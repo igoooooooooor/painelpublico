@@ -56,6 +56,7 @@ test('city view explains missing data blocks and the Brasília and Fernando de N
   city.selectedCity = null;
   const picker = context.cityApi.view();
   assert.match(picker, /Fernando de Noronha é um distrito estadual de Pernambuco e não elege prefeito nem vereadores/);
+  assert.match(picker, /emendas parlamentares/);
   assert.doesNotMatch(picker, /consulte Recife/);
 
   city.selectedId = '2605459';
@@ -121,6 +122,120 @@ test('election rows keep office labels, hide null vote counts, and keep current 
   assert.doesNotMatch(html, /Mandatos em exercício/);
   assert.match(html, /<details class="city-collapsible city-roster"><summary>Câmara dos Deputados · 1/);
   assert.match(html, /<details class="city-collapsible city-roster"><summary>Senado Federal · 1/);
+});
+
+test('amendments with no snapshot or no matched records never display missing amounts as zero', () => {
+  const { context } = makeView();
+  const city = context.cityApi.state;
+  city.selectedId = '3550308';
+  city.selectedCity = { id: '3550308', name: 'São Paulo', uf: 'SP' };
+  city.detail = {
+    municipality: { id: '3550308', name: 'São Paulo', uf: 'SP' },
+    sources: {}, municipalElected: [], stateElected: [], topFederalVotes: [], currentFederal: [], messages: {},
+  };
+  let html = context.cityApi.view();
+  assert.match(html, /Emendas parlamentares/);
+  assert.match(html, /não estão disponíveis neste recorte/);
+  assert.match(html, /Registros sem município identificado ficam fora deste recorte/);
+  assert.doesNotMatch(html, /R\$ 0,00/);
+  assert.doesNotMatch(html, /0 registros/);
+
+  city.detail.amendments = {
+    year: 2023, status: 'no_records', message: 'Nenhuma emenda com localidade identificada em 2023.',
+    source: { label: 'Consulta de emendas', url: 'https://dados.example/emendas', fetchedAt: '2026-10-06' },
+    totals: { committedCents: 0, paidCents: 0, restosPaidCents: 0 }, recordCount: 0,
+    specialTransfers: { identified: true, totals: { committedCents: 0, paidCents: 0, restosPaidCents: 0 }, recordCount: 0 },
+    authors: [], records: [], coverage: {},
+  };
+  html = context.cityApi.view();
+  assert.match(html, /Emendas parlamentares · 2023/);
+  assert.match(html, /Nenhuma emenda com localidade identificada em 2023\./);
+  assert.match(html, /Consulta de emendas ↗/);
+  assert.match(html, /06\/10\/2026/);
+  assert.doesNotMatch(html, /R\$ 0,00/);
+  assert.doesNotMatch(html, /0 registros/);
+  assert.doesNotMatch(html, /Transferências especiais/);
+
+  city.detail.amendments = {
+    year: 2024, status: 'available', recordCount: 1,
+    totals: { committedCents: 50000, paidCents: 30000, restosPaidCents: null },
+  };
+  html = context.cityApi.view();
+  const amendments = html.match(/<section class="card city-data-section city-amendments-section"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(amendments, /Restos a pagar pagos[\s\S]*<b class="mono">Não informado<\/b>/);
+});
+
+test('available amendments separate financial states, keep Pix as a subset, and show all published authors', () => {
+  const { context } = makeView();
+  const city = context.cityApi.state;
+  city.selectedId = '3550308';
+  city.selectedCity = { id: '3550308', name: 'São Paulo', uf: 'SP' };
+  city.detail = {
+    municipality: { id: '3550308', name: 'São Paulo', uf: 'SP' },
+    sources: {}, municipalElected: [], stateElected: [], topFederalVotes: [], currentFederal: [], messages: {},
+    amendments: {
+      year: 2022, status: 'partial', message: 'Cobertura parcial informada pela fonte.',
+      source: { label: 'Dados do Congresso', url: 'https://dados.example/amendments', period: 'propostas de 2022', fetchedAt: '2026-10-07' },
+      totals: { committedCents: 123450, paidCents: 0, restosPaidCents: 32100 }, recordCount: 3,
+      specialTransfers: { identified: true, totals: { committedCents: 30000, paidCents: 10000, restosPaidCents: null }, recordCount: 1 },
+      authors: [
+        { id: 'author-z', name: 'Zeta Comissão', types: ['Comissão'], profileId: 'camara:90', committedCents: 50000, paidCents: 20000, restosPaidCents: null, recordCount: 1 },
+        { id: 'author-b', name: 'Bancada SP', types: ['Bancada'], committedCents: 0, paidCents: null, restosPaidCents: null, recordCount: 1 },
+        { id: 'author-a', name: 'Autora <img src=x onerror=alert(1)>', types: ['Individual'], committedCents: 20000, paidCents: 10000, restosPaidCents: null, recordCount: 1 },
+        { id: 'author-unknown', name: null, types: [], committedCents: null, paidCents: null, restosPaidCents: null, recordCount: 0 },
+      ],
+      records: [
+        { id: '1', authorName: 'Bancada SP', type: 'Bancada', specialTransfer: false, committedCents: 30000, paidCents: 10000, restosPaidCents: 2000, sourceUrl: 'https://dados.example/records/1' },
+        { id: '2', authorName: 'Comissão <Norte>', type: 'Comissão', specialTransfer: true, committedCents: 30000, paidCents: 10000, restosPaidCents: null, sourceUrl: 'javascript:alert(1)' },
+      ],
+      coverage: {},
+    },
+  };
+
+  const html = context.cityApi.view();
+  assert.match(html, /Eleições, representantes e emendas parlamentares/);
+  assert.match(html, /Ano da proposta/);
+  assert.match(html, /Emendas parlamentares · 2022/);
+  assert.match(html, /O ano indicado é o da proposta[\s\S]*Pagamentos podem ocorrer em outros anos/);
+  assert.match(html, /Empenhado \(compromisso\)/);
+  assert.match(html, /R\$ 1\.234,50/);
+  assert.match(html, /Pago[\s\S]*R\$ 0,00/);
+  assert.match(html, /Restos a pagar pagos[\s\S]*R\$ 321,00/);
+  assert.match(html, /não significa que já foi pago/);
+  assert.match(html, /Transferências especiais \(“Pix”\)/);
+  assert.match(html, /subconjunto das emendas[\s\S]*Não some estes valores novamente/);
+  assert.match(html, /Dados do Congresso ↗[\s\S]*consulta em 07\/10\/2026/);
+  assert.match(html, /registros sem município identificado ficam fora deste recorte/i);
+  assert.doesNotMatch(html, /Total geral|Soma total/);
+
+  const authors = html.match(/<ol class="city-amendment-authors">[\s\S]*?<\/ol>/)?.[0] || '';
+  assert.match(authors, /Autora &lt;img src=x onerror=alert\(1\)&gt;/);
+  assert.match(authors, /Autoria não identificada/);
+  assert.match(authors, /Bancada SP[\s\S]*Bancada/);
+  assert.match(authors, /Zeta Comissão[\s\S]*Comissão/);
+  assert.ok(authors.indexOf('Autoria não identificada') < authors.indexOf('Bancada SP'));
+  assert.ok(authors.indexOf('Bancada SP') < authors.indexOf('Zeta Comissão'));
+  assert.equal((authors.match(/data-deputy=/g) || []).length, 1);
+  assert.match(html, /Comissão &lt;Norte&gt;/);
+  assert.match(html, /ID 2/);
+  assert.match(html, /ID da emenda<\/span><b>2<\/b>/);
+  assert.doesNotMatch(html, /<img src=x/);
+  assert.doesNotMatch(html, /href="javascript:/);
+});
+
+test('transferência especial subset is omitted when the source does not identify it', () => {
+  const { context } = makeView();
+  const city = context.cityApi.state;
+  city.selectedId = '3550308';
+  city.selectedCity = { id: '3550308', name: 'São Paulo', uf: 'SP' };
+  city.detail = {
+    municipality: { id: '3550308', name: 'São Paulo', uf: 'SP' },
+    sources: {}, municipalElected: [], stateElected: [], topFederalVotes: [], currentFederal: [], messages: {},
+    amendments: { year: 2021, status: 'available', recordCount: 1, totals: { committedCents: 100 }, specialTransfers: { identified: false } },
+  };
+  const html = context.cityApi.view();
+  assert.match(html, /R\$ 1,00/);
+  assert.doesNotMatch(html, /Transferências especiais|“Pix”/);
 });
 
 test('stale city search responses cannot replace newer data and unavailable catalog is not reported as no match', async () => {

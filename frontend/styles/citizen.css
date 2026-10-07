@@ -408,7 +408,7 @@ nav.tabs button svg { flex: none; }
   body[data-view="city"] .view > .ph, body[data-view="city"] .view > .back, .city-detail-header, .city-special-note { grid-column: 1 / -1; }
   .city-content-grid { display: contents; }
   .city-content-grid > .card { min-width: 0; }
-  .city-intro-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .city-intro-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 @media (max-width: 420px) {
   nav.tabs button { font-size: 10px; }
@@ -416,6 +416,45 @@ nav.tabs button svg { flex: none; }
   .city-search-row .fchip { min-height: 44px; }
   .city-suggestion { align-items: flex-start; flex-direction: column; gap: 2px; }
   .city-person { align-items: flex-start; flex-wrap: wrap; }
+  .city-person-main { flex: 1 1 180px; }
   .city-profile-link { margin-left: auto; }
   .city-overview .src { text-align: left; flex-basis: 100%; }
+}
+
+/* Emendas parlamentares na consulta por cidade */
+.city-amendments-section { min-width: 0; }
+.city-amendment-year-note { margin: 0; color: var(--ink-2); font-size: 13px; line-height: 1.5; }
+.city-amendment-metrics { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+.city-amendment-metric { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--chip); }
+.city-amendment-metric .k { color: var(--muted); }
+.city-amendment-metric > b { font-size: clamp(20px, 5vw, 27px); overflow-wrap: anywhere; }
+.city-amendment-metric .muted { line-height: 1.4; }
+.city-amendment-caveat { margin: 0; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--ink-2); background: var(--surface); font-size: 13px; line-height: 1.5; }
+.city-special-transfers { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--surface); }
+.city-special-transfers h3 { margin: 2px 0 0; font-size: 17px; }
+.city-special-transfers > p { margin: 0; }
+.city-amendment-disclosure { min-width: 0; }
+.city-amendment-authors { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.city-amendment-author { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 12px 0; border-top: 1px solid var(--line); }
+.city-amendment-author-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.city-amendment-author-heading > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.city-amendment-author-heading small { color: var(--muted); }
+.city-amendment-author-values { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.city-amendment-author-values .city-amendment-metric { padding: 10px; background: var(--surface); }
+.city-amendment-author-values .city-amendment-metric > b { font-size: 16px; }
+.city-amendment-records { display: flex; flex-direction: column; gap: 0; }
+.city-amendment-record { border-top: 1px solid var(--line); min-width: 0; }
+.city-amendment-record summary { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-height: 52px; padding-block: 8px; cursor: pointer; font-weight: 600; overflow-wrap: anywhere; }
+.city-amendment-record summary::after { content: "+"; margin-left: auto; padding-left: 10px; font: 600 18px var(--f-data); }
+.city-amendment-record[open] summary::after { content: "−"; }
+.city-amendment-tag { display: inline-flex; align-items: center; min-height: 26px; padding: 2px 8px; border: 1px solid var(--line); border-radius: 999px; background: var(--chip); color: var(--ink-2); font-size: 11px; font-weight: 600; }
+.city-amendment-record-body { display: flex; flex-direction: column; gap: var(--space-2); padding-bottom: var(--space-3); }
+.city-amendment-id-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin: 0; }
+.city-amendment-id-line b { overflow-wrap: anywhere; font-family: var(--f-data); }
+.city-amendment-source { display: inline-flex; align-items: center; min-height: 40px; color: var(--ink-2); font-weight: 600; font-size: 13px; }
+@media (min-width: 520px) {
+  .city-amendment-metrics, .city-amendment-author-values { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+}
+@media (min-width: 720px) {
+  .city-content-grid > .city-amendments-section { grid-column: 1 / -1; }
 }

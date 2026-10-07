@@ -15,6 +15,9 @@ const cityReadableDate = value => {
   const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
   return match ? `${match[3]}/${match[2]}/${match[1]}` : String(value || '');
 };
+const cityHasCents = value => value !== null && value !== undefined && String(value).trim() !== '' && Number.isFinite(Number(value));
+const cityMoneyFromCents = value => cityHasCents(value)
+  ? `R$ ${(Number(value) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null;
 const citySafeUrl = value => {
   if (typeof profileSafeUrl === 'function') return profileSafeUrl(value);
   return /^https?:\/\//i.test(String(value || '')) ? String(value) : '';
@@ -289,6 +292,86 @@ function cityCurrentFederalSection(data) {
   </section>`;
 }
 
+function cityAmendmentMetric(label, cents, explanation, missingText = 'Não informado') {
+  const amount = cityMoneyFromCents(cents);
+  return `<div class="city-amendment-metric"><span class="k">${esc(label)}</span><b class="mono">${amount || esc(missingText)}</b><span class="muted">${esc(explanation)}</span></div>`;
+}
+
+function cityAmendmentFinancials(totals = {}) {
+  return `<div class="city-amendment-metrics">
+    ${cityAmendmentMetric('Empenhado (compromisso)', totals.committedCents, 'Valor reservado para a emenda; não significa que já foi pago.')}
+    ${cityAmendmentMetric('Pago', totals.paidCents, 'Valor classificado como pago na fonte consultada.')}
+    ${cityAmendmentMetric('Restos a pagar pagos', totals.restosPaidCents, 'Pagamento de compromisso de ano anterior, mostrado à parte.')}
+  </div>`;
+}
+
+function cityAmendmentAuthorName(author) {
+  return String(author?.name || '').trim() || 'Autoria não identificada';
+}
+
+function cityAmendmentAuthorRow(author) {
+  const types = Array.isArray(author.types) ? author.types.filter(type => typeof type === 'string' && type.trim()) : [];
+  const variants = Array.isArray(author.nameVariants) ? [...new Set(author.nameVariants)].filter(name => typeof name === 'string' && name.trim() && name !== author.name) : [];
+  const profileId = String(author.profileId || '');
+  const profile = /^(?:camara|senado):\d+$/.test(profileId)
+    ? `<button type="button" class="city-profile-link" data-deputy="${esc(profileId)}">Ver ficha parlamentar</button>` : '';
+  return `<li class="city-amendment-author"><div class="city-amendment-author-heading"><span><b>${esc(cityAmendmentAuthorName(author))}</b>${types.length ? `<small>${types.map(esc).join(' · ')}</small>` : ''}${variants.length ? `<small>Outros nomes publicados para esta autoria: ${variants.map(esc).join(' · ')}</small>` : ''}</span>${profile}</div>
+    <div class="city-amendment-author-values">${cityAmendmentMetric('Empenhado (compromisso)', author.committedCents, 'Valor reservado.')}${cityAmendmentMetric('Pago', author.paidCents, 'Valor pago na fonte.')}${cityAmendmentMetric('Restos a pagar pagos', author.restosPaidCents, 'Compromisso de ano anterior.')}</div>
+    ${Number(author.recordCount) > 0 ? `<small class="muted">${Number(author.recordCount).toLocaleString('pt-BR')} registros associados</small>` : ''}</li>`;
+}
+
+function cityAmendmentRecord(record) {
+  const authorName = String(record.authorName || '').trim() || 'Autoria não identificada';
+  const type = String(record.type || '').trim() || 'Tipo não informado';
+  const recordId = String(record.id || '').trim() || 'Não informado';
+  const title = `${type} · ${authorName}`;
+  const sourceUrl = citySafeUrl(record.sourceUrl);
+  return `<details class="city-amendment-record"><summary><span>${esc(title)}</span><span class="city-amendment-tag">ID ${esc(recordId)}</span>${record.specialTransfer === true ? '<span class="city-amendment-tag">Transferência especial (Pix)</span>' : ''}</summary>
+    <div class="city-amendment-record-body"><p class="city-amendment-id-line"><span class="k">ID da emenda</span><b>${esc(recordId)}</b></p>${cityAmendmentFinancials(record)}${sourceUrl ? `<a class="city-amendment-source" href="${esc(sourceUrl)}" target="_blank" rel="noopener">Abrir registro na fonte ↗</a>` : ''}</div>
+  </details>`;
+}
+
+function cityAmendmentFallback(status, year) {
+  if (status === 'no_records' || status === 'available' || status === 'partial' || status === 'stale') {
+    return `Nenhuma emenda com município identificado foi encontrada para o ano da proposta ${year || 'consultado'}. Registros sem município identificado ficam fora deste recorte.`;
+  }
+  return `Os dados de emendas parlamentares para o ano da proposta ${year || 'consultado'} não estão disponíveis neste recorte.`;
+}
+
+function cityAmendmentsSection(data) {
+  const amendments = data.amendments && typeof data.amendments === 'object' ? data.amendments : {};
+  const status = ['available', 'partial', 'unavailable', 'no_records', 'stale'].includes(amendments.status) ? amendments.status : 'unavailable';
+  const year = Number.isInteger(amendments.year) ? String(amendments.year) : null;
+  const recordCount = Number.isFinite(Number(amendments.recordCount)) && Number(amendments.recordCount) > 0 ? Number(amendments.recordCount) : 0;
+  const hasRecords = recordCount > 0 && ['available', 'partial', 'stale'].includes(status);
+  const records = Array.isArray(amendments.records) ? amendments.records : [];
+  const authors = Array.isArray(amendments.authors) ? [...amendments.authors].sort((left, right) => cityAmendmentAuthorName(left).localeCompare(cityAmendmentAuthorName(right), 'pt-BR', { sensitivity: 'base' })) : [];
+  const statusMessage = amendments.message || (status === 'stale'
+    ? 'Os dados vêm de uma consulta anterior. Confira a data indicada pela fonte.'
+    : status === 'partial' ? 'A cobertura está parcial para este recorte.' : '');
+  const special = amendments.specialTransfers;
+  const specialCount = Number.isFinite(Number(special?.recordCount)) && Number(special.recordCount) > 0 ? Number(special.recordCount) : 0;
+  const specialBlock = special?.identified === true && hasRecords ? `<section class="city-special-transfers" aria-labelledby="city-special-transfers-title"><div><span class="k">Recorte identificado pela fonte</span><h3 id="city-special-transfers-title">Transferências especiais (“Pix”)</h3></div>
+    <p class="muted">Este é um subconjunto das emendas e dos valores apresentados acima. Não some estes valores novamente ao total.</p>
+    ${specialCount ? cityAmendmentFinancials(special.totals || {}) : cityUnavailable(special.message, 'A fonte permite identificar transferências especiais, mas não há registros deste tipo neste recorte.')}
+    ${specialCount ? `<small class="muted">${specialCount.toLocaleString('pt-BR')} registros identificados como transferência especial.</small>` : ''}
+  </section>` : '';
+  const authorDetails = hasRecords && authors.length
+    ? `<details class="city-collapsible city-amendment-disclosure"><summary>Ver autorias · ${authors.length}</summary><ol class="city-amendment-authors">${authors.map(cityAmendmentAuthorRow).join('')}</ol></details>`
+    : hasRecords ? cityUnavailable('As autorias detalhadas não estão disponíveis neste recorte.', 'As autorias detalhadas não estão disponíveis neste recorte.') : '';
+  const recordDetails = hasRecords && records.length
+    ? `<details class="city-collapsible city-amendment-disclosure"><summary>Ver registros de emendas · ${records.length}</summary><div class="city-amendment-records">${records.map(cityAmendmentRecord).join('')}</div></details>`
+    : hasRecords ? cityUnavailable('Os registros individuais não estão disponíveis neste recorte; os valores agregados aparecem acima.', 'Os registros individuais não estão disponíveis neste recorte.') : '';
+  const statusLabel = status === 'stale' ? 'Consulta anterior' : status === 'partial' ? 'Cobertura parcial' : status === 'available' && hasRecords ? `${recordCount.toLocaleString('pt-BR')} registros` : null;
+  return `<section class="card city-data-section city-amendments-section" aria-labelledby="city-amendments-title"><div class="city-section-heading"><div><span class="k">Ano da proposta</span><h2 class="h" id="city-amendments-title">Emendas parlamentares${year ? ` · ${esc(year)}` : ''}</h2></div>${statusLabel ? `<span class="pill">${esc(statusLabel)}</span>` : ''}</div>
+    <p class="city-amendment-year-note">O ano indicado é o da proposta da emenda. Pagamentos podem ocorrer em outros anos; “pago” e “restos a pagar pagos” aparecem em campos separados.</p>
+    ${hasRecords
+      ? `${statusMessage ? `<p class="note">${esc(statusMessage)}</p>` : ''}${cityAmendmentFinancials(amendments.totals || {})}${specialBlock}${authorDetails}${recordDetails}`
+      : cityUnavailable(amendments.message, cityAmendmentFallback(status, year))}
+    <p class="city-amendment-caveat">Esta consulta usa a localidade associada à emenda; ela não representa todos os gastos realizados no município. Registros sem município identificado ficam fora deste recorte.</p>
+    ${citySource(amendments.source, 'Fonte das emendas')}</section>`;
+}
+
 function cityDetailView() {
   if (!cityViewState.selectedId || !cityViewState.selectedCity) return cityPickerView();
   if (cityViewState.detailLoading && !cityViewState.detail) return `<button type="button" class="back" data-city-search>‹ Voltar à busca</button>${pageHead('Minha cidade', 'Carregando cidade…', 'Consultando os registros disponíveis para este município.')}${skel('ficha', 2)}`;
@@ -300,23 +383,23 @@ function cityDetailView() {
   const municipality = data.municipality, isDf = cityIsBrasilia(municipality), isFernando = cityIsFernandoDeNoronha(municipality);
   const population = cityPopulation(municipality.population), year = cityYear(municipality.populationYear);
   return `<button type="button" class="back" data-city-search>‹ Voltar à busca</button>
-    <header class="city-detail-header"><span class="k">Minha cidade · ${esc(municipality.uf)}</span><h1 class="h">${esc(municipality.name)}</h1><p class="ph-lead">Eleições e representantes, com fonte e período de cada conjunto de dados.</p></header>
+    <header class="city-detail-header"><span class="k">Minha cidade · ${esc(municipality.uf)}</span><h1 class="h">${esc(municipality.name)}</h1><p class="ph-lead">Eleições, representantes e emendas parlamentares, com fonte e período de cada conjunto de dados.</p></header>
     ${isDf ? `<section class="note city-special-note"><b>Sobre Brasília:</b> esta seleção representa o Distrito Federal, que não tem municípios, prefeitos ou vereadores. Os cargos locais são distritais.</section>` : isFernando ? `<section class="note city-special-note"><b>Sobre Fernando de Noronha:</b> embora conste em cadastros estatísticos, é um distrito estadual de Pernambuco e não elege prefeito nem vereadores.</section>` : ''}
     <section class="city-overview card"><div class="city-overview-label"><span class="k">População</span><span class="city-population">${population === null ? 'Sem registro' : population}</span><span class="muted">${population === null ? 'habitantes não informados' : `habitantes${year ? ` · ${year}` : ''}`}</span></div>${citySource(data.sources?.population, 'Estimativa de população')}</section>
-    <div class="city-content-grid">${cityMunicipalSection(data, isDf, isFernando)}${cityGeneralElectionSection(data, isDf)}${cityFederalVotesSection(data)}${cityCurrentFederalSection(data)}</div>
+    <div class="city-content-grid">${cityMunicipalSection(data, isDf, isFernando)}${cityGeneralElectionSection(data, isDf)}${cityFederalVotesSection(data)}${cityCurrentFederalSection(data)}${cityAmendmentsSection(data)}</div>
     ${data.generatedAt ? `<span class="src">Base local montada em ${esc(cityReadableDate(data.generatedAt))}.</span>` : ''}`;
 }
 
 function cityPickerView() {
   const query = cityViewState.query;
-  return `${pageHead('Dados públicos por município', 'Minha cidade', 'Consulte população, eleições municipais, resultados de 2026 e a lista parlamentar atual do seu estado.')}
+  return `${pageHead('Dados públicos por município', 'Minha cidade', 'Consulte população, eleições municipais, resultados de 2026, emendas parlamentares e a lista parlamentar atual do seu estado.')}
     <section class="card city-search-card"><label class="k" for="city-search">Qual cidade você quer consultar?</label>
       <div class="city-search-row"><div class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="city-search" type="search" value="${esc(query)}" placeholder="Digite o nome da cidade" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="city-suggestions"></div><button type="button" class="fchip" data-city-search-submit>Buscar</button></div>
       <div id="city-results" class="city-results" aria-live="polite">${citySearchResultsMarkup()}</div>
       <div id="city-search-source">${cityViewState.searchSource ? citySource(cityViewState.searchSource, 'Lista de municípios') : '<span class="src">A fonte da lista aparece junto aos resultados da busca.</span>'}</div>
     </section>
     <section class="note city-geography-note"><b>Como interpretar:</b> Brasília representa o Distrito Federal, que não tem prefeitura nem vereadores. Embora conste em cadastros estatísticos, Fernando de Noronha é um distrito estadual de Pernambuco e não elege prefeito nem vereadores.</section>
-    <section class="card city-intro-card"><span class="k">O que você vai encontrar</span><div class="city-intro-grid"><p><b>Dados do município</b><span>População e resultados de 2024 para prefeito(a), vice-prefeito(a) e vereadores(as).</span></p><p><b>Eleição geral de 2026</b><span>Resultados de governador(a) e deputados(as) estaduais ou distritais. Os mandatos começam em 2027.</span></p><p><b>Representação federal</b><span>Votos de pessoas eleitas na cidade e lista atual de deputados(as) e senadores(as) do estado, em blocos separados.</span></p></div></section>`;
+    <section class="card city-intro-card"><span class="k">O que você vai encontrar</span><div class="city-intro-grid"><p><b>Dados do município</b><span>População e resultados de 2024 para prefeito(a), vice-prefeito(a) e vereadores(as).</span></p><p><b>Eleição geral de 2026</b><span>Resultados de governador(a) e deputados(as) estaduais ou distritais. Os mandatos começam em 2027.</span></p><p><b>Representação federal</b><span>Votos de pessoas eleitas na cidade e lista atual de deputados(as) e senadores(as) do estado, em blocos separados.</span></p><p><b>Emendas parlamentares</b><span>Valores por ano da proposta, com empenhado, pago e restos a pagar apresentados separadamente.</span></p></div></section>`;
 }
 
 function cityView() {
