@@ -49,3 +49,14 @@ Para mostrar o site sem servidor: rode `make prod` e, em outro terminal, `cloudf
 
 - `.env`, o banco e os backups não vão para o git nem para a pasta do código no servidor.
 - A ferramenta de busca avançada expõe CSV de despesas; o limite de tempo protege o servidor, mas, se houver abuso, ative *Rate limiting* na Cloudflare para `/api/`.
+
+## Publicação automática pelo GitHub
+
+O workflow `.github/workflows/deploy.yml` roda `make check` em todo push e pull request. Em push na `main`, se os testes passarem, ele envia o código para o servidor e reinicia o serviço. O banco continua indo pelo `make deploy-db`, do seu computador.
+
+Configuração (uma vez):
+
+1. Crie uma chave só para o deploy: `ssh-keygen -t ed25519 -f ~/.ssh/painel-deploy -N "" -C github-deploy`.
+2. Autorize-a no servidor: `ssh painel 'cat >> ~/.ssh/authorized_keys' < ~/.ssh/painel-deploy.pub`.
+3. No repositório do GitHub, em *Settings > Secrets and variables > Actions*, crie `DEPLOY_HOST` (IP), `DEPLOY_USER` (`ubuntu`) e `DEPLOY_SSH_KEY` (conteúdo de `~/.ssh/painel-deploy`, a chave **privada**).
+4. Opcional: em *Settings > Environments*, crie `production` e exija aprovação manual antes de publicar.

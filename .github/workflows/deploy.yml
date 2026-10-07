@@ -1,0 +1,59 @@
+# A cada push na main: roda make check e, se passar, publica o código no servidor.
+# O banco SQLite não vai pelo GitHub; continua com make deploy-db a partir do seu computador.
+# Segredos (Settings > Secrets and variables > Actions):
+#   DEPLOY_HOST     IP do servidor (ex.: 203.0.113.10)
+#   DEPLOY_USER     usuário SSH (ex.: ubuntu)
+#   DEPLOY_SSH_KEY  chave privada criada só para o deploy (a pública fica no servidor)
+name: Testar e publicar
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: make check
+
+  deploy:
+    needs: check
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Chave SSH
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          ssh-keyscan -T 15 "$HOST" >> ~/.ssh/known_hosts
+          printf 'Host painel\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/deploy\n' "$HOST" "${{ secrets.DEPLOY_USER }}" > ~/.ssh/config
+      - name: Gerar e publicar
+        run: |
+          make build
+          rsync -az --delete --rsync-path="sudo rsync" --exclude-from=deploy/rsync-exclude.txt ./ painel:/opt/painel/app/
+          ssh painel "sudo sh -c 'chown -R painel:painel /opt/painel/app && install -m 0644 /opt/painel/app/deploy/painel.service /etc/systemd/system/painel.service && systemctl daemon-reload && systemctl restart painel'"
+      - name: Conferir se está no ar
+        run: |
+          for i in 1 2 3 4 5; do ssh painel 'curl -fsS http://127.0.0.1:8000/healthz' && exit 0; sleep 3; done
+          echo "O site não respondeu após o deploy"; exit 1

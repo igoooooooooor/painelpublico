@@ -8,3 +8,4 @@ artifacts/
 _backup-antes-do-claude/
 node_modules/
 .venv/
+.github/
