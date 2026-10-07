@@ -372,6 +372,103 @@ function cityAmendmentsSection(data) {
     ${citySource(amendments.source, 'Fonte das emendas')}</section>`;
 }
 
+function cityAccountStatusLabel(status) {
+  return ({
+    available: 'Dados disponíveis', partial: 'Cobertura parcial', unavailable: 'Consulta indisponível',
+    not_filed: 'Não entregou ao Tesouro', not_applicable: 'Não se aplica', stale: 'Consulta anterior',
+  })[status] || 'Consulta indisponível';
+}
+
+function cityAccountClassification(value) {
+  return ({
+    revenue: 'Receita', function: 'Despesa por função', nature: 'Despesa por natureza', total: 'Despesa total',
+  })[value] || (value ? 'Outra classificação publicada pela fonte' : 'Classificação não informada');
+}
+
+function cityAccountStage(value) {
+  if (!value) return null;
+  const key = cityNormalize(value).replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  const labels = {
+    committed: 'Empenhada', empenhado: 'Empenhada', empenhada: 'Empenhada',
+    liquidated: 'Liquidada', liquidado: 'Liquidada', liquidada: 'Liquidada',
+    paid: 'Paga', pago: 'Pago', paga: 'Paga',
+    realized: 'Realizada', realised: 'Realizada', realizada: 'Realizada', realizado: 'Realizada',
+    budgeted: 'Orçada', orcado: 'Orçada', orcada: 'Orçada',
+  };
+  return labels[key] || String(value);
+}
+
+function cityAccountComparisonMetric(comparison, metricId) {
+  if (!comparison || !Array.isArray(comparison.metrics)) return null;
+  return comparison.metrics.find(item => item && String(item.id) === String(metricId)) || null;
+}
+
+function cityAccountComparisonValue(comparison, metric) {
+  if (!comparison?.available) {
+    return '<b>Comparação indisponível</b>';
+  }
+  const sampleSize = Number.isInteger(metric?.sampleSize) && metric.sampleSize >= 0 ? metric.sampleSize : null;
+  if (sampleSize === null || sampleSize < 3) {
+    return `<b>Sem comparação</b><small>${sampleSize === null ? 'A amostra comparável não foi informada.' : 'Menos de 3 municípios com valor válido.'}</small>`;
+  }
+  const amount = cityMoneyFromCents(metric?.medianCents);
+  if (!amount) return '<b>Não informado</b><small>Mediana não publicada para este indicador.</small>';
+  const sampleNote = sampleSize === null ? '' : `<small>n = ${sampleSize.toLocaleString('pt-BR')} municípios com valor válido</small>`;
+  return `<b>${amount}</b>${sampleNote}`;
+}
+
+function cityAccountMetric(metric, comparison, year) {
+  const label = String(metric.label || 'Indicador não informado');
+  const comparisonMetric = cityAccountComparisonMetric(comparison, metric.id);
+  const amount = cityMoneyFromCents(metric.amountCents);
+  const stage = cityAccountStage(metric.stage);
+  const source = metric.source ? `<div class="city-account-metric-source">${citySource(metric.source, `Fonte de ${label}`)}</div>` : '';
+  return `<article class="city-account-metric"><div class="city-account-metric-heading"><div><span class="k">${esc(cityAccountClassification(metric.classification))}${stage ? ` · ${esc(stage)}` : ''}</span><h3>${esc(label)}</h3></div></div>
+    <div class="city-account-values"><div><span class="city-account-value-label">${year ? `Município · exercício ${esc(year)}` : 'Município · exercício não informado'}</span><b class="mono">${amount || 'Não informado'}</b>${stage ? '' : '<small>Etapa não informada</small>'}</div>
+      <div><span class="city-account-value-label">Mediana dos demais municípios</span>${cityAccountComparisonValue(comparison, comparisonMetric)}</div></div>${source}</article>`;
+}
+
+function cityAccountsSection(data, isDf, isFernando) {
+  const accounts = data.accounts && typeof data.accounts === 'object' ? data.accounts : {};
+  const knownStatuses = ['available', 'partial', 'unavailable', 'not_filed', 'not_applicable', 'stale'];
+  const status = knownStatuses.includes(accounts.status) ? accounts.status : (isDf || isFernando ? 'not_applicable' : 'unavailable');
+  const year = cityYear(accounts.year);
+  const comparison = accounts.comparison && typeof accounts.comparison === 'object' ? accounts.comparison : null;
+  const metrics = Array.isArray(accounts.metrics) ? accounts.metrics.filter(metric => metric && typeof metric === 'object') : [];
+  const hasMetrics = metrics.length > 0 && ['available', 'partial', 'stale'].includes(status);
+  const statusMessage = accounts.message || (status === 'not_applicable'
+    ? isDf ? 'A declaração municipal não se aplica ao Distrito Federal, que não é município.'
+      : isFernando ? 'A declaração municipal não se aplica a Fernando de Noronha, distrito estadual de Pernambuco.'
+        : 'Esta declaração não se aplica ao município.'
+    : status === 'not_filed' ? 'O município não entregou esta declaração ao Tesouro no recorte consultado.'
+      : status === 'unavailable' ? 'A consulta das contas municipais está indisponível neste momento.'
+        : status === 'stale' ? 'Os dados vêm de uma consulta anterior. Confira a data indicada pela fonte.'
+          : status === 'partial' ? 'A cobertura está parcial para este recorte.' : 'Os indicadores desta declaração não estão disponíveis.');
+  const submittedAt = status !== 'not_filed' && status !== 'not_applicable' && status !== 'unavailable'
+    && accounts.declaration?.submittedAt ? cityReadableDate(accounts.declaration.submittedAt) : null;
+  const populationYear = cityYear(comparison?.populationYear);
+  const band = comparison?.band && typeof comparison.band === 'object' ? comparison.band : null;
+  const minPopulation = cityPopulation(band?.minPopulation), maxPopulation = cityPopulation(band?.maxPopulation);
+  const populationRange = minPopulation !== null && maxPopulation !== null
+    ? ` · ${minPopulation} a ${maxPopulation} habitantes` : '';
+  const comparisonSummary = comparison ? `<div class="city-account-comparison-note"><b>Comparação entre municípios</b>
+    ${comparison.available ? `${band?.label ? `<span>Faixa populacional: ${esc(band.label)}${populationRange}${populationYear ? ` · população de ${esc(populationYear)}` : ''}.</span>` : populationYear ? `<span>Faixa definida pela população de ${esc(populationYear)}.</span>` : ''}
+      ${Number.isInteger(comparison.reportingCount) && Number.isInteger(comparison.universeCount) ? `<span>${comparison.reportingCount.toLocaleString('pt-BR')} de ${comparison.universeCount.toLocaleString('pt-BR')} municípios têm valores disponíveis nesta faixa.</span>` : ''}
+      <span>${comparison.method ? esc(comparison.method) : 'A mediana considera os demais municípios da faixa; este município não entra no cálculo e não há classificação por posição.'}</span>`
+      : `<span>${esc(comparison.message || 'A mediana para municípios de faixa populacional semelhante está indisponível.')}</span>`}
+    ${comparison.populationSource ? citySource(comparison.populationSource, 'Fonte da população usada na faixa') : ''}
+  </div>` : '';
+  const hasPersonnel = metrics.some(metric => cityNormalize(metric.id).includes('personnel') || cityNormalize(metric.label).includes('pessoal'));
+  const accountsNote = `<p class="city-account-caveat">A receita bruta é apresentada antes das deduções. Os totais de receita e despesa incluem operações intraorçamentárias; saúde, educação e pessoal aparecem sem essas operações. Despesas por função, como saúde e educação, e por natureza podem incluir os mesmos gastos; não some esses indicadores como parcelas independentes. ${hasPersonnel ? 'O indicador de pessoal descreve a natureza da despesa e não é o limite de despesa com pessoal da LRF.' : ''}</p>`;
+  const metricContent = hasMetrics
+    ? `${statusMessage ? `<p class="note">${esc(statusMessage)}</p>` : ''}${comparisonSummary}<div class="city-account-metrics">${metrics.map(metric => cityAccountMetric(metric, comparison, year)).join('')}</div>${accountsNote}`
+    : cityUnavailable(statusMessage, 'A consulta das contas municipais está indisponível neste momento.');
+  return `<section class="card city-data-section city-accounts-section" aria-labelledby="city-accounts-title"><div class="city-section-heading"><div><span class="k">Exercício financeiro</span><h2 class="h" id="city-accounts-title">Contas do município${year ? ` · ${esc(year)}` : ''}</h2></div><span class="pill">${esc(cityAccountStatusLabel(status))}</span></div>
+    <p class="city-account-year-note">A DCA é a declaração anual enviada pelo município ao Tesouro. Despesa empenhada é um compromisso assumido; não significa que já foi paga.</p>
+    ${submittedAt ? `<p class="city-account-submitted">Entrega registrada em ${esc(submittedAt)}.</p>` : ''}
+    ${metricContent}${citySource(accounts.source, 'Fonte das contas municipais')}</section>`;
+}
+
 function cityDetailView() {
   if (!cityViewState.selectedId || !cityViewState.selectedCity) return cityPickerView();
   if (cityViewState.detailLoading && !cityViewState.detail) return `<button type="button" class="back" data-city-search>‹ Voltar à busca</button>${pageHead('Minha cidade', 'Carregando cidade…', 'Consultando os registros disponíveis para este município.')}${skel('ficha', 2)}`;
@@ -383,23 +480,23 @@ function cityDetailView() {
   const municipality = data.municipality, isDf = cityIsBrasilia(municipality), isFernando = cityIsFernandoDeNoronha(municipality);
   const population = cityPopulation(municipality.population), year = cityYear(municipality.populationYear);
   return `<button type="button" class="back" data-city-search>‹ Voltar à busca</button>
-    <header class="city-detail-header"><span class="k">Minha cidade · ${esc(municipality.uf)}</span><h1 class="h">${esc(municipality.name)}</h1><p class="ph-lead">Eleições, representantes e emendas parlamentares, com fonte e período de cada conjunto de dados.</p></header>
+    <header class="city-detail-header"><span class="k">Minha cidade · ${esc(municipality.uf)}</span><h1 class="h">${esc(municipality.name)}</h1><p class="ph-lead">Eleições, representantes, emendas e contas públicas, com fonte e período de cada conjunto de dados.</p></header>
     ${isDf ? `<section class="note city-special-note"><b>Sobre Brasília:</b> esta seleção representa o Distrito Federal, que não tem municípios, prefeitos ou vereadores. Os cargos locais são distritais.</section>` : isFernando ? `<section class="note city-special-note"><b>Sobre Fernando de Noronha:</b> embora conste em cadastros estatísticos, é um distrito estadual de Pernambuco e não elege prefeito nem vereadores.</section>` : ''}
     <section class="city-overview card"><div class="city-overview-label"><span class="k">População</span><span class="city-population">${population === null ? 'Sem registro' : population}</span><span class="muted">${population === null ? 'habitantes não informados' : `habitantes${year ? ` · ${year}` : ''}`}</span></div>${citySource(data.sources?.population, 'Estimativa de população')}</section>
-    <div class="city-content-grid">${cityMunicipalSection(data, isDf, isFernando)}${cityGeneralElectionSection(data, isDf)}${cityFederalVotesSection(data)}${cityCurrentFederalSection(data)}${cityAmendmentsSection(data)}</div>
+    <div class="city-content-grid">${cityMunicipalSection(data, isDf, isFernando)}${cityGeneralElectionSection(data, isDf)}${cityFederalVotesSection(data)}${cityCurrentFederalSection(data)}${cityAmendmentsSection(data)}${cityAccountsSection(data, isDf, isFernando)}</div>
     ${data.generatedAt ? `<span class="src">Base local montada em ${esc(cityReadableDate(data.generatedAt))}.</span>` : ''}`;
 }
 
 function cityPickerView() {
   const query = cityViewState.query;
-  return `${pageHead('Dados públicos por município', 'Minha cidade', 'Consulte população, eleições municipais, resultados de 2026, emendas parlamentares e a lista parlamentar atual do seu estado.')}
+  return `${pageHead('Dados públicos por município', 'Minha cidade', 'Consulte população, eleições municipais, resultados de 2026, emendas parlamentares, contas municipais e a lista parlamentar atual do seu estado.')}
     <section class="card city-search-card"><label class="k" for="city-search">Qual cidade você quer consultar?</label>
       <div class="city-search-row"><div class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="city-search" type="search" value="${esc(query)}" placeholder="Digite o nome da cidade" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="city-suggestions"></div><button type="button" class="fchip" data-city-search-submit>Buscar</button></div>
       <div id="city-results" class="city-results" aria-live="polite">${citySearchResultsMarkup()}</div>
       <div id="city-search-source">${cityViewState.searchSource ? citySource(cityViewState.searchSource, 'Lista de municípios') : '<span class="src">A fonte da lista aparece junto aos resultados da busca.</span>'}</div>
     </section>
     <section class="note city-geography-note"><b>Como interpretar:</b> Brasília representa o Distrito Federal, que não tem prefeitura nem vereadores. Embora conste em cadastros estatísticos, Fernando de Noronha é um distrito estadual de Pernambuco e não elege prefeito nem vereadores.</section>
-    <section class="card city-intro-card"><span class="k">O que você vai encontrar</span><div class="city-intro-grid"><p><b>Dados do município</b><span>População e resultados de 2024 para prefeito(a), vice-prefeito(a) e vereadores(as).</span></p><p><b>Eleição geral de 2026</b><span>Resultados de governador(a) e deputados(as) estaduais ou distritais. Os mandatos começam em 2027.</span></p><p><b>Representação federal</b><span>Votos de pessoas eleitas na cidade e lista atual de deputados(as) e senadores(as) do estado, em blocos separados.</span></p><p><b>Emendas parlamentares</b><span>Valores por ano da proposta, com empenhado, pago e restos a pagar apresentados separadamente.</span></p></div></section>`;
+    <section class="card city-intro-card"><span class="k">O que você vai encontrar</span><div class="city-intro-grid"><p><b>Dados do município</b><span>População e resultados de 2024 para prefeito(a), vice-prefeito(a) e vereadores(as).</span></p><p><b>Eleição geral de 2026</b><span>Resultados de governador(a) e deputados(as) estaduais ou distritais. Os mandatos começam em 2027.</span></p><p><b>Representação federal</b><span>Votos de pessoas eleitas na cidade e lista atual de deputados(as) e senadores(as) do estado, em blocos separados.</span></p><p><b>Emendas parlamentares</b><span>Valores por ano da proposta, com empenhado, pago e restos a pagar apresentados separadamente.</span></p><p><b>Contas municipais</b><span>Receitas, despesas e comparação com municípios de faixa populacional semelhante, sem ranking.</span></p></div></section>`;
 }
 
 function cityView() {

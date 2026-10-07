@@ -408,7 +408,7 @@ nav.tabs button svg { flex: none; }
   body[data-view="city"] .view > .ph, body[data-view="city"] .view > .back, .city-detail-header, .city-special-note { grid-column: 1 / -1; }
   .city-content-grid { display: contents; }
   .city-content-grid > .card { min-width: 0; }
-  .city-intro-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .city-intro-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 }
 @media (max-width: 420px) {
   nav.tabs button { font-size: 10px; }
@@ -457,4 +457,31 @@ nav.tabs button svg { flex: none; }
 }
 @media (min-width: 720px) {
   .city-content-grid > .city-amendments-section { grid-column: 1 / -1; }
+}
+
+/* Contas municipais: valores por exercício e medianas sem ranking. */
+.city-accounts-section { min-width: 0; }
+.city-account-year-note { margin: 0; color: var(--ink-2); font-size: 13px; line-height: 1.5; }
+.city-account-submitted { margin: 0; color: var(--ink-2); font-size: 13px; }
+.city-account-comparison-note { display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--surface); color: var(--ink-2); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.city-account-comparison-note > b { color: var(--ink); }
+.city-account-comparison-note .src { margin-top: 4px; }
+.city-account-metrics { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); min-width: 0; }
+.city-account-metric { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--surface); }
+.city-account-metric-heading { min-width: 0; }
+.city-account-metric-heading .k { display: block; overflow-wrap: anywhere; }
+.city-account-metric h3 { margin: 3px 0 0; font-size: 17px; overflow-wrap: anywhere; }
+.city-account-values { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; min-width: 0; }
+.city-account-values > div { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; padding: 12px; border-radius: var(--radius-control); background: var(--chip); }
+.city-account-value-label { color: var(--ink-2); font-size: 12px; line-height: 1.4; }
+.city-account-values b { max-width: 100%; font-size: clamp(17px, 4vw, 22px); overflow-wrap: anywhere; }
+.city-account-values small { color: var(--muted); line-height: 1.4; overflow-wrap: anywhere; }
+.city-account-metric-source { min-width: 0; overflow-wrap: anywhere; }
+.city-account-caveat { margin: 0; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--ink-2); background: var(--surface); font-size: 13px; line-height: 1.5; }
+@media (min-width: 520px) {
+  .city-account-values { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 720px) {
+  .city-content-grid > .city-accounts-section { grid-column: 1 / -1; }
+  .city-account-metrics { grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
 }

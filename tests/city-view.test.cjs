@@ -57,6 +57,7 @@ test('city view explains missing data blocks and the Brasília and Fernando de N
   const picker = context.cityApi.view();
   assert.match(picker, /Fernando de Noronha é um distrito estadual de Pernambuco e não elege prefeito nem vereadores/);
   assert.match(picker, /emendas parlamentares/);
+  assert.match(picker, /contas municipais/);
   assert.doesNotMatch(picker, /consulte Recife/);
 
   city.selectedId = '2605459';
@@ -193,7 +194,7 @@ test('available amendments separate financial states, keep Pix as a subset, and 
   };
 
   const html = context.cityApi.view();
-  assert.match(html, /Eleições, representantes e emendas parlamentares/);
+  assert.match(html, /Eleições, representantes, emendas e contas públicas/);
   assert.match(html, /Ano da proposta/);
   assert.match(html, /Emendas parlamentares · 2022/);
   assert.match(html, /O ano indicado é o da proposta[\s\S]*Pagamentos podem ocorrer em outros anos/);
@@ -278,6 +279,101 @@ test('Escape closes the autocomplete options while preserving the query', () => 
   assert.equal(input['aria-expanded'], 'false');
   assert.match(elements['city-results'].innerHTML, /Sugestões ocultas/);
   assert.doesNotMatch(elements['city-results'].innerHTML, /role="option"/);
+});
+
+test('municipal accounts distinguish declarations that are unavailable, missing, and not applicable', () => {
+  const { context } = makeView();
+  const city = context.cityApi.state;
+  const show = (municipality, accounts) => {
+    city.selectedId = municipality.id;
+    city.selectedCity = municipality;
+    city.detail = { municipality, sources: {}, municipalElected: [], stateElected: [], topFederalVotes: [], currentFederal: [], messages: {}, accounts };
+    return context.cityApi.view();
+  };
+
+  let html = show({ id: '3550308', name: 'São Paulo', uf: 'SP' }, {
+    status: 'not_filed', year: 2025, message: 'O município não entregou a declaração ao Tesouro.',
+  });
+  assert.match(html, /Contas do município · 2025/);
+  assert.match(html, /Não entregou ao Tesouro/);
+  assert.match(html, /não entregou a declaração ao Tesouro/);
+  assert.doesNotMatch(html, /R\$ 0,00/);
+  assert.doesNotMatch(html, /Consulta indisponível/);
+
+  html = show({ id: '3550308', name: 'São Paulo', uf: 'SP' }, {
+    status: 'unavailable', year: 2025, message: 'Consulta SICONFI indisponível neste momento.',
+  });
+  assert.match(html, /Consulta indisponível/);
+  assert.match(html, /Consulta SICONFI indisponível neste momento/);
+  assert.doesNotMatch(html, /Não entregou ao Tesouro/);
+
+  html = show({ id: '5300108', name: 'Brasília', uf: 'DF' }, {
+    status: 'not_applicable', message: 'Contas municipais não se aplicam ao Distrito Federal.',
+  });
+  assert.match(html, /Não se aplica/);
+  assert.match(html, /não se aplicam ao Distrito Federal/);
+  assert.doesNotMatch(html, /Não entregou ao Tesouro/);
+
+  html = show({ id: '2605459', name: 'Fernando de Noronha', uf: 'PE' }, {
+    status: 'not_applicable', message: 'Declaração municipal não se aplica a este distrito estadual.',
+  });
+  assert.match(html, /Declaração municipal não se aplica a este distrito estadual/);
+});
+
+test('municipal account amounts preserve sourced zero and precision, with safe medians and explicit comparison years', () => {
+  const { context } = makeView();
+  const city = context.cityApi.state;
+  city.selectedId = '3550308';
+  city.selectedCity = { id: '3550308', name: 'São Paulo', uf: 'SP' };
+  city.detail = {
+    municipality: city.selectedCity, sources: {}, municipalElected: [], stateElected: [], topFederalVotes: [], currentFederal: [], messages: {},
+    accounts: {
+      year: 2025, status: 'partial', message: 'Alguns indicadores não estão disponíveis.',
+      source: { label: 'SICONFI <dados>', url: 'https://dados.example/accounts', period: 'exercício de 2025', fetchedAt: '2026-09-30' },
+      declaration: { status: 'submitted', submittedAt: '2026-08-15' },
+      comparison: {
+        available: true, message: 'Comparação calculada com outras cidades.',
+        band: { id: 'large', label: 'Faixa 4', minPopulation: 1000000, maxPopulation: 5000000 },
+        populationYear: 2024, populationSource: { label: 'População IBGE', url: 'https://dados.example/population', period: '2024' },
+        universeCount: 80, reportingCount: 65, method: 'Mediana dos demais municípios, sem ranking.',
+        metrics: [
+          { id: 'revenue', medianCents: 987654, sampleSize: 5 },
+          { id: 'health', medianCents: 12000, sampleSize: 2 },
+          { id: 'personnel', medianCents: 300000, sampleSize: 10 },
+        ],
+      },
+      metrics: [
+        { id: 'revenue', label: 'Receita realizada', amountCents: 0, classification: 'revenue', stage: 'realized' },
+        { id: 'total-expense', label: 'Despesa total', amountCents: 123456789012, classification: 'total', stage: 'committed' },
+        { id: 'health', label: 'Saúde', amountCents: null, classification: 'function', stage: 'paid' },
+        { id: 'personnel', label: 'Pessoal <img src=x onerror=alert(1)>', amountCents: 123450, classification: 'nature', stage: 'Empenhado <img src=x>', source: { label: 'Fonte do indicador', url: 'javascript:alert(1)' } },
+      ],
+    },
+  };
+
+  const html = context.cityApi.view();
+  assert.match(html, /Contas do município · 2025/);
+  assert.match(html, /Entrega registrada em 15\/08\/2026/);
+  assert.match(html, /Receita realizada/);
+  assert.match(html, /Receita · Realizada/);
+  assert.match(html, /Despesa total · Empenhada/);
+  assert.match(html, /Despesa por função · Paga/);
+  assert.match(html, /R\$ 0,00/);
+  assert.match(html, /R\$ 1\.234\.567\.890,12/);
+  assert.match(html, /Saúde[\s\S]*Não informado/);
+  assert.match(html, /Saúde[\s\S]*Menos de 3 municípios com valor válido/);
+  assert.match(html, /R\$ 9\.876,54[\s\S]*n = 5 municípios com valor válido/);
+  assert.match(html, /Faixa populacional: Faixa 4[\s\S]*população de 2024/);
+  assert.match(html, /65 de 80 municípios têm valores disponíveis nesta faixa/);
+  assert.match(html, /Mediana dos demais municípios, sem ranking/);
+  assert.match(html, /SICONFI &lt;dados&gt; ↗[\s\S]*exercício de 2025[\s\S]*consulta em 30\/09\/2026/);
+  assert.match(html, /População IBGE ↗/);
+  assert.match(html, /não some esses indicadores como parcelas independentes/);
+  assert.match(html, /não é o limite de despesa com pessoal da LRF/);
+  assert.match(html, /Pessoal &lt;img src=x onerror=alert\(1\)&gt;/);
+  assert.doesNotMatch(html, /<img src=x/);
+  assert.doesNotMatch(html, /href="javascript:/);
+  assert.doesNotMatch(html, /R\$ 120,00/);
 });
 
 test('search source refreshes with each response and keyboard focus scrolls only the suggestion panel', async () => {
