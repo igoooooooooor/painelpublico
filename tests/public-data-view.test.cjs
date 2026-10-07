@@ -204,6 +204,31 @@ test('external expense and source text is escaped before entering profile HTML',
   assert.match(html, /href="https:\/\/data\.example\.test\/source"/);
 });
 
+test('payroll rows show one download link instead of a fake receipt', () => {
+  const { api } = makeView();
+  const file = 'https://portaldatransparencia.gov.br/download-de-dados/servidores/202608_Servidores_SIAPE';
+  api.publicState.coverage = { sources: [{ id: 'portal-siape-202608', label: 'Folha SIAPE', url: file }] };
+  const html = api.publicExpenseRow({
+    id: 'r1', amount: 9495.37, year: 2026, month: 8, category: 'REMUNERAÇÃO BÁSICA BRUTA (R$)', kind: 'remuneracao',
+    authorityId: 'portal-siape:1', authorityName: 'Pessoa', sourceId: 'portal-siape-202608',
+    documentId: '202608_Servidores_SIAPE.csv:row-201226', documentUrl: file
+  });
+  assert.doesNotMatch(html, /Abrir recibo/);
+  assert.doesNotMatch(html, /Emissão/);
+  assert.equal(html.match(/href=/g).length, 1);
+  assert.match(html, /Baixar arquivo da fonte/);
+  assert.match(html, /linha 201\.226 do arquivo oficial/);
+});
+
+test('reimbursement rows keep their own receipt next to the source', () => {
+  const { api } = makeView();
+  api.publicState.coverage = { sources: [{ id: 'camara_ceap', label: 'Cota', url: 'https://dadosabertos.camara.leg.br/' }] };
+  const html = api.publicExpenseRow({ id: 'e1', amount: 10, year: 2026, month: 1, kind: 'reembolso', sourceId: 'camara_ceap',
+    documentUrl: 'https://www.camara.leg.br/cota-parlamentar/documentos/publ/1/2026/1.pdf' });
+  assert.match(html, /Abrir recibo\/documento/);
+  assert.match(html, /Ver fonte/);
+});
+
 test('saving an investigation persists its selected expense, annotation, and source fields', () => {
   const { api, values, state } = makeView({ caseTitle: 'Conferir recibo', caseNote: 'Rever o documento.' });
   const expense = {

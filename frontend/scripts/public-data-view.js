@@ -78,6 +78,14 @@ const publicSourceLink = (url, label = 'Conferir fonte ↗') => {
   const safe = publicSafeURL(url);
   return safe ? `<a class="public-link" href="${esc(safe)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>` : '';
 };
+// Folhas (SIAPE, DadosJusBr) só publicam o arquivo do mês inteiro: não há recibo por linha.
+const publicIsBulkFile = url => {
+  const safe = publicSafeURL(url);
+  if (!safe) return false;
+  const { pathname, search } = new URL(safe);
+  return /\/download/i.test(pathname) || /\.(zip|csv)$/i.test(pathname) || /[?&](anos|meses)=/.test(search);
+};
+const publicSourceURL = item => item?.sourceUrl || (publicState.coverage?.sources || []).find(row => String(row.id) === String(item?.sourceId))?.url;
 function publicOptions(options, selected, allLabel) {
   return `<option value="">${allLabel}</option>${options.map(([value, label]) => `<option value="${esc(value)}" ${selected === value ? 'selected' : ''}>${esc(label)}</option>`).join('')}`;
 }
@@ -184,7 +192,7 @@ function publicFollowRows() {
 function publicCasesHTML() {
   const cases = publicRead(PUBLIC_STORAGE.cases, []);
   if (!cases.length) return '<section class="card empty"><p class="muted">Nenhuma anotação salva ainda. Selecione despesas e anote o que deseja conferir.</p></section>';
-  return cases.map(item => `<article class="card public-case"><div class="signal-heading"><h3>${esc(item.title || 'Anotação sem título')}</h3><button type="button" class="public-clear" data-public-delete-case="${esc(item.id)}">Excluir</button></div><p class="radar-note">Salva em ${publicDate((item.createdAt || '').slice(0, 10))} · ${publicCount(item.expenses?.length || 0)} despesas</p>${item.note ? `<p>${esc(item.note)}</p>` : ''}<details><summary>Ver registros guardados</summary><div>${(item.expenses || []).map(row => `<div class="public-case-expense"><b>${esc(row.supplierName || row.authorityName || row.id)}</b><span>Competência ${esc(publicCompetence(row))} · emissão ${publicDate(row.date)} · ${publicMoney(row.amount)}</span><small>${esc(row.category || row.kind || 'Categoria sem dado')} · ${esc(row.documentId || 'Documento sem identificador')}</small>${row.annotation ? `<p>${esc(row.annotation)}</p>` : ''}${publicSourceLink(row.documentUrl, 'Abrir documento ↗')}</div>`).join('')}</div></details><button type="button" class="public-clear" data-public-export-case="${esc(item.id)}">Exportar evidências CSV</button></article>`).join('');
+  return cases.map(item => `<article class="card public-case"><div class="signal-heading"><h3>${esc(item.title || 'Anotação sem título')}</h3><button type="button" class="public-clear" data-public-delete-case="${esc(item.id)}">Excluir</button></div><p class="radar-note">Salva em ${publicDate((item.createdAt || '').slice(0, 10))} · ${publicCount(item.expenses?.length || 0)} despesas</p>${item.note ? `<p>${esc(item.note)}</p>` : ''}<details><summary>Ver registros guardados</summary><div>${(item.expenses || []).map(row => `<div class="public-case-expense"><b>${esc(row.supplierName || row.authorityName || row.id)}</b><span>Competência ${esc(publicCompetence(row))} · emissão ${publicDate(row.date)} · ${publicMoney(row.amount)}</span><small>${esc(row.category || row.kind || 'Categoria sem dado')} · ${esc(row.documentId || 'Documento sem identificador')}</small>${row.annotation ? `<p>${esc(row.annotation)}</p>` : ''}${publicIsBulkFile(row.documentUrl) ? publicSourceLink(row.documentUrl, 'Baixar arquivo da fonte ↗') : publicSourceLink(row.documentUrl, 'Abrir documento ↗')}</div>`).join('')}</div></details><button type="button" class="public-clear" data-public-export-case="${esc(item.id)}">Exportar evidências CSV</button></article>`).join('');
 }
 function publicNotice(message, type = 'note') { return `<p class="${type}" role="status">${esc(message)}</p>`; }
 function publicPagination(data, page, action) {
@@ -199,10 +207,17 @@ function publicAuthorityCard(item) {
 function publicExpenseRow(item) {
   publicState.expenseRowsById.set(String(item.id), item);
   const selected = publicState.selectedExpenseIds.has(String(item.id));
-  const documentLink = publicSourceLink(item.documentUrl, 'Abrir recibo/documento ↗');
+  const sourceUrl = publicSourceURL(item);
+  // Só mostra "recibo" quando o link aponta para o documento deste lançamento, não para o arquivo da fonte.
+  const ownDocument = item.documentUrl && item.documentUrl !== sourceUrl && !publicIsBulkFile(item.documentUrl);
+  const documentLink = ownDocument ? publicSourceLink(item.documentUrl, 'Abrir recibo/documento ↗') : '';
+  const fileRow = String(item.documentId || '').match(/:row-(\d+)$/);
+  const origin = item.kind === 'remuneracao'
+    ? `Folha de ${esc(publicCompetence(item))}${fileRow ? ` · linha ${publicCount(Number(fileRow[1]))} do arquivo oficial` : ''}`
+    : `Emissão ${publicDate(item.date)} · ${item.documentId ? `documento ${esc(item.documentId)}` : 'documento sem identificador'}`;
   const sourceLink = publicRecordSource(item);
   const supplier = item.kind === 'remuneracao' ? 'Remuneração publicada' : item.supplierKey ? `<button type="button" class="public-inline" data-public-supplier="${esc(item.supplierKey)}" data-public-supplier-name="${esc(item.supplierName || '')}" data-public-cnpj="${esc(item.cnpj || '')}">${esc(item.supplierName || item.supplierKey)}</button>${item.cnpj ? `<small>CNPJ ${esc(item.cnpj)}</small>` : ''}` : esc(item.supplierName || 'Fornecedor sem identificador');
-  return `<article class="public-expense-row"><label class="public-select"><input type="checkbox" data-public-select-expense="${esc(item.id)}" ${selected ? 'checked' : ''}><span>Guardar</span></label><div class="public-expense-head"><b>${publicMoney(item.amount)}</b><span>Competência ${esc(publicCompetence(item))}</span></div><div class="public-expense-body"><b>${supplier}</b><span>${esc(item.category || 'Categoria sem dado')} · ${esc(PUBLIC_KIND_LABEL[item.kind] || item.kind || 'Tipo sem dado')}</span><span>${item.authorityId ? `<button type="button" class="public-inline" data-public-authority="${esc(item.authorityId)}" data-public-authority-name="${esc(item.authorityName || '')}" data-public-authority-role="${esc(item.role || '')}" data-public-authority-institution="${esc(item.institution || '')}">${esc(item.authorityName || item.authorityId)}</button>` : esc(item.authorityName || 'Autoridade sem dado')}${item.role ? ` · ${esc(publicRoleLabel(item.role))}` : ''}${item.institution ? ` · ${esc(item.institution)}` : ''}</span><small>Emissão ${publicDate(item.date)} · ${item.documentId ? `documento ${esc(item.documentId)}` : 'documento sem identificador'}</small>${selected ? `<label class="public-row-note">Anotação para este lançamento<input type="text" maxlength="300" data-public-expense-note="${esc(item.id)}" value="${esc(publicState.expenseNotes.get(String(item.id)) || '')}" placeholder="Observação opcional"></label>` : ''}<div class="public-actions">${documentLink}${sourceLink}</div></div></article>`;
+  return `<article class="public-expense-row"><label class="public-select"><input type="checkbox" data-public-select-expense="${esc(item.id)}" ${selected ? 'checked' : ''}><span>Guardar</span></label><div class="public-expense-head"><b>${publicMoney(item.amount)}</b><span>Competência ${esc(publicCompetence(item))}</span></div><div class="public-expense-body"><b>${supplier}</b><span>${esc(item.category || 'Categoria sem dado')} · ${esc(PUBLIC_KIND_LABEL[item.kind] || item.kind || 'Tipo sem dado')}</span><span>${item.authorityId ? `<button type="button" class="public-inline" data-public-authority="${esc(item.authorityId)}" data-public-authority-name="${esc(item.authorityName || '')}" data-public-authority-role="${esc(item.role || '')}" data-public-authority-institution="${esc(item.institution || '')}">${esc(item.authorityName || item.authorityId)}</button>` : esc(item.authorityName || 'Autoridade sem dado')}${item.role ? ` · ${esc(publicRoleLabel(item.role))}` : ''}${item.institution ? ` · ${esc(item.institution)}` : ''}</span><small>${origin}</small>${selected ? `<label class="public-row-note">Anotação para este lançamento<input type="text" maxlength="300" data-public-expense-note="${esc(item.id)}" value="${esc(publicState.expenseNotes.get(String(item.id)) || '')}" placeholder="Observação opcional"></label>` : ''}<div class="public-actions">${documentLink}${sourceLink}</div></div></article>`;
 }
 function publicSignalSummary(item) {
   const description = String(item.description || '');
@@ -236,10 +251,10 @@ function publicInvestigateSignal(id) {
 }
 function publicRecordSource(item) {
   const source = (publicState.coverage?.sources || []).find(row => String(row.id) === String(item.sourceId));
-  const url = item.sourceUrl || source?.url;
+  const url = publicSourceURL(item);
   const label = source?.label;
   const attribution = label ? `<small>Fonte do registro: ${esc(label)}</small>` : item.sourceId ? '<small>Fonte do registro</small>' : '';
-  return `${attribution}${url ? publicSourceLink(url, 'Ver fonte ↗') : ''}`;
+  return `${attribution}${url ? publicSourceLink(url, publicIsBulkFile(url) ? 'Baixar arquivo da fonte ↗' : 'Ver fonte ↗') : ''}`;
 }
 function publicAuthorityDetailHTML(data) {
   const detail = data.authority || {};
