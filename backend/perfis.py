@@ -2,6 +2,7 @@
 
 O arquivo tem ~15 MB (projetos de 595 parlamentares). Ele é lido uma vez e relido só quando muda.
 """
+from copy import deepcopy
 import json
 import re
 import threading
@@ -65,6 +66,29 @@ def _senado_projetos(identifier, perfil_path):
     return profile['projetos'], data.get('generatedAt')
 
 
+def _com_situacoes_projetos(result, identifier, profile_path):
+    """Anexa somente a situação dos projetos desta ficha, sem alterar o cache base."""
+    chamber = identifier.split(':', 1)[0]
+    projects = result.get('projetos')
+    if chamber not in ('camara', 'senado') or not isinstance(projects, dict):
+        return result
+    items = projects.get('items')
+    if not isinstance(items, list):
+        return result
+    snapshot = _load(profile_path.parent / 'projetos-situacao.json')
+    statuses = snapshot.get('projects') if snapshot else None
+    if not isinstance(statuses, dict):
+        return result
+    enriched = []
+    for item in items:
+        if not isinstance(item, dict):
+            enriched.append(item)
+            continue
+        status = statuses.get(f"{chamber}:{item.get('id')}")
+        enriched.append({**item, 'situacaoAtual': deepcopy(status)} if isinstance(status, dict) else item)
+    return {**result, 'projetos': {**projects, 'items': enriched}}
+
+
 def perfil(identifier, path=None):
     """Perfil complementar de um parlamentar ou None se o arquivo ou o registro não existirem."""
     profile_path = Path(path) if path is not None else SNAPSHOTS_PATH / 'perfis.json'
@@ -82,9 +106,9 @@ def perfil(identifier, path=None):
         generated_at = data.get('generatedAt') if data is not None else projects_generated_at
         if generated_at is not None:
             result['generatedAt'] = generated_at
-        return result
+        return _com_situacoes_projetos(result, identifier, profile_path)
 
     result = {**profile, 'generatedAt': data.get('generatedAt')}
     if projects is not None:
         result['projetos'] = projects
-    return result
+    return _com_situacoes_projetos(result, identifier, profile_path)

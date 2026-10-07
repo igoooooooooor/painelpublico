@@ -133,7 +133,7 @@ A reconciliação de 7/10/2026 reprocessa essa mesma fotografia do XML (`Metadad
 
 Há reembolsos associados a 509 dos deputados e 79 dos registros do Senado. Os demais devem aparecer como dados ausentes, não como zero. A lista, o Placar e as comparações abrem a mesma ficha parlamentar; a busca avançada usa as mesmas seções complementares. Os antigos detalhes e PDF de dez deputados e a análise editorial de despesas foram removidos.
 
-`frontend/scripts/profile-data.js` concentra a leitura do snapshot complementar, presença e votos. Contatos e situação da Câmara vêm do detalhe oficial de cada deputado; verba e equipe de gabinete vêm da página oficial, com ano, meses publicados e data de atualização. Projetos da Câmara abrangem PL, PLP e PEC apresentados desde 1/2/2023: total só é confirmado quando todas as páginas da consulta são lidas. O resumo dessa API não fornece a situação atual de cada projeto, que permanece ausente. Contatos e participação/exercício do Senado vêm do XML reconciliado. Autoria do Senado usa a API substituta `/dadosabertos/processo`, com o filtro `codigoParlamentarAutor` validado; a cobertura está detalhada abaixo. Gabinete do Senado ainda não tem fonte integrada.
+`frontend/scripts/profile-data.js` concentra a leitura do snapshot complementar, presença e votos. Contatos e situação da Câmara vêm do detalhe oficial de cada deputado; verba e equipe de gabinete vêm da página oficial, com ano, meses publicados e data de atualização. Projetos da Câmara abrangem PL, PLP e PEC apresentados desde 1/2/2023: total só é confirmado quando todas as páginas da consulta são lidas. O resumo dessa API não fornece a situação atual; a coleta separada da Etapa 3, descrita abaixo, consulta os IDs já listados e preserva lacunas. Contatos e participação/exercício do Senado vêm do XML reconciliado. Autoria do Senado usa a API substituta `/dadosabertos/processo`, com o filtro `codigoParlamentarAutor` validado; a cobertura está detalhada abaixo. Gabinete do Senado ainda não tem fonte integrada.
 
 Na coleta de 7/10/2026, o complemento contém os 595 IDs da lista: 513 deputados e 82 registros do Senado. Na Câmara, há e-mail para 513, telefone/endereço para 512, gasto de gabinete para 512 e equipe ativa para 512; dois perfis têm a seção de gabinete parcial. A consulta de projetos concluiu a paginação dos 513 perfis (quatro com zero resultados no recorte): são 35.746 associações entre autor e projeto, correspondentes a 19.878 IDs de proposição distintos, pois há coautorias. No Senado, o XML da fotografia de 6/10 informa e-mail para 78 e telefone para 80; 81 registros têm ao menos um desses contatos. Campos não publicados continuam sem valor. Essas contagens não ampliam o recorte de despesas no SQLite.
 
@@ -174,8 +174,7 @@ processos `objetivo=Iniciadora`: substitutivos posteriores podem herdar o autor 
 original e não são novos projetos de sua autoria. O serviço não documenta paginação
 nem publica total independente; a cobertura se refere aos arrays retornados pelos
 filtros oficiais, não a uma auditoria da completude interna da fonte. O serviço legado
-anunciava descontinuação em 1/2/2026 e não é usado. Situação atual permanece sem valor
-até a Etapa 3. O recorte do Senado começa em 2026; o da Câmara, em fevereiro de 2023.
+anunciava descontinuação em 1/2/2026 e não é usado. Situação atual vem da coleta separada da Etapa 3, descrita abaixo, sem inferência a partir da autoria. O recorte do Senado começa em 2026; o da Câmara, em fevereiro de 2023.
 
 **Votos:** [API oficial de votações](https://legis.senado.leg.br/dadosabertos/votacao?dataInicio=2026-01-01&dataFim=2026-10-07),
 consulta de 1/1 a 7/10/2026. A resposta contém 59 votações do Plenário do Senado:
@@ -237,6 +236,89 @@ verificar votações e justificativas, publicadas separadamente. Por isso a inte
 é **parcial para presença**: não exibe percentual, selo comparativo nem barra de
 faltas do Senado. Apurar faltas e justificativas permanece pendente; não se deduz
 nenhum desses estados a partir de uma omissão na tabela ou no arquivo de votos.
+
+### Situação atual dos projetos — Etapa 3
+
+`ingest/project_status.py` consulta somente os IDs de projetos que já existem nas
+fichas locais: Câmara em `perfis.json`, Senado em `senado-projetos.json`. Coautorias
+são deduplicadas para a coleta; cada ficha conserva sua própria lista e contagem.
+Não há ampliação do período de autoria nem substituição do snapshot original.
+
+```sh
+make collect-project-status
+# Atualização explícita de todas as consultas:
+python3 ingest/project_status.py --collect --refresh
+# Reconstrução sem rede, mantendo a data real das consultas em cache:
+python3 ingest/project_status.py
+make build
+```
+
+Os arquivos brutos e seus metadados (URL, data da consulta e SHA-256) ficam em
+`data/raw/projetos-situacao/`. O snapshot `data/snapshots/projetos-situacao.json`
+usa chaves `camara:<idProposicao>` e `senado:<idProcesso>`; IDs numéricos de casas
+diferentes nunca são fundidos. A API `/api/c/perfil/<id>` anexa `situacaoAtual`
+somente aos projetos daquela pessoa, sem embutir o conjunto no HTML e sem gravar
+no SQLite. Para testar alterações da API, reinicie o servidor Python e recarregue
+a página. Novas coletas podem ser relidas sem reiniciar: o cache acompanha o mtime.
+
+**Câmara:** os [arquivos anuais oficiais de proposições](https://dadosabertos.camara.leg.br/swagger/api.html)
+de 2023, 2024, 2025 e 2026 fornecem `ultimoStatus`, com descrição da situação, código
+e data. Por exemplo: [arquivo de 2026](https://dadosabertos.camara.leg.br/arquivos/proposicoes/json/proposicoes-2026.json).
+O coletor lê esses quatro arquivos, filtra os IDs já listados e só consulta
+`/api/v2/proposicoes/<id>` para IDs não encontrados ou referências normativas.
+O detalhe chama esse campo de `statusProposicao`. A consulta resumida em lote não
+fornece situação. Situações vazias aparecem também no detalhe oficial; não são
+completadas a partir da ementa, da proposição principal ou de uma apensada.
+Para PEC cuja situação própria já confirma transformação em norma, o despacho
+pode identificar a emenda somente quando começa com a declaração explícita
+“Transformado na Emenda Constitucional N/AAAA.”; menções no restante do texto
+não contam. O último andamento disponível pode ser anterior à data da coleta.
+
+**Senado:** a [API oficial de processos](https://legis.senado.leg.br/dadosabertos/v3/api-docs)
+aceita até 100 valores de `idProcesso` por consulta. O coletor usa cinco lotes para
+os 462 IDs e consulta `/processo/<id>` quando precisa confirmar estados finais,
+norma gerada ou informação incompleta. Usa `situacaoAtual`, `tramitando`, datas
+publicadas e `normaGerada` do próprio processo. No detalhe, considera somente a
+autuação principal para situações históricas; processos relacionados e outros
+números não transferem seu resultado para o projeto consultado.
+
+As classificações são conservadoras e preservam a descrição original:
+
+- **Virou lei:** transformação explícita do próprio PL/PLP em norma legal ou
+  referência normativa final direta. Aprovação e remessa à sanção não bastam.
+- **Tramitando:** situação ativa reconhecida da Câmara ou indicação explícita de
+  tramitação do Senado, sem estado terminal conflitante.
+- **Arquivado/rejeitado:** situação final explicitamente informada pela fonte.
+- **Emenda promulgada:** resultado normativo próprio de PEC, separado da contagem
+  de leis, conforme a distinção da [Constituição, artigos 59 e 60](https://legis.senado.leg.br/norma/579494/publicacao/16434817).
+- **Outras / sem classificação:** situação vazia, desconhecida, retirada,
+  prejudicada ou transformada em outra proposição, quando não há prova de um dos
+  resultados acima. A descrição oficial e a data continuam visíveis.
+
+Cada item conserva `consultadoEm` (consulta), `atualizadoEm` (andamento informado),
+fonte, descrição original e eventual norma gerada. `generatedAt` marca apenas a
+montagem do snapshot. Falha de atualização mantém a consulta anterior e sua data,
+com status parcial; a interface não inclui esse estado antigo nas contagens
+confirmadas. Sem classificação de todos os itens, o cabeçalho informa cobertura
+parcial e não transforma zero leis confirmadas em prova de que nenhuma virou lei.
+Snapshots sem a nova coleta continuam válidos e mostram situação não consultada.
+
+**Fotografia local consultada em 7/10/2026:**
+
+| Casa | IDs consultados | Viraram lei | Emendas | Tramitando | Arquivados/rejeitados | Sem classificação confirmada |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Câmara | 19.878 | 149 | 1 | 16.876 | 675 | 2.177 |
+| Senado | 462 | 2 | 0 | 441 | 0 | 19 |
+
+Esses números contam projetos distintos dentro de cada casa; uma coautoria pode
+aparecer em várias fichas. A coleta conseguiu ler todos os IDs, mas isso não torna
+todas as situações classificáveis. Na Câmara, os casos sem classificação incluem
+1.581 situações vazias, 389 retiradas, 197 devolvidas e dez transformações em nova
+proposição. No Senado, são oito prejudicadas, seis retiradas, quatro remessas à
+Câmara com tramitação encerrada no Senado e um processo sem situação confirmada.
+Remessa à outra casa não comprova a situação atual no destino. O detalhe individual
+prevalece sobre o arquivo anual quando consultado; ambos preservam suas datas reais
+nos metadados. Esta fotografia e os caches são locais e não estão no Git.
 
 ### Comparar partidos
 
