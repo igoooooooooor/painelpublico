@@ -2,31 +2,58 @@
 
 Atualizado em 7 de outubro de 2026. Itens pendentes são planejamento; não descrevem cobertura já disponível. A cobertura e suas datas estão em [Dados e SQLite](data.md).
 
-## Agora
+## Rumo
 
-1. **Concluído:** organizar o projeto com arquitetura simples, Git, SQLite e design system, preservando a home e as telas atuais.
-2. **Concluído:** consulta principal dos 513 deputados e dos registros do Senado, com cobertura explícita e distinção entre ausência e zero.
-3. **Concluído para a fotografia de 6/10:** reconciliar metadados do Senado. O adaptador recupera UF do mandato, importa participação (titular/suplente) e intervalo do último exercício; a ficha mostra esses dados com a fonte. Os 82 registros e suas despesas são preservados, sem tratá-los como 82 cadeiras ou inferir exercício atual. Novas coletas ainda precisam de validação.
-4. **Entregue nesta etapa:** home e lista consultam os 513 deputados e 82 registros do Senado importados no SQLite; gastos sem lançamento continuam ausentes. As fichas usam a mesma identidade canônica, com complementos manuais para os 595 registros da fotografia. Presença (512 deputados) e quatro votações selecionadas usam linhas da fonte e não inferem ausência. Salário aparece como referência do cargo, sem afirmar pagamento individual. **Ainda pendente:** apurar faltas/justificativas e integrar gabinete do Senado, folha parlamentar e atualização periódica da situação das proposições; ampliar os históricos e preencher as lacunas da Câmara somente com fonte validada.
-5. **Completar as fichas — Etapa 1 revisada:** fichas canônicas e entradas legadas usam “Em 3 respostas” (cota, presença/Placar e maior alerta), seguidas de detalhes em acordeões. No celular, gastos começam abertos; a partir de 900 px, gastos e votos abrem lado a lado. Fontes e datas, salário de referência e limitações foram preservados. Os complementos continuam sob demanda em `/api/c/perfil/<id>`. Sem despesas, presença ou votos, a ficha indica ausência. Esta etapa reorganiza somente o frontend; não amplia a cobertura nem altera as regras de cálculo/alertas. **Etapa 2 revisada e integrada à main:** 19 votações nominais abertas de 2026 e 788 associações de autoria/coautoria (462 PL, PLP e PEC distintos) do Senado integram fichas e comparadores por consultas sob demanda. A coleta dos Diários adiciona 42 listas validadas de comparecimento, com observações associadas a 80 perfis e links por sessão. Três eventos da agenda ficaram sem tabela validada e 215 linhas não tiveram associação segura ao cadastro; faltas, justificativas e percentual de assiduidade continuam ausentes. Os comparadores separam Câmara/Senado e não atribuem ranking a essa contagem de presença. Fontes, datas, recortes e lacunas estão documentados em `docs/data.md`. As Etapas 2 e 3 foram aprovadas para integração e publicação na `main` em 7/10. **Etapa 3 revisada e integrada à main:** situação atual dos IDs já listados na Câmara/Senado, com cache bruto, consulta datada, fonte por item, contagens e filtros no acordeão de projetos. Leis, tramitação e arquivamento/rejeição usam evidência da própria proposição; emendas promulgadas têm contagem separada. Situações ambíguas preservam a descrição oficial e a cobertura parcial, sem inventar resultados. Snapshot separado e API sob demanda mantêm os dados fora do HTML e do Git. A home permanece preservada. O envio à `main` aciona o workflow de testes/deploy do código; banco e snapshots continuam fora do Git e têm publicação separada. As branches das duas etapas são removidas após a confirmação do push.
-6. Integrar resultados eleitorais para cobertura ampla antes de reintroduzir o bloco eleitoral na home. O recorte antigo de dez perfis, seu PDF e a análise editorial de despesas foram removidos.
+O Painel Público é para o cidadão comum: abrir, entender em poucos segundos e saber quem o representa, quanto custa e como trabalha. A referência é o [TheyWorkForYou](https://www.theyworkforyou.com/), do Reino Unido: uma porta de entrada simples, votos explicados em linguagem clara e um jeito fácil de falar com o representante.
 
-## Expansão de dados
+Antes de entrar no roadmap, cada item passa por duas perguntas:
 
-- Remuneração completa e histórico mensal: salário-base, benefícios, indenizações, retroativos e descontos separados.
-- Contratos, licitações, atas e fornecedores pelo [PNCP](https://www.gov.br/pncp/). Contratos pertencem ao órgão; não são gastos pessoais de uma autoridade.
-- Bens declarados, doadores e fornecedores eleitorais pelo [TSE](https://dadosabertos.tse.jus.br/).
-- Governadores, prefeitos, vices, deputados estaduais/distritais, vereadores e servidores locais; integração por órgão e localidade.
-- Ministério Público, tribunais de contas, militares, Banco Central, aposentados, pensionistas e servidores do Legislativo ainda fora do recorte atual.
+1. Responde a uma pergunta que um cidadão comum faria sobre alguém que ele elegeu ou pode deixar de eleger?
+2. Vale o custo de manter? As coletas são manuais, então cada fonte nova é trabalho permanente.
 
-## Qualidade e operação
+## Entregue
 
-- **Implementado:** modo de produção com cache, gzip, health check e limite de tempo de consultas; scripts de deploy e documentação do Cloudflare Tunnel. Há workflow de testes/deploy no GitHub Actions, mas a configuração e a execução no servidor não foram confirmadas nesta revisão.
-- **Concluído:** `make check` e o build de deploy funcionam em checkout limpo sem `data/snapshots/editorial.json`. A lista e os resumos parlamentares são lidos do SQLite; os snapshots complementares seguem locais.
-- Otimizar a consulta ampla de despesas e medir com a base real antes de exposição pública.
-- Automatizar atualização com data da coleta, validação e registro das falhas; hoje as coletas são manuais e o app não agenda nem inicia downloads.
-- Reconciliar entradas e saídas entre fotografias: o importador ainda pode manter um `sourceId` de cadastro atual em autoridades ausentes de uma nova lista, caso nenhuma outra fonte as atualize. Separar pertencimento à lista da preservação do histórico, sem apagar despesas.
-- Aumentar cobertura de presença, votações e demais dados biográficos sem perder rastreabilidade da fonte e período.
-- Definir e validar backups externos, restauração e testes de concorrência. O backup local consistente já existe; a política externa continua pendente.
+- Projeto organizado com Git, SQLite e design system, preservando a home e as telas.
+- Consulta dos 513 deputados e dos 82 registros do Senado, com cobertura explícita e distinção entre ausência e zero.
+- Fichas em "3 respostas" (cota, presença/Placar e maior alerta), com detalhes recolhidos, atividade e autoria do Senado e situação atual dos projetos (Etapas 1 a 3, integradas à `main`).
+- Foco no cidadão (7/10/2026): saíram a busca avançada e os dados de servidores (SIAPE) e do Judiciário (DadosJusBr). O banco caiu de 1,27 GB para 84 MB sem mudar nenhuma resposta das telas, e cada ficha passou a oferecer o download de todas as notas da cota em CSV.
 
-Ordem de execução definida pelo usuário: completar fichas e refletir os dados em todo o app; ampliar remunerações; integrar contratos. Automação de atualização/deploy e backups externos ficam para depois. Dados eleitorais e expansão territorial continuam planejados. Toda ampliação deve mostrar dados ausentes como ausência, nunca como zero. Sinais de atenção não são conclusões de irregularidade.
+## Agora, nesta ordem
+
+1. **Eleições de 2026 e troca de mandatos, antes de fevereiro de 2027.** O primeiro turno foi em 4/10 e o segundo é em 25/10. A nova legislatura começa em 1º/2/2027, com toda a Câmara e dois terços do Senado eleitos agora.
+   - Reconciliar entradas e saídas entre coletas. Hoje o importador pode manter como atual alguém que saiu da lista se nenhuma outra fonte atualizar o registro. Separar o pertencimento à lista da preservação do histórico, sem apagar despesas.
+   - Importar do TSE quem foi eleito e reeleito em 2026, para mostrar na ficha e preparar a troca de legislatura.
+   - O bloco eleitoral só volta à home com cobertura ampla.
+2. **Minha cidade, versão 1.** A pessoa digita a cidade e vê quem a representa e quanto custa. A base é nacional e igual para as 5.570 cidades:
+   - **TSE:** prefeito(a), vice e vereadores eleitos em 2024; governador(a) e deputados(as) estaduais eleitos em 2026; bens declarados e financiamento de campanha; deputados(as) federais mais votados(as) na cidade.
+   - **Emendas parlamentares (Portal da Transparência):** quanto cada deputado(a) e senador(a) destinou para a cidade.
+   - **SICONFI (Tesouro Nacional):** quanto a prefeitura e o estado arrecadam e gastam com saúde, educação e pessoal, comparados com cidades do mesmo porte.
+
+   Onde houver dado aberto, entram extras (portais estaduais e Tribunais de Contas que publicam as contas de todos os municípios do estado), começando pelos lugares mais populosos e pelas fontes com arquivo para baixar ou API; raspar site vem por último. Onde não houver, a página diz que o órgão não publica aquilo em formato aberto. Comparações entre cidades e estados usam só a base nacional, para que publicar mais não faça um lugar parecer pior.
+3. **Quanto custa um mandato.** Um total por parlamentar com divisão simples: subsídio, cota, gabinete e auxílios, cada parte com fonte e período. Inclui a verba de gabinete do Senado e a folha parlamentar. Retroativos e descontos ficam no link da fonte.
+4. **Placar mais amplo.** Hoje a Câmara tem só quatro votações selecionadas. Ampliar com um critério neutro e público (por exemplo, todas as votações finais de PEC e PL), com resumo em linguagem simples a partir da ementa oficial e agrupamento por tema com metodologia publicada.
+5. **Antes de divulgar o site:**
+   - Atualização automática das cotas da Câmara e do Senado, com data da coleta, validação e registro das falhas. Hoje as coletas são manuais e o app não agenda downloads.
+   - Backup externo com teste de restauração. O backup local consistente já existe.
+   - Confirmar o deploy pelo GitHub Actions no servidor, cuja configuração ainda não foi verificada.
+
+## Depois
+
+- Faltas e justificativas do Senado, sem gastar semanas em PDF para chegar a uma porcentagem.
+- Botão de destaque "Fale com ele(a)" na ficha, com o e-mail e o telefone do gabinete que já são coletados.
+- Aviso por e-mail quando algo muda na ficha de quem a pessoa acompanha; depende da atualização automática.
+- Busca por CEP em "Minha cidade".
+- Histórico de anos anteriores das cotas e lacunas da Câmara, somente com fonte validada.
+
+## Fora do escopo
+
+Decidido em 7/10/2026, para manter o app simples:
+
+- Remuneração de servidores, inclusive Ministério Público, tribunais de contas, militares, Banco Central e servidores do Legislativo.
+- Aposentados e pensionistas.
+- Busca avançada e ferramentas de pesquisa (filtros, anotações, acompanhamento no navegador). Quem precisa do dado bruto baixa o CSV da ficha.
+- Contratos e licitações do PNCP como recurso próprio. Se voltarem, entram como um bloco de "Minha cidade" (maiores compras da prefeitura), nunca ligados a uma pessoa.
+
+## Princípios
+
+Toda ampliação mostra dados ausentes como ausência, nunca como zero. Sinais de atenção não são conclusões de irregularidade. Cada número indica fonte, período e onde conferir.
