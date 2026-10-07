@@ -114,14 +114,14 @@ def _alerta(db, s, pessoas, totais_cache):
         antes = [serie.get(m, 0) for m in range(1, month)]
         ref = median(antes) if antes else 0
         vezes = base['valor'] / ref if ref else None
-        # Meses seguidos acima do normal formam um único alerta (mudança de patamar).
+        # Meses seguidos acima do habitual formam um único alerta (mudança de patamar).
         seguidos = []
         m = month + 1
         while ref and serie.get(m) is not None and serie[m] >= ref * 1.75 and m < max(serie):
             seguidos.append(m); m += 1
-        titulo = (f'Passou a gastar mais a partir de {MESES[month]}' if seguidos
-                  else f'Gastou {vezes:.1f}× o normal em {MESES[month]}'.replace('.', ',') if vezes else 'Gasto fora do normal')
-        frase = f'Em {MESES[month]}, a cota custou {store_money(base["valor"])}. Nos meses anteriores, o normal era {store_money(ref)} por mês.'
+        titulo = (f'Gastos mais altos a partir de {MESES[month]}' if seguidos
+                  else f'Gasto de {MESES[month]} foi {vezes:.1f}× o habitual'.replace('.', ',') if vezes else 'Gasto acima do habitual')
+        frase = f'Em {MESES[month]}, a cota custou {store_money(base["valor"])}. Nos meses anteriores, o habitual era {store_money(ref)} por mês.'
         if seguidos:
             frase += ' Depois continuou alta: ' + ', '.join(f'{MESES[x]} {store_money(serie[x])}' for x in seguidos) + '.'
         base.update({'referencia': ref, 'vezes': vezes, 'mes': month, 'seguidos': seguidos,

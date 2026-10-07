@@ -238,7 +238,7 @@ def rebuild_signals(db):
             run = [month]
             while run[-1] + 1 in flagged:
                 run.append(run[-1] + 1)
-            seguidos = f' Continuou acima do normal em {len(run) - 1} mês(es) seguido(s); conta como um único alerta.' if len(run) > 1 else ''
+            seguidos = f' Continuou acima do habitual em {len(run) - 1} mês(es) seguido(s); conta como um único alerta.' if len(run) > 1 else ''
             add(f'pico:{authority}:{source}:{year}:{month}', authority, source, 'pico', 'Pico no reembolso mensal', value,
                 f'{currency(value)}: {value / base:.2f} vezes a mediana de {currency(base)} entre janeiro e o mês anterior. Critério: 1,75 vez, diferença de R$ 10.000 e acima do gasto mensal típico dos parlamentares da mesma fonte ({currency(floor)}), com ao menos 3 meses anteriores sem lacunas.{seguidos} O último mês da fonte é excluído; meses anteriores ainda podem receber ajustes.', f'{year}-{month:02d}')
 

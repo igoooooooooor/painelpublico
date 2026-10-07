@@ -242,7 +242,7 @@ test('profile starts with three ordered answers and keeps the complementary deta
   assert.deepEqual(answers, ['custo', 'trabalho', 'alerta']);
   assert.match(html, /Em 3 respostas/);
   assert.ok(html.indexOf('Quanto custa?') < html.indexOf('Trabalha?'));
-  assert.ok(html.indexOf('Trabalha?') < html.indexOf('Tem algo estranho?'));
+  assert.ok(html.indexOf('Trabalha?') < html.indexOf('Algum gasto incomum?'));
   assert.match(html, /class="cid-details/);
   const detailKeys = [...html.matchAll(/data-profile-section="([^"]+)"/g)].map(match => match[1]);
   assert.deepEqual(detailKeys, ['gastos', 'alertas', 'votos', 'projetos', 'equipe', 'contato', 'fontes']);

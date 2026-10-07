@@ -244,7 +244,7 @@ class PicoRuleTests(unittest.TestCase):
             pessoas = {'camara:30': {'id': 'camara:30', 'name': 'Pessoa 30', 'role': 'deputado'}}
             alerta = cidadao._alerta(db, picos[0], pessoas, {})
             ranking = cidadao.politicos(db, {'ordem': 'alertas', 'pageSize': 3})['itens']
-        self.assertEqual(alerta['titulo'], 'Passou a gastar mais a partir de abril')
+        self.assertEqual(alerta['titulo'], 'Gastos mais altos a partir de abril')
         self.assertEqual(alerta['seguidos'], [5])
         self.assertIn('Depois continuou alta: maio', alerta['frase'])
         self.assertIn('No ano, gastou', alerta['contexto']['frase'])

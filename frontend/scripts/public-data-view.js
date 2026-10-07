@@ -89,7 +89,7 @@ function publicRoleOptions(selected = '') {
   return publicOptions(options, selected, 'Todos os cargos');
 }
 function publicNavChips(active = '') {
-  const entries = [['radar', 'Gastos em destaque'], ['despesas', 'Buscar despesas'], ['fornecedores', 'Fornecedores'], ['autoridades', 'Pessoas e órgãos'], ['investigacoes', 'Investigações salvas'], ['cobertura', 'Fontes e cobertura'], ['comparar', 'Comparar parlamentares'], ['base', 'Resumo da base']];
+  const entries = [['radar', 'Gastos em destaque'], ['despesas', 'Buscar despesas'], ['fornecedores', 'Fornecedores'], ['autoridades', 'Pessoas e órgãos'], ['investigacoes', 'Anotações salvas'], ['cobertura', 'Fontes e cobertura'], ['comparar', 'Comparar parlamentares'], ['base', 'Resumo da base']];
   return `<details class="public-tools"><summary>Mais opções</summary><nav class="public-nav" aria-label="Explorar dados públicos">${entries.filter(([view]) => view !== active).map(([view, label]) => `<button type="button" class="fchip" data-public-go="${view}">${label}</button>`).join('')}</nav></details>`;
 }
 function vAutoridades() {
@@ -107,7 +107,7 @@ function vBasePublica() {
   return `<div class="public-view">${publicNavChips('base')}<span class="k">Dados disponíveis</span><h1 class="h radar-title">Resumo da base</h1>
     <p class="note">Explore despesas, remunerações e vínculos nas fontes importadas. O recorte pode ser parcial e varia por órgão e período; consulte a cobertura antes de comparar.</p>
     <div class="public-actions public-home-actions"><button type="button" class="fchip" data-public-go="despesas">Explorar despesas</button><button type="button" class="fchip" data-public-go="autoridades">Buscar pessoas e órgãos</button><button type="button" class="fchip" data-public-go="fornecedores">Buscar fornecedores</button></div>
-    <p class="public-home-links"><button type="button" class="public-clear" data-public-go="radar">Sinais para conferir</button><span>·</span><button type="button" class="public-clear" data-public-go="investigacoes">Investigações</button><span>·</span><button type="button" class="public-clear" data-public-go="cobertura">Fontes e cobertura</button></p>
+    <p class="public-home-links"><button type="button" class="public-clear" data-public-go="radar">Sinais para conferir</button><span>·</span><button type="button" class="public-clear" data-public-go="investigacoes">Anotações</button><span>·</span><button type="button" class="public-clear" data-public-go="cobertura">Fontes e cobertura</button></p>
     <div class="public-results" data-public-content="base" aria-live="polite">${skel('numeros')}${skel('cards', 2)}</div>
     <section class="card"><span class="k">Comece pela evidência</span><p class="radar-note">Reembolsos e remunerações são mostrados separadamente. Uma despesa ou sinal precisa ser entendido no contexto do cargo, do período e do documento oficial. Os sinais exploratórios não comprovam irregularidade.</p></section>
   </div>`;
@@ -148,7 +148,7 @@ function vRadarPublico() {
   return `<div class="public-view"><div class="public-page-heading"><div><span class="k">Busca avançada</span><h1 class="h radar-title">Gastos</h1></div>${publicNavChips('radar')}</div>
     <p class="public-intro">O que chama atenção nos gastos de deputados e senadores.</p>
     <div class="chips public-quick-filters" role="group" aria-label="Que gastos você quer ver?">${filters.map(([value, label]) => `<button type="button" class="fchip" data-public-signal-type="${value}" aria-pressed="${publicState.signal.type === value}">${label}</button>`).join('')}</div>
-    <div class="public-actions"><button type="button" class="more" data-public-go="despesas">Buscar uma despesa →</button><button type="button" class="more" data-public-go="investigacoes">Minhas investigações</button></div>
+    <div class="public-actions"><button type="button" class="more" data-public-go="despesas">Buscar uma despesa →</button><button type="button" class="more" data-public-go="investigacoes">Minhas anotações</button></div>
     <p class="radar-note">São pontos para conferir, não conclusões de irregularidade.</p>
     <div class="public-results public-radar-results" data-public-content="radar" aria-live="polite">${skel('cards', 3)}</div></div>`;
 }
@@ -168,12 +168,12 @@ function vInvestigacoes() {
   publicState.savedCases = publicRead(PUBLIC_STORAGE.cases, []);
   publicState.followed = publicRead(PUBLIC_STORAGE.follow, []);
   const selectedCount = publicState.selectedExpenseIds.size;
-  return `<div class="public-view">${publicNavChips('investigacoes')}<span class="k">Anotações neste navegador</span><h1 class="h radar-title">Investigações</h1>
+  return `<div class="public-view">${publicNavChips('investigacoes')}<span class="k">Salvas neste navegador</span><h1 class="h radar-title">Anotações</h1>
     <p class="note">Guarde despesas selecionadas e suas anotações para retomar a conferência. Os registros ficam só neste navegador e não são enviados a nenhum serviço.</p>
-    <section class="card public-save"><label>Título da investigação<input id="public-case-title" maxlength="120" placeholder="Ex.: conferir notas de março"></label><label>Anotação geral<textarea id="public-case-note" rows="3" maxlength="2000" placeholder="O que ainda precisa ser verificado?"></textarea></label>
-      <span class="muted">${selectedCount} ${selectedCount === 1 ? 'despesa selecionada' : 'despesas selecionadas'} da lista carregada</span><button type="button" class="fchip" data-public-save-case ${selectedCount ? '' : 'disabled'}>Salvar investigação</button><button type="button" class="public-clear" data-public-export-selected ${selectedCount ? '' : 'disabled'}>Exportar seleção CSV</button><p class="public-save-status" role="status">${esc(publicState.storageMessage || '')}</p></section>
+    <section class="card public-save"><label>Título da anotação<input id="public-case-title" maxlength="120" placeholder="Ex.: conferir notas de março"></label><label>Anotação geral<textarea id="public-case-note" rows="3" maxlength="2000" placeholder="O que ainda precisa ser verificado?"></textarea></label>
+      <span class="muted">${selectedCount} ${selectedCount === 1 ? 'despesa selecionada' : 'despesas selecionadas'} da lista carregada</span><button type="button" class="fchip" data-public-save-case ${selectedCount ? '' : 'disabled'}>Salvar anotação</button><button type="button" class="public-clear" data-public-export-selected ${selectedCount ? '' : 'disabled'}>Exportar seleção CSV</button><p class="public-save-status" role="status">${esc(publicState.storageMessage || '')}</p></section>
     <section class="card"><span class="k">Acompanhamento manual</span><p class="radar-note">A lista mostra a última visita registrada neste navegador; não indica que houve mudança nos dados.</p><p class="public-save-status" data-public-list-follow-status role="status">${esc(publicState.followMessage || '')}</p><div class="public-follow-list">${publicFollowRows()}</div></section>
-    <section class="public-cases"><h2 class="h">Investigações salvas</h2><div class="public-case-list">${publicCasesHTML()}</div></section>
+    <section class="public-cases"><h2 class="h">Anotações salvas</h2><div class="public-case-list">${publicCasesHTML()}</div></section>
   </div>`;
 }
 function publicFollowRows() {
@@ -183,8 +183,8 @@ function publicFollowRows() {
 }
 function publicCasesHTML() {
   const cases = publicRead(PUBLIC_STORAGE.cases, []);
-  if (!cases.length) return '<section class="card empty"><p class="muted">Nenhuma investigação salva ainda. Selecione despesas e anote o que deseja conferir.</p></section>';
-  return cases.map(item => `<article class="card public-case"><div class="signal-heading"><h3>${esc(item.title || 'Investigação sem título')}</h3><button type="button" class="public-clear" data-public-delete-case="${esc(item.id)}">Excluir</button></div><p class="radar-note">Salva em ${publicDate((item.createdAt || '').slice(0, 10))} · ${publicCount(item.expenses?.length || 0)} despesas</p>${item.note ? `<p>${esc(item.note)}</p>` : ''}<details><summary>Ver registros guardados</summary><div>${(item.expenses || []).map(row => `<div class="public-case-expense"><b>${esc(row.supplierName || row.authorityName || row.id)}</b><span>Competência ${esc(publicCompetence(row))} · emissão ${publicDate(row.date)} · ${publicMoney(row.amount)}</span><small>${esc(row.category || row.kind || 'Categoria sem dado')} · ${esc(row.documentId || 'Documento sem identificador')}</small>${row.annotation ? `<p>${esc(row.annotation)}</p>` : ''}${publicSourceLink(row.documentUrl, 'Abrir documento ↗')}</div>`).join('')}</div></details><button type="button" class="public-clear" data-public-export-case="${esc(item.id)}">Exportar evidências CSV</button></article>`).join('');
+  if (!cases.length) return '<section class="card empty"><p class="muted">Nenhuma anotação salva ainda. Selecione despesas e anote o que deseja conferir.</p></section>';
+  return cases.map(item => `<article class="card public-case"><div class="signal-heading"><h3>${esc(item.title || 'Anotação sem título')}</h3><button type="button" class="public-clear" data-public-delete-case="${esc(item.id)}">Excluir</button></div><p class="radar-note">Salva em ${publicDate((item.createdAt || '').slice(0, 10))} · ${publicCount(item.expenses?.length || 0)} despesas</p>${item.note ? `<p>${esc(item.note)}</p>` : ''}<details><summary>Ver registros guardados</summary><div>${(item.expenses || []).map(row => `<div class="public-case-expense"><b>${esc(row.supplierName || row.authorityName || row.id)}</b><span>Competência ${esc(publicCompetence(row))} · emissão ${publicDate(row.date)} · ${publicMoney(row.amount)}</span><small>${esc(row.category || row.kind || 'Categoria sem dado')} · ${esc(row.documentId || 'Documento sem identificador')}</small>${row.annotation ? `<p>${esc(row.annotation)}</p>` : ''}${publicSourceLink(row.documentUrl, 'Abrir documento ↗')}</div>`).join('')}</div></details><button type="button" class="public-clear" data-public-export-case="${esc(item.id)}">Exportar evidências CSV</button></article>`).join('');
 }
 function publicNotice(message, type = 'note') { return `<p class="${type}" role="status">${esc(message)}</p>`; }
 function publicPagination(data, page, action) {
@@ -569,7 +569,7 @@ function publicUnfollow(id, rowElement) {
 function publicSaveCase() {
   const rows = [...publicState.selectedExpenseIds].map(id => { const row = publicState.expenseRowsById.get(id); return row ? { ...row, annotation: publicState.expenseNotes.get(id) || '', savedAt: new Date().toISOString() } : null; }).filter(Boolean);
   if (!rows.length) return;
-  const title = document.getElementById('public-case-title')?.value.trim() || 'Investigação sem título';
+  const title = document.getElementById('public-case-title')?.value.trim() || 'Anotação sem título';
   const note = document.getElementById('public-case-note')?.value.trim() || '';
   const cases = publicRead(PUBLIC_STORAGE.cases, []);
   cases.unshift({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, title, note, createdAt: new Date().toISOString(), expenses: rows });
@@ -581,7 +581,7 @@ function publicSaveCase() {
   publicState.savedCases = cases;
   publicState.selectedExpenseIds.clear();
   for (const row of rows) publicState.expenseNotes.delete(String(row.id));
-  publicState.storageMessage = 'Investigação salva neste navegador.';
+  publicState.storageMessage = 'Anotação salva neste navegador.';
   render();
 }
 function publicRemoveCase(id) { const cases = publicRead(PUBLIC_STORAGE.cases, []).filter(item => String(item.id) !== String(id)); publicWrite(PUBLIC_STORAGE.cases, cases); render(); }
@@ -645,7 +645,7 @@ function initPublicData() {
     if (target.hasAttribute('data-public-save-case')) { publicSaveCase(); return; }
     if (target.hasAttribute('data-public-export-selected')) { publicExportRows([...publicState.selectedExpenseIds].map(id => { const row = publicState.expenseRowsById.get(id); return row ? { ...row, annotation: publicState.expenseNotes.get(id) || '' } : null; }).filter(Boolean), 'evidencias-selecionadas.csv'); return; }
     if (target.dataset.publicDeleteCase) { publicRemoveCase(target.dataset.publicDeleteCase); return; }
-    if (target.dataset.publicExportCase) { const item = publicRead(PUBLIC_STORAGE.cases, []).find(row => String(row.id) === String(target.dataset.publicExportCase)); if (item) publicExportRows(item.expenses || [], 'investigacao-evidencias.csv'); return; }
+    if (target.dataset.publicExportCase) { const item = publicRead(PUBLIC_STORAGE.cases, []).find(row => String(row.id) === String(target.dataset.publicExportCase)); if (item) publicExportRows(item.expenses || [], 'anotacao-despesas.csv'); return; }
     if (target.hasAttribute('data-public-retry')) { publicRefresh(); return; }
   });
   document.addEventListener('submit', event => {
