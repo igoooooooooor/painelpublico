@@ -1,6 +1,6 @@
 /* Contador de impostos, presença de todos(as), quem votou o quê e comparação de perfis.
    A leitura de presença e votos passa pelos helpers compartilhados de perfil. */
-const ext = { voto: {}, votoLim: 40, votoQ: '', presOrd: 'menos', presQ: '', presLim: 40, cmp: [], cmpQ: '', cmpKey: null, cmpRes: null, cmpErro: null, cmpLoading: false };
+const ext = { voto: {}, votoLim: 40, votoQ: '', presOrd: 'menos', presQ: '', presLim: 40, senateVoteLim: 20, cmpVoteLim: 20, cmp: [], cmpQ: '', cmpKey: null, cmpRes: null, cmpErro: null, cmpLoading: false };
 const extCam = id => 'camara:' + id;
 const extPct = (a, b) => b ? Math.round(a / b * 100) : 0;
 
@@ -39,8 +39,8 @@ function extImpostoCard(cota = null) {
 })();
 
 /* ---------- Presença de todos(as) ---------- */
-function extPresRows() {
-  const rows = typeof profilePresenceRows === 'function' ? profilePresenceRows() : (DATA.presencaTodos || []);
+function extPresRows(chamber = 'camara') {
+  const rows = typeof profilePresenceRows === 'function' ? profilePresenceRows(chamber) : (chamber === 'camara' ? DATA.presencaTodos || [] : []);
   return rows.filter(p => p && Number.isFinite(p.dias) && p.dias > 0
     && [p.presente, p.falta, p.justificadas].every(n => Number.isFinite(n) && n >= 0)
     && p.presente + p.falta + p.justificadas === p.dias);
@@ -90,6 +90,7 @@ const EXT_VOTO = { 'Sim': 'Sim', 'Não': 'Não', 'Abstenção': 'Abstenção', '
 function extVotos(v) {
   const lista = typeof profileVoteRows === 'function' ? profileVoteRows(v) : DATA.votosCompletos?.[v.id];
   if (!Array.isArray(lista)) return null;
+  if (String(v.id).startsWith('senado:')) return lista;
   return lista.map(x => [x[0], x[1], x[2], x[3], v.secreta ? 'Presente' : (x[4] ? (EXT_VOTO[x[4]] || x[4]) : 'Presente')]);
 }
 function extQuemVotou(v) {
@@ -119,24 +120,62 @@ function extQuemVotou(v) {
 /* ---------- Ficha leve: presença e votos de quem é deputado(a) ---------- */
 function extVotosDe(num) {
   const id = String(num).includes(':') ? String(num) : extCam(num);
+  const senate = id.startsWith('senado:');
   const rows = typeof profileVotes === 'function' ? profileVotes(id) : (DATA.votacoes || []).map(v => {
     const t = extVotos(v) || [];
     const x = t.find(r => String(r[0]) === String(num).replace(/^camara:/, ''));
     return { v, voto: x?.[4] ?? null };
   });
-  return (rows || []).filter(r => r?.v && String(r.v.data || '').startsWith('2026'))
+  return (rows || []).filter(r => r?.v && (senate || String(r.v.data || '').startsWith('2026')))
     .sort((a, b) => String(b.v.data).localeCompare(String(a.v.data)));
+}
+function extActivitySource(section, label = 'Conferir na fonte do Senado') {
+  if (!section) return '';
+  if (typeof profileSource === 'function') return profileSource(section, label);
+  const url = typeof section.sourceUrl === 'string' ? section.sourceUrl : '';
+  const href = /^https?:\/\//i.test(url) ? url : '';
+  return `<span class="src">${section.period ? `${esc(section.period)}. ` : ''}${section.fetchedAt ? `Fotografia: ${esc(String(section.fetchedAt).slice(0, 10))}. ` : ''}${href ? `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(label)} ↗</a>` : ''}</span>`;
+}
+function extSenateLoading() {
+  return typeof profileSenateLoading === 'function' && profileSenateLoading();
+}
+function extSenateRegisteredPresence(id) {
+  if (typeof profileRegisteredPresence !== 'function') return null;
+  const row = profileRegisteredPresence(id);
+  return row && Number.isFinite(row.presente) && row.presente > 0 ? row : null;
 }
 function extFichaExtra(id) {
   const [casa, num] = String(id).split(':');
   if (casa === 'senado') {
+    if (typeof profileSenateEnsure === 'function') profileSenateEnsure();
+    const presSource = typeof profileSenateSource === 'function' ? profileSenateSource('presenca') : null;
+    const voteSource = typeof profileSenateSource === 'function' ? profileSenateSource('votacoes') : null;
+    const loading = extSenateLoading();
+    const p = extSenateRegisteredPresence(id);
+    const sessionCount = Number.isFinite(presSource?.sessionCount) ? presSource.sessionCount : null;
+    const votos = extVotosDe(id);
     const official = typeof cidFonte === 'function' ? cidFonte({ id })
       : /^\d+$/.test(num || '') ? `https://www25.senado.leg.br/web/senadores/senador/-/perfil/${encodeURIComponent(num)}` : null;
-    return `<section class="card"><span class="k">Presença no Senado</span>
-      <p class="muted">Sem dados de presença do Senado importados neste painel.</p>
-      <span class="k">Votações individuais no Senado</span>
-      <p class="muted">Sem registros individuais de votação do Senado importados neste painel.</p>
-      ${official ? `<a class="fchip" href="${esc(official)}" target="_blank" rel="noopener">Conferir no Senado ↗</a>` : ''}
+    const presence = p ? `<section class="card">
+      <span class="k">Presença registrada · Senado</span>
+      <div><span class="big">${p.presente}</span> <span class="muted">sessões com presença registrada</span></div>
+      ${sessionCount === null ? '' : `<p class="muted">${sessionCount} listas de sessões consultadas no recorte.</p>`}
+      <p class="muted">A fonte deste recorte registra presenças; ausência de linha não confirma falta.</p>
+      ${presSource?.detail ? `<p class="muted">${esc(presSource.detail)}</p>` : ''}
+      ${extActivitySource(presSource)}
+    </section>` : `<section class="card"><span class="k">Presença registrada · Senado</span>${loading ? (typeof skel === 'function' ? skel('linhas', 2) : '<i class="sk" style="display:block;width:100%;height:14px"></i>') : '<p class="muted">Sem dados de presença do Senado importados para este perfil. Ausência de registro não significa zero presença nem falta.</p>'}${presSource?.detail ? `<p class="muted">${esc(presSource.detail)}</p>` : ''}${extActivitySource(presSource)}</section>`;
+    const list = votos.slice(0, ext.senateVoteLim).map(({ v, voto }) => {
+      const label = voto === 'Presente' ? 'Presença registrada · sem voto' : voto == null ? 'Sem registro importado' : String(voto).toLowerCase();
+      const content = `<b>${esc(label)}</b><span>${esc(v.titulo || v.proposicao || 'Votação nominal')}</span>${v.data ? `<small>${esc(v.data)}</small>` : ''}`;
+      return typeof profileVoteButton === 'function' ? profileVoteButton(v, content, 'vt') : `<a class="vt" href="${esc(v.sourceUrl || '')}" target="_blank" rel="noopener">${content}</a>`;
+    }).join('');
+    return `${presence}
+    <section class="card"><span class="k">Votações nominais do Senado${votos.length ? ` · ${votos.length}` : ''}</span>
+      ${loading && !voteSource ? (typeof skel === 'function' ? skel('linhas', 3) : '<i class="sk" style="display:block;width:100%;height:14px"></i>') : votos.length ? `<div class="votes">${list}</div>${votos.length > ext.senateVoteLim ? `<button type="button" class="opt cid-more" data-senate-votes-more>Mostrar mais (${votos.length - ext.senateVoteLim})</button>` : ''}` : `<p class="muted">${voteSource ? 'Sem registros individuais de votação do Senado para este perfil.' : 'Votações nominais do Senado ainda não importadas.'}</p>`}
+      <p class="muted">Votações secretas foram excluídas; a lista mostra somente votações nominais abertas e seus registros individuais.</p>
+      ${voteSource?.detail ? `<p class="muted">${esc(voteSource.detail)}</p>` : ''}
+      ${extActivitySource(voteSource)}
+      ${official ? `<a class="fchip" href="${esc(official)}" target="_blank" rel="noopener">Conferir perfil no Senado ↗</a>` : ''}
     </section>`;
   }
   if (casa !== 'camara') return '';
@@ -155,7 +194,8 @@ function extFichaExtra(id) {
   <section class="card"><span class="k">Votações selecionadas do Placar · ${votacoes}</span>
     ${votacoes ? `<div class="votes">${votos.map(({ v, voto }) => {
       const label = voto == null ? 'Sem registro importado' : v.secreta ? 'Presença registrada · voto secreto' : String(voto).toLowerCase();
-      return `<button type="button" class="vt" data-vote="${esc(v.id)}"><b>${esc(label)}</b><span>${esc(v.titulo)}</span></button>`;
+      const content = `<b>${esc(label)}</b><span>${esc(v.titulo)}</span>`;
+      return typeof profileVoteButton === 'function' ? profileVoteButton(v, content, 'vt') : `<button type="button" class="vt" data-vote="${esc(v.id)}">${content}</button>`;
     }).join('')}</div>` : '<p class="muted">Nenhuma votação selecionada do Placar em 2026.</p>'}
     <span class="muted">A lista cobre apenas as votações selecionadas no Placar; falta de registro não identifica motivo nem situação do mandato.</span>
   </section>
@@ -245,6 +285,59 @@ function extCmpGabinete(profile) {
 function extCmpInfoRow(label, a, b) {
   return `<div class="cmp-row"><span class="cmp-l">${esc(label)}</span><div class="cmp-v">${a}</div><div class="cmp-v">${b}</div></div>`;
 }
+function extCmpPresenceRows(a, b, pA, pB) {
+  const chamberA = String(a.pessoa.id).split(':')[0], chamberB = String(b.pessoa.id).split(':')[0];
+  const senate = chamberA === 'senado' || chamberB === 'senado';
+  if (senate && typeof profileSenateEnsure === 'function') profileSenateEnsure();
+  const loading = senate && extSenateLoading();
+  const source = senate && typeof profileSenateSource === 'function' ? profileSenateSource('presenca') : null;
+  const value = p => p ? p.presente / p.dias : null;
+  const display = (p, applies = true) => !applies ? '<span class="muted">Não se aplica</span>' : loading && !p ? '<i class="sk" style="display:inline-block;width:48px;height:12px"></i>' : p ? `<b>${Math.round(value(p) * 100)}%</b>` : '<span class="muted">Sem dados</span>';
+  const line = (label, x, y, rank, sourceMeta = '', applicableA = true, applicableB = true) => {
+    const okX = Number.isFinite(x), okY = Number.isFinite(y);
+    const winner = rank && okX && okY && x !== y ? ((x > y) === (rank === 'maior') ? 'a' : 'b') : '';
+    return `<div class="cmp-row"><span class="cmp-l">${label}${sourceMeta ? `<small>${sourceMeta}</small>` : ''}</span><div class="cmp-v ${winner === 'a' ? 'best' : ''}">${display(okX ? { presente: x, dias: 1 } : null, applicableA)}</div><div class="cmp-v ${winner === 'b' ? 'best' : ''}">${display(okY ? { presente: y, dias: 1 } : null, applicableB)}</div></div>`;
+  };
+  if (chamberA === chamberB) {
+    if (chamberA === 'senado') {
+      const recordA = extSenateRegisteredPresence(a.pessoa.id), recordB = extSenateRegisteredPresence(b.pessoa.id);
+      const sessionCount = Number.isFinite(source?.sessionCount) ? source.sessionCount : null;
+      const show = record => loading && !record ? '<i class="sk" style="display:inline-block;width:48px;height:12px"></i>'
+        : record ? `<b>${record.presente}</b><small> sessões com presença registrada</small>` : '<span class="muted">Sem dados</span>';
+      const detail = 'Contagem de registros positivos. Faltas e justificativas não apuradas; ausência de linha não confirma falta.';
+      return `<div class="cmp-row"><span class="cmp-l">Presença registrada · Senado</span><div class="cmp-v">${show(recordA)}</div><div class="cmp-v">${show(recordB)}</div></div>
+        <div class="cmp-row"><div class="cmp-v muted cmp-source" style="grid-column:1 / -1">${sessionCount === null ? '' : `${sessionCount} listas de sessões consultadas. `}${esc(detail)}${extActivitySource(source, 'Fonte e período')}</div></div>`;
+    }
+    return line('Presença no Plenário · Câmara', value(pA), value(pB), 'maior');
+  }
+  const recordA = chamberA === 'senado' ? extSenateRegisteredPresence(a.pessoa.id) : null;
+  const recordB = chamberB === 'senado' ? extSenateRegisteredPresence(b.pessoa.id) : null;
+  const sessionCount = Number.isFinite(source?.sessionCount) ? source.sessionCount : null;
+  const sourceDetail = 'Contagem de registros positivos. Faltas e justificativas não apuradas; ausência de linha não confirma falta.';
+  const show = (record, applies) => !applies ? '<span class="muted">Não se aplica</span>' : loading && !record ? '<i class="sk" style="display:inline-block;width:48px;height:12px"></i>'
+    : record ? `<b>${record.presente}</b><small> sessões registradas</small>` : '<span class="muted">Sem dados</span>';
+  return `${line('Presença · Câmara', chamberA === 'camara' ? value(pA) : null, chamberB === 'camara' ? value(pB) : null, null, '', chamberA === 'camara', chamberB === 'camara')}
+    <div class="cmp-row"><span class="cmp-l">Presença registrada · Senado</span><div class="cmp-v">${show(recordA, chamberA === 'senado')}</div><div class="cmp-v">${show(recordB, chamberB === 'senado')}</div></div>
+    <div class="cmp-row"><div class="cmp-v muted cmp-source" style="grid-column:1 / -1">Metodologias de presença de casas diferentes não são comparadas. ${sessionCount === null ? '' : `${sessionCount} listas de sessões consultadas no Senado. `}${esc(sourceDetail)}${extActivitySource(source, 'Fonte e período')}</div></div>`;
+}
+function extCmpVotes(a, b) {
+  const idA = String(a.pessoa.id), idB = String(b.pessoa.id);
+  const chamberA = idA.split(':')[0], chamberB = idB.split(':')[0];
+  if (chamberA !== chamberB || !['camara', 'senado'].includes(chamberA)) return { chamber: null, votes: [] };
+  const chamber = chamberA;
+  if (chamber === 'senado' && typeof profileSenateEnsure === 'function') profileSenateEnsure();
+  const list = typeof profileVoteList === 'function' ? profileVoteList(chamber) : chamber === 'camara' ? DATA.votacoes || [] : [];
+  const key = id => chamber === 'senado' ? id : id.slice(id.indexOf(':') + 1);
+  const votes = list.filter(v => !v.secreta).map(v => {
+    const rows = extVotos(v) || [];
+    const x = rows.find(r => String(r[0]) === key(idA)), y = rows.find(r => String(r[0]) === key(idB));
+    return { v, va: x?.[4] ?? null, vb: y?.[4] ?? null };
+  });
+  const senateRecordedVotes = new Set(['Sim', 'Não', 'Abstenção', 'Obstrução']);
+  return { chamber, votes: chamber === 'senado'
+    ? votes.filter(r => senateRecordedVotes.has(r.va) && senateRecordedVotes.has(r.vb))
+    : votes };
+}
 function extCmpTabela([a, b]) {
   const pa = a.pessoa, pb = b.pessoa, maxT = Math.max(a.total, b.total, 1);
   const perfilA = extCmpPerfil(a), perfilB = extCmpPerfil(b);
@@ -254,22 +347,30 @@ function extCmpTabela([a, b]) {
     return `<div class="cmp-v ${ganha === 'a' ? 'best' : ''}">${va == null ? 'Sem dados' : fmt(va)}</div><div class="cmp-v ${ganha === 'b' ? 'best' : ''}">${vb == null ? 'Sem dados' : fmt(vb)}</div>`;
   };
   const vsMedia = f => f.total != null && f.media ? Math.round((f.total / f.media - 1) * 100) : null;
-  const pres = f => { const [casa, num] = String(f.pessoa.id).split(':'); return casa === 'camara' ? extPres(num) : null; };
-  const pA = pres(a), pB = pres(b);
+  if ([a, b].some(f => String(f.pessoa.id).startsWith('senado:')) && typeof profileSenateEnsure === 'function') profileSenateEnsure();
+  const pA = extPres(a.pessoa.id), pB = extPres(b.pessoa.id);
   const topCat = f => f.categorias[0] ? `${esc(f.categorias[0].nome)} <small>${extPct(f.categorias[0].valor, f.total)}%</small>` : '—';
   const topForn = f => f.fornecedores[0] ? `${esc(cidNome(f.fornecedores[0].name))} <small>${extPct(f.fornecedores[0].valor, f.total)}%</small>` : '—';
-  const numA = String(pa.id).split(':')[1], numB = String(pb.id).split(':')[1];
-  const ambosDep = String(pa.id).startsWith('camara:') && String(pb.id).startsWith('camara:');
-  const votos = ambosDep ? DATA.votacoes.filter(v => !v.secreta).map(v => { const t = extVotos(v) || []; const x = t.find(r => String(r[0]) === numA), y = t.find(r => String(r[0]) === numB); return { v, va: x?.[4] ?? null, vb: y?.[4] ?? null }; }) : [];
+  const { chamber: voteChamber, votes: votos } = extCmpVotes(a, b);
   const comparaveis = votos.filter(r => r.va !== null && r.vb !== null);
   const iguais = comparaveis.filter(r => r.va === r.vb).length;
+  const senateVoteSource = voteChamber === 'senado' && typeof profileSenateSource === 'function' ? profileSenateSource('votacoes') : null;
+  const senateLoading = voteChamber === 'senado' && extSenateLoading();
+  const voteLabel = voteChamber === 'senado' ? 'Como votaram · Senado' : 'Como votaram';
+  const voteSummary = voteChamber === 'senado'
+    ? (comparaveis.length ? `${nome(pa)} e ${nome(pb)} registraram o mesmo voto em ${iguais} de ${comparaveis.length} votações nominais comparáveis no Senado.` : 'Sem votos nominais comparáveis para estes senadores neste recorte.')
+    : `${nome(pa)} e ${nome(pb)} registraram o mesmo voto em ${iguais} de ${comparaveis.length} votações comparáveis.`;
+  const voteRows = votos.slice(0, ext.cmpVoteLim || 20).map(r => {
+    const content = `<span>${esc(r.v.titulo || r.v.proposicao || 'Votação nominal')}</span><span class="vchip ${r.va === 'Sim' ? 'sim' : r.va === 'Não' ? 'nao' : ''}">${esc(r.va === null ? 'Sem registro importado' : String(r.va).toLowerCase())}</span><span class="vchip ${r.vb === 'Sim' ? 'sim' : r.vb === 'Não' ? 'nao' : ''}">${esc(r.vb === null ? 'Sem registro importado' : String(r.vb).toLowerCase())}</span><em>${r.va === null || r.vb === null ? 'sem registro comparável' : r.va === r.vb ? 'igual' : 'diferente'}</em>`;
+    return typeof profileVoteButton === 'function' ? profileVoteButton(r.v, content, 'cmp-vote') : `<button type="button" class="cmp-vote" data-vote="${esc(r.v.id)}">${content}</button>`;
+  }).join('');
   return `<section class="card cmp wide">
     <div class="cmp-head"><span></span>${[a, b].map(f => `<button type="button" class="cmp-who" data-pol="${esc(f.pessoa.id)}">${cidAvatar(f.pessoa, 56)}<b>${esc(cidNome(f.pessoa.name))}</b><small>${esc([CARGO[f.pessoa.role], f.pessoa.party, f.pessoa.uf].filter(Boolean).join(' · '))}</small></button>`).join('')}</div>
     <div class="cmp-row"><span class="cmp-l">Cota gasta em 2026</span>${lado(a.total, b.total, v => `<b class="mono">${cidMil(v)}</b>`)}</div>
     <div class="cmp-row cmp-bars"><span class="cmp-l"></span><div><i style="width:${a.total == null ? 0 : a.total / maxT * 100}%"></i></div><div><i style="width:${b.total == null ? 0 : b.total / maxT * 100}%"></i></div></div>
     <div class="cmp-row"><span class="cmp-l">Comparado à média do cargo</span>${lado(vsMedia(a), vsMedia(b), v => `<b>${v > 0 ? '+' : ''}${v}%</b>`)}</div>
     <div class="cmp-row"><span class="cmp-l">Alertas</span>${lado(a.total == null ? null : a.alertas.length, b.total == null ? null : b.alertas.length, v => `<b>${v}</b>`)}</div>
-    <div class="cmp-row"><span class="cmp-l">Presença no Plenário · Câmara</span>${lado(pA ? pA.presente / pA.dias : null, pB ? pB.presente / pB.dias : null, v => `<b>${Math.round(v * 100)}%</b>`, false)}</div>
+    ${extCmpPresenceRows(a, b, pA, pB)}
     ${extCmpInfoRow('Participação e exercício', extCmpParticipacao(perfilA), extCmpParticipacao(perfilB))}
     ${extCmpInfoRow('Contato institucional', esc(extCmpContato(perfilA)), esc(extCmpContato(perfilB)))}
     ${extCmpInfoRow('Projetos', esc(extCmpProjetos(perfilA)), esc(extCmpProjetos(perfilB)))}
@@ -278,22 +379,25 @@ function extCmpTabela([a, b]) {
     <div class="cmp-row"><span class="cmp-l">Onde mais gastou</span><div class="cmp-v">${topCat(a)}</div><div class="cmp-v">${topCat(b)}</div></div>
     <div class="cmp-row"><span class="cmp-l">Empresa que mais recebeu</span><div class="cmp-v">${topForn(a)}</div><div class="cmp-v">${topForn(b)}</div></div>
   </section>
-  ${votos.length ? `<section class="card wide"><span class="k">Como votaram</span>
-    <h2 class="h" style="font-size:21px">${nome(pa)} e ${nome(pb)} registraram o mesmo voto em ${iguais} de ${comparaveis.length} votações comparáveis.</h2>
-    ${votos.map(r => `<button type="button" class="cmp-vote" data-vote="${esc(r.v.id)}"><span>${esc(r.v.titulo)}</span><span class="vchip ${r.va === 'Sim' ? 'sim' : r.va === 'Não' ? 'nao' : ''}">${esc(r.va === null ? 'Sem registro importado' : r.va.toLowerCase())}</span><span class="vchip ${r.vb === 'Sim' ? 'sim' : r.vb === 'Não' ? 'nao' : ''}">${esc(r.vb === null ? 'Sem registro importado' : r.vb.toLowerCase())}</span><em>${r.va === null || r.vb === null ? 'sem registro comparável' : r.va === r.vb ? 'igual' : 'diferente'}</em></button>`).join('')}
-    <span class="muted">A comparação considera apenas votos registrados por ambos; ausência de registro não significa que a pessoa não votou.</span>
-  </section>` : ''}
-  <span class="src">Destaque em roxo: quem gastou menos, teve menos alertas ou foi mais às sessões. Gastos pelas notas da cota publicadas pela Câmara e pelo Senado (sem as passagens aéreas da Câmara).</span>`;
+  ${voteChamber === 'senado' || comparaveis.length ? `<section class="card wide"><span class="k">${voteLabel}</span>
+    ${senateLoading ? (typeof skel === 'function' ? skel('linhas', 3) : '<i class="sk" style="display:block;width:100%;height:14px"></i>') : `<h2 class="h" style="font-size:21px">${voteSummary}</h2>
+    ${voteRows || (voteChamber === 'senado' ? '<p class="muted">Sem votações nominais do Senado com registro para ambos neste recorte.</p>' : '')}
+    ${votos.length > (ext.cmpVoteLim || 20) ? `<button type="button" class="opt cid-more" data-cmp-votes-more>Mostrar mais (${votos.length - (ext.cmpVoteLim || 20)})</button>` : ''}`}
+    ${voteChamber === 'senado' ? `${senateVoteSource?.detail ? `<p class="muted">${esc(senateVoteSource.detail)}</p>` : ''}${extActivitySource(senateVoteSource, 'Fonte e período')}` : '<span class="muted">A comparação considera apenas votos registrados por ambos; ausência de registro não significa que a pessoa não votou.</span>'}
+  </section>` : String(pa.id).split(':')[0] !== String(pb.id).split(':')[0] ? '<section class="card wide"><span class="k">Votações</span><p class="muted">Votações de casas diferentes não são comparadas.</p></section>' : ''}
+  <span class="src">Destaque em roxo: quem gastou menos, teve menos alertas ou teve maior presença na Câmara. O Senado aparece como contagem de presenças registradas, sem ranking; votações entre casas não são comparadas. Gastos pelas notas da cota publicadas pela Câmara e pelo Senado (sem as passagens aéreas da Câmara).</span>`;
 }
 
 /* ---------- Eventos ---------- */
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-pres-ord],[data-pres-more],[data-voto-grupo],[data-voto-more],[data-cmp-add],[data-cmp-del],[data-cmp-start],[data-cmp-retry]');
+  const t = e.target.closest('[data-pres-ord],[data-pres-more],[data-voto-grupo],[data-voto-more],[data-senate-votes-more],[data-cmp-votes-more],[data-cmp-add],[data-cmp-del],[data-cmp-start],[data-cmp-retry]');
   if (!t) return;
   if (t.dataset.presOrd) { ext.presOrd = t.dataset.presOrd; ext.presLim = 40; return rerender(); }
   if (t.hasAttribute('data-pres-more')) { ext.presLim += 60; return rerender(); }
   if (t.dataset.votoGrupo) { ext.voto[t.dataset.votoId] = t.dataset.votoGrupo; ext.votoLim = 40; ext.votoQ = ''; return rerender(); }
   if (t.hasAttribute('data-voto-more')) { ext.votoLim += 80; return rerender(); }
+  if (t.hasAttribute('data-senate-votes-more')) { ext.senateVoteLim += 20; return rerender(); }
+  if (t.hasAttribute('data-cmp-votes-more')) { ext.cmpVoteLim += 20; return rerender(); }
   if (t.dataset.cmpAdd) { e.stopPropagation(); extCmpAdd(t.dataset.cmpAdd); return state.view === 'comparar' ? rerender() : go('comparar'); }
   if (t.hasAttribute('data-cmp-retry')) { ext.cmpErro = null; ext.cmpRes = null; ext.cmpLoading = false; return extCmpBusca(ext.cmpQ); }
   if (t.dataset.cmpDel) { ext.cmp = ext.cmp.filter(x => x !== t.dataset.cmpDel); ext.cmpQ = ''; ext.cmpKey = null; ext.cmpRes = null; ext.cmpErro = null; return rerender(); }

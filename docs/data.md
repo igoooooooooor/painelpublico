@@ -133,7 +133,7 @@ A reconciliação de 7/10/2026 reprocessa essa mesma fotografia do XML (`Metadad
 
 Há reembolsos associados a 509 dos deputados e 79 dos registros do Senado. Os demais devem aparecer como dados ausentes, não como zero. A lista, o Placar e as comparações abrem a mesma ficha parlamentar; a busca avançada usa as mesmas seções complementares. Os antigos detalhes e PDF de dez deputados e a análise editorial de despesas foram removidos.
 
-`frontend/scripts/profile-data.js` concentra a leitura do snapshot complementar, presença e votos. Contatos e situação da Câmara vêm do detalhe oficial de cada deputado; verba e equipe de gabinete vêm da página oficial, com ano, meses publicados e data de atualização. Projetos da Câmara abrangem PL, PLP e PEC apresentados desde 1/2/2023: total só é confirmado quando todas as páginas da consulta são lidas. O resumo dessa API não fornece a situação atual de cada projeto, que permanece ausente. Contatos e participação/exercício do Senado vêm do XML reconciliado; gabinete e projetos do Senado ainda não têm fonte integrada validada. O antigo serviço de autoria anuncia descontinuação e o filtro por autor da API substituta não foi confirmado.
+`frontend/scripts/profile-data.js` concentra a leitura do snapshot complementar, presença e votos. Contatos e situação da Câmara vêm do detalhe oficial de cada deputado; verba e equipe de gabinete vêm da página oficial, com ano, meses publicados e data de atualização. Projetos da Câmara abrangem PL, PLP e PEC apresentados desde 1/2/2023: total só é confirmado quando todas as páginas da consulta são lidas. O resumo dessa API não fornece a situação atual de cada projeto, que permanece ausente. Contatos e participação/exercício do Senado vêm do XML reconciliado. Autoria do Senado usa a API substituta `/dadosabertos/processo`, com o filtro `codigoParlamentarAutor` validado; a cobertura está detalhada abaixo. Gabinete do Senado ainda não tem fonte integrada.
 
 Na coleta de 7/10/2026, o complemento contém os 595 IDs da lista: 513 deputados e 82 registros do Senado. Na Câmara, há e-mail para 513, telefone/endereço para 512, gasto de gabinete para 512 e equipe ativa para 512; dois perfis têm a seção de gabinete parcial. A consulta de projetos concluiu a paginação dos 513 perfis (quatro com zero resultados no recorte): são 35.746 associações entre autor e projeto, correspondentes a 19.878 IDs de proposição distintos, pois há coautorias. No Senado, o XML da fotografia de 6/10 informa e-mail para 78 e telefone para 80; 81 registros têm ao menos um desses contatos. Campos não publicados continuam sem valor. Essas contagens não ampliam o recorte de despesas no SQLite.
 
@@ -141,6 +141,103 @@ O salário nas fichas e comparações é o subsídio bruto de referência do car
 
 A presença complementar cobre 512 dos 513 deputados; Gilmar Machado não tem dias extraídos no snapshot. Somente denominadores positivos e contagens consistentes entram nas porcentagens. As votações complementares cobrem quatro votações escolhidas para o Placar. Linha ausente significa registro não importado, nunca a inferência de que a pessoa não votou; votação secreta informa somente participação. As comparações de concordância usam apenas votações com registro para ambos. Cadastro completo não significa histórico de presença, votações e remunerações completo.
 
+### Atividade e autoria do Senado — consulta de 7/10/2026
+
+```sh
+# Só a coleta de PDFs de presença requer esta dependência opcional:
+python3 -m pip install -r ingest/senado-requirements.txt
+make collect-senate YEAR=2026
+python3 ingest/senado_attendance.py --collect --refresh --year 2026
+python3 ingest/senado_projects.py --collect --refresh --year 2026
+python3 ingest/senado_activity.py --collect --refresh --year 2026
+# Reconstrução dos snapshots sem acessar a rede:
+python3 ingest/senado_attendance.py --year 2026
+python3 ingest/senado_projects.py --year 2026
+python3 ingest/senado_activity.py --year 2026
+make build
+```
+
+Os novos coletores são manuais. Caches ficam em `data/raw/senado-projetos/` e
+`data/raw/senado-atividade/` e `data/raw/senado-presenca/`; os snapshots correspondentes, em `data/snapshots/`.
+Autoria é mesclada na resposta individual `/api/c/perfil/<id>`, preservando contato e
+mandato. Votos e presença chegam por `/api/c/senado/atividade`, somente quando uma
+ficha ou comparação precisa deles. O HTML leva apenas o marcador de disponibilidade.
+Nenhum dado novo é embutido na home ou importado no SQLite.
+
+**Autoria:** [API oficial de processos](https://legis.senado.leg.br/dadosabertos/v3/api-docs),
+endpoint `/processo`, filtros `codigoParlamentarAutor`, `sigla=PL,PLP,PEC`,
+`dataInicioApresentacao=2026-01-01` e `dataFimApresentacao=2026-10-07`.
+As 82 consultas do cadastro local responderam com arrays válidos: 788 associações
+senador–projeto, 462 IDs distintos e três respostas vazias confirmadas. Inclui coautorias,
+portanto a soma por senador não é uma contagem de projetos distintos. Mantém somente
+processos `objetivo=Iniciadora`: substitutivos posteriores podem herdar o autor do projeto
+original e não são novos projetos de sua autoria. O serviço não documenta paginação
+nem publica total independente; a cobertura se refere aos arrays retornados pelos
+filtros oficiais, não a uma auditoria da completude interna da fonte. O serviço legado
+anunciava descontinuação em 1/2/2026 e não é usado. Situação atual permanece sem valor
+até a Etapa 3. O recorte do Senado começa em 2026; o da Câmara, em fevereiro de 2023.
+
+**Votos:** [API oficial de votações](https://legis.senado.leg.br/dadosabertos/votacao?dataInicio=2026-01-01&dataFim=2026-10-07),
+consulta de 1/1 a 7/10/2026. A resposta contém 59 votações do Plenário do Senado:
+19 abertas nominais com 1.539 linhas individuais e 40 secretas. As secretas ficam
+fora dos itens e de todos os denominadores de escolha nominal. Registros sem escolha
+(presença sem voto, atividade parlamentar, licenças, missão, não comparecimento e
+presidência) são mantidos como registros, sem virar votos nem faltas. A comparação de
+pessoas usa somente Sim, Não, Abstenção ou Obstrução presentes para os dois senadores;
+casas diferentes não têm concordância calculada. O resumo da ficha informa em quantas
+votações com linha individual foi identificado um voto; chamadas sem linha dessa pessoa
+não entram no denominador, e registros sem voto não são classificados como faltas.
+A lista completa deste recorte é distinta das quatro votações editoriais do Placar da Câmara.
+Cada item aponta para a consulta oficial da sessão; os títulos vêm da descrição e da
+identificação da matéria, sem resumo editorial novo. Falha de atualização preserva a
+fotografia anterior e sua data, com status parcial.
+
+**Presença registrada:** a [agenda mensal oficial](https://legis.senado.leg.br/dadosabertos/plenario/agenda/mes/20260401)
+é consultada desde o primeiro dia de cada mês; a API lista eventos da data informada
+até o fim do mês. O coletor considera sessões deliberativas ordinárias/extraordinárias
+realizadas e cruza o [calendário por data de sessão do DSF](https://legis.senado.leg.br/diarios/ver)
+com os cadernos. Baixa somente o sumário e as páginas necessárias da tabela
+“Registro de Comparecimento” (com ou sem “e Voto”), validando data, tipo de sessão e
+total “Compareceram N senadores”. A evidência positiva é a marca na coluna Presença ou,
+no formato que publica a coluna Horário, o registro nominal explícito de data e hora
+do comparecimento. Marcas na coluna Voto não são usadas como presença. Cada tabela
+guarda o método aplicado. Cadernos repetidos da mesma sessão são conciliados por data,
+tipo e número da sessão. Texto selecionado e observações validadas
+ficam no cache local, com URL e data; falhas de atualização preservam evidência anterior.
+A extração de PDF é a única parte que requer a dependência opcional descrita acima;
+modo offline, build, testes e servidor não precisam dela.
+
+Na consulta de 7/10/2026 foram validadas **42 tabelas**, em um universo de 45 eventos
+deliberativos realizados enumerados na agenda: 41 com marcas na coluna Presença e
+uma, de 29/4, com 79 horários nominais e total oficial de 79 comparecimentos.
+Há observações positivas associadas a 80 IDs do cadastro. Faltam tabelas validadas
+para 1º e 2/9 (atas da sessão deliberativa contínua sem seção de comparecimento
+identificada nos sumários) e 6/10 (sem caderno no calendário consultado).
+Outras 215 linhas, de 21 nomes ou grafias extraídas, não coincidiram com um nome
+normalizado único do cadastro atual. Há nomes históricos e erros de reconhecimento
+de texto nos PDFs; essas linhas foram preservadas no cache, mas não atribuídas por
+aproximação. Isso pode subcontar comparecimentos de pessoas com outros registros
+válidos. As contagens exibidas são somente as observações positivas associadas,
+não o total certificado de presença de cada senador em 2026.
+
+O nome publicado é associado somente a um nome normalizado único no cadastro local.
+Nomes sem correspondência ou ambíguos não recebem ID por aproximação. O snapshot
+`senado-presenca.json` guarda as sessões, links dos Diários, IDs associados e contagens
+positivas por pessoa; `senado-atividade.json` incorpora essa seção na reconstrução.
+A legenda usada para agrupar essas presenças é a do cadastro atual, enquanto votos
+usam a legenda publicada em cada votação. O denominador de dias, faltas e faltas
+justificadas permanecem nulos. Perfis sem marca positiva permanecem sem dado, nunca
+com zero inferido. As comparações mostram sessões com presença registrada e, nos
+partidos, a média apenas entre pessoas com registros positivos, sem ranking de
+assiduidade e sem comparar essa métrica com o percentual da Câmara.
+
+O [tutorial oficial de assiduidade](https://www12.senado.leg.br/assessoria-de-imprensa/guia-para-jornalistas/tutorial-de-verificacao-da-assiduidade-dos-senadores)
+explica que registrar presença isoladamente não confirma a assiduidade: é preciso
+verificar votações e justificativas, publicadas separadamente. Por isso a integração
+é **parcial para presença**: não exibe percentual, selo comparativo nem barra de
+faltas do Senado. Apurar faltas e justificativas permanece pendente; não se deduz
+nenhum desses estados a partir de uma omissão na tabela ou no arquivo de votos.
+
 ### Comparar partidos
 
-`/api/c/partidos` agrupa os cadastros atuais de deputados e senadores pela sigla da lista oficial. Para cada cargo informa quantos registros integram a lista, quantos têm notas importadas, gasto somado, média por parlamentar com notas e alertas (`pico` e `fornecedor`), além dos três maiores gastos do partido. Quem não tem nota importada não entra na média; partido sem nenhuma nota fica com gasto e média nulos. A tela soma a isso a presença média e os votos por partido calculados dos snapshots da Câmara (sem votações secretas); o Senado não tem presença nem votos nesta versão. Cota usa a sigla da lista atual; presença usa a sigla do respectivo snapshot e votos usam a sigla publicada na votação. Esses recortes podem divergir após mudanças de partido.
+`/api/c/partidos` agrupa os cadastros atuais de deputados e senadores pela sigla da lista oficial. Para cada cargo informa quantos registros integram a lista, quantos têm notas importadas, gasto somado, média por parlamentar com notas e alertas (`pico` e `fornecedor`), além dos três maiores gastos do partido. Quem não tem nota importada não entra na média; partido sem nenhuma nota fica com gasto e média nulos. A tela soma a isso a presença média e os votos por partido calculados dos snapshots da Câmara e os dados coletados do Senado, sempre em linhas separadas por casa. Votações secretas ficam fora da comparação nominal. A unidade usa somente votos Sim/Não; a concordância entre pessoas usa escolhas nominais registradas para ambas. Presença do Senado é contagem de registros positivos, sem percentual de assiduidade nem classificação de faltas. Cota usa a sigla da lista atual; presença usa a sigla do respectivo snapshot e votos usam a sigla publicada na votação. Esses recortes podem divergir após mudanças de partido.

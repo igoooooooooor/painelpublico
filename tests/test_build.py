@@ -31,14 +31,52 @@ class BuildTests(unittest.TestCase):
             data, _ = embedded_data(output)
             self.assertEqual(set(data), {
                 "geradoEm", "ultimaVotacao", "votacoes", "presencaTodos", "votosCompletos",
-                "arrecadacao", "perfis",
+                "arrecadacao", "perfis", "senado",
             })
             self.assertIsNone(data["geradoEm"])
             self.assertEqual(data["presencaTodos"], [])
             self.assertEqual(data["votosCompletos"], {})
             self.assertIsNone(data["arrecadacao"])
             self.assertEqual(data["perfis"], {"profiles": {}, "sobDemanda": False})
+            self.assertEqual(data["senado"], {"sobDemanda": False})
             self.assertEqual(len(data["votacoes"]), 4)
+
+    def test_senate_snapshots_are_markers_only_in_the_build(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            snapshots = root / "snapshots"
+            snapshots.mkdir()
+            (snapshots / "senado-atividade.json").write_text(
+                '{"private":"SENATE_ACTIVITY_PRIVATE"}', encoding="utf-8")
+            (snapshots / "senado-projetos.json").write_text(
+                '{"profiles":{"senado:1":{"private":"SENATE_PROJECTS_PRIVATE"}}}', encoding="utf-8")
+            (snapshots / "perfis.json").write_text(
+                '{"profiles":{"senado:1":{"private":"PROFILE_PRIVATE"}}}', encoding="utf-8")
+            output = root / "dist" / "index.html"
+
+            with patch.object(BUILD, "SNAPSHOTS", snapshots):
+                BUILD.build(output)
+
+            data, html = embedded_data(output)
+            self.assertEqual(data["senado"], {"sobDemanda": True})
+            self.assertEqual(data["perfis"], {"profiles": {}, "sobDemanda": True})
+            for private_marker in ("SENATE_ACTIVITY_PRIVATE", "SENATE_PROJECTS_PRIVATE", "PROFILE_PRIVATE"):
+                self.assertNotIn(private_marker, html)
+
+    def test_senate_projects_enable_profile_fetch_without_profiles_snapshot(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            snapshots = root / "snapshots"
+            snapshots.mkdir()
+            (snapshots / "senado-projetos.json").write_text("{}", encoding="utf-8")
+            output = root / "dist" / "index.html"
+
+            with patch.object(BUILD, "SNAPSHOTS", snapshots):
+                BUILD.build(output)
+
+            data, _ = embedded_data(output)
+            self.assertEqual(data["perfis"], {"profiles": {}, "sobDemanda": True})
+            self.assertEqual(data["senado"], {"sobDemanda": False})
 
     def test_editorial_sample_is_ignored_and_all_vote_rows_are_kept(self):
         metadata = json.loads((ROOT / "frontend" / "data" / "votacoes.json").read_text(encoding="utf-8"))

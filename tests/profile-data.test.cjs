@@ -72,6 +72,45 @@ test('missing vote rows never become absences and secret votes never reveal a ch
   assert.equal(ctx.profileVotes('senado:1').length, 0);
 });
 
+test('Senate activity loads once on demand and keeps identities and non-vote records distinct', async () => {
+  const ctx = load({ senado: { sobDemanda: true }, presencaTodos: [{ id: 1, dias: 10, presente: 10, falta: 0, justificadas: 0 }] });
+  let release;
+  const calls = [];
+  ctx.fetch = url => { calls.push(url); return new Promise(resolve => { release = resolve; }); };
+  ctx.profileData('senado:1');
+  ctx.profileData('senado:2');
+  assert.equal(ctx.profileSenateLoading(), true);
+  assert.deepEqual(calls, ['/api/c/senado/atividade']);
+  release({ ok: true, json: async () => ({
+    presenca: { status: 'unavailable', items: [] },
+    votacoes: { items: ['Sim', 'Presente – Não registrou voto', 'Atividade parlamentar', 'Presidente (art. 51 RISF)'].map((vote, n) => ({
+      id: `senado:${n}`, rows: [['senado:1', 'Senadora', 'PT', 'SP', vote]],
+    })) },
+  }) });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(ctx.profileSenateLoading(), false);
+  assert.equal(ctx.profilePresence('senado:1'), null);
+  assert.deepEqual(Array.from(ctx.profileVotes('senado:1'), r => r.voto), ['Sim', 'Presente', 'Atividade parlamentar', 'Presidiu']);
+  assert.ok(ctx.profileVotes('senado:2').every(r => r.voto === null));
+  assert.equal(ctx.profileVotes('camara:1').length, 0);
+  assert.equal(calls.length, 1);
+});
+
+test('failed Senate activity does not create attendance or vote counts', async () => {
+  const ctx = load({ senado: { sobDemanda: true } });
+  ctx.fetch = async () => ({ ok: false });
+  ctx.profileData('senado:1');
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(ctx.profileSenateLoading(), false);
+  assert.equal(ctx.profilePresence('senado:1'), null);
+  assert.equal(ctx.profileVotes('senado:1').length, 0);
+});
+
+test('Senate secret votes are excluded even if a malformed snapshot contains a choice', () => {
+  const ctx = load();
+  assert.equal(ctx.profileVoteRows({ id: 'senado:1', secreta: true, rows: [['senado:1', 'Pessoa', 'PT', 'SP', 'Sim']] }).length, 0);
+});
+
 test('every legislative profile has explicit coverage for salary, staff, contact and projects', () => {
   const ctx = load();
   const html = ctx.profileSectionsHTML({ id: 'senado:9', role: 'senador' }, {

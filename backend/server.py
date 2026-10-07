@@ -94,6 +94,12 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(found if found is not None else {'error': 'Perfil complementar não encontrado.'},
                            200 if found is not None else 404, 'public, max-age=300' if prod else 'no-store')
             return
+        if url.path == '/api/c/senado/atividade':
+            # O arquivo local é lido somente quando esta rota é chamada e pode mudar entre consultas.
+            found = perfis.atividade_senado()
+            self.send_json(found if found is not None else {'error': 'Atividade do Senado não encontrada.'},
+                           200 if found is not None else 404)
+            return
         if not url.path.startswith('/api/'):
             self.send_json({'error': 'Recurso não encontrado.'}, 404)
             return

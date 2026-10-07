@@ -16,29 +16,77 @@ function profileSafeUrl(value) {
   try { const u = new URL(value); return ['http:', 'https:'].includes(u.protocol) && !u.username && !u.password ? u.href : null; }
   catch { return null; }
 }
-function profilePresenceRows() {
-  return (DATA.presencaTodos || []).filter(p => Number.isFinite(p.dias) && p.dias > 0
+/* Atividade do Senado é carregada só nas fichas/comparações que precisam dela. */
+const SENATE_LOAD = { pending: false, done: false, data: null, error: null };
+function profileSenateEnsure() {
+  if (!DATA.senado?.sobDemanda || SENATE_LOAD.pending || SENATE_LOAD.done || typeof fetch !== 'function') return;
+  SENATE_LOAD.pending = true;
+  fetch('/api/c/senado/atividade', { headers: { Accept: 'application/json' } })
+    .then(r => { if (!r.ok) throw new Error('Atividade do Senado indisponível'); return r.json(); })
+    .then(d => { SENATE_LOAD.data = d; })
+    .catch(() => { SENATE_LOAD.error = 'Não foi possível carregar a atividade do Senado.'; })
+    .finally(() => { SENATE_LOAD.pending = false; SENATE_LOAD.done = true; if (typeof rerender === 'function') rerender(); });
+}
+function profileSenateLoading() { return SENATE_LOAD.pending; }
+function profileSenateSource(section) { return SENATE_LOAD.data?.[section] || null; }
+function profileRegisteredPresenceRows() {
+  profileSenateEnsure();
+  const rows = profileSenateSource('presenca')?.items;
+  return (Array.isArray(rows) ? rows : []).filter(p => /^senado:\d+$/.test(p.id)
+    && Number.isInteger(p.presente) && p.presente > 0);
+}
+function profileRegisteredPresence(id) {
+  return profileRegisteredPresenceRows().find(p => p.id === profileId(id)) || null;
+}
+function profileAttendanceSources(id) {
+  const sessions = profileSenateSource('presenca')?.sessions;
+  const records = (Array.isArray(sessions) ? sessions : []).filter(s => Array.isArray(s.presentIds)
+    && s.presentIds.includes(profileId(id)) && profileSafeUrl(s.sourceUrl));
+  if (!records.length) return '';
+  return `<p class="muted">Sessões com presença registrada no Diário:</p><div class="chips">${records.map(s =>
+    `<a class="fchip" href="${esc(profileSafeUrl(s.sourceUrl))}" target="_blank" rel="noopener">${esc(s.date)} ↗</a>`).join('')}</div>`;
+}
+function profilePresenceRows(chamber = 'camara') {
+  if (chamber === 'senado') profileSenateEnsure();
+  const rows = chamber === 'senado' ? profileSenateSource('presenca')?.items : DATA.presencaTodos;
+  return (Array.isArray(rows) ? rows : []).filter(p => Number.isFinite(p.dias) && p.dias > 0
     && [p.presente, p.falta, p.justificadas].every(n => Number.isFinite(n) && n >= 0)
     && p.presente + p.falta + p.justificadas === p.dias);
 }
 function profilePresence(id) {
-  const canonical = profileId(id);
-  return canonical.startsWith('camara:') ? profilePresenceRows().find(p => String(p.id) === canonical.slice(7)) || null : null;
+  const canonical = profileId(id), chamber = canonical.split(':')[0];
+  if (!['camara', 'senado'].includes(chamber)) return null;
+  return profilePresenceRows(chamber).find(p => (chamber === 'camara' ? profileId(p.id) : String(p.id)) === canonical) || null;
+}
+function profileVoteList(chamber = 'camara') {
+  if (chamber === 'senado') profileSenateEnsure();
+  const rows = chamber === 'senado' ? profileSenateSource('votacoes')?.items : DATA.votacoes;
+  return Array.isArray(rows) ? rows.filter(v => chamber !== 'senado' || !v.secreta) : [];
 }
 function profileVoteRows(v) {
-  const raw = DATA.votosCompletos?.[v.id];
+  const senate = String(v.id).startsWith('senado:');
+  if (senate && v.secreta) return [];
+  const raw = senate ? v.rows : DATA.votosCompletos?.[v.id];
   if (!Array.isArray(raw)) return [];
-  // Only source rows establish participation. The current roster cannot tell
-  // whether an absent row voted, was eligible, or had already taken office.
-  return raw.filter(r => Array.isArray(r) && r.length >= 5 && r[0] != null).map(r => [
-    r[0], r[1], r[2], r[3], v.secreta ? 'Presente' : (r[4] === 'Artigo 17' ? 'Presidiu' : r[4] || 'Presente'),
-  ]);
+  // Apenas linhas da fonte comprovam participação; uma linha ausente continua ausente.
+  return raw.filter(r => Array.isArray(r) && r.length >= 5 && r[0] != null).map(r => {
+    let vote = r[4] || (senate ? null : 'Presente');
+    if (senate && /^(P-NRV|Presente\s*[–-]\s*Não registrou voto)$/i.test(vote)) vote = 'Presente';
+    if (senate && /^(AP|Atividade parlamentar)$/i.test(vote)) vote = 'Atividade parlamentar';
+    if (vote === 'Artigo 17' || (senate && /^Presidente\b/i.test(vote))) vote = 'Presidiu';
+    return [r[0], r[1], r[2], r[3], v.secreta && (!senate || vote === 'Votou') ? 'Presente' : vote];
+  });
 }
 function profileVotes(id) {
-  const canonical = profileId(id);
-  if (!canonical.startsWith('camara:')) return [];
-  const num = canonical.slice(7);
-  return (DATA.votacoes || []).map(v => ({ v, voto: profileVoteRows(v).find(r => String(r[0]) === num)?.[4] ?? null }));
+  const canonical = profileId(id), chamber = canonical.split(':')[0];
+  if (!['camara', 'senado'].includes(chamber)) return [];
+  return profileVoteList(chamber).map(v => ({ v, voto: profileVoteRows(v)
+    .find(r => (chamber === 'camara' ? profileId(r[0]) : String(r[0])) === canonical)?.[4] ?? null }));
+}
+function profileVoteButton(v, content, className = 'vt') {
+  if (!String(v.id).startsWith('senado:')) return `<button type="button" class="${esc(className)}" data-vote="${esc(v.id)}">${content}</button>`;
+  const url = profileSafeUrl(v.sourceUrl);
+  return url ? `<a class="${esc(className)}" href="${esc(url)}" target="_blank" rel="noopener">${content}</a>` : `<div class="${esc(className)}">${content}</div>`;
 }
 /* Perfis complementares chegam um a um pela API (antes iam todos dentro da página, ~14 MB). */
 const PROFILE_LOAD = { pending: new Set(), done: new Set() };
@@ -64,7 +112,7 @@ function profileData(value) {
   return { id, pessoa, contato: snapshot.contato || null, projetos: snapshot.projetos || null,
     gabinete: snapshot.gabinete || null, mandato: snapshot.mandato || null,
     loading: PROFILE_LOAD.pending.has(id),
-    presenca: profilePresence(id), votos: profileVotes(id),
+    presenca: profilePresence(id), presencaRegistrada: role === 'senador' ? profileRegisteredPresence(id) : null, votos: profileVotes(id),
     remuneracao: PROFILE_SALARY[role] ? { ...PROFILE_SALARY[role], individual: null } : null };
 }
 function profileSource(section, label = 'Conferir na fonte', dateLabel = 'Fotografia') {
@@ -133,7 +181,7 @@ function profileSectionsHTML(value, slots = {}) {
   const loading = () => typeof skel === 'function' ? skel('linhas', 3) : '<p class="muted">Carregando complemento…</p>';
   const slot = key => typeof slots?.[key] === 'string' && slots[key].trim() ? slots[key] : null;
   const projectContent = p.loading ? loading() : `<p>${total !== null ? `${total} ${total === 1 ? 'projeto no recorte consultado' : 'projetos no recorte consultado'}.`
-      : items.length ? `${items.length} projetos disponíveis neste recorte parcial.` : 'Projetos ainda não importados para este perfil.'}</p>
+      : items.length ? `${items.length} projetos disponíveis neste recorte parcial.` : projects?.status === 'partial' || projects?.status === 'unavailable' ? 'Consulta de projetos incompleta ou indisponível; total não confirmado.' : 'Projetos ainda não importados para este perfil.'}</p>
     ${projects?.detail ? `<p class="muted">${esc(projects.detail)}</p>` : ''}
     ${items.length ? `<div>${items.map(item => {
       const url = profileSafeUrl(item.url);
