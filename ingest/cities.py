@@ -62,7 +62,7 @@ STATE_OFFICES = {
 FEDERAL_OFFICE = "DEPUTADO FEDERAL"
 ORDINARY_ELECTIONS = {
     2024: {"typeCode": "2", "typeName": "ELEICAO ORDINARIA", "dates": {"2024-10-06", "2024-10-27"}},
-    2026: {"typeCode": "2", "typeName": "ELEICAO ORDINARIA", "dates": {"2026-10-04"}},
+    2026: {"typeCode": "2", "typeName": "ELEICAO ORDINARIA", "dates": {"2026-10-04", "2026-10-25"}},
 }
 UF_CODES = {
     "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG",

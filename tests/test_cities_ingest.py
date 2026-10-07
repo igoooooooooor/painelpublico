@@ -139,6 +139,19 @@ class CitiesIngestTests(unittest.TestCase):
         self.assertEqual(meta["projectionVersion"], cities.CANDIDATE_CACHE_VERSION)
         self.assertEqual(meta["electionRowsExcluded"], 2)
 
+    def test_general_runoff_elected_result_is_kept_when_refreshed(self):
+        rows = [candidate_row("1", "Governor", "GOVERNADOR", "ELEITO", turn="2",
+                              election_date="25/10/2026"),
+                candidate_row("1", "Governor", "GOVERNADOR", "2º TURNO", turn="1",
+                              election_date="04/10/2026")]
+        with tempfile.TemporaryDirectory() as temp:
+            cache = Path(temp) / "candidates.jsonl"
+            cities._project_candidate_archive(candidate_archive(rows, 2026), cache, 2026)
+            elected = [json.loads(line) for line in cache.read_text().splitlines()]
+        self.assertEqual(len(elected), 1)
+        self.assertEqual(elected[0]["round"], 2)
+        self.assertEqual(elected[0]["result"], "ELEITO")
+
     def test_crosswalk_discards_all_conflicting_or_wrong_uf_mappings(self):
         municipalities = [
             {"id": "5300108", "name": "Brasília", "uf": "DF"},
