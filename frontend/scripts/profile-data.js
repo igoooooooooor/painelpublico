@@ -16,10 +16,6 @@ function profileSafeUrl(value) {
   try { const u = new URL(value); return ['http:', 'https:'].includes(u.protocol) && !u.username && !u.password ? u.href : null; }
   catch { return null; }
 }
-function profileEditorial(id) {
-  const canonical = profileId(id);
-  return canonical.startsWith('camara:') ? (DATA.deputados || []).find(d => String(d.id) === canonical.slice(7)) || null : null;
-}
 function profilePresenceRows() {
   return (DATA.presencaTodos || []).filter(p => Number.isFinite(p.dias) && p.dias > 0
     && [p.presente, p.falta, p.justificadas].every(n => Number.isFinite(n) && n >= 0)
@@ -62,34 +58,10 @@ function profileData(value) {
   const id = profileId(value), supplied = typeof value === 'object' && value !== null ? value : {};
   profileEnsure(id);
   const snapshot = DATA.perfis?.profiles?.[id] || {};
-  const editorial = profileEditorial(id);
   const role = supplied.role || snapshot.role || (id.startsWith('camara:') ? 'deputado' : id.startsWith('senado:') ? 'senador' : null);
-  const pessoa = { id, name: snapshot.name || editorial?.nome, party: snapshot.party || editorial?.partido,
-    uf: snapshot.uf || editorial?.uf, ...supplied, role };
-  let contato = snapshot.contato || null;
-  if (!contato && editorial?.contato) {
-    const c = editorial.contato;
-    contato = { email: c.email || null, telefones: c.telefone ? [c.telefone] : [],
-      endereco: [c.endereco, c.cidade].filter(Boolean).join(' · '), redes: c.redes || [],
-      sourceUrl: `https://www.camara.leg.br/deputados/${editorial.id}?ano=2026`,
-      fetchedAt: DATA.geradoEm, status: 'partial', detail: 'Complemento da amostra editorial.' };
-  }
-  let projetos = snapshot.projetos || null;
-  if ((!projetos || projetos.status === 'unavailable') && editorial?.projetos?.lista?.length) {
-    projetos = { status: 'partial', period: 'Desde fevereiro de 2023 · amostra editorial', total: null,
-      sourceUrl: `https://www.camara.leg.br/deputados/${editorial.id}?ano=2026`, fetchedAt: DATA.geradoEm,
-      detail: 'Lista preservada da amostra editorial; não representa uma coleta atual completa.',
-      items: editorial.projetos.lista.map(p => ({ id: p.id, titulo: p.t, ementa: p.e, situacao: p.s,
-        url: `https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=${p.id}` })) };
-  }
-  const cost = editorial?.custo;
-  const gabinete = snapshot.gabinete?.amount != null || snapshot.gabinete?.staffActive != null ? snapshot.gabinete
-    : Number.isFinite(cost?.gabineteGasto) ? { status: 'partial', amount: cost.gabineteGasto, months: {},
-      staffActive: cost.pessoal?.ativos ?? null, period: `${cost.gabineteMeses} meses no recorte editorial`,
-      sourceUrl: `https://www.camara.leg.br/deputados/${editorial.id}?ano=2026`, fetchedAt: DATA.geradoEm,
-      detail: 'Complemento da amostra editorial. Verba da equipe, separada do subsídio e dos reembolsos.' }
-      : snapshot.gabinete || null;
-  return { id, pessoa, contato, projetos, editorial, gabinete, mandato: snapshot.mandato || null,
+  const pessoa = { id, name: snapshot.name, party: snapshot.party, uf: snapshot.uf, ...supplied, role };
+  return { id, pessoa, contato: snapshot.contato || null, projetos: snapshot.projetos || null,
+    gabinete: snapshot.gabinete || null, mandato: snapshot.mandato || null,
     loading: PROFILE_LOAD.pending.has(id),
     presenca: profilePresence(id), votos: profileVotes(id),
     remuneracao: PROFILE_SALARY[role] ? { ...PROFILE_SALARY[role], individual: null } : null };

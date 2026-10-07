@@ -1,0 +1,62 @@
+[
+  {
+    "id": "2611313-31",
+    "proposicao": "PLP 74/2026",
+    "titulo": "Exceções às travas para novos benefícios fiscais",
+    "naPratica": "Libera, em 2026, benefícios fiscais para datacenters, para o programa de apoio a pessoas com câncer e com deficiência e para resseguradoras, mesmo fora das regras que hoje limitam esse tipo de benefício. Também dispensa cidades de até 65 mil habitantes de provar que estão em dia com impostos, empréstimos e prestações de contas para receber repasses voluntários.",
+    "situacao": "Virou lei, com partes vetadas",
+    "texto": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3179537",
+    "ficha": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2611313",
+    "curto": "Libera benefícios fiscais para datacenters e alivia exigências para cidades pequenas receberem verba.",
+    "data": "2026-09-03T17:28:34",
+    "sim": 346,
+    "nao": 46,
+    "aprovada": true,
+    "secreta": false
+  },
+  {
+    "id": "2645346-18",
+    "proposicao": "PDL 995/2026",
+    "titulo": "Rodrigo Pacheco vai para o TCU",
+    "naPratica": "A Câmara aprovou o nome de Rodrigo Pacheco, senador por MG, para ministro do Tribunal de Contas da União, o órgão que fiscaliza os gastos do governo federal. Ele fica com a vaga de Bruno Dantas.",
+    "situacao": "Aprovado",
+    "texto": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3180399",
+    "ficha": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2645346",
+    "curto": "Rodrigo Pacheco vira ministro do TCU, o órgão que fiscaliza os gastos do governo.",
+    "data": "2026-09-02T13:53:25",
+    "sim": 404,
+    "nao": 61,
+    "aprovada": true,
+    "secreta": true
+  },
+  {
+    "id": "2618177-71",
+    "proposicao": "PLP 114/2026",
+    "titulo": "Corte de impostos sobre combustíveis",
+    "naPratica": "Permite ao governo reduzir em 2026 os impostos federais sobre diesel, gasolina, etanol e querosene de aviação, por causa da alta do petróleo com o conflito no Oriente Médio, usando a arrecadação extra com petróleo para cobrir a perda. Se o imposto da gasolina cair 30% ou mais, o do etanol vai a zero. Também cria uma ajuda de até R$ 1,2 bilhão a produtores de etanol.",
+    "situacao": "Virou lei",
+    "texto": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3173002",
+    "ficha": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2618177",
+    "curto": "O governo pode cortar imposto de gasolina, diesel e etanol por causa da alta do petróleo.",
+    "data": "2026-08-12T17:49:46",
+    "sim": 318,
+    "nao": 113,
+    "aprovada": true,
+    "secreta": false
+  },
+  {
+    "id": "2606313-36",
+    "proposicao": "PLP 41/2026",
+    "titulo": "Dinheiro carimbado contra o feminicídio",
+    "naPratica": "Cria um sistema nacional contra a violência a meninas e mulheres. Estados que renegociaram a dívida com a União (Propag) terão de aplicar pelo menos 10% dos investimentos exigidos pelo programa num plano contra a violência e o feminicídio, com metas públicas. Quem não comprovar perde o desconto nos juros da dívida.",
+    "situacao": "Aguardando o Senado",
+    "texto": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3162742",
+    "ficha": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2606313",
+    "curto": "Estados com dívida renegociada terão de investir no combate ao feminicídio.",
+    "data": "2026-07-07T20:50:36",
+    "sim": 470,
+    "nao": 1,
+    "aprovada": true,
+    "secreta": false
+  }
+]

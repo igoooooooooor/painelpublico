@@ -24,10 +24,8 @@ function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'
     'cid-pol-list': { innerHTML: '' },
   };
   const state = { view: 'politicos', pol: null };
-  const byId = {};
   const context = {
     AbortController,
-    byId,
     clearTimeout,
     DATA: { deputados: [], geradoEm: '2026-10-07', perfis: { profiles: {} }, presencaTodos: [], votacoes: [], votosCompletos: {} },
     document: {
@@ -42,13 +40,14 @@ function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'
     fetch: fetchImpl,
     first(value) { return String(value || '').split(' ')[0]; },
     go(view) { state.view = view; },
+    rerender() {},
     setTimeout: schedule,
     URL,
     state,
   };
   vm.createContext(context);
-  vm.runInContext(profileSource + '\n' + source + '\nthis.__api = { cid, cidOpenPol, cidPolRow, cidPolCoverageHTML, cidPolCoverageNotesHTML, cidLoadPol, profileData, profileSectionsHTML, vPolitico };', context);
-  return { api: context.__api, elements, state, events, byId };
+  vm.runInContext(profileSource + '\n' + source + '\nthis.__api = { cid, cidOpenPol, cidAvatar, cidTemFicha, cidPolRow, cidPolCoverageHTML, cidPolCoverageNotesHTML, cidLoadPol, vPoliticos, cidHomeCard, profileData, profileSectionsHTML, vPolitico };', context);
+  return { api: context.__api, elements, state, events, context };
 }
 
 test('clearing a search updates state before debounce so another filter cannot restore the old query', () => {
@@ -104,12 +103,35 @@ test('the roster and profile distinguish missing reimbursements from an observed
   assert.match(profile, /Salário parlamentar/);
   assert.match(profile, /Equipe e verba de gabinete/);
   assert.match(profile, /Projetos apresentados/);
+  assert.doesNotMatch(profile, /Detalhes da amostra editorial|data-editorial-ficha|data-pdf/);
   assert.doesNotMatch(profile, /cid-months|Nenhum alerta|R\$.*0 mil/);
 });
 
-test('sampled and unsampled people use the same profile route', () => {
-  const { api, state, byId } = makeView();
-  byId['123'] = { id: '123', nome: 'Amostra editorial' };
+test('home alert loading failures show a retry card instead of a sample fallback', async () => {
+  const { api, events } = makeView({ fetchImpl: async () => { throw new Error('offline'); } });
+  const path = '/api/c/radar?pageSize=8&tipo=pico,fornecedor';
+  const loading = api.cidHomeCard();
+  assert.match(loading, /Carregando/);
+  await new Promise(resolve => setImmediate(resolve));
+  const failed = api.cidHomeCard();
+  assert.match(failed, /data-home-retry/);
+  assert.doesNotMatch(failed, /radarHome|amostra|editorial/);
+  const retry = { dataset: {}, hasAttribute: name => name === 'data-home-retry' };
+  retry.closest = () => retry;
+  events.click({ target: { closest: () => retry }, preventDefault() {} });
+  assert.equal(api.cid.cache.has(path), false);
+});
+
+test('all federal identifiers use the same profile route and avatar URL without a local sample roster', () => {
+  const { api, state } = makeView();
+  assert.equal(api.cidTemFicha('camara:513'), true);
+  assert.equal(api.cidTemFicha('senado:82'), true);
+  assert.equal(api.cidTemFicha('camara:abc'), false);
+  const avatar = api.cidAvatar({ id: 'camara:513', name: 'Deputada Nova' }, 48);
+  assert.match(avatar, /https:\/\/www\.camara\.leg\.br\/internet\/deputado\/bandep\/513\.jpg/);
+  assert.doesNotMatch(avatar, /undefined|Amostra editorial/);
+  const snapshotPhoto = api.cidAvatar({ id: 'camara:513', name: 'Deputada Nova', photo: 'https://example.test/photos/513.jpg' });
+  assert.match(snapshotPhoto, /src="https:\/\/example\.test\/photos\/513\.jpg"/);
 
   api.cidOpenPol('123');
   assert.equal(state.view, 'politico');
@@ -120,6 +142,25 @@ test('sampled and unsampled people use the same profile route', () => {
   assert.equal(state.view, 'politico');
   assert.equal(state.pol, 'camara:987');
   assert.equal(state.dep, '987');
+});
+
+test('the full public roster request runs with an empty query and an empty result stays explicit', async () => {
+  const calls = [];
+  const { api, elements } = makeView({ fetchImpl: async url => {
+    calls.push(url);
+    return { ok: true, async json() { return { itens: [], total: 0, cobertura: null, medias: {} }; } };
+  } });
+  api.cidLoadPol(false);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(calls, ['/api/c/politicos?pageSize=25&page=1&ordem=nome']);
+  assert.match(elements['cid-pol-list'].innerHTML, /Ninguém encontrado/);
+});
+
+test('politicians view has no editorial sample block', () => {
+  const { api } = makeView();
+  api.cid.pol.key = 'q=&cargo=&ordem=nome';
+  const html = api.vPoliticos();
+  assert.doesNotMatch(html, /Detalhes editoriais|amostra editorial|data-editorial-ficha|data-pdf/);
 });
 
 test('legacy ficha alias preserves canonical Senate identity', () => {

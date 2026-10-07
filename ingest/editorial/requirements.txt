@@ -1,2 +1,2 @@
-# Apenas para reconstruir a amostra editorial antiga; app e importadores atuais usam stdlib.
+# Opcional para os coletores auxiliares de passagens e totais eleitorais; app e build usam stdlib.
 pandas>=2.2,<3

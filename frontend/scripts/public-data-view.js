@@ -89,7 +89,7 @@ function publicRoleOptions(selected = '') {
   return publicOptions(options, selected, 'Todos os cargos');
 }
 function publicNavChips(active = '') {
-  const entries = [['radar', 'Gastos em destaque'], ['despesas', 'Buscar despesas'], ['fornecedores', 'Fornecedores'], ['autoridades', 'Pessoas e órgãos'], ['investigacoes', 'Investigações salvas'], ['cobertura', 'Fontes e cobertura'], ['gastos', 'Comparar deputados acompanhados'], ['base', 'Resumo da base']];
+  const entries = [['radar', 'Gastos em destaque'], ['despesas', 'Buscar despesas'], ['fornecedores', 'Fornecedores'], ['autoridades', 'Pessoas e órgãos'], ['investigacoes', 'Investigações salvas'], ['cobertura', 'Fontes e cobertura'], ['comparar', 'Comparar parlamentares'], ['base', 'Resumo da base']];
   return `<details class="public-tools"><summary>Mais opções</summary><nav class="public-nav" aria-label="Explorar dados públicos">${entries.filter(([view]) => view !== active).map(([view, label]) => `<button type="button" class="fchip" data-public-go="${view}">${label}</button>`).join('')}</nav></details>`;
 }
 function vAutoridades() {

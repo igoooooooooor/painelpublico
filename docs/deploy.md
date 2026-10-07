@@ -52,7 +52,7 @@ Para mostrar o site sem servidor: rode `make prod` e, em outro terminal, `cloudf
 
 ## Publicação automática pelo GitHub
 
-O workflow `.github/workflows/deploy.yml` roda `make ci` (sintaxe e testes, sem dados privados) em todo push e pull request. Em push na `main`, se passar, ele envia o código e o servidor monta a página com os snapshots que já estão lá (`/opt/painel/data/snapshots`). Banco e snapshots nunca passam pelo GitHub: vão pelo `make deploy-data`, do seu computador. **Antes do primeiro deploy automático, rode `make deploy-data` uma vez.**
+O workflow `.github/workflows/deploy.yml` roda `make ci` (sintaxe e testes, sem dados privados ou downloads) em todo push e pull request. Em push na `main`, se passar, ele envia o código e o servidor monta a página com os snapshots complementares que já estiverem lá (`/opt/painel/data/snapshots`). O build não exige `editorial.json` nem qualquer snapshot; a lista e os totais de parlamentares vêm do SQLite em execução. Banco e snapshots nunca passam pelo GitHub: vão pelo `make deploy-data`, do seu computador. Rode esse comando para publicar uma nova base ou atualizar complementos locais.
 
 Configuração (uma vez):
 
@@ -63,4 +63,4 @@ Configuração (uma vez):
 
 ## Peso da página
 
-A página leva só os dados pequenos (amostra editorial, presença, votos, arrecadação): ~1,3 MB, ~600 KB comprimida. Os perfis complementares (`perfis.json`, ~15 MB com projetos) ficam no servidor e cada ficha busca o seu em `/api/c/perfil/<id>`. Não volte a embutir arquivos grandes em `scripts/build.py`.
+O HTML contém os metadados curtos dos quatro cartões de votação e os complementos pequenos que existirem nos snapshots. O roster, totais e despesas ficam no SQLite e são consultados pela API; o banco completo não é embutido no HTML. Os perfis complementares (`perfis.json`) ficam no servidor e cada ficha busca o seu em `/api/c/perfil/<id>`.

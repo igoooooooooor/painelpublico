@@ -121,6 +121,7 @@ class Handler(BaseHTTPRequestHandler):
                       '/api/signals': lambda: store.signals(db, params),
                       '/api/suppliers': lambda: store.suppliers(db, params),
                       '/api/c/radar': lambda: cidadao.radar(db, params),
+                      '/api/c/resumo': lambda: cidadao.resumo(db),
                       '/api/c/politicos': lambda: cidadao.politicos(db, params),
                       '/api/c/partidos': lambda: cidadao.partidos(db)}
             if url.path in routes:

@@ -29,7 +29,7 @@ test:
 	$(PYTHON) -m unittest discover -s tests
 	$(NODE) --test tests/*.test.cjs
 
-# Sem dados privados (GitHub Actions): sintaxe e testes; os testes editoriais são pulados.
+# CI roda sintaxe e testes sem dados privados nem downloads; check também monta o build sem snapshots.
 ci:
 	$(PYTHON) -m compileall -q backend ingest scripts
 	@for file in frontend/scripts/*.js; do $(NODE) --check "$$file" || exit 1; done
@@ -66,7 +66,7 @@ APP_DIR ?= /opt/painel
 SSH ?= ssh
 # Usuário comum com sudo (ex.: ubuntu na Magalu Cloud). Para root, use SUDO= (vazio).
 SUDO ?= sudo
-# Monta a página no servidor com os snapshots de lá e reinicia o serviço.
+# Monta a página no servidor com os snapshots complementares que estiverem lá e reinicia o serviço.
 REMOTE_BUILD = cd $(APP_DIR)/app && PAINEL_SNAPSHOTS=$(APP_DIR)/data/snapshots python3 scripts/build.py && chown -R painel:painel $(APP_DIR)/app && install -m 0644 deploy/painel.service /etc/systemd/system/painel.service && systemctl daemon-reload && systemctl enable --now painel && systemctl restart painel
 
 deploy: check
@@ -75,7 +75,7 @@ deploy: check
 	$(SSH) $(SERVER) "$(SUDO) sh -c '$(REMOTE_BUILD)'"
 	$(MAKE) deploy-status
 
-# Banco + snapshots editoriais (nada disso vai para o Git).
+# Banco + snapshots complementares (nada disso vai para o Git).
 deploy-data:
 	@test -n "$(SERVER)" || (echo "Defina SERVER=usuario@host (ou no .env)"; exit 1)
 	@mkdir -p data/backups

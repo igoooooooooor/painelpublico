@@ -12,9 +12,9 @@ make dev
 
 Abra [localhost:8000](http://127.0.0.1:8000/). `make dev` gera `dist/index.html` e inicia a API local. Não faz downloads nem reimporta o banco. Depois de editar o frontend, rode `make build` e recarregue a página; alterações Python exigem reiniciar o servidor.
 
-A base já existente em `data/na-lupa.sqlite3` é preservada. Este repositório publica somente código, testes e documentação: banco, snapshots editoriais, downloads e credenciais são locais.
+A base já existente em `data/na-lupa.sqlite3` é preservada. Este repositório publica somente código, testes e documentação: banco, snapshots complementares, downloads e credenciais são locais.
 
-**Em um clone novo**, `make test` funciona sem a base real (três testes de integração editorial são pulados). Para abrir a interface, obtenha uma cópia autorizada de `editorial.json` e coloque-a em `data/snapshots/` antes de `make dev`; os coletores antigos ainda não reconstroem todos os insumos dessa amostra. `make db-init` prepara um banco vazio. Para preencher a consulta de autoridades com dados reais, siga os coletores e a importação em [Dados e SQLite](docs/data.md). Os snapshots complementares são opcionais.
+**Em um clone novo**, `make check`, `make build` e `make dev` não dependem de `editorial.json` nem de snapshots privados. `make db-init` prepara um banco vazio; para consultar a base parlamentar completa, obtenha os arquivos normalizados e importe-os conforme [Dados e SQLite](docs/data.md). O build não baixa dados. Presença, votos e perfis são complementos opcionais, coletados manualmente.
 
 Sem Make:
 
@@ -45,7 +45,7 @@ python3 -m backend.server --port 8000
 backend/        API Python, consultas e esquema SQLite
 frontend/       template HTML, scripts e design system
 scripts/        montagem do app
-ingest/         coletores (editorial/ contém os antigos)
+ingest/         coletores oficiais; editorial/ contém complementos manuais da Câmara
 data/           snapshots, banco e downloads locais, fora do Git
 tests/          testes Python e Node
 docs/           arquitetura, dados, visual e próximas etapas

@@ -9,7 +9,9 @@ function comparison(a, b) {
     DATA: { votacoes: [], presencaTodos: [] }, CARGO: { senador: 'Senador(a)' },
     document: { querySelector: () => null, getElementById: () => ({}), addEventListener() {} },
     MutationObserver: class { observe() {} }, addEventListener() {}, setTimeout() {},
-    esc: String, cidNome: String, cidAvatar: () => '', cidMil: value => `R$ ${value}`,
+    esc: String, cidNome: String, cidAvatar: () => '', cidMil: value => `R$ ${value}`, cidQuem: () => 'Deputado(a)',
+    cid: { cache: new Map() }, state: { view: 'comparar' }, skel: () => '<loading>',
+    pageHead: () => '<header>', cidErroMsg: error => error.message, dmy: String,
     cidFonte: p => p.id === 'senado:55' ? 'https://www25.senado.leg.br/web/senadores/senador/-/perfil/55' : null,
   };
   vm.createContext(context);
@@ -32,7 +34,7 @@ function comparison(a, b) {
   };
   context.profileData = value => ({ id: value.id, pessoa: value, contato: null, projetos: null, remuneracao: null, mandato: null });
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../frontend/scripts/extras-view.js'), 'utf8') +
-    '\nthis.__api = { extCmpTabela, extVotos, extVotosDe, extPres, extPresRows, extPresBar, extFichaExtra };', context);
+    '\nthis.__api = { ext, extCmpTabela, extCmpBusca, extCmpPickerList, vComparar, extImpostoCard, extVotos, extVotosDe, extPres, extPresRows, extPresBar, extFichaExtra };', context);
   return { html: context.__api.extCmpTabela([a, b]), api: context.__api, context };
 }
 const profile = (id, total) => ({ pessoa: { id, name: id, role: 'senador' }, total, media: 100,
@@ -119,4 +121,43 @@ test('profile comparison adds neutral availability and mandate details without r
     assert.ok(row, `linha ausente: ${label}`);
     assert.doesNotMatch(row, /class="cmp-v best"/);
   }
+});
+
+test('comparison suggestions load from the full API with an empty query and use its results', async () => {
+  const { api, context } = comparison(profile('camara:1', 100), profile('camara:2', 200));
+  const picker = { innerHTML: '' };
+  context.document.getElementById = id => id === 'ext-cmp-res' ? picker : null;
+  const calls = [];
+  const roster = Array.from({ length: 8 }, (_, i) => ({ id: `camara:${i === 7 ? 513 : 500 + i}`,
+    name: `Pessoa ${i + 1}`, role: 'deputado', party: 'PT', uf: 'SP' }));
+  context.cidGet = async path => { calls.push(path); return { itens: roster }; };
+
+  const html = api.vComparar();
+  assert.deepEqual(calls, ['/api/c/politicos?pageSize=8&page=1&ordem=nome']);
+  assert.match(html, /loading/);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.match(picker.innerHTML, /data-cmp-add="camara:513"/);
+  assert.doesNotMatch(picker.innerHTML, /data-cmp-add="camara:7"/);
+});
+
+test('comparison suggestions show an API error and a retry control', async () => {
+  const { api, context } = comparison(profile('camara:1', 100), profile('camara:2', 200));
+  const picker = { innerHTML: '' };
+  context.document.getElementById = id => id === 'ext-cmp-res' ? picker : null;
+  context.cidGet = async () => { throw new Error('offline'); };
+  api.vComparar();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.match(picker.innerHTML, /offline/);
+  assert.match(picker.innerHTML, /data-cmp-retry/);
+});
+
+test('tax card receives the observed Chamber roster total as an argument', () => {
+  const { api, context } = comparison(profile('camara:1', 100), profile('camara:2', 200));
+  context.DATA.arrecadacao = {
+    inicio: '2026-01-01', ate: '2026-10-06', acumulado: 1000000,
+    populacao: 100, url: 'https://example.test/arrecadacao',
+  };
+  const html = api.extImpostoCard(300000);
+  assert.match(html, /cota registrada para os deputados\(as\) da lista no recorte \(R\$ 300000\)/);
+  assert.doesNotMatch(html, /Tudo o que a Câmara gastou/);
 });

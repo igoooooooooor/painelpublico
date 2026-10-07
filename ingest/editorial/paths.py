@@ -1,4 +1,4 @@
-"""Caminhos dos coletores da amostra editorial original."""
+"""Caminhos dos coletores complementares manuais da Câmara."""
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]

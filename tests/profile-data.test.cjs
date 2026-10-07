@@ -15,14 +15,24 @@ function load(data = {}) {
   return context;
 }
 
-test('all entry points resolve canonical IDs and prefer supplied API identity', () => {
+test('canonical identities use API and profile snapshots without editorial roster fallbacks', () => {
   const ctx = load({ perfis: { profiles: { 'camara:1': {
     name: 'Nome na coleta', uf: 'SP', contato: { email: 'dep@example.gov.br' },
-  } } }, deputados: [{ id: 1, nome: 'Nome editorial' }] });
+  } } }, deputados: Array.from({ length: 12 }, (_, i) => ({ id: i + 1,
+    nome: `Nome editorial ${i + 1}`, partido: 'PT', uf: 'SP', contato: { email: 'amostra@example.gov.br' },
+    projetos: { lista: [{ id: i + 1 }] }, custo: { gabineteGasto: 1000 },
+  })) });
   assert.equal(ctx.profileData(1).id, 'camara:1');
   assert.equal(ctx.profileData('camara:1').contato.email, 'dep@example.gov.br');
   assert.equal(ctx.profileData({ id: 'camara:1', name: 'Nome no cadastro' }).pessoa.name, 'Nome no cadastro');
-  assert.equal(ctx.profileData('senado:1').editorial, null);
+  const outsideOldSample = ctx.profileData('camara:12');
+  assert.equal(outsideOldSample.pessoa.name, undefined);
+  assert.equal(outsideOldSample.pessoa.party, undefined);
+  assert.equal(outsideOldSample.contato, null);
+  assert.equal(outsideOldSample.projetos, null);
+  assert.equal(outsideOldSample.gabinete, null);
+  assert.equal('editorial' in outsideOldSample, false);
+  assert.equal(ctx.profileData('senado:1').pessoa.role, 'senador');
 });
 
 test('presence rejects zero denominators and incoherent counts without manufacturing attendance', () => {
@@ -81,20 +91,30 @@ test('external fields and URLs are safe in shared cards', () => {
   assert.doesNotMatch(html, /href="(?:javascript|data):|user:secret|<script>|<img onerror/);
 });
 
-test('profiles load on demand once, show a skeleton meanwhile and never fetch without the snapshot', async () => {
+test('profiles outside the old sample load on demand once, show a skeleton meanwhile and never fetch without the snapshot', async () => {
   const calls = [];
   let release;
   const ctx = load({ perfis: { profiles: {}, sobDemanda: true } });
   ctx.skel = () => '<skeleton>';
   ctx.rerender = () => calls.push('rerender');
   ctx.fetch = url => { calls.push(url); return new Promise(ok => { release = () => ok({ ok: true, json: async () => ({ name: 'Ana', role: 'deputado', contato: { email: 'ana@camara.leg.br' } }) }); }); };
-  assert.equal(ctx.profileSectionsHTML({ id: 'camara:7', role: 'deputado' }), '<skeleton>');
-  ctx.profileData('camara:7');
-  assert.deepEqual(calls, ['/api/c/perfil/camara%3A7']);
+  assert.equal(ctx.profileSectionsHTML({ id: 'camara:513', role: 'deputado' }), '<skeleton>');
+  ctx.profileData('camara:513');
+  assert.deepEqual(calls, ['/api/c/perfil/camara%3A513']);
   release(); await new Promise(r => setTimeout(r, 0)); await new Promise(r => setTimeout(r, 0));
-  assert.equal(ctx.profileData('camara:7').contato.email, 'ana@camara.leg.br');
+  assert.equal(ctx.profileData('camara:513').contato.email, 'ana@camara.leg.br');
   assert.equal(calls.filter(c => c !== 'rerender').length, 1);
   assert.ok(calls.includes('rerender'));
+
+  const failedCalls = [];
+  const failed = load({ perfis: { profiles: {}, sobDemanda: true } });
+  failed.rerender = () => failedCalls.push('rerender');
+  failed.fetch = url => { failedCalls.push(url); return Promise.reject(new Error('offline')); };
+  assert.equal(failed.profileData('camara:514').loading, true);
+  await new Promise(r => setTimeout(r, 0)); await new Promise(r => setTimeout(r, 0));
+  assert.equal(failed.profileData('camara:514').loading, false);
+  assert.equal(failedCalls.filter(c => c !== 'rerender').length, 1);
+  assert.ok(failedCalls.includes('rerender'));
 
   const offline = load({ perfis: { profiles: {} } });
   offline.fetch = () => { throw new Error('não deveria buscar'); };

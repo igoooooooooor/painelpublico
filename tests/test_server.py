@@ -48,6 +48,16 @@ class ProdServerTests(unittest.TestCase):
         self.assertEqual(second['itens'][0]['sigla'], 'BBB')
         self.assertEqual(len(self.httpd.cache.items), 1)
 
+    def test_home_summary_route_returns_full_roster_contract(self):
+        response, summary = self.get('/api/c/resumo')
+        self.assertEqual(response.status, 200)
+        self.assertEqual(summary['parlamentares']['deputado'], {'total': 1, 'comReembolsos': 0})
+        self.assertEqual(summary['parlamentares']['senador'], {'total': 0, 'comReembolsos': 0})
+        self.assertIsNone(summary['reembolsos']['deputado']['total'])
+        self.assertIsNone(summary['reembolsos']['deputado']['media'])
+        self.assertEqual(summary['categoriasCamara'], [])
+        self.assertEqual(summary['topCamara'], [])
+
     def test_profile_is_served_on_demand_from_snapshot_and_missing_is_404(self):
         snap = Path(self.temp.name) / 'perfis.json'
         snap.write_text(json.dumps({'generatedAt': 'x', 'profiles': {'camara:1': {'name': 'Ana', 'projetos': {'total': 2}}}}),

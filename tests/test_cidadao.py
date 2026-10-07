@@ -131,6 +131,53 @@ class CidadaoPoliticosTests(unittest.TestCase):
             {'year': 2026, 'month': 1, 'valor': 0},
         ])
 
+    def test_home_summary_uses_full_current_rosters_and_observed_expense_periods(self):
+        amounts = []
+        for index in range(10):
+            identifier = f'camara:extra-{index:02d}'
+            self.payload['authorities'].append(
+                self.authority(identifier, f'Pessoa Extra {index:02d}', 'deputado', 'camara_deputies_current'))
+            amount = (index + 1) * 25
+            amounts.append(amount)
+            expense = self.expense(f'expense:extra-{index:02d}', identifier, 'camara_ceap', amount)
+            expense['month'] = index + 2
+            expense['date'] = f'2026-{index + 2:02d}-12'
+            expense['category'] = 'Alimentação' if index % 2 else 'Divulgação'
+            self.payload['expenses'].append(expense)
+        self.payload['authorities'].append(
+            self.authority('senado:no-data', 'Senador Sem Dados', 'senador', 'senado_senators_current'))
+        self.import_data()
+
+        with closing(store.connect(self.db_path)) as db, db:
+            result = cidadao.resumo(db)
+
+        self.assertEqual(result['parlamentares'], {
+            'deputado': {'total': 13, 'comReembolsos': 12},
+            'senador': {'total': 2, 'comReembolsos': 1},
+        })
+        deputy_total = 123.45 + sum(amounts)
+        self.assertEqual(result['reembolsos']['deputado'], {
+            'total': deputy_total,
+            'media': deputy_total / 12,
+            'comRegistros': 12,
+            'periodo': {'inicio': '2026-01', 'fim': '2026-11'},
+        })
+        self.assertEqual(result['reembolsos']['senador'], {
+            'total': 50.0,
+            'media': 50.0,
+            'comRegistros': 1,
+            'periodo': {'inicio': '2026-01', 'fim': '2026-01'},
+        })
+        categories = {item['nome']: item['valor'] for item in result['categoriasCamara']}
+        self.assertEqual(categories['Escritório'], 123.45)
+        self.assertEqual(categories['Alimentação'], sum(amount for i, amount in enumerate(amounts) if i % 2))
+        self.assertEqual(categories['Divulgação'], sum(amount for i, amount in enumerate(amounts) if i % 2 == 0))
+        self.assertEqual(sum(categories.values()), deputy_total)
+        self.assertEqual(len(result['topCamara']), 12)
+        self.assertEqual(result['topCamara'][0]['id'], 'camara:extra-09')
+        self.assertEqual(result['topCamara'][-1]['id'], 'camara:zero')
+        self.assertNotIn('camara:former', {item['id'] for item in result['topCamara']})
+
     def test_party_summary_counts_roster_and_keeps_missing_spending_null(self):
         self.payload['authorities'].append(
             {**self.authority('camara:outro', 'Fábio Outro', 'deputado', 'camara_deputies_current'), 'party': 'OUTRO'})

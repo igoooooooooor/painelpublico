@@ -60,7 +60,7 @@ async function cidGet(path) {
   return data;
 }
 const cidLocalId = id => String(id || '').startsWith('camara:') ? String(id).slice(7) : null;
-const cidTemFicha = id => !!byId[cidLocalId(id)];
+const cidTemFicha = id => /^(?:camara|senado):\d+$/.test(String(id || ''));
 function cidIniciais(nome) { return String(nome || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase(); }
 /* Foto oficial (Câmara/Senado); se não carregar, ficam as iniciais por baixo */
 function cidFoto(id) {
@@ -69,11 +69,11 @@ function cidFoto(id) {
   return casa === 'camara' ? `https://www.camara.leg.br/internet/deputado/bandep/${num}.jpg` : casa === 'senado' ? `https://www.senado.leg.br/senadores/img/fotos-oficiais/senador${num}.jpg` : null;
 }
 function cidAvatar(p, size = 44) {
-  const local = byId[cidLocalId(p.id)], dim = `width:${size}px;height:${size}px`;
-  if (local) return `<img class="cid-av" src="${local.foto}" alt="" style="${dim}">`;
+  const dim = `width:${size}px;height:${size}px`;
   const ini = `<span class="cid-av cid-ini" style="${dim};font-size:${Math.round(size / 2.8)}px" aria-hidden="true">${esc(cidIniciais(cidNome(p.name)))}</span>`;
-  const url = cidFoto(p.id);
-  return url ? `<span class="cid-avs" style="${dim}">${ini}<img class="cid-av" src="${url}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" style="${dim}"></span>` : ini;
+  const rawPhoto = p.photo || p.foto;
+  const url = (typeof profileSafeUrl === 'function' && profileSafeUrl(rawPhoto)) || cidFoto(p.id);
+  return url ? `<span class="cid-avs" style="${dim}">${ini}<img class="cid-av" src="${esc(url)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" style="${dim}"></span>` : ini;
 }
 const cidNome = n => { const s = String(n || ''); return s === s.toUpperCase() ? s.toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase()) : s; };
 function cidQuem(p) {
@@ -139,10 +139,10 @@ function cidHomeCard() {
   const path = '/api/c/radar?pageSize=8&tipo=pico,fornecedor';
   const data = cid.cache.get(path);
   if (!data) {
-    if (!cid.pending.has(path)) { cid.pending.add(path); cidGet(path).then(() => { if (state.view === 'inicio' || state.view === 'hoje') rerender(); }).catch(() => { cid.cache.set(path, { erro: true }); if (state.view === 'inicio') rerender(); }); }
+    if (!cid.pending.has(path)) { cid.pending.add(path); cidGet(path).then(() => { cid.pending.delete(path); if (state.view === 'inicio' || state.view === 'hoje') rerender(); }).catch(() => { cid.pending.delete(path); cid.cache.set(path, { erro: true }); if (state.view === 'inicio' || state.view === 'hoje') rerender(); }); }
     return `<section class="cid-home"><div class="cid-head"><h2 class="h">Fora do normal</h2></div><div class="carousel cid-carousel">${skel('alerta', 3)}</div></section>`;
   }
-  if (data.erro) return radarHome();
+  if (data.erro) return `<section class="cid-home"><div class="cid-head"><div><h2 class="h">Fora do normal</h2><span class="muted">Os alertas da Câmara e do Senado não carregaram.</span></div></div><section class="card"><p>Não deu para carregar os alertas agora.</p><button type="button" class="more" data-home-retry>Tentar de novo</button></section></section>`;
   const itens = [...data.itens].sort((a, b) => (b.nivel === 'alto') - (a.nivel === 'alto'));
   return `<section class="cid-home">
     <div class="cid-head"><div><h2 class="h">Fora do normal</h2><span class="muted">Gastos de deputados(as) e senadores(as) em 2026 que merecem uma conferida</span></div></div>
@@ -260,7 +260,6 @@ function cidRenderPolList() {
 }
 function vPoliticos() {
   const p = cid.pol; cidLoadPol(false);
-  const destaque = !p.q && !p.cargo && p.ordem === 'nome';
   return `${pageHead('Deputados(as) e senadores(as)', 'Políticos', 'Busque qualquer um(a) e veja quanto gastou da cota em 2026, com os alertas.')}
     <div id="cid-pol-summary" class="cid-roster-summary" role="status">${cidPolCoverageHTML(p.cobertura)}</div>
     <label class="search" for="cid-busca"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="cid-busca" type="search" placeholder="Nome, partido ou estado" value="${esc(p.q)}" autocomplete="off"></label>
@@ -272,10 +271,6 @@ function vPoliticos() {
     <div id="cid-pol-list" class="cid-stack" aria-live="polite">${cidPolListHTML()}</div>
     <div id="cid-pol-notes">${cidPolCoverageNotesHTML(p.cobertura)}</div>
     <span class="src">Valor: quanto cada um(a) gastou da cota em 2026, pelas notas publicadas. Não é salário. A barra roxa mais forte indica gasto acima da média.</span>
-    ${destaque ? `<details class="card"><summary><b>Detalhes editoriais disponíveis para ${D.length} perfis</b></summary>
-      <p class="muted">Complementos editoriais desta amostra. Todos os perfis abrem a mesma ficha parlamentar.</p>
-      <div class="faces">${D.map(d => `<button type="button" class="face" data-dep="${d.id}"><img src="${d.foto}" alt=""><span>${esc(first(d.nome))}</span></button>`).join('')}</div>
-    </details>` : ''}
     ${advLink('data-public-go="autoridades"', 'Busca avançada: ministros(as), juízes(as) e servidores(as)')}`;
 }
 
@@ -296,9 +291,7 @@ function vPolitico() {
   const shared = profileData(f.pessoa || id), p = shared?.pessoa || f.pessoa, profileId = shared?.id || p.id || id;
   const sections = profileSectionsHTML(p);
   const authorityAttrs = cidPublicAuthorityAttrs(p, shared?.mandato);
-  const localId = cidLocalId(profileId), hasEditorial = !!byId[localId];
-  const profileActions = `<div class="cid-actions"><button type="button" class="fchip" data-cmp-start="${esc(profileId)}">Comparar com outro(a) →</button>
-    ${hasEditorial ? `<button type="button" class="fchip" data-editorial-ficha="${esc(localId)}">Detalhes da amostra editorial</button><button type="button" class="fchip dl-only" data-pdf="${esc(localId)}">Baixar PDF dos detalhes editoriais</button>` : ''}</div>`;
+  const profileActions = `<div class="cid-actions"><button type="button" class="fchip" data-cmp-start="${esc(profileId)}">Comparar com outro(a) →</button></div>`;
   const hasExpenseData = f.hasExpenseData === undefined ? f.total != null : Boolean(f.hasExpenseData);
   const media = f.media || 0;
   if (!hasExpenseData) return `${back}
@@ -326,7 +319,7 @@ function vPolitico() {
     <div class="huge"><small>R$</small>${totalLabel}</div>
     <span class="muted">Gastos com o trabalho registrados nas notas da cota (escritório, divulgação, carro e viagens). Cota é reembolso; remuneração é informada separadamente quando a fonte publica.</span>
     ${media ? `<div class="cid-vs">
-      <div><span>${esc(first(cidNome(p.name)))}</span><b class="mono">${cidMil(f.total)}</b></div><div class="cid-vsbar"><i style="width:${Math.min(100, f.total / Math.max(f.total, media) * 100)}%"></i></div>
+      <div><span>${esc(cidNome(p.name).split(' ')[0])}</span><b class="mono">${cidMil(f.total)}</b></div><div class="cid-vsbar"><i style="width:${Math.min(100, f.total / Math.max(f.total, media) * 100)}%"></i></div>
       <div><span>Média dos(as) ${CARGO_PL[p.role] || 'colegas'}</span><b class="mono">${cidMil(media)}</b></div><div class="cid-vsbar avg"><i style="width:${Math.min(100, media / Math.max(f.total, media) * 100)}%"></i></div>
     </div>
     <p class="cid-verdict">${Math.abs(dif) < 0.1 ? 'Gasta parecido com a média.' : dif > 0 ? `Gasta <b>${Math.round(dif * 100)}% a mais</b> que a média.` : `Gasta <b>${Math.round(-dif * 100)}% a menos</b> que a média.`}</p>` : ''}
@@ -365,13 +358,13 @@ function cidOpenPol(id) {
   const canonical = String(id || '').includes(':') ? String(id) : 'camara:' + String(id || '');
   state.pol = canonical;
   state.dep = cidLocalId(canonical);
-  state.plimit = 12; state.pfilter = 'todos';
   go('politico');
 }
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-pol],[data-lupa-tipo],[data-lupa-cargo],[data-lupa-more],[data-lupa-retry],[data-pol-cargo],[data-pol-ordem],[data-pol-more],[data-pol-retry]');
+  const t = e.target.closest('[data-pol],[data-home-retry],[data-lupa-tipo],[data-lupa-cargo],[data-lupa-more],[data-lupa-retry],[data-pol-cargo],[data-pol-ordem],[data-pol-more],[data-pol-retry]');
   if (!t) return;
   if (t.dataset.pol) { e.preventDefault(); cidOpenPol(t.dataset.pol); return; }
+  if (t.hasAttribute('data-home-retry')) { const path = '/api/c/radar?pageSize=8&tipo=pico,fornecedor'; cid.cache.delete(path); cid.pending.delete(path); return rerender(); }
   const l = cid.lupa, p = cid.pol;
   if (t.dataset.lupaTipo !== undefined) { l.tipo = t.dataset.lupaTipo; return rerender(); }
   if (t.dataset.lupaCargo !== undefined) { l.cargo = t.dataset.lupaCargo; return rerender(); }

@@ -1,6 +1,6 @@
 /* Contador de impostos, presença de todos(as), quem votou o quê e comparação de perfis.
    A leitura de presença e votos passa pelos helpers compartilhados de perfil. */
-const ext = { voto: {}, votoLim: 40, votoQ: '', presOrd: 'menos', presQ: '', presLim: 40, cmp: [], cmpQ: '', cmpRes: null, cmpErro: null, cmpLoading: false };
+const ext = { voto: {}, votoLim: 40, votoQ: '', presOrd: 'menos', presQ: '', presLim: 40, cmp: [], cmpQ: '', cmpKey: null, cmpRes: null, cmpErro: null, cmpLoading: false };
 const extCam = id => 'camara:' + id;
 const extPct = (a, b) => b ? Math.round(a / b * 100) : 0;
 
@@ -13,10 +13,10 @@ function extImposto(now = Date.now()) {
   return { valor: a.acumulado + porMs * Math.max(0, now - fim), porSeg: porMs * 1000, a };
 }
 const extReais = v => 'R$ ' + Math.floor(v).toLocaleString('pt-BR');
-function extImpostoCard() {
+function extImpostoCard(cota = null) {
   const t = extImposto();
   if (!t) return '';
-  const cota = G.cotaTotal || 0, min = cota / t.porSeg / 60;
+  const cotaObservada = Number.isFinite(cota) ? cota : 0, min = cotaObservada / t.porSeg / 60;
   return `<section class="card imposto">
     <div class="imposto-top"><span class="k">Contador de impostos · 2026</span><span class="live"><i></i>ao vivo</span></div>
     <div class="imposto-n mono" data-imposto aria-live="off">${extReais(t.valor)}</div>
@@ -25,7 +25,7 @@ function extImpostoCard() {
       <div><b class="mono" data-imposto-seg>${extReais(t.porSeg)}</b><span>por segundo</span></div>
       <div><b class="mono" data-imposto-pessoa>${extReais(t.valor / t.a.populacao)}</b><span>por pessoa no ano</span></div>
     </div>
-    ${cota ? `<p class="imposto-rel">Tudo o que a Câmara gastou da cota em 2026 (${cidMil(cota)}) é o que o país paga de impostos federais em <b>${min < 1 ? Math.round(min * 60) + ' segundos' : Math.round(min) + ' minutos'}</b>.</p>` : ''}
+    ${cotaObservada ? `<p class="imposto-rel">A cota registrada para os deputados(as) da lista no recorte (${cidMil(cotaObservada)}) equivale ao que o país paga de impostos federais em <b>${min < 1 ? Math.round(min * 60) + ' segundos' : Math.round(min) + ' minutos'}</b>.</p>` : ''}
     <a class="src" href="${esc(t.a.url)}" target="_blank" rel="noopener">Fonte: Receita Federal (arrecadação até ${dmy(t.a.ate)}). Não inclui impostos estaduais e municipais ↗</a>
   </section>`;
 }
@@ -165,24 +165,28 @@ function extFichaExtra(id) {
 /* ---------- Comparar perfis ---------- */
 function extCmpAdd(id) {
   if (!ext.cmp.includes(id)) ext.cmp = [...ext.cmp, id].slice(-2);
-  ext.cmpQ = ''; ext.cmpRes = null;
+  ext.cmpQ = ''; ext.cmpKey = null; ext.cmpRes = null; ext.cmpErro = null;
   ext.cmp.forEach(x => cidGet('/api/c/politico/' + encodeURIComponent(x)).then(() => state.view === 'comparar' && rerender()).catch(e => { ext.cmpErro = cidErroMsg(e); if (state.view === 'comparar') rerender(); }));
 }
 function extCmpBusca(q) {
-  ext.cmpQ = q;
-  if (!q.trim()) { ext.cmpRes = null; extCmpRenderPicker(); return; }
-  ext.cmpLoading = true; extCmpRenderPicker();
-  cidGet(`/api/c/politicos?pageSize=8&page=1&ordem=nome&q=${encodeURIComponent(q.trim())}`).then(d => { if (ext.cmpQ !== q) return; ext.cmpRes = d.itens; ext.cmpLoading = false; extCmpRenderPicker(); })
-    .catch(e => { ext.cmpLoading = false; ext.cmpRes = []; ext.cmpErro = cidErroMsg(e); extCmpRenderPicker(); });
+  const query = String(q || '').trim(), key = query;
+  ext.cmpQ = String(q || '');
+  if (ext.cmpLoading && ext.cmpKey === key) return;
+  ext.cmpKey = key; ext.cmpLoading = true; ext.cmpErro = null; ext.cmpRes = null; extCmpRenderPicker();
+  const path = `/api/c/politicos?pageSize=8&page=1&ordem=nome${query ? '&q=' + encodeURIComponent(query) : ''}`;
+  cidGet(path).then(d => { if (ext.cmpKey !== key || ext.cmpQ.trim() !== query) return; ext.cmpRes = d.itens; ext.cmpLoading = false; extCmpRenderPicker(); })
+    .catch(e => { if (ext.cmpKey !== key || ext.cmpQ.trim() !== query) return; ext.cmpLoading = false; ext.cmpRes = []; ext.cmpErro = cidErroMsg(e); extCmpRenderPicker(); });
 }
 function extCmpPickerList() {
   if (ext.cmpLoading) return skel('linhas', 3);
-  if (ext.cmpRes === null) return `<div class="chips">${D.slice(0, 6).map(d => `<button type="button" class="fchip" data-cmp-add="${extCam(d.id)}">${esc(first(d.nome))}</button>`).join('')}</div>`;
-  if (!ext.cmpRes.length) return `<p class="muted">${ext.cmpErro ? esc(ext.cmpErro) : 'Ninguém encontrado.'}</p>`;
+  if (ext.cmpErro) return `<p class="muted">Não deu para carregar a lista. ${esc(ext.cmpErro)}</p><button type="button" class="more" data-cmp-retry>Tentar de novo</button>`;
+  if (ext.cmpRes === null) return skel('linhas', 3);
+  if (!ext.cmpRes.length) return '<p class="muted">Ninguém encontrado.</p>';
   return ext.cmpRes.filter(x => !ext.cmp.includes(x.id)).map(x => `<button type="button" class="cid-row" data-cmp-add="${esc(x.id)}">${cidAvatar(x, 40)}<span class="cid-rowtxt"><b>${esc(cidNome(x.name))}</b><small>${cidQuem(x)}</small></span><span class="cid-rowval"><span class="fchip">Escolher</span></span></button>`).join('');
 }
 function extCmpRenderPicker() { const el = document.getElementById('ext-cmp-res'); if (el) el.innerHTML = extCmpPickerList(); }
 function vComparar() {
+  if (ext.cmp.length < 2 && ext.cmpRes === null && !ext.cmpLoading && !ext.cmpErro) extCmpBusca(ext.cmpQ);
   const fichas = ext.cmp.map(id => ({ id, f: cid.cache.get('/api/c/politico/' + encodeURIComponent(id)) }));
   const prontas = fichas.filter(x => x.f).map(x => x.f);
   const picker = ext.cmp.length < 2 ? `<section class="card wide"><span class="k">${ext.cmp.length ? 'Com quem comparar?' : 'Escolha dois(duas) políticos(as)'}</span>
@@ -284,14 +288,15 @@ function extCmpTabela([a, b]) {
 
 /* ---------- Eventos ---------- */
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-pres-ord],[data-pres-more],[data-voto-grupo],[data-voto-more],[data-cmp-add],[data-cmp-del],[data-cmp-start]');
+  const t = e.target.closest('[data-pres-ord],[data-pres-more],[data-voto-grupo],[data-voto-more],[data-cmp-add],[data-cmp-del],[data-cmp-start],[data-cmp-retry]');
   if (!t) return;
   if (t.dataset.presOrd) { ext.presOrd = t.dataset.presOrd; ext.presLim = 40; return rerender(); }
   if (t.hasAttribute('data-pres-more')) { ext.presLim += 60; return rerender(); }
   if (t.dataset.votoGrupo) { ext.voto[t.dataset.votoId] = t.dataset.votoGrupo; ext.votoLim = 40; ext.votoQ = ''; return rerender(); }
   if (t.hasAttribute('data-voto-more')) { ext.votoLim += 80; return rerender(); }
   if (t.dataset.cmpAdd) { e.stopPropagation(); extCmpAdd(t.dataset.cmpAdd); return state.view === 'comparar' ? rerender() : go('comparar'); }
-  if (t.dataset.cmpDel) { ext.cmp = ext.cmp.filter(x => x !== t.dataset.cmpDel); return rerender(); }
+  if (t.hasAttribute('data-cmp-retry')) { ext.cmpErro = null; ext.cmpRes = null; ext.cmpLoading = false; return extCmpBusca(ext.cmpQ); }
+  if (t.dataset.cmpDel) { ext.cmp = ext.cmp.filter(x => x !== t.dataset.cmpDel); ext.cmpQ = ''; ext.cmpKey = null; ext.cmpRes = null; ext.cmpErro = null; return rerender(); }
   if (t.hasAttribute('data-cmp-start')) { if (t.dataset.cmpStart) { ext.cmp = []; extCmpAdd(t.dataset.cmpStart); } go('comparar'); }
 }, true);
 let extTimer = null;
@@ -299,7 +304,7 @@ document.addEventListener('input', e => {
   const id = e.target.id;
   if (id === 'ext-pres-q') { ext.presQ = e.target.value; ext.presLim = 40; const q = cidFold(ext.presQ); const el = document.getElementById('ext-pres-list'); if (el) { const all = extPresRows(); el.innerHTML = extPresList(all.filter(p => !q || cidFold(`${p.nome} ${p.partido} ${p.uf}`).includes(q)).sort((a, b) => ext.presOrd === 'menos' ? a.presente / a.dias - b.presente / b.dias : b.presente / b.dias - a.presente / a.dias)); } }
   if (id === 'ext-voto-q') { ext.votoQ = e.target.value; const pos = e.target.selectionStart; rerender(); const i = document.getElementById('ext-voto-q'); if (i) { i.focus(); i.setSelectionRange(pos, pos); } }
-  if (id === 'ext-cmp-q') { clearTimeout(extTimer); const v = e.target.value; extTimer = setTimeout(() => extCmpBusca(v), 250); }
+  if (id === 'ext-cmp-q') { clearTimeout(extTimer); const v = e.target.value; ext.cmpQ = v; ext.cmpKey = null; ext.cmpRes = null; ext.cmpErro = null; ext.cmpLoading = false; extTimer = setTimeout(() => extCmpBusca(v), 250); }
 });
 
 /* ---------- Encaixe bento no computador ----------

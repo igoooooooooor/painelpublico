@@ -2,7 +2,7 @@
 
 Não recalcula nem altera os sinais de public_store.py. Só reúne o que cada alerta
 precisa para ser entendido sem conhecimento técnico: quem, quanto, comparado com o quê,
-e onde conferir. Rotas no server.py: /api/c/radar, /api/c/politicos, /api/c/politico/<id>.
+e onde conferir. Rotas no server.py: /api/c/resumo, /api/c/radar, /api/c/politicos, /api/c/politico/<id>.
 """
 import re
 from statistics import median
@@ -191,6 +191,63 @@ def _cobertura_politicos(db):
             'withExpenses': row['withExpenses'] or 0,
         }
     return by_role
+
+
+def resumo(db):
+    """Resumo da página inicial, calculado sobre o roster atual e todos os reembolsos observados.
+
+    Médias usam somente parlamentares com registros; sem registros, total e média ficam nulos.
+    O ranking inclui todos os membros atuais da Câmara com registros, sem limitar a uma amostra.
+    """
+    aggregates = rows(db, '''SELECT a.role,COUNT(*) total,COUNT(t.authorityId) comReembolsos,
+            SUM(t.amountCents) cents,AVG(t.amountCents) mediaCents,
+            MIN(t.periodStart) inicio,MAX(t.periodEnd) fim
+        FROM authorities a LEFT JOIN authority_totals t
+            ON t.authorityId=a.id AND t.kind='reembolso'
+        WHERE (a.role=? AND a.sourceId=?) OR (a.role=? AND a.sourceId=?)
+        GROUP BY a.role''',
+        ('deputado', CURRENT['deputado'], 'senador', CURRENT['senador']))
+    by_role = {role: {
+        'total': 0, 'comReembolsos': 0, 'cents': None, 'mediaCents': None,
+        'inicio': None, 'fim': None,
+    } for role in ROLES}
+    for row in aggregates:
+        by_role[row['role']] = row
+
+    parlamentares, reembolsos = {}, {}
+    for role, row in by_role.items():
+        com_registros = row['comReembolsos']
+        parlamentares[role] = {'total': row['total'], 'comReembolsos': com_registros}
+        reembolsos[role] = {
+            'total': row['cents'] / 100 if com_registros else None,
+            'media': row['mediaCents'] / 100 if com_registros else None,
+            'comRegistros': com_registros,
+            'periodo': {'inicio': row['inicio'], 'fim': row['fim']},
+        }
+
+    category_rows = rows(db, '''SELECT e.category,SUM(e.amountCents) cents
+        FROM authorities a JOIN expenses e ON e.authorityId=a.id
+        WHERE a.role='deputado' AND a.sourceId=? AND e.kind='reembolso'
+        GROUP BY e.category''', (CURRENT['deputado'],))
+    categories = {}
+    for row in category_rows:
+        name = categoria(row['category'])
+        categories[name] = categories.get(name, 0) + row['cents'] / 100
+
+    top = rows(db, '''SELECT a.id,a.name nome,a.party partido,a.uf,t.amountCents/100.0 gasto
+        FROM authorities a JOIN authority_totals t ON t.authorityId=a.id AND t.kind='reembolso'
+        WHERE a.role='deputado' AND a.sourceId=?
+        ORDER BY t.amountCents DESC,a.name,a.id''', (CURRENT['deputado'],))
+    return {
+        'parlamentares': parlamentares,
+        'reembolsos': reembolsos,
+        'categoriasCamara': [
+            {'nome': name, 'valor': value}
+            for name, value in sorted(categories.items(), key=lambda item: (-item[1], item[0]))
+        ],
+        'topCamara': top,
+        'snapshotAt': _snapshot(db),
+    }
 
 
 def politicos(db, params):
