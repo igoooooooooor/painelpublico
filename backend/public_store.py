@@ -207,7 +207,18 @@ def rebuild_signals(db):
         series.setdefault(key, {})[r['month']] = r['cents']
         skey = (r['sourceId'], r['year'])
         last_month[skey] = max(last_month.get(skey, 0), r['month'])
+    # Piso pelos colegas: o "normal" de cada um é só dele, então quem gasta muito pouco disparava alerta
+    # com um mês comum. Um pico só conta se o mês também passar do gasto mensal típico (mediana) dos
+    # parlamentares da mesma fonte e ano, considerando apenas meses fechados.
+    peer_months = {}
     for (authority, source, year), months in series.items():
+        for month, value in months.items():
+            if month < last_month[(source, year)] and value > 0:
+                peer_months.setdefault((source, year), []).append(value)
+    peer_floor = {k: median(v) for k, v in peer_months.items() if len(v) >= 5}
+    for (authority, source, year), months in series.items():
+        floor = peer_floor.get((source, year), 0)
+        flagged = {}
         for month, value in months.items():
             # Latest observed month is omitted to reduce partial-period effects.
             if month < 4 or month >= last_month[(source, year)]:
@@ -216,10 +227,20 @@ def rebuild_signals(db):
             if any(v is None or v < 0 for v in before):
                 continue
             base = median(before)
-            if base <= 0 or value < base * 1.75 or value - base < 1000000:
+            if base <= 0 or value < base * 1.75 or value - base < 1000000 or value < floor:
                 continue
+            flagged[month] = (value, base)
+        # Meses seguidos acima do normal são uma mudança de patamar: viram um alerta só, no primeiro mês.
+        for month in sorted(flagged):
+            if month - 1 in flagged:
+                continue
+            value, base = flagged[month]
+            run = [month]
+            while run[-1] + 1 in flagged:
+                run.append(run[-1] + 1)
+            seguidos = f' Continuou acima do normal em {len(run) - 1} mês(es) seguido(s); conta como um único alerta.' if len(run) > 1 else ''
             add(f'pico:{authority}:{source}:{year}:{month}', authority, source, 'pico', 'Pico no reembolso mensal', value,
-                f'{currency(value)}: {value / base:.2f} vezes a mediana de {currency(base)} entre janeiro e o mês anterior. Critério: 1,75 vez e diferença de R$ 10.000, com ao menos 3 meses anteriores sem lacunas. O último mês da fonte é excluído; meses anteriores ainda podem receber ajustes.', f'{year}-{month:02d}')
+                f'{currency(value)}: {value / base:.2f} vezes a mediana de {currency(base)} entre janeiro e o mês anterior. Critério: 1,75 vez, diferença de R$ 10.000 e acima do gasto mensal típico dos parlamentares da mesma fonte ({currency(floor)}), com ao menos 3 meses anteriores sem lacunas.{seguidos} O último mês da fonte é excluído; meses anteriores ainda podem receber ajustes.', f'{year}-{month:02d}')
 
 
 def signals(db, params):

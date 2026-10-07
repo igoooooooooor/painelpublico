@@ -80,9 +80,17 @@ da mediana/quartis são descritivas. Na folha mensal, competência conhecida nã
 
 O radar aplica três cortes a reembolsos: lançamento de pelo menos R$ 10.000; concentração de pelo menos 50% do total anual com
 um fornecedor na mesma fonte, com soma mínima de R$ 30.000; e mês pelo menos 1,75 vez a mediana anterior, com diferença mínima
-de R$ 10.000 e três meses anteriores observados sem lacuna. O último mês observado pela fonte é excluído. São critérios de
+de R$ 10.000, três meses anteriores observados sem lacuna e valor acima da mediana dos meses positivos de todos os parlamentares
+da mesma fonte e ano (piso pelos colegas, exigido a partir de cinco meses observados). O piso evita que quem gasta pouco o ano todo
+vire alerta por um mês ainda abaixo do que os colegas gastam normalmente. Meses seguidos acima do critério contam como um único alerta,
+registrado no primeiro mês da sequência. O último mês observado pela fonte é excluído. São critérios de
 triagem, não conclusões sobre conduta. Valores negativos são preservados e podem ser créditos ou estornos; documentos repetidos
 exigem conferência na fonte. Referências idênticas não são deduplicadas como se fossem pagamentos repetidos.
+
+Cada alerta da visão cidadã traz uma linha de contexto com o total do ano na cota e a diferença para a média do cargo
+(deputados ou senadores com notas importadas); diferenças menores que 10% aparecem como “parecido com a média”. A ordem
+“Maior valor em alerta” soma os valores dos alertas `pico` e `fornecedor` de cada pessoa, em vez de contar alertas. O radar
+da visão cidadã lista só deputados e senadores; contas institucionais (lideranças) seguem na busca avançada.
 
 Investigações, anotações e autoridades acompanhadas ficam no `localStorage` deste navegador. Seleções não salvas ficam só em memória e
 podem ser exportadas em CSV. Ao abrir perfil acompanhado, consulta-se o que foi incluído ou alterado desde a visita anterior;

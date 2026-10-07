@@ -10,6 +10,7 @@ from statistics import median
 from . import public_store as store
 
 ROLES = ('deputado', 'senador')
+CARGO_PL = {'deputado': 'deputados(as)', 'senador': 'senadores(as)'}
 CURRENT = {'deputado': 'camara_deputies_current', 'senador': 'senado_senators_current'}
 MESES = ['', 'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto',
          'setembro', 'outubro', 'novembro', 'dezembro']
@@ -81,28 +82,59 @@ def _serie(db, authority, source, year):
     return {r['month']: r['c'] / 100 for r in rs}
 
 
+def _contexto(db, p, authority, source, year, cache, total=None):
+    """Escala do ano: um alerta de quem gasta pouco não pode parecer igual ao de quem gasta muito."""
+    if '__medias' not in cache:
+        cache['__medias'] = _medias(db)
+    media = (cache['__medias'].get(p.get('role')) or {}).get('media')
+    if total is None:
+        total = sum(_serie(db, authority, source, int(year)).values())
+    if not media or not total:
+        return None
+    dif = total / media - 1
+    grupo = CARGO_PL.get(p.get('role'), 'parlamentares')
+    if abs(dif) < 0.1:
+        comp = f'parecido com a média dos(as) {grupo}'
+    else:
+        comp = f'{round(abs(dif) * 100)}% {"mais" if dif > 0 else "menos"} que a média dos(as) {grupo} ({store_money(media)})'
+    return {'total': total, 'media': media, 'diferenca': dif,
+            'frase': f'No ano, gastou {store_money(total)} na cota, {comp}.'}
+
+
 def _alerta(db, s, pessoas, totais_cache):
     """Um sinal do radar em linguagem simples. Mantém o texto técnico original em `criterio`."""
     p = pessoas.get(s['authorityId'], {'name': s.get('authorityName')})
     base = {'id': s['id'], 'tipo': s['type'], 'valor': s['amountCents'] / 100, 'periodo': s['period'],
             'pessoa': {k: p.get(k) for k in ('id', 'name', 'role', 'party', 'uf', 'foraDaLista')}, 'criterio': s['description']}
     if s['type'] == 'pico':
-        _, auth_a, auth_b, source, year, month = s['id'].split(':')
-        authority, year, month = f'{auth_a}:{auth_b}', int(year), int(month)
+        # O id do parlamentar pode ter mais de um ':' (contas de liderança: camara:group:N); lê das colunas.
+        authority, source = s['authorityId'], s['sourceId']
+        year, month = (int(x) for x in s['period'].split('-'))
         serie = _serie(db, authority, source, year)
         antes = [serie.get(m, 0) for m in range(1, month)]
         ref = median(antes) if antes else 0
         vezes = base['valor'] / ref if ref else None
-        base.update({'referencia': ref, 'vezes': vezes, 'mes': month,
+        # Meses seguidos acima do normal formam um único alerta (mudança de patamar).
+        seguidos = []
+        m = month + 1
+        while ref and serie.get(m) is not None and serie[m] >= ref * 1.75 and m < max(serie):
+            seguidos.append(m); m += 1
+        titulo = (f'Passou a gastar mais a partir de {MESES[month]}' if seguidos
+                  else f'Gastou {vezes:.1f}× o normal em {MESES[month]}'.replace('.', ',') if vezes else 'Gasto fora do normal')
+        frase = f'Em {MESES[month]}, a cota custou {store_money(base["valor"])}. Nos meses anteriores, o normal era {store_money(ref)} por mês.'
+        if seguidos:
+            frase += ' Depois continuou alta: ' + ', '.join(f'{MESES[x]} {store_money(serie[x])}' for x in seguidos) + '.'
+        base.update({'referencia': ref, 'vezes': vezes, 'mes': month, 'seguidos': seguidos,
+                     'contexto': _contexto(db, p, authority, source, year, totais_cache),
                      'serie': [{'mes': m, 'valor': serie.get(m)} for m in range(1, max(serie) + 1)] if serie else [],
                      'nivel': 'alto' if vezes and vezes >= 3 else 'medio',
-                     'titulo': f'Gastou {vezes:.1f}× o normal em {MESES[month]}'.replace('.', ',') if vezes else 'Gasto fora do normal',
-                     'frase': f'Em {MESES[month]}, a cota custou {store_money(base["valor"])}. Nos meses anteriores, o normal era {store_money(ref)} por mês.',
+                     'titulo': titulo,
+                     'frase': frase,
                      'fonte': p.get('sourceUrl')})
     elif s['type'] == 'fornecedor':
-        prefix = ':'.join(s['id'].split(':')[:5])  # fornecedor:camara:ID:fonte:ano
-        _, auth_a, auth_b, source, year = prefix.split(':')
-        authority, key = f'{auth_a}:{auth_b}', s['id'][len(prefix) + 1:]
+        authority, source, year = s['authorityId'], s['sourceId'], s['period']
+        prefix = f'fornecedor:{authority}:{source}:{year}'
+        key = s['id'][len(prefix) + 1:]
         forn = rows(db, 'SELECT name,cnpj FROM suppliers WHERE key=?', (key,))
         tk = (authority, source, year, key)
         if tk not in totais_cache:
@@ -120,7 +152,7 @@ def _alerta(db, s, pessoas, totais_cache):
                      'nivel': 'alto' if share and share >= 0.8 else 'medio',
                      'titulo': f'{round(share * 100)}% do dinheiro foi para uma empresa só' if share else 'Dinheiro concentrado em uma empresa',
                      'frase': f'Das notas da cota em {year}, que somam {store_money(total)}, {store_money(base["valor"])} foram para {nome_forn} ({notas} notas).',
-                     'fornecedorKey': key})
+                     'fornecedorKey': key, 'contexto': _contexto(db, p, authority, source, year, totais_cache, total)})
     else:  # nota
         e = rows(db, '''SELECT e.date,e.category,e.documentUrl,s.name supplier FROM expenses e LEFT JOIN suppliers s ON s.key=e.supplierKey
             WHERE e.id=?''', (s['id'][len('nota:'):],))
@@ -140,7 +172,8 @@ def radar(db, params):
     """Feed do cidadão. Por padrão só picos e concentração em fornecedor: notas altas sozinhas
     (aluguel de carro de R$ 10 mil, por exemplo) são comuns e viram ruído para quem não é do ramo."""
     tipos = [t for t in (params.get('tipo') or 'pico,fornecedor').split(',') if t in ('pico', 'fornecedor', 'nota')]
-    clauses, args = [f"s.type IN ({','.join('?' * len(tipos))})"], list(tipos)
+    # Só parlamentares: contas institucionais (lideranças) ficam na busca avançada.
+    clauses, args = [f"s.type IN ({','.join('?' * len(tipos))})", "a.role IN ('deputado','senador')"], list(tipos)
     if params.get('cargo') in ROLES:
         clauses.append('a.role=?'); args.append(params['cargo'])
     if params.get('id'):
@@ -157,7 +190,7 @@ def radar(db, params):
     cache = {}
     itens = [_alerta(db, s, pessoas, cache) for s in sinais]
     contagem = {r['type']: r['n'] for r in rows(db, f'''SELECT s.type,COUNT(*) n FROM signals s JOIN authorities a ON a.id=s.authorityId
-        WHERE 1=1 {"AND a.role=?" if params.get("cargo") in ROLES else ""} GROUP BY s.type''', [params['cargo']] if params.get('cargo') in ROLES else [])}
+        WHERE a.role IN ('deputado','senador') {"AND a.role=?" if params.get("cargo") in ROLES else ""} GROUP BY s.type''', [params['cargo']] if params.get('cargo') in ROLES else [])}
     return {'itens': itens, 'total': total, 'page': page, 'pageSize': size, 'contagem': contagem, 'snapshotAt': _snapshot(db)}
 
 
@@ -261,7 +294,8 @@ def politicos(db, params):
         args += [store.query_text(params), q.upper(), q.upper()]
     ordem = {
         'gasto': 'CASE WHEN t.authorityId IS NULL THEN 1 ELSE 0 END,gasto DESC',
-        'alertas': 'alertas DESC,CASE WHEN t.authorityId IS NULL THEN 1 ELSE 0 END,gasto DESC',
+        # Pelo peso: valor envolvido nos alertas, não a contagem (vários alertas pequenos não passam à frente de um enorme).
+        'alertas': 'valorAlertas DESC,alertas DESC,CASE WHEN t.authorityId IS NULL THEN 1 ELSE 0 END,gasto DESC',
     }.get(params.get('ordem'), 'a.name')
     page, size, offset = store.page_args(params)
     where = ' AND '.join(clauses)
@@ -269,7 +303,8 @@ def politicos(db, params):
     itens = rows(db, f'''SELECT a.id,a.name,a.role,a.party,a.uf,a.position,a.employmentStatus,a.sourceUrl,
         CASE WHEN t.authorityId IS NULL THEN NULL ELSE t.amountCents/100.0 END gasto,
         (t.authorityId IS NOT NULL) hasExpenseData,COALESCE(t.count,0) expenseCount,
-        (SELECT COUNT(*) FROM signals s WHERE s.authorityId=a.id AND s.type IN ('pico','fornecedor')) alertas
+        (SELECT COUNT(*) FROM signals s WHERE s.authorityId=a.id AND s.type IN ('pico','fornecedor')) alertas,
+        (SELECT COALESCE(SUM(s.amountCents),0)/100.0 FROM signals s WHERE s.authorityId=a.id AND s.type IN ('pico','fornecedor')) valorAlertas
         FROM authorities a LEFT JOIN authority_totals t ON t.authorityId=a.id AND t.kind='reembolso'
         WHERE {where} ORDER BY {ordem},a.id LIMIT ? OFFSET ?''', [*args, size, offset])
     return {'itens': itens, 'total': total, 'page': page, 'pageSize': size,

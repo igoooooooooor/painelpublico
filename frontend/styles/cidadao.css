@@ -331,3 +331,6 @@ b.warn { color: var(--warn); }
     border-color: var(--line);
   }
 }
+
+/* Escala do ano em cada alerta: quem gasta pouco não parece igual a quem gasta muito. */
+.cid-contexto { margin: 0; padding: 8px 10px; border-radius: 10px; background: var(--chip); font-size: 13px; line-height: 1.4; color: var(--ink-2); }

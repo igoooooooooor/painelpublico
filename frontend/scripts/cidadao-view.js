@@ -120,7 +120,7 @@ function cidVisual(a) {
   return '';
 }
 function cidPorQue(a) {
-  if (a.tipo === 'pico') return `Aparece quando o gasto de um mês passa de 1,75 vez o valor normal dos meses anteriores e a diferença é de pelo menos R$ 10 mil. "Normal" é o valor do meio dos meses anteriores (a mediana).`;
+  if (a.tipo === 'pico') return `Aparece quando o gasto de um mês passa de 1,75 vez o normal da própria pessoa nos meses anteriores, a diferença é de pelo menos R$ 10 mil e o mês também fica acima do que um(a) parlamentar costuma gastar por mês. "Normal" é o valor do meio dos meses anteriores (a mediana). Meses seguidos acima do normal contam como um alerta só.`;
   if (a.tipo === 'fornecedor') return `Aparece quando metade ou mais do dinheiro da cota no ano foi para uma mesma empresa, somando pelo menos R$ 30 mil. Pode ser um contrato fixo de divulgação ou escritório; vale conferir as notas.`;
   return `Aparece para toda nota de R$ 10 mil ou mais. É só um corte de valor.`;
 }
@@ -132,6 +132,7 @@ function cidCard(a, opts = {}) {
     <h3 class="cid-title">${esc(a.titulo)}</h3>
     ${cidVisual(a)}
     <p class="cid-frase">${esc(a.frase)}</p>
+    ${a.contexto?.frase ? `<p class="cid-contexto">${esc(a.contexto.frase)}</p>` : ''}
     <details class="cid-why"><summary>Por que apareceu aqui?</summary><p>${cidPorQue(a)}</p><p class="muted">Fora do normal não quer dizer irregular. É um convite para conferir as notas.</p></details>
     <div class="cid-actions">${opts.semPessoa ? '' : `<button type="button" class="fchip" data-pol="${esc(p.id)}">Ver a ficha</button>`}${cidFonte(p) ? `<a class="fchip" href="${esc(cidFonte(p))}" target="_blank" rel="noopener">Conferir na fonte ↗</a>` : ''}</div>
   </article>`;
@@ -180,8 +181,8 @@ function cidLupaHero() {
     <span class="muted">gastos fora do normal para conferir. Fora do normal não quer dizer irregular.</span>
     ${tot ? `<div class="stack" role="img" aria-label="${pico} picos num mês e ${forn} concentrações numa empresa"><i style="width:${pico / tot * 100}%;background:var(--accent-2)"></i><i style="width:${forn / tot * 100}%;background:var(--hero-fg)"></i></div>
     <div class="legend" style="color:var(--hero-muted)"><span><i style="background:var(--accent-2)"></i>Gastou muito num mês · ${pico}</span><span><i style="background:var(--hero-fg)"></i>Uma empresa só · ${forn}</span></div>` : ''}
-    ${top.length ? `<span class="k" style="margin-top:6px">Quem mais aparece</span>
-    <div class="faces cid-top5">${top.map(x => `<button type="button" class="face" data-pol="${esc(x.id)}">${cidAvatar(x, 54)}<span>${esc(cidNome(x.name).split(' ')[0])}</span><em>${x.alertas} ${x.alertas === 1 ? 'ALERTA' : 'ALERTAS'}</em></button>`).join('')}</div>` : ''}
+    ${top.length ? `<span class="k" style="margin-top:6px">Maiores valores em alerta</span>
+    <div class="faces cid-top5">${top.map(x => `<button type="button" class="face" data-pol="${esc(x.id)}">${cidAvatar(x, 54)}<span>${esc(cidNome(x.name).split(' ')[0])}</span><em>${x.valorAlertas ? esc(cidMil(x.valorAlertas)) : `${x.alertas} ${x.alertas === 1 ? 'ALERTA' : 'ALERTAS'}`}</em></button>`).join('')}</div>` : ''}
   </section>`;
 }
 function vLupa() {
@@ -268,7 +269,7 @@ function vPoliticos() {
     <label class="search" for="cid-busca"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="cid-busca" type="search" placeholder="Nome, partido ou estado" value="${esc(p.q)}" autocomplete="off"></label>
     <div class="cid-filters">
       <div class="chips" role="group" aria-label="Cargo">${[['', 'Todos'], ['deputado', 'Deputados(as)'], ['senador', 'Senadores(as)']].map(([k, n]) => `<button type="button" class="fchip" data-pol-cargo="${k}" aria-pressed="${p.cargo === k}">${n}</button>`).join('')}</div>
-      <div class="chips" role="group" aria-label="Ordenar">${[['nome', 'A–Z'], ['gasto', 'Quem mais gastou'], ['alertas', 'Mais alertas']].map(([k, n]) => `<button type="button" class="fchip" data-pol-ordem="${k}" aria-pressed="${p.ordem === k}">${n}</button>`).join('')}</div>
+      <div class="chips" role="group" aria-label="Ordenar">${[['nome', 'A–Z'], ['gasto', 'Quem mais gastou'], ['alertas', 'Maior valor em alerta']].map(([k, n]) => `<button type="button" class="fchip" data-pol-ordem="${k}" aria-pressed="${p.ordem === k}">${n}</button>`).join('')}</div>
     </div>
     <div class="cid-actions"><button type="button" class="fchip" data-cmp-start="">Comparar dois(duas) lado a lado →</button><button type="button" class="fchip" data-go="partidos">Comparar partidos →</button><button type="button" class="fchip" data-go="presenca">Presença dos deputados →</button></div>
     <div id="cid-pol-list" class="cid-stack" aria-live="polite">${cidPolListHTML()}</div>
@@ -327,7 +328,7 @@ function cidAlertaResposta(alertas, hasExpenseData) {
   return `<section class="card cid-answer cid-answer-alert" data-profile-answer="alerta">
     <h2 class="h">Tem algo estranho?</h2>
     ${top ? `<span class="fchip cid-alert-count">${alertas.length} ${alertas.length === 1 ? 'alerta' : 'alertas'}</span>
-      <h3 class="cid-title">${esc(top.titulo)}</h3>${cidVisual(top)}<p class="cid-frase">${esc(top.frase)}</p>
+      <h3 class="cid-title">${esc(top.titulo)}</h3>${cidVisual(top)}<p class="cid-frase">${esc(top.frase)}</p>${top.contexto?.frase ? `<p class="cid-contexto">${esc(top.contexto.frase)}</p>` : ''}
       <button type="button" class="more" data-profile-open="alertas">${alertas.length > 1 ? `Ver os demais alertas (${alertas.length - 1})` : 'Ver alerta em detalhe'} →</button>`
     : `<p class="cid-empty">${hasExpenseData ? 'Nada fora do normal nas regras que checamos' : 'Sem dados de cota para checar alertas.'}</p>`}
   </section>`;

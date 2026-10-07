@@ -207,3 +207,56 @@ class CidadaoPoliticosTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class PicoRuleTests(unittest.TestCase):
+    """Pico: piso pelos colegas, meses seguidos como um alerta só e escala do ano no cartão."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.db_path = Path(self.temp.name) / 'pico.sqlite3'
+        authorities, expenses = [], []
+        perfis = {f'camara:{i}': [40000] * 6 for i in range(1, 7)}            # colegas: R$ 40 mil por mês
+        perfis['camara:20'] = [2000, 2000, 2000, 22000, 22000, 2000]           # gasta pouco; "pico" abaixo do típico
+        perfis['camara:30'] = [40000, 40000, 40000, 100000, 100000, 40000]    # sobe de patamar em abril e maio
+        perfis['camara:group:9'] = perfis['camara:30']                        # conta de liderança: id com dois ':'
+        for ident, meses in perfis.items():
+            role = 'conta_institucional' if ':group:' in ident else 'deputado'
+            authorities.append({'id': ident, 'name': f'Pessoa {ident}', 'role': role, 'party': 'AAA', 'uf': 'SP',
+                                'sourceId': 'camara_deputies_current', 'branch': 'legislativo', 'sphere': 'federal'})
+            for month, amount in enumerate(meses, 1):
+                expenses.append({'id': f'{ident}:{month}', 'authorityId': ident, 'sourceId': 'camara_ceap', 'year': 2026,
+                                 'month': month, 'date': f'2026-{month:02d}-10', 'category': 'Escritório', 'kind': 'reembolso',
+                                 'amount': amount, 'supplier': {'key': f'k{ident}:{month}', 'name': f'Empresa {ident} {month}'}})
+        source = Path(self.temp.name) / 'in.json'
+        source.write_text(json.dumps({'sources': [{'id': s, 'label': s, 'status': 'imported'} for s in ('camara_deputies_current', 'camara_ceap')],
+                                      'authorities': authorities, 'expenses': expenses}), encoding='utf-8')
+        store.import_documents([source], self.db_path)
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def test_low_spender_month_below_peers_is_not_a_spike_and_consecutive_months_are_one_alert(self):
+        with closing(store.connect(self.db_path)) as db, db:
+            picos = cidadao.rows(db, "SELECT * FROM signals WHERE type='pico' ORDER BY id")
+            self.assertEqual([s['authorityId'] for s in picos], ['camara:30', 'camara:group:9'])
+            self.assertEqual(picos[0]['period'], '2026-04')
+            pessoas = {'camara:30': {'id': 'camara:30', 'name': 'Pessoa 30', 'role': 'deputado'}}
+            alerta = cidadao._alerta(db, picos[0], pessoas, {})
+            ranking = cidadao.politicos(db, {'ordem': 'alertas', 'pageSize': 3})['itens']
+        self.assertEqual(alerta['titulo'], 'Passou a gastar mais a partir de abril')
+        self.assertEqual(alerta['seguidos'], [5])
+        self.assertIn('Depois continuou alta: maio', alerta['frase'])
+        self.assertIn('No ano, gastou', alerta['contexto']['frase'])
+        self.assertGreater(alerta['contexto']['diferenca'], 0)
+        self.assertEqual(ranking[0]['id'], 'camara:30')
+        self.assertEqual(ranking[0]['valorAlertas'], 100000)
+
+    def test_radar_reads_ids_with_extra_colons_and_lists_only_politicians(self):
+        with closing(store.connect(self.db_path)) as db, db:
+            grupo = cidadao.rows(db, "SELECT * FROM signals WHERE authorityId='camara:group:9' AND type='pico'")[0]
+            alerta = cidadao._alerta(db, grupo, {}, {})
+            radar = cidadao.radar(db, {'pageSize': 50})
+        self.assertEqual(alerta['mes'], 4)
+        self.assertEqual([a['pessoa']['id'] for a in radar['itens']], ['camara:30'])
+        self.assertEqual(radar['contagem']['pico'], 1)
