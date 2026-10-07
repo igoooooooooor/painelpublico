@@ -33,6 +33,6 @@ O projeto é apartidário e só usa informações públicas ([Aviso legal](AVISO
 
 ## Código e dados
 
-Python usa quatro espaços; JavaScript/CSS usam dois, conforme `.editorconfig`. Preserve o estilo do trecho editado e evite reformatação em massa. O build, a API e as coletas principais não precisam de dependências de terceiros. Pandas é opcional para `ingest/editorial/scrape_passagens.py` e `ingest/editorial/tse_totais.py`.
+Python usa quatro espaços; JavaScript/CSS usam dois, conforme `.editorconfig`. Preserve o estilo do trecho editado e evite reformatação em massa. O build, a API e as coletas principais não precisam de dependências de terceiros. Pandas é opcional para `ingest/editorial/scrape_passagens.py` e `ingest/editorial/tse_totais.py`. A coleta opcional dos PDFs de presença do Senado usa `pdfplumber`, isolado em `ingest/senado-requirements.txt`; a reconstrução offline e os testes não dependem dele.
 
 Use o design system existente, mantenha bordas neutras e preserve a home. Ao alterar uma regra financeira ou consulta, teste resultados e casos ausentes; não crie testes que só espelham CSS. Antes de mexer no esquema ou reimportar dados relevantes, use `make db-backup`. Registre novas fontes e limitações em `docs/data.md`.

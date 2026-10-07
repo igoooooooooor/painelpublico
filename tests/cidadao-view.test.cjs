@@ -336,9 +336,52 @@ test('Senate work answer stays unavailable even when a Câmara record has the sa
   ficha(api, state, 'senado:77');
   const html = api.vPolitico();
   const work = html.match(/<section[^>]*data-profile-answer="trabalho"[\s\S]*?<\/section>/)?.[0] || '';
-  assert.match(work, /Presença e votos do Senado ainda não foram coletados/);
-  assert.match(html, /Votos nominais do Senado ainda não foram coletados/);
+  assert.match(work, /Presença do Senado sem registro importado/);
+  assert.match(html, /Votos nominais do Senado ainda não disponíveis neste recorte/);
   assert.doesNotMatch(work, /8\/10|201 de 250|Votou em|votações do Placar · 1/);
+});
+
+test('Senate profile shows fetched votes with skeletons and never counts parliamentary activity as a vote', async () => {
+  let release;
+  const { api, state, context } = makeView({ fetchImpl: () => new Promise(resolve => { release = resolve; }) });
+  context.DATA.senado = { sobDemanda: true };
+  ficha(api, state, 'senado:77');
+  assert.match(api.vPolitico(), /data-profile-answer="trabalho"[\s\S]*?Carregando/);
+  release({ ok: true, json: async () => ({
+    presenca: { status: 'unavailable', items: [] },
+    votacoes: { status: 'imported', items: ['Sim', 'Atividade parlamentar', 'Presente – Não registrou voto', null].map((vote, n) => ({
+      id: `senado:${n}`, titulo: `Votação ${n}`, data: '2026-09-01', sourceUrl: 'https://legis.senado.leg.br/voto/' + n,
+      rows: vote === null ? [] : [['senado:77', 'Senador', 'PT', 'SP', vote]],
+    })) },
+  }) });
+  await new Promise(resolve => setImmediate(resolve));
+  const html = api.vPolitico();
+  const work = html.match(/<section[^>]*data-profile-answer="trabalho"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(work, /Voto identificado em <b>1 de 3<\/b> votações do Senado com registro individual/);
+  assert.match(work, /Presença do Senado sem registro importado/);
+  assert.doesNotMatch(work, /class="huge"|0%|média da Câmara/);
+  assert.match(html, /href="https:\/\/legis.senado.leg.br\/voto\/0"/);
+  assert.match(html, /atividade parlamentar/);
+  assert.match(html, /Sem registro importado/);
+  assert.doesNotMatch(html, /data-vote="senado:/);
+});
+
+test('Senate registered attendance is a positive count without an inferred attendance rate or absence', async () => {
+  const { api, state, context } = makeView({ fetchImpl: async () => ({ ok: true, json: async () => ({
+    presenca: { status: 'partial', sessionCount: 12, items: [{ id: 'senado:77', presente: 9, dias: null, falta: null, justificadas: null }] },
+    votacoes: { status: 'imported', items: [] },
+  }) }) });
+  context.DATA.senado = { sobDemanda: true };
+  ficha(api, state, 'senado:77');
+  api.vPolitico();
+  await new Promise(resolve => setImmediate(resolve));
+  const work = api.vPolitico().match(/<section[^>]*data-profile-answer="trabalho"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(work, /9<small> sessões/);
+  assert.match(work, /12 listas de sessões consultadas/);
+  assert.match(work, /Faltas e justificativas não apuradas/);
+  assert.doesNotMatch(work, /75%|Justificada 0|Falta 3|média do Senado/);
+  ficha(api, state, 'senado:78');
+  assert.match(api.vPolitico(), /Presença do Senado sem registro importado/);
 });
 
 test('three-answer alert highlights only the strongest alert while details retain every alert in source order', () => {

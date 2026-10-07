@@ -6,7 +6,7 @@ Protótipo para entender gastos, presença e votações de parlamentares e consu
 
 ## Rodar localmente
 
-Requer **Python 3.10+**. Para os testes de frontend, **Node.js 18+**. A aplicação e os importadores atuais não precisam de pacotes externos.
+Requer **Python 3.10+**. Para os testes de frontend, **Node.js 18+**. A aplicação, o build e os testes não precisam de pacotes Python externos. A coleta opcional de presença do Senado em PDFs requer `pdfplumber`; veja a instalação em [Dados e SQLite](docs/data.md).
 
 ```sh
 make dev
@@ -38,6 +38,8 @@ python3 -m backend.server --port 8000
 | `make import` | Importar arquivos locais de `data/imports/` |
 | `make collect-legislative YEAR=2026` | Baixar dados da Câmara e do Senado |
 | `make collect-profiles` | Coletar manualmente os complementos das fichas; depois rode `make build` |
+| `make collect-senate YEAR=2026` | Coletar presença registrada, votos nominais e autoria do Senado; depois rode `make build` |
+| `make collect-project-status` | Consultar a situação dos projetos já listados, com fontes e datas; atualização e modo offline em [Dados e SQLite](docs/data.md) |
 | `make prod` | Rodar como em produção (cache, só localhost) |
 | `make deploy` / `make deploy-db` | Publicar código / banco no servidor ([Publicação](docs/deploy.md)) |
 

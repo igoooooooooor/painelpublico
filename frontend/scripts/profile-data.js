@@ -16,29 +16,124 @@ function profileSafeUrl(value) {
   try { const u = new URL(value); return ['http:', 'https:'].includes(u.protocol) && !u.username && !u.password ? u.href : null; }
   catch { return null; }
 }
-function profilePresenceRows() {
-  return (DATA.presencaTodos || []).filter(p => Number.isFinite(p.dias) && p.dias > 0
+const PROFILE_PROJECT_GROUPS = new Set(['lei', 'tramitando', 'arquivado', 'emenda']);
+const PROFILE_PROJECT_GROUP_LABELS = {
+  lei: 'Virou lei', tramitando: 'Tramitando', arquivado: 'Arquivado/rejeitado', emenda: 'Emenda constitucional',
+};
+const PROFILE_PROJECT_FILTERS = new Set(['todos', ...PROFILE_PROJECT_GROUPS, 'sem-situacao']);
+const PROFILE_PROJECT_FILTER_STATE = new Map();
+function profileProjectDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value)) return null;
+  return Number.isFinite(Date.parse(value)) ? value.slice(0, 10) : null;
+}
+function profileProjectConsulted(item) {
+  return !!profileProjectDate(item?.situacaoAtual?.consultadoEm);
+}
+function profileProjectGroup(item) {
+  const situation = item?.situacaoAtual;
+  if (!situation || situation.status !== 'imported' || !PROFILE_PROJECT_GROUPS.has(situation.grupo)
+      || !profileProjectConsulted(item)) return null;
+  return situation.grupo;
+}
+function profileProjectFilter(button) {
+  const filter = button?.dataset?.projectFilter || button?.getAttribute?.('data-project-filter');
+  const profile = button?.dataset?.projectProfile || button?.getAttribute?.('data-project-profile');
+  const root = button?.closest?.('[data-project-filter-root]');
+  if (!PROFILE_PROJECT_FILTERS.has(filter) || profile == null || !root
+      || typeof root.querySelectorAll !== 'function') return false;
+  PROFILE_PROJECT_FILTER_STATE.set(String(profile), filter);
+  let visible = 0;
+  root.querySelectorAll('[data-project-filter]').forEach(control => {
+    const value = control.dataset?.projectFilter || control.getAttribute('data-project-filter');
+    control.setAttribute('aria-pressed', String(value === filter));
+  });
+  root.querySelectorAll('[data-project-item]').forEach(item => {
+    const group = item.dataset?.projectGroup || item.getAttribute('data-project-group') || 'sem-situacao';
+    const show = filter === 'todos' || (filter === 'sem-situacao' ? group === 'sem-situacao' : group === filter);
+    item.hidden = !show;
+    if (show) visible += 1;
+  });
+  const empty = typeof root.querySelector === 'function' ? root.querySelector('[data-project-empty]') : null;
+  if (empty) empty.hidden = visible > 0;
+  return true;
+}
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+  document.addEventListener('click', event => {
+    const button = event.target?.closest?.('[data-project-filter]');
+    if (button) profileProjectFilter(button);
+  });
+}
+/* Atividade do Senado é carregada só nas fichas/comparações que precisam dela. */
+const SENATE_LOAD = { pending: false, done: false, data: null, error: null };
+function profileSenateEnsure() {
+  if (!DATA.senado?.sobDemanda || SENATE_LOAD.pending || SENATE_LOAD.done || typeof fetch !== 'function') return;
+  SENATE_LOAD.pending = true;
+  fetch('/api/c/senado/atividade', { headers: { Accept: 'application/json' } })
+    .then(r => { if (!r.ok) throw new Error('Atividade do Senado indisponível'); return r.json(); })
+    .then(d => { SENATE_LOAD.data = d; })
+    .catch(() => { SENATE_LOAD.error = 'Não foi possível carregar a atividade do Senado.'; })
+    .finally(() => { SENATE_LOAD.pending = false; SENATE_LOAD.done = true; if (typeof rerender === 'function') rerender(); });
+}
+function profileSenateLoading() { return SENATE_LOAD.pending; }
+function profileSenateSource(section) { return SENATE_LOAD.data?.[section] || null; }
+function profileRegisteredPresenceRows() {
+  profileSenateEnsure();
+  const rows = profileSenateSource('presenca')?.items;
+  return (Array.isArray(rows) ? rows : []).filter(p => /^senado:\d+$/.test(p.id)
+    && Number.isInteger(p.presente) && p.presente > 0);
+}
+function profileRegisteredPresence(id) {
+  return profileRegisteredPresenceRows().find(p => p.id === profileId(id)) || null;
+}
+function profileAttendanceSources(id) {
+  const sessions = profileSenateSource('presenca')?.sessions;
+  const records = (Array.isArray(sessions) ? sessions : []).filter(s => Array.isArray(s.presentIds)
+    && s.presentIds.includes(profileId(id)) && profileSafeUrl(s.sourceUrl));
+  if (!records.length) return '';
+  return `<p class="muted">Sessões com presença registrada no Diário:</p><div class="chips">${records.map(s =>
+    `<a class="fchip" href="${esc(profileSafeUrl(s.sourceUrl))}" target="_blank" rel="noopener">${esc(s.date)} ↗</a>`).join('')}</div>`;
+}
+function profilePresenceRows(chamber = 'camara') {
+  if (chamber === 'senado') profileSenateEnsure();
+  const rows = chamber === 'senado' ? profileSenateSource('presenca')?.items : DATA.presencaTodos;
+  return (Array.isArray(rows) ? rows : []).filter(p => Number.isFinite(p.dias) && p.dias > 0
     && [p.presente, p.falta, p.justificadas].every(n => Number.isFinite(n) && n >= 0)
     && p.presente + p.falta + p.justificadas === p.dias);
 }
 function profilePresence(id) {
-  const canonical = profileId(id);
-  return canonical.startsWith('camara:') ? profilePresenceRows().find(p => String(p.id) === canonical.slice(7)) || null : null;
+  const canonical = profileId(id), chamber = canonical.split(':')[0];
+  if (!['camara', 'senado'].includes(chamber)) return null;
+  return profilePresenceRows(chamber).find(p => (chamber === 'camara' ? profileId(p.id) : String(p.id)) === canonical) || null;
+}
+function profileVoteList(chamber = 'camara') {
+  if (chamber === 'senado') profileSenateEnsure();
+  const rows = chamber === 'senado' ? profileSenateSource('votacoes')?.items : DATA.votacoes;
+  return Array.isArray(rows) ? rows.filter(v => chamber !== 'senado' || !v.secreta) : [];
 }
 function profileVoteRows(v) {
-  const raw = DATA.votosCompletos?.[v.id];
+  const senate = String(v.id).startsWith('senado:');
+  if (senate && v.secreta) return [];
+  const raw = senate ? v.rows : DATA.votosCompletos?.[v.id];
   if (!Array.isArray(raw)) return [];
-  // Only source rows establish participation. The current roster cannot tell
-  // whether an absent row voted, was eligible, or had already taken office.
-  return raw.filter(r => Array.isArray(r) && r.length >= 5 && r[0] != null).map(r => [
-    r[0], r[1], r[2], r[3], v.secreta ? 'Presente' : (r[4] === 'Artigo 17' ? 'Presidiu' : r[4] || 'Presente'),
-  ]);
+  // Apenas linhas da fonte comprovam participação; uma linha ausente continua ausente.
+  return raw.filter(r => Array.isArray(r) && r.length >= 5 && r[0] != null).map(r => {
+    let vote = r[4] || (senate ? null : 'Presente');
+    if (senate && /^(P-NRV|Presente\s*[–-]\s*Não registrou voto)$/i.test(vote)) vote = 'Presente';
+    if (senate && /^(AP|Atividade parlamentar)$/i.test(vote)) vote = 'Atividade parlamentar';
+    if (vote === 'Artigo 17' || (senate && /^Presidente\b/i.test(vote))) vote = 'Presidiu';
+    return [r[0], r[1], r[2], r[3], v.secreta && (!senate || vote === 'Votou') ? 'Presente' : vote];
+  });
 }
 function profileVotes(id) {
-  const canonical = profileId(id);
-  if (!canonical.startsWith('camara:')) return [];
-  const num = canonical.slice(7);
-  return (DATA.votacoes || []).map(v => ({ v, voto: profileVoteRows(v).find(r => String(r[0]) === num)?.[4] ?? null }));
+  const canonical = profileId(id), chamber = canonical.split(':')[0];
+  if (!['camara', 'senado'].includes(chamber)) return [];
+  return profileVoteList(chamber).map(v => ({ v, voto: profileVoteRows(v)
+    .find(r => (chamber === 'camara' ? profileId(r[0]) : String(r[0])) === canonical)?.[4] ?? null }));
+}
+function profileVoteButton(v, content, className = 'vt') {
+  if (!String(v.id).startsWith('senado:')) return `<button type="button" class="${esc(className)}" data-vote="${esc(v.id)}">${content}</button>`;
+  const url = profileSafeUrl(v.sourceUrl);
+  return url ? `<a class="${esc(className)}" href="${esc(url)}" target="_blank" rel="noopener">${content}</a>` : `<div class="${esc(className)}">${content}</div>`;
 }
 /* Perfis complementares chegam um a um pela API (antes iam todos dentro da página, ~14 MB). */
 const PROFILE_LOAD = { pending: new Set(), done: new Set() };
@@ -64,7 +159,7 @@ function profileData(value) {
   return { id, pessoa, contato: snapshot.contato || null, projetos: snapshot.projetos || null,
     gabinete: snapshot.gabinete || null, mandato: snapshot.mandato || null,
     loading: PROFILE_LOAD.pending.has(id),
-    presenca: profilePresence(id), votos: profileVotes(id),
+    presenca: profilePresence(id), presencaRegistrada: role === 'senador' ? profileRegisteredPresence(id) : null, votos: profileVotes(id),
     remuneracao: PROFILE_SALARY[role] ? { ...PROFILE_SALARY[role], individual: null } : null };
 }
 function profileSource(section, label = 'Conferir na fonte', dateLabel = 'Fotografia') {
@@ -128,18 +223,80 @@ function profileSectionsHTML(value, slots = {}) {
     ['Endereço do gabinete', c?.endereco],
   ];
   const networks = (c?.redes || []).filter(r => profileSafeUrl(r.url));
-  const projects = p.projetos, items = projects?.items || [];
-  const total = projects?.status === 'imported' && Number.isInteger(projects.total) ? projects.total : null;
+  const projects = p.projetos, items = Array.isArray(projects?.items) ? projects.items.filter(item => item && typeof item === 'object') : [];
+  const total = projects?.status === 'imported' && Number.isInteger(projects.total) && projects.total >= 0 ? projects.total : null;
+  const projectCount = total !== null ? total : items.length ? items.length : null;
+  const confirmedProjectGroups = items.map(profileProjectGroup);
+  const confirmedProjectCount = confirmedProjectGroups.filter(Boolean).length;
+  const consultedProjectCount = items.filter(profileProjectConsulted).length;
+  const confirmedLawCount = confirmedProjectGroups.filter(group => group === 'lei').length;
+  const confirmedAmendmentCount = confirmedProjectGroups.filter(group => group === 'emenda').length;
+  const unclassifiedProjectCount = items.length - confirmedProjectCount;
+  const projectTotalMatchesItems = total === null || total === items.length;
+  const partialSituationCoverage = confirmedProjectCount > 0
+    && (unclassifiedProjectCount > 0 || !projectTotalMatchesItems);
+  const projectCountLabel = projectCount === null ? 'total não confirmado'
+    : `${projectCount} ${projectCount === 1 ? 'projeto' : 'projetos'}`;
+  const amendmentLabel = confirmedAmendmentCount
+    ? ` · ${confirmedAmendmentCount} ${confirmedAmendmentCount === 1 ? 'emenda' : 'emendas'}` : '';
+  const projectSituationLabel = partialSituationCoverage
+    ? `${confirmedLawCount
+      ? `${confirmedLawCount} ${confirmedLawCount === 1 ? 'lei confirmada' : 'leis confirmadas'} · situação parcial`
+      : 'leis: consulta parcial'}${amendmentLabel}`
+    : confirmedProjectCount
+      ? `${confirmedLawCount} ${confirmedLawCount === 1 ? 'virou' : 'viraram'} lei${amendmentLabel}`
+      : consultedProjectCount ? 'situação consultada · classificação não confirmada' : 'situação não consultada';
+  const projectTitle = p.loading ? 'Projetos apresentados · carregando'
+    : `Projetos apresentados · ${projectCountLabel} · ${projectSituationLabel}`;
+  const savedProjectFilter = PROFILE_PROJECT_FILTER_STATE.get(p.id) || 'todos';
+  const selectedProjectFilter = savedProjectFilter === 'emenda' && !confirmedAmendmentCount ? 'todos' : savedProjectFilter;
+  if (selectedProjectFilter !== savedProjectFilter) PROFILE_PROJECT_FILTER_STATE.set(p.id, selectedProjectFilter);
+  const visibleProjects = items.filter(item => {
+    const group = profileProjectGroup(item) || 'sem-situacao';
+    return selectedProjectFilter === 'todos' || selectedProjectFilter === group;
+  }).length;
   const loading = () => typeof skel === 'function' ? skel('linhas', 3) : '<p class="muted">Carregando complemento…</p>';
   const slot = key => typeof slots?.[key] === 'string' && slots[key].trim() ? slots[key] : null;
   const projectContent = p.loading ? loading() : `<p>${total !== null ? `${total} ${total === 1 ? 'projeto no recorte consultado' : 'projetos no recorte consultado'}.`
-      : items.length ? `${items.length} projetos disponíveis neste recorte parcial.` : 'Projetos ainda não importados para este perfil.'}</p>
+      : items.length ? `${items.length} projetos disponíveis neste recorte parcial.` : projects?.status === 'partial' || projects?.status === 'unavailable' ? 'Consulta de projetos incompleta ou indisponível; total não confirmado.' : 'Projetos ainda não importados para este perfil.'}</p>
+    ${items.length ? `<p class="muted cid-project-coverage">${consultedProjectCount
+      ? `Consulta registrada em ${consultedProjectCount} de ${items.length} projetos; grupo confirmado em ${confirmedProjectCount}; ${unclassifiedProjectCount} sem grupo confirmado${items.length - consultedProjectCount ? ` (${items.length - consultedProjectCount} sem consulta)` : ''}.`
+      : `Nenhuma consulta de situação registrada: 0 de ${items.length} consultados; ${items.length} sem confirmação.`}${total !== null && !projectTotalMatchesItems ? ` A lista mostra ${items.length} ${items.length === 1 ? 'projeto' : 'projetos'} de ${total} no total; as situações contam apenas os itens listados.` : ''}</p>` : ''}
+    ${confirmedAmendmentCount ? '<p class="muted cid-project-explanation">PEC aprovada e promulgada é emenda constitucional; por isso não entra na contagem de leis.</p>' : ''}
+    ${unclassifiedProjectCount ? '<p class="muted cid-project-explanation">“Outras / sem classificação” reúne situações que não confirmam um dos resultados acima e projetos ainda sem consulta. A descrição da fonte permanece visível.</p>' : ''}
     ${projects?.detail ? `<p class="muted">${esc(projects.detail)}</p>` : ''}
-    ${items.length ? `<div>${items.map(item => {
+    ${items.length ? `<div class="cid-projects" data-project-filter-root data-project-profile="${esc(p.id)}">
+      <div class="cid-project-filters" aria-label="Filtrar projetos por situação">
+        ${[['todos', 'Todos'], ['lei', 'Viraram lei'], ['tramitando', 'Tramitando'], ['arquivado', 'Arquivados/rejeitados'],
+          ...(confirmedAmendmentCount ? [['emenda', 'Emendas promulgadas']] : []), ['sem-situacao', 'Outras / sem classificação']].map(([filter, label]) =>
+          `<button type="button" class="fchip" data-project-filter="${filter}" data-project-profile="${esc(p.id)}" aria-pressed="${selectedProjectFilter === filter}">${label}</button>`).join('')}
+      </div>
+      <div class="cid-project-list">${items.map(item => {
       const url = profileSafeUrl(item.url);
-      const content = `<b>${esc(item.titulo || 'Projeto sem título informado')}</b><span class="e">${esc(item.ementa || 'Ementa não informada')}</span><span class="st">${esc(item.situacao || 'Situação não importada')}</span>`;
-      return url ? `<a class="proj" href="${esc(url)}" target="_blank" rel="noopener">${content}</a>` : `<div class="proj">${content}</div>`;
-    }).join('')}</div>` : ''}
+      const situation = item.situacaoAtual;
+      const group = profileProjectGroup(item) || 'sem-situacao';
+      const title = `<b>${esc(item.titulo || 'Projeto sem título informado')}</b><span class="e">${esc(item.ementa || 'Ementa não informada')}</span>`;
+      const originalSituation = typeof situation?.descricao === 'string' && situation.descricao
+        ? situation.descricao : typeof item.situacao === 'string' && item.situacao
+          ? item.situacao : PROFILE_PROJECT_GROUP_LABELS[group] || 'Situação não confirmada';
+      const status = `<span class="st${group === 'lei' ? ' lei' : ''}">${esc(originalSituation)}</span>`;
+      const main = url ? `<a class="cid-project-main" href="${esc(url)}" target="_blank" rel="noopener">${title}</a>` : `<div class="cid-project-main">${title}</div>`;
+      const consulted = profileProjectDate(situation?.consultadoEm);
+      const source = profileSafeUrl(situation?.sourceUrl);
+      const norms = Array.isArray(situation?.normas) ? situation.normas.map(norm => {
+        const normUrl = profileSafeUrl(norm?.url);
+        const label = [norm?.tipo, norm?.numero, norm?.ano].filter(value => value != null && String(value).trim()).map(esc).join(' ');
+        return label ? normUrl ? `<a href="${esc(normUrl)}" target="_blank" rel="noopener">${label} ↗</a>` : `<span>${label}</span>` : '';
+      }).filter(Boolean) : [];
+      const meta = [consulted ? `<span>Consulta da situação: ${esc(consulted)}</span>` : '',
+        source ? `<a href="${esc(source)}" target="_blank" rel="noopener">Fonte da situação ↗</a>` : '', ...norms].filter(Boolean).join(' · ');
+      const detail = typeof situation?.detail === 'string' && situation.detail.trim()
+        ? `<p class="cid-project-detail muted">${esc(situation.detail)}</p>` : '';
+      const show = selectedProjectFilter === 'todos' || selectedProjectFilter === group;
+      return `<article class="proj" data-project-item data-project-group="${group}"${show ? '' : ' hidden'}>${main}${status}${meta ? `<div class="cid-project-meta">${meta}</div>` : ''}${detail}</article>`;
+    }).join('')}</div>
+      <p class="muted cid-project-empty" data-project-empty role="status" aria-live="polite"${visibleProjects ? ' hidden' : ''}>Nenhum projeto nesta situação neste recorte.</p>
+    </div>` : ''}
     ${profileSource(projects)}`;
   const officeContent = p.loading ? loading() : `${hasOffice ? `<div><span class="big">${money(office.amount)}</span><span class="muted"> · gasto publicado no recorte</span></div>`
       : '<p class="muted">Gastos com a equipe ainda não importados para este perfil. Ausência de dado não significa gasto zero.</p>'}
@@ -180,7 +337,7 @@ function profileSectionsHTML(value, slots = {}) {
     ['gastos', 'Gastos em detalhe', slot('gastos'), { desktopOpen: true, mobileOpen: true }],
     ['alertas', 'Alertas em detalhe', slot('alertas'), {}],
     ['votos', 'Como votou', slot('votos'), { desktopOpen: true }],
-    ['projetos', 'Projetos apresentados', projectContent, {}],
+    ['projetos', projectTitle, projectContent, {}],
     ['equipe', 'Equipe e verba de gabinete', officeContent, {}],
     ['contato', 'Fale com ele', contactContent, {}],
     ...(p.pessoa.role === 'senador' ? [['mandato', 'Mandato', senateMandateContent, {}]] : []),

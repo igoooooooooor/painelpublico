@@ -5,6 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 function comparison(a, b) {
+  const senate = { presenca: null, votacoes: null, loading: false };
   const context = {
     DATA: { votacoes: [], presencaTodos: [] }, CARGO: { senador: 'Senador(a)' },
     document: { querySelector: () => null, getElementById: () => ({}), addEventListener() {} },
@@ -15,27 +16,40 @@ function comparison(a, b) {
     cidFonte: p => p.id === 'senado:55' ? 'https://www25.senado.leg.br/web/senadores/senador/-/perfil/55' : null,
   };
   vm.createContext(context);
-  context.profilePresenceRows = () => (context.DATA.presencaTodos || []).filter(p => p && p.dias > 0
+  context.senate = senate;
+  context.profilePresenceRows = (chamber = 'camara') => (chamber === 'senado' ? senate.presenca?.items || [] : context.DATA.presencaTodos || []).filter(p => p && p.dias > 0
     && [p.presente, p.falta, p.justificadas].every(n => Number.isFinite(n) && n >= 0)
     && p.presente + p.falta + p.justificadas === p.dias);
   context.profilePresence = id => {
-    const num = String(id).replace(/^camara:/, '');
-    return context.profilePresenceRows().find(p => String(p.id) === num) || null;
+    const canonical = String(id).startsWith('senado:') ? String(id) : `camara:${String(id).replace(/^camara:/, '')}`;
+    const chamber = canonical.startsWith('senado:') ? 'senado' : 'camara';
+    return context.profilePresenceRows(chamber).find(p => (chamber === 'senado' ? String(p.id) : `camara:${p.id}`) === canonical) || null;
   };
-  context.profileVoteRows = vote => context.DATA.votosCompletos?.[vote.id] || [];
+  context.profileRegisteredPresenceRows = () => (senate.presenca?.items || []).filter(p => Number.isFinite(p.presente) && p.presente > 0);
+  context.profileRegisteredPresence = id => context.profileRegisteredPresenceRows().find(p => String(p.id) === String(id)) || null;
+  context.profileSenateEnsure = () => {};
+  context.profileSenateLoading = () => senate.loading;
+  context.profileSenateSource = section => senate[section];
+  context.profileVoteList = chamber => chamber === 'senado' ? senate.votacoes?.items || [] : context.DATA.votacoes || [];
+  context.profileVoteRows = vote => String(vote.id).startsWith('senado:') ? vote.rows || [] : context.DATA.votosCompletos?.[vote.id] || [];
   context.profileVotes = id => {
-    const num = String(id).replace(/^camara:/, '');
-    return (context.DATA.votacoes || []).map(v => ({
+    const canonical = String(id).startsWith('senado:') ? String(id) : `camara:${String(id).replace(/^camara:/, '')}`;
+    const chamber = canonical.startsWith('senado:') ? 'senado' : 'camara';
+    const key = canonical.startsWith('senado:') ? canonical : canonical.slice(7);
+    return context.profileVoteList(chamber).map(v => ({
       v, voto: (() => {
-        const row = context.profileVoteRows(v).find(record => String(record[0]) === num);
-        return row ? (v.secreta ? 'Presente' : row[4] ?? 'Presente') : null;
+        const row = context.profileVoteRows(v).find(record => String(record[0]) === key);
+        return row ? (chamber === 'senado' ? row[4] ?? null : (v.secreta ? 'Presente' : row[4] ?? 'Presente')) : null;
       })(),
     }));
   };
+  context.profileVoteButton = (vote, content, className = 'vt') => String(vote.id).startsWith('senado:')
+    ? `<a class="${className}" href="${vote.sourceUrl || ''}">${content}</a>`
+    : `<button type="button" class="${className}" data-vote="${vote.id}">${content}</button>`;
   context.profileData = value => ({ id: value.id, pessoa: value, contato: null, projetos: null, remuneracao: null, mandato: null });
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../frontend/scripts/extras-view.js'), 'utf8') +
     '\nthis.__api = { ext, extCmpTabela, extCmpBusca, extCmpPickerList, vComparar, extImpostoCard, extVotos, extVotosDe, extPres, extPresRows, extPresBar, extFichaExtra };', context);
-  return { html: context.__api.extCmpTabela([a, b]), api: context.__api, context };
+  return { html: context.__api.extCmpTabela([a, b]), api: context.__api, context, senate };
 }
 const profile = (id, total) => ({ pessoa: { id, name: id, role: 'senador' }, total, media: 100,
   categorias: [], fornecedores: [], alertas: [], meses: [] });
@@ -50,7 +64,7 @@ test('comparison preserves an observed zero reimbursement', () => {
   const { html } = comparison(profile('senado:a', 0), profile('senado:b', 100));
   assert.match(html, /R\$ 0</);
   assert.match(html, /-100%/);
-  assert.match(html, /Presença no Plenário · Câmara/);
+  assert.match(html, /Presença registrada · Senado/);
   assert.doesNotMatch(html, /NaN|Infinity/);
 });
 
@@ -94,7 +108,7 @@ test('voter lists contain source rows only and never infer non-voters from the c
   assert.match(secretFicha, /Presença no Plenário ↗/);
   assert.doesNotMatch(ficha, /Sim|Não votou/);
   assert.match(api.extFichaExtra('senado:55'), /Sem dados de presença do Senado importados/);
-  assert.match(api.extFichaExtra('senado:55'), /Sem registros individuais de votação do Senado/);
+  assert.match(api.extFichaExtra('senado:55'), /Votações nominais do Senado ainda não importadas/);
   assert.match(api.extFichaExtra('senado:55'), /https:\/\/www25\.senado\.leg\.br\/web\/senadores\/senador\/-\/perfil\/55/);
   assert.doesNotMatch(api.extFichaExtra('senado:55'), /Sim|Não votou/);
 });
@@ -121,6 +135,90 @@ test('profile comparison adds neutral availability and mandate details without r
     assert.ok(row, `linha ausente: ${label}`);
     assert.doesNotMatch(row, /class="cmp-v best"/);
   }
+});
+
+test('Senate profile comparison keeps presence and registered nominal votes within the Senate source', () => {
+  const { api, senate } = comparison(profile('senado:55', 100), profile('senado:56', 200));
+  senate.presenca = { status: 'partial', period: '2026 · 18 sessões', sessionCount: 18, sourceUrl: 'https://senado.example.test/presenca', items: [
+    { id: 'senado:55', nome: 'Senadora A', partido: 'AAA', uf: 'SP', dias: null, presente: 7, falta: null, justificadas: null },
+    { id: 'senado:56', nome: 'Senador B', partido: 'BBB', uf: 'RJ', dias: null, presente: 12, falta: null, justificadas: null },
+  ] };
+  senate.votacoes = { status: 'imported', period: 'Votações nominais em 2026', sourceUrl: 'https://senado.example.test/votos', items: [
+    { id: 'senado:V1', data: '2026-09-01', titulo: 'Matéria 1', secreta: false, sourceUrl: 'https://senado.example.test/v1', rows: [
+      ['senado:55', 'Senadora A', 'AAA', 'SP', 'Sim'], ['senado:56', 'Senador B', 'BBB', 'RJ', 'Não'],
+    ] },
+    { id: 'senado:V2', data: '2026-09-02', titulo: 'Matéria 2', secreta: false, sourceUrl: 'https://senado.example.test/v2', rows: [
+      ['senado:55', 'Senadora A', 'AAA', 'SP', 'Presente'], ['senado:56', 'Senador B', 'BBB', 'RJ', 'Sim'],
+    ] },
+    { id: 'senado:V3', data: '2026-09-03', titulo: 'Matéria 3', secreta: false, sourceUrl: 'https://senado.example.test/v3', rows: [
+      ['senado:55', 'Senadora A', 'AAA', 'SP', 'Sim'],
+    ] },
+  ] };
+  const html = api.extCmpTabela([profile('senado:55', 100), profile('senado:56', 200)]);
+  assert.match(html, /Presença registrada · Senado/);
+  assert.match(html, /<b>7<\/b>/);
+  assert.match(html, /<b>12<\/b>/);
+  assert.match(html, /2026 · 18 sessões/);
+  assert.match(html, /18 listas de sessões consultadas/);
+  const presenceRow = html.split('\n').find(line => line.includes('Presença registrada · Senado'));
+  assert.ok(presenceRow);
+  assert.doesNotMatch(presenceRow, /%|class="cmp-v best"/);
+  assert.match(html, /Fonte e período/);
+  assert.match(html, /registraram o mesmo voto em 0 de 1 votações nominais comparáveis no Senado/);
+  assert.match(html, /Matéria 1/);
+  assert.doesNotMatch(html, /Matéria 2|Matéria 3/);
+  assert.match(html, /href="https:\/\/senado\.example\.test\/v1"/);
+  assert.match(html, /Como votaram · Senado/);
+  const ficha = api.extFichaExtra('senado:55');
+  assert.match(ficha, /Presença registrada · sem voto/);
+  assert.match(ficha, /Votações secretas foram excluídas/);
+});
+
+test('cross-house profile comparison leaves presence methods unranked and omits vote agreement', () => {
+  const { api, context, senate } = comparison(profile('camara:1', 100), profile('senado:55', 200));
+  context.DATA.presencaTodos = [{ id: 1, nome: 'Deputado A', partido: 'AAA', uf: 'SP', dias: 4, presente: 4, falta: 0, justificadas: 0 }];
+  senate.presenca = { status: 'partial', period: '18 sessões', sessionCount: 18, sourceUrl: 'https://senado.example.test/presenca', items: [
+    { id: 'senado:55', nome: 'Senadora B', partido: 'BBB', uf: 'RJ', dias: null, presente: 3, falta: null, justificadas: null },
+  ] };
+  senate.votacoes = { status: 'imported', period: '2026', sourceUrl: 'https://senado.example.test/votos', items: [
+    { id: 'senado:V1', titulo: 'Matéria Senado', secreta: false, sourceUrl: 'https://senado.example.test/v1', rows: [] },
+  ] };
+  const html = api.extCmpTabela([profile('camara:1', 100), profile('senado:55', 200)]);
+  assert.match(html, /Presença · Câmara/);
+  assert.match(html, /Presença registrada · Senado/);
+  assert.match(html, /Metodologias de presença de casas diferentes não são comparadas/);
+  assert.match(html, /Votações de casas diferentes não são comparadas/);
+  const rows = html.split('\n').filter(line => line.includes('Presença · Câmara') || line.includes('Presença registrada · Senado'));
+  assert.equal(rows.length, 2);
+  rows.forEach(row => assert.doesNotMatch(row, /class="cmp-v best"/));
+  assert.doesNotMatch(html, /Matéria Senado|1 votação nominal com registro/);
+});
+
+test('Senate profile absence remains unavailable and loading uses a skeleton', () => {
+  const { api, senate } = comparison(profile('senado:55', 100), profile('senado:56', 200));
+  senate.loading = true;
+  const loading = api.extFichaExtra('senado:55');
+  assert.match(loading, /loading/);
+  senate.loading = false;
+  const absent = api.extFichaExtra('senado:55');
+  assert.match(absent, /Sem dados de presença do Senado importados/);
+  assert.match(absent, /Votações nominais do Senado ainda não importadas/);
+  assert.doesNotMatch(absent, /0\/0|0% presente|Votações nominais do Senado · 0/);
+  const comparisonHtml = api.extCmpTabela([profile('senado:55', 100), profile('senado:56', 200)]);
+  assert.match(comparisonHtml, /Sem votos nominais comparáveis/);
+  assert.doesNotMatch(comparisonHtml, /0 de 0/);
+});
+
+test('Senate vote rows preserve null individual votes and source statuses', () => {
+  const { api } = comparison(profile('senado:55', 100), profile('senado:56', 200));
+  const vote = { id: 'senado:V1', secreta: false, rows: [
+    ['senado:55', 'Senadora A', 'AAA', 'SP', null],
+    ['senado:56', 'Senador B', 'BBB', 'RJ', 'Atividade parlamentar'],
+  ] };
+  const rows = api.extVotos(vote);
+  assert.equal(rows[0][4], null);
+  assert.equal(rows[1][4], 'Atividade parlamentar');
+  assert.doesNotMatch(JSON.stringify(rows), /"Presente"/);
 });
 
 test('comparison suggestions load from the full API with an empty query and use its results', async () => {

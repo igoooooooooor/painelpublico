@@ -76,7 +76,10 @@ def build(output=None):
         "presencaTodos": presence,
         "votosCompletos": votes,
         "arrecadacao": arrecadacao,
-        "perfis": {"profiles": {}, "sobDemanda": (SNAPSHOTS / "perfis.json").exists()},
+        "perfis": {"profiles": {}, "sobDemanda": any(
+            (SNAPSHOTS / name).exists() for name in ("perfis.json", "senado-projetos.json")
+        )},
+        "senado": {"sobDemanda": (SNAPSHOTS / "senado-atividade.json").exists()},
     }
 
     payload = json.dumps(data, ensure_ascii=False, allow_nan=False).replace("<", "\\u003c")

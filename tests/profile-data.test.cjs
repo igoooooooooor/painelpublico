@@ -8,6 +8,7 @@ const source = fs.readFileSync(path.join(__dirname, '../frontend/scripts/profile
 function load(data = {}, { width = 390 } = {}) {
   const elements = new Map();
   const accordionButtons = [];
+  const listeners = new Map();
   const viewport = { width };
   const media = query => ({ matches: query.includes('900') && viewport.width >= 900, addEventListener() {} });
   const context = {
@@ -17,8 +18,9 @@ function load(data = {}, { width = 390 } = {}) {
     matchMedia: media,
     document: {
       documentElement: { clientWidth: width },
+      addEventListener: (type, listener) => listeners.set(type, listener),
       getElementById: id => elements.get(id) || null,
-      querySelectorAll: () => accordionButtons,
+      querySelectorAll: selector => selector.includes('.cid-detail-toggle') ? accordionButtons : [],
       _elements: elements,
       _accordionButtons: accordionButtons,
     },
@@ -26,6 +28,7 @@ function load(data = {}, { width = 390 } = {}) {
       .replaceAll('>', '&gt;').replaceAll('"', '&quot;'),
   };
   context.__setWidth = next => { viewport.width = next; };
+  context.__dispatch = (type, target) => listeners.get(type)?.({ target });
   vm.createContext(context); vm.runInContext(source, context);
   return context;
 }
@@ -70,6 +73,45 @@ test('missing vote rows never become absences and secret votes never reveal a ch
   assert.equal(ctx.profileVotes('camara:2')[0].voto, null);
   assert.equal(ctx.profileVotes('camara:1')[1].voto, 'Presente');
   assert.equal(ctx.profileVotes('senado:1').length, 0);
+});
+
+test('Senate activity loads once on demand and keeps identities and non-vote records distinct', async () => {
+  const ctx = load({ senado: { sobDemanda: true }, presencaTodos: [{ id: 1, dias: 10, presente: 10, falta: 0, justificadas: 0 }] });
+  let release;
+  const calls = [];
+  ctx.fetch = url => { calls.push(url); return new Promise(resolve => { release = resolve; }); };
+  ctx.profileData('senado:1');
+  ctx.profileData('senado:2');
+  assert.equal(ctx.profileSenateLoading(), true);
+  assert.deepEqual(calls, ['/api/c/senado/atividade']);
+  release({ ok: true, json: async () => ({
+    presenca: { status: 'unavailable', items: [] },
+    votacoes: { items: ['Sim', 'Presente – Não registrou voto', 'Atividade parlamentar', 'Presidente (art. 51 RISF)'].map((vote, n) => ({
+      id: `senado:${n}`, rows: [['senado:1', 'Senadora', 'PT', 'SP', vote]],
+    })) },
+  }) });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(ctx.profileSenateLoading(), false);
+  assert.equal(ctx.profilePresence('senado:1'), null);
+  assert.deepEqual(Array.from(ctx.profileVotes('senado:1'), r => r.voto), ['Sim', 'Presente', 'Atividade parlamentar', 'Presidiu']);
+  assert.ok(ctx.profileVotes('senado:2').every(r => r.voto === null));
+  assert.equal(ctx.profileVotes('camara:1').length, 0);
+  assert.equal(calls.length, 1);
+});
+
+test('failed Senate activity does not create attendance or vote counts', async () => {
+  const ctx = load({ senado: { sobDemanda: true } });
+  ctx.fetch = async () => ({ ok: false });
+  ctx.profileData('senado:1');
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(ctx.profileSenateLoading(), false);
+  assert.equal(ctx.profilePresence('senado:1'), null);
+  assert.equal(ctx.profileVotes('senado:1').length, 0);
+});
+
+test('Senate secret votes are excluded even if a malformed snapshot contains a choice', () => {
+  const ctx = load();
+  assert.equal(ctx.profileVoteRows({ id: 'senado:1', secreta: true, rows: [['senado:1', 'Pessoa', 'PT', 'SP', 'Sim']] }).length, 0);
 });
 
 test('every legislative profile has explicit coverage for salary, staff, contact and projects', () => {
@@ -214,19 +256,184 @@ test('only a complete project collection supports an observed zero', () => {
     'camara:2': { projetos: { status: 'unavailable', total: 0, items: [] } },
   } } });
   assert.match(ctx.profileSectionsHTML('camara:1'), /0 projetos no recorte consultado/);
+  assert.match(ctx.profileSectionsHTML('camara:1'), /Projetos apresentados · 0 projetos · situação não consultada/);
   assert.doesNotMatch(ctx.profileSectionsHTML('camara:2'), /0 projetos/);
+});
+
+test('missing project snapshot never presents a zero law count', () => {
+  const html = load().profileSectionsHTML({ id: 'camara:99', role: 'deputado' });
+  assert.match(html, /Projetos apresentados · total não confirmado · situação não consultada/);
+  assert.doesNotMatch(html, /0 (?:virou|viraram) lei/);
+  assert.match(html, /Projetos ainda não importados para este perfil/);
+});
+
+test('project situation groups need an explicit dated imported enum and counts each profile list entry', () => {
+  const situation = (grupo, overrides = {}) => ({
+    grupo, descricao: `Descrição ${grupo}`, consultadoEm: '2026-10-01T12:00:00Z',
+    sourceUrl: 'https://fonte.example.test/projeto', status: 'imported', normas: [], detail: null,
+    ...overrides,
+  });
+  const repeatedCoauthoredProject = { titulo: 'Projeto em coautoria', ementa: 'Ementa original', situacao: 'Aprovado e convertido',
+    situacaoAtual: situation('lei'), url: 'https://projetos.example.test/1' };
+  const items = [
+    repeatedCoauthoredProject,
+    { titulo: 'Em tramitação', ementa: 'Texto', situacao: 'Tramitando na comissão', situacaoAtual: situation('tramitando') },
+    { titulo: 'Arquivado', ementa: 'Texto', situacaoAtual: situation('arquivado') },
+    repeatedCoauthoredProject,
+    { titulo: 'Enum não reconhecido', situacaoAtual: situation('lei falsa') },
+    { titulo: 'Data ausente', situacaoAtual: situation('lei', { consultadoEm: null }) },
+  ];
+  const ctx = load({ perfis: { profiles: {
+    'camara:1': { projetos: { status: 'partial', total: null, items } },
+    'camara:2': { projetos: { status: 'partial', total: null, items: [items[1]] } },
+  } } });
+  const html = ctx.profileSectionsHTML('camara:1');
+  assert.match(html, /6 projetos · 2 leis confirmadas · situação parcial/);
+  assert.match(html, /Consulta registrada em 5 de 6 projetos; grupo confirmado em 4; 2 sem grupo confirmado \(1 sem consulta\)/);
+  assert.equal((html.match(/data-project-item data-project-group="lei"/g) || []).length, 2);
+  assert.equal((html.match(/data-project-item data-project-group="sem-situacao"/g) || []).length, 2);
+  assert.match(html, /Descrição lei/);
+  assert.doesNotMatch(html, /Aprovado e convertido/);
+  assert.match(html, /Consulta da situação: 2026-10-01/);
+  assert.match(html, /href="https:\/\/fonte\.example\.test\/projeto"[^>]*>Fonte da situação/);
+  assert.match(html, /data-project-filter="arquivado"[^>]*>Arquivados\/rejeitados/);
+  assert.match(html, /data-project-filter="sem-situacao"[^>]*>Outras \/ sem classificação/);
+  assert.doesNotMatch(html, /Emendas promulgadas/);
+  assert.match(html, /data-project-empty role="status" aria-live="polite" hidden>Nenhum projeto nesta situação neste recorte/);
+  assert.doesNotMatch(html, /<a class="proj"/);
+});
+
+test('promulgated PECs are counted and filtered as amendments, outside the law count', () => {
+  const ctx = load({ perfis: { profiles: { 'camara:1': { projetos: { status: 'partial', items: [
+    { titulo: 'Projeto que virou lei', situacaoAtual: {
+      grupo: 'lei', status: 'imported', consultadoEm: '2026-10-01T12:00:00Z', sourceUrl: 'https://fonte.example.test/lei',
+    } },
+    { titulo: 'PEC promulgada', situacao: 'Emenda constitucional promulgada', situacaoAtual: {
+      grupo: 'emenda', status: 'imported', consultadoEm: '2026-10-01T12:00:00Z', sourceUrl: 'https://fonte.example.test/emenda',
+      normas: [
+        { tipo: 'EC', numero: '99', ano: 2026, url: 'https://normas.example.test/ec-99' },
+        { tipo: 'EC', numero: '100', ano: 2026 },
+        { tipo: 'EC', numero: '101', ano: 2026, url: 'urn:normas:ec-101' },
+      ],
+    } },
+  ] } } } } });
+  const html = ctx.profileSectionsHTML('camara:1');
+  assert.match(html, /2 projetos · 1 virou lei · 1 emenda/);
+  assert.match(html, /PEC aprovada e promulgada é emenda constitucional; por isso não entra na contagem de leis/);
+  assert.match(html, /data-project-item data-project-group="emenda"/);
+  assert.match(html, /data-project-filter="emenda"[^>]*>Emendas promulgadas/);
+  assert.match(html, /href="https:\/\/normas\.example\.test\/ec-99"/);
+  assert.match(html, /<span>EC 100 2026<\/span>/);
+  assert.match(html, /<span>EC 101 2026<\/span>/);
+  assert.doesNotMatch(html, /href="urn:/);
+});
+
+test('an imported consultation with no group stays unclassified, not unconsulted', () => {
+  const ctx = load({ perfis: { profiles: { 'camara:1': { projetos: { status: 'partial', items: [{
+    titulo: 'Proposição retirada', situacao: 'Texto legado de tramitação', situacaoAtual: {
+      grupo: null, descricao: 'Proposição retirada da tramitação', status: 'imported',
+      consultadoEm: '2026-10-02T09:30:00Z', sourceUrl: 'https://fonte.example.test/retirada',
+      detail: '<script>Consulta antiga preservada</script>',
+    },
+  }] } } } } });
+  const html = ctx.profileSectionsHTML('camara:1');
+  assert.match(html, /1 projeto · situação consultada · classificação não confirmada/);
+  assert.match(html, /Consulta registrada em 1 de 1 projetos; grupo confirmado em 0; 1 sem grupo confirmado/);
+  assert.match(html, /data-project-item data-project-group="sem-situacao"/);
+  assert.match(html, /Proposição retirada da tramitação/);
+  assert.doesNotMatch(html, /Texto legado de tramitação/);
+  assert.match(html, /Consulta da situação: 2026-10-02/);
+  assert.match(html, /href="https:\/\/fonte\.example\.test\/retirada"/);
+  assert.match(html, /&lt;script&gt;Consulta antiga preservada&lt;\/script&gt;/);
+  assert.doesNotMatch(html, /<script>/);
+  assert.doesNotMatch(html, /0 (?:virou|viraram) lei/);
+});
+
+test('partial group coverage never renders zero laws as a complete count', () => {
+  const situation = grupo => ({ grupo, status: 'imported', consultadoEm: '2026-10-03T12:00:00Z' });
+  const items = [{ titulo: 'Projeto com grupo conhecido', situacaoAtual: situation('tramitando') },
+    ...Array.from({ length: 99 }, (_, index) => ({ titulo: `Sem grupo ${index}`, situacaoAtual: {
+      grupo: null, status: 'imported', consultadoEm: '2026-10-03T12:00:00Z',
+    } }))];
+  const ctx = load({ perfis: { profiles: {
+    'camara:1': { projetos: { status: 'imported', total: 100, items } },
+    'camara:2': { projetos: { status: 'imported', total: 100, items: [
+      { titulo: 'Uma lei confirmada', situacaoAtual: situation('lei') }, ...items.slice(1),
+    ] } },
+    'camara:3': { projetos: { status: 'imported', total: 2, items: [items[0]] } },
+  } } });
+  const zeroKnownLaws = ctx.profileSectionsHTML('camara:1');
+  assert.match(zeroKnownLaws, /100 projetos · leis: consulta parcial/);
+  assert.doesNotMatch(zeroKnownLaws, /0 (?:virou|viraram) lei/);
+  assert.match(zeroKnownLaws, /grupo confirmado em 1; 99 sem grupo confirmado/);
+
+  const someKnownLaws = ctx.profileSectionsHTML('camara:2');
+  assert.match(someKnownLaws, /100 projetos · 1 lei confirmada · situação parcial/);
+  assert.doesNotMatch(someKnownLaws, /0 (?:virou|viraram) lei/);
+
+  const mismatchedTotal = ctx.profileSectionsHTML('camara:3');
+  assert.match(mismatchedTotal, /2 projetos · leis: consulta parcial/);
+  assert.match(mismatchedTotal, /A lista mostra 1 projeto de 2 no total/);
+  assert.doesNotMatch(mismatchedTotal, /0 (?:virou|viraram) lei/);
+});
+
+test('project filters expose empty results and persist per profile without replacing the focused control', () => {
+  const ctx = load({ perfis: { profiles: {
+    'camara:1': { projetos: { status: 'partial', items: [{ titulo: 'Lei', situacaoAtual: {
+      grupo: 'lei', status: 'imported', consultadoEm: '2026-10-01T12:00:00Z',
+    } }] } },
+    'camara:2': { projetos: { status: 'partial', items: [{ titulo: 'Lei', situacaoAtual: {
+      grupo: 'lei', status: 'imported', consultadoEm: '2026-10-01T12:00:00Z',
+    } }] } },
+  } } });
+  const controls = ['todos', 'lei', 'tramitando', 'arquivado', 'sem-situacao'].map(value => ({
+    dataset: { projectFilter: value, projectProfile: 'camara:1' },
+    attrs: { 'data-project-filter': value, 'data-project-profile': 'camara:1', 'aria-pressed': 'false' },
+    getAttribute(name) { return this.attrs[name] ?? null; },
+    setAttribute(name, value) { this.attrs[name] = value; },
+    closest(selector) {
+      if (selector === '[data-project-filter]') return this;
+      return selector === '[data-project-filter-root]' ? root : null;
+    },
+  }));
+  const rows = [{ dataset: { projectGroup: 'lei' }, hidden: false }, { dataset: { projectGroup: 'sem-situacao' }, hidden: false }];
+  const empty = { hidden: true };
+  const root = {
+    querySelectorAll(selector) { return selector === '[data-project-filter]' ? controls : selector === '[data-project-item]' ? rows : []; },
+    querySelector(selector) { return selector === '[data-project-empty]' ? empty : null; },
+  };
+  let rerenders = 0;
+  ctx.rerender = () => { rerenders += 1; };
+  const focusedButton = controls.find(control => control.dataset.projectFilter === 'tramitando');
+  ctx.__dispatch('click', focusedButton);
+  assert.equal(focusedButton.getAttribute('aria-pressed'), 'true');
+  assert.equal(rows[0].hidden, true);
+  assert.equal(rows[1].hidden, true);
+  assert.equal(empty.hidden, false);
+  assert.equal(rerenders, 0);
+  const rerendered = ctx.profileSectionsHTML('camara:1');
+  assert.match(rerendered, /data-project-filter="tramitando"[^>]*aria-pressed="true"/);
+  assert.match(rerendered, /data-project-empty role="status" aria-live="polite">Nenhum projeto nesta situação/);
+  assert.match(ctx.profileSectionsHTML('camara:2'), /data-project-filter="todos"[^>]*aria-pressed="true"/);
 });
 
 test('external fields and URLs are safe in shared cards', () => {
   const ctx = load({ perfis: { profiles: { 'camara:1': {
     contato: { email: '<script>email</script>', redes: [{ nome: 'malicioso', url: 'javascript:alert(1)' }] },
     projetos: { status: 'partial', total: null, items: [
-      { titulo: '<img onerror=x>', ementa: 'Texto & conteúdo', url: 'data:text/html,test' },
+      { titulo: '<img onerror=x>', ementa: 'Texto & conteúdo', url: 'data:text/html,test', situacao: '<script>estado</script>', situacaoAtual: {
+        grupo: 'lei', descricao: '<script>descrição</script>', consultadoEm: '2026-06-01T12:00:00Z',
+        sourceUrl: 'https://user:secret@example.test/status', status: 'imported', normas: [
+          { tipo: '<script>norma</script>', numero: '1', ano: 2026, url: 'javascript:alert(2)' },
+        ],
+      } },
     ], sourceUrl: 'https://user:secret@example.test/' },
   } } } });
   const html = ctx.profileSectionsHTML('camara:1');
   assert.match(html, /&lt;script&gt;email&lt;\/script&gt;/);
   assert.match(html, /&lt;img onerror=x&gt;/);
+  assert.match(html, /&lt;script&gt;descrição&lt;\/script&gt;/);
+  assert.doesNotMatch(html, /&lt;script&gt;estado&lt;\/script&gt;/);
   assert.doesNotMatch(html, /href="(?:javascript|data):|user:secret|<script>|<img onerror/);
 });
 

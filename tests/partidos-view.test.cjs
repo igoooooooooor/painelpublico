@@ -4,18 +4,32 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function load(data) {
+function load(data, senate = { presenca: null, votacoes: null, loading: false }) {
   const context = {
     DATA: data, CARGO: { deputado: 'Deputado(a) federal' }, state: { view: 'x' },
     document: { addEventListener() {} }, esc: String, cidNome: String, cidAvatar: () => '',
     cidMil: value => `R$ ${value}`,
+    skel: () => '<loading>', skL: () => '<loading>',
     profilePresenceRows() { return (data.presencaTodos || []).filter(p => p.dias > 0
       && p.presente >= 0 && p.falta >= 0 && p.justificadas >= 0
       && p.presente + p.falta + p.justificadas === p.dias); },
   };
   vm.createContext(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../frontend/scripts/partidos-view.js'), 'utf8'), context);
-  context.extVotos = v => data.votosCompletos[v.id];
+  context.senate = senate;
+  context.profileSenateEnsure = () => {};
+  context.profileSenateLoading = () => senate.loading;
+  context.profileSenateSource = section => senate[section];
+  context.profileVoteList = chamber => chamber === 'senado' ? senate.votacoes?.items || [] : data.votacoes || [];
+  context.profilePresenceRows = (chamber = 'camara') => (chamber === 'senado' ? senate.presenca?.items || [] : data.presencaTodos || []).filter(p => p.dias > 0
+    && p.presente >= 0 && p.falta >= 0 && p.justificadas >= 0
+    && p.presente + p.falta + p.justificadas === p.dias);
+  context.profileRegisteredPresenceRows = () => (senate.presenca?.items || []).filter(p => Number.isFinite(p.presente) && p.presente > 0);
+  context.profileSource = section => `<span class="src">${section.period || ''}${section.sourceUrl ? `<a href="${section.sourceUrl}">Fonte e período</a>` : ''}</span>`;
+  context.profileVoteButton = (vote, content, className = 'vt') => String(vote.id).startsWith('senado:')
+    ? `<a class="${className}" href="${vote.sourceUrl || ''}">${content}</a>`
+    : `<button type="button" class="${className}" data-vote="${vote.id}">${content}</button>`;
+  context.extVotos = v => String(v.id).startsWith('senado:') ? v.rows || [] : data.votosCompletos?.[v.id] || [];
   return context;
 }
 const voto = (id, partido, v) => [id, `Dep ${id}`, partido, 'SP', v];
@@ -59,4 +73,68 @@ test('party comparison shows missing data as unavailable and never highlights it
   assert.match(html, /Registros na lista disponível/);
   assert.doesNotMatch(html, /Bancada no Congresso|parlamentares em exercício/);
   assert.doesNotMatch(html, /NaN|Infinity|R\$ null|cmp-v best/);
+});
+
+test('party comparison adds Senate registered presence counts and nominal vote records without mixing Chamber data', () => {
+  const senate = {
+    loading: false,
+    presenca: { status: 'partial', period: '2026 · 20 sessões', sessionCount: 20, sourceUrl: 'https://senado.example.test/presenca', items: [
+      { id: 'senado:1', partido: 'AAA', presente: 1, falta: null, justificadas: null, dias: null },
+      { id: 'senado:2', partido: 'AAA', presente: 4, falta: null, justificadas: null, dias: null },
+      { id: 'senado:3', partido: 'BBB', presente: 6, falta: null, justificadas: null, dias: null },
+      { id: 'senado:4', partido: 'AAA', presente: 0, falta: null, justificadas: null, dias: null },
+    ] },
+    votacoes: { status: 'imported', period: 'Votações nominais em 2026', sourceUrl: 'https://senado.example.test/votos', items: [
+      { id: 'senado:V1', titulo: 'Matéria do Senado', secreta: false, sourceUrl: 'https://senado.example.test/v1', rows: [
+        ['senado:1', 'Senadora 1', 'AAA', 'SP', 'Sim'], ['senado:2', 'Senador 2', 'AAA', 'RJ', 'Sim'], ['senado:3', 'Senador 3', 'BBB', 'MG', 'Não'],
+      ] },
+      { id: 'senado:V2', titulo: 'Participação sem voto', secreta: false, sourceUrl: 'https://senado.example.test/v2', rows: [
+        ['senado:1', 'Senadora 1', 'AAA', 'SP', 'Presente'], ['senado:3', 'Senador 3', 'BBB', 'MG', 'Sim'],
+      ] },
+    ] },
+  };
+  const ctx = load(DATA, senate);
+  assert.equal(ctx.parPresenca('AAA', 'senado').media, 2.5);
+  assert.equal(ctx.parPresenca('AAA', 'senado').n, 2);
+  assert.equal(ctx.parVotos('AAA', 'senado')[0].maioria, 'Sim');
+  assert.equal(ctx.parUnidade(ctx.parVotos('AAA', 'senado')), 1);
+  const html = ctx.parTabela(party('AAA', { membros: 3, comDados: 2, media: 100, alertas: 1 }),
+    party('BBB', { membros: 3, comDados: 1, media: 200, alertas: 0 }));
+  assert.match(html, /Presenças registradas por senador\(a\) · Senado/);
+  assert.match(html, /<b>2,5<\/b><small> sessões em média/);
+  assert.match(html, /<b>6<\/b><small> sessões em média/);
+  assert.match(html, /20 listas de sessões consultadas/);
+  assert.match(html, /votações nominais · Senado/);
+  assert.match(html, /Como votaram · Senado/);
+  assert.match(html, /Matéria do Senado/);
+  assert.match(html, /Votações nominais em 2026/);
+  assert.match(html, /href="https:\/\/senado\.example\.test\/v1"/);
+  assert.doesNotMatch(html, /href="https:\/\/senado\.example\.test\/v1"[^>]*data-vote/);
+  const presenceRow = html.split('\n').find(line => line.includes('Presenças registradas por senador(a) · Senado'));
+  assert.ok(presenceRow);
+  assert.doesNotMatch(presenceRow, /class="cmp-v best"|%/);
+});
+
+test('missing Senate activity stays unavailable and loading uses skeletons', () => {
+  const absent = load(DATA);
+  assert.equal(absent.parPresenca('AAA', 'senado'), null);
+  assert.equal(absent.parVotos('AAA', 'senado').length, 0);
+  const html = absent.parTabela(party('AAA', { membros: 3, comDados: 2, media: 100, alertas: 1 }),
+    party('BBB', { membros: 3, comDados: 0, media: null, alertas: 0 }));
+  assert.match(html, /Votações nominais do Senado ainda não importadas/);
+  assert.match(html, /Sem dados/);
+  assert.doesNotMatch(html, /NaN|Infinity|R\$ null/);
+  const presenceRow = html.split('\n').find(line => line.includes('Presenças registradas por senador(a) · Senado'));
+  assert.ok(presenceRow);
+  assert.doesNotMatch(presenceRow, /<b>0<\/b>|%|class="cmp-v best"/);
+
+  const withoutComparable = load(DATA, { loading: false, presenca: null, votacoes: { status: 'imported', items: [] } });
+  const emptyVotes = withoutComparable.parTabela(party('AAA', { membros: 3 }), party('BBB', { membros: 3 }));
+  assert.match(emptyVotes, /Sem votações com escolhas nominais registradas para ambos os partidos/);
+  assert.doesNotMatch(emptyVotes, /0 de 0/);
+
+  const loading = load(DATA, { loading: true, presenca: null, votacoes: null });
+  const pending = loading.parTabela(party('AAA', { membros: 3, comDados: 2, media: 100, alertas: 1 }),
+    party('BBB', { membros: 3, comDados: 0, media: null, alertas: 0 }));
+  assert.match(pending, /loading/);
 });
