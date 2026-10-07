@@ -28,6 +28,10 @@ const publicWrite = (key, value) => { try { localStorage.setItem(key, JSON.strin
 const publicText = value => value === null || value === undefined || value === '' ? 'Sem dado' : String(value);
 const publicMoney = (value, digits = 2) => Number.isFinite(Number(value)) && value !== null && value !== '' ? brl(Number(value), digits) : 'Sem dado';
 const publicCount = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value)) ? Number(value).toLocaleString('pt-BR') : 'Sem dado';
+function publicMergeKnown(base, incoming) {
+  const known = Object.fromEntries(Object.entries(incoming || {}).filter(([, value]) => value !== null && value !== undefined && value !== ''));
+  return { ...(base || {}), ...known };
+}
 const publicAmountForCount = (amount, count) => count !== null && count !== undefined && count !== '' && Number(count) === 0 ? 'Sem valores importados' : publicMoney(amount);
 const PUBLIC_ROLE_LABELS = { deputado: 'Deputado(a) federal', senador: 'Senador(a)', presidente: 'Presidente da República', ministro: 'Ministro(a) de Estado', magistrado: 'Juiz(a) ou magistrado(a)', servidor: 'Servidor(a) público(a)', governador: 'Governador(a)', prefeito: 'Prefeito(a)', vereador: 'Vereador(a)', deputado_estadual: 'Deputado(a) estadual', conta_institucional: 'Conta institucional' };
 const publicRoleLabel = role => PUBLIC_ROLE_LABELS[String(role || '').toLowerCase()] || publicText(role);
@@ -239,13 +243,26 @@ function publicRecordSource(item) {
 }
 function publicAuthorityDetailHTML(data) {
   const detail = data.authority || {};
+  const authority = publicMergeKnown(publicState.publicAuthority, detail);
+  const role = String(authority.role || detail.role || '').toLowerCase();
+  const rawId = authority.id || detail.id;
+  const rawText = String(rawId || '');
+  const senator = role === 'senador' && /^\d+$/.test(rawText);
+  const deputy = ['deputado', 'deputado_federal'].includes(role) && /^\d+$/.test(rawText);
+  const legislativeId = rawText.startsWith('camara:') || rawText.startsWith('senado:') ? rawText
+    : senator ? 'senado:' + rawText : deputy ? 'camara:' + rawText : null;
+  const parliamentary = !!legislativeId;
+  const profile = parliamentary && legislativeId ? profileData({ ...authority, id: legislativeId }) : null;
+  const person = profile?.pessoa || authority;
+  const legislativeProfile = parliamentary ? `${cidSenadoFotografia(person)}${profileSectionsHTML(person)}${extFichaExtra(profile?.id || legislativeId)}
+    <button type="button" class="fchip" data-pol="${esc(profile?.id || legislativeId)}">Abrir ficha parlamentar</button>` : '';
   const summary = data.summary || [];
   const categories = data.categories || [];
   const monthly = data.monthly || [];
   const reembolso = publicKindTotals(summary, 'reembolso');
   const remuneration = publicKindTotals(summary, 'remuneracao');
-  const positions = Array.isArray(detail.positions) ? detail.positions : [];
-  const positionCount = Number(detail.positionCount) || positions.length;
+  const positions = Array.isArray(authority.positions) ? authority.positions : [];
+  const positionCount = Number(authority.positionCount) || positions.length;
   const positionsHTML = positionCount > 1 ? `<section class="card"><span class="k">Vínculos funcionais</span><p>${publicCount(positionCount)} cargos registrados; remuneração não atribuível a um único cargo.</p></section>` : '';
   const b = data.benchmark || {};
   const benchmark = b.available && Number(b.peerCount) >= 5
@@ -253,9 +270,9 @@ function publicAuthorityDetailHTML(data) {
     : `<section class="card"><span class="k">Comparação contextual</span><p class="muted">${esc(b.reason || 'Não há pelo menos cinco registros comparáveis nesta fonte e neste recorte.')}</p><p class="radar-note">Sem referência suficiente, não exibimos ranking nem avaliação de valor.</p></section>`;
   return `${positionsHTML}<div class="row2 public-metrics"><div class="tile"><span class="muted">Registros de despesa</span><b>${publicCount(reembolso.count)}</b></div><div class="tile"><span class="muted">Reembolsos informados</span><b>${publicAmountForCount(reembolso.amount, reembolso.count)}</b></div><div class="tile"><span class="muted">Remuneração informada</span><b>${publicAmountForCount(remuneration.amount, remuneration.count)}</b></div></div>
     ${summary.length ? `<section class="card"><span class="k">Totais por tipo e período</span>${summary.map(row => `<div class="public-stat-row"><b>${esc(PUBLIC_KIND_LABEL[row.kind] || row.kind || 'Tipo sem dado')}</b><span>${publicAmountForCount(row.amount, row.count)} · ${publicCount(row.count)} registros</span><small>${esc(publicPeriod(row.periodStart, row.periodEnd))}</small></div>`).join('')}</section>` : publicNotice('A fonte não informou um resumo por tipo e período.')}
-    ${categories.length ? publicCategoryBars(categories) : ''}
+    ${legislativeProfile}${categories.length ? publicCategoryBars(categories) : ''}
     ${monthly.length ? publicMonthChart(monthly) : ''}${benchmark}
-    ${detail.sourceUrl ? `<section class="card"><span class="k">Origem do perfil</span>${publicSourceLink(detail.sourceUrl, 'Ver fonte ↗')}<p class="radar-note">Identificador ${esc(detail.id || publicState.publicAuthority?.id || 'não informado')} · dados podem cobrir períodos diferentes conforme o órgão.</p></section>` : ''}
+    ${authority.sourceUrl ? `<section class="card"><span class="k">Origem do perfil</span>${publicSourceLink(authority.sourceUrl, 'Ver fonte ↗')}<p class="radar-note">Identificador ${esc(authority.id || 'não informado')} · dados podem cobrir períodos diferentes conforme o órgão.</p></section>` : ''}
     <button type="button" class="fchip" data-public-authority-expenses="${esc(publicState.publicAuthority?.id || detail.id || '')}">Abrir lista de despesas</button>`;
 }
 /* Visual do perfil: mesmas peças das telas simples (barras e meses) */
@@ -424,7 +441,7 @@ async function loadPublicView(view) {
       publicState.coverage = coverage;
       publicState.authorityDetail = data;
       if (data.authority) {
-        publicState.publicAuthority = { ...authority, ...data.authority, id: data.authority.id || authority.id };
+        publicState.publicAuthority = { ...publicMergeKnown(authority, data.authority), id: data.authority.id || authority.id };
         const meta = document.querySelector('[data-public-authority-meta]');
         const title = document.querySelector('[data-public-authority-title]');
         if (title) title.textContent = publicState.publicAuthority.name || publicState.publicAuthority.id;
@@ -571,8 +588,7 @@ function publicRemoveCase(id) { const cases = publicRead(PUBLIC_STORAGE.cases, [
 function publicSetAuthority(id, details = {}) {
   const followed = publicRead(PUBLIC_STORAGE.follow, []).find(row => String(row.id) === String(id));
   const item = publicState.authorities.find(row => String(row.id) === String(id)) || (publicState.publicAuthority && String(publicState.publicAuthority.id) === String(id) ? publicState.publicAuthority : followed) || {};
-  const supplied = Object.fromEntries(Object.entries(details).filter(([, value]) => value !== undefined && value !== ''));
-  publicState.publicAuthority = { ...item, ...supplied, id };
+  publicState.publicAuthority = { ...publicMergeKnown(item, details), id };
 }
 function publicSetSupplier(key, name, cnpj) {
   const old = publicState.publicSupplier;

@@ -7,7 +7,7 @@ FRONTEND = ROOT / "frontend"
 SNAPSHOTS = ROOT / "data" / "snapshots"
 STYLES = ("tokens.css", "base.css", "public-data.css", "cidadao.css")
 # Ordem explícita: helpers/views antes do bootstrap e router.
-SCRIPTS = ("spending-analysis.js", "spending-view.js", "public-data-view.js",
+SCRIPTS = ("profile-data.js", "spending-analysis.js", "spending-view.js", "public-data-view.js",
            "cidadao-view.js", "extras-view.js", "partidos-view.js", "app.script.js")
 
 
@@ -20,7 +20,7 @@ def build(output=None):
         )
     data = json.loads(editorial.read_text(encoding="utf-8"))
     for key, filename in (("votosCompletos", "votos.json"), ("presencaTodos", "presenca.json"),
-                          ("arrecadacao", "arrecadacao.json")):
+                          ("arrecadacao", "arrecadacao.json"), ("perfis", "perfis.json")):
         path = SNAPSHOTS / filename
         data[key] = json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
     payload = json.dumps(data, ensure_ascii=False, allow_nan=False).replace("<", "\\u003c")

@@ -37,6 +37,7 @@ function pageHead(kicker, title, lead) {
   return `<header class="ph"><span class="k">${kicker}</span><h1 class="h ph-t">${title}</h1>${lead ? `<p class="ph-lead">${lead}</p>` : ''}</header>`;
 }
 const advLink = (attrs, label = 'Busca avançada') => `<button type="button" class="cid-adv" ${attrs}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>${label} →</button>`;
+const cidPublicAuthorityAttrs = (p, mandate) => `data-public-authority="${esc(p.id || '')}" data-public-authority-name="${esc(cidNome(p.name))}" data-public-authority-role="${esc(p.role || '')}" data-public-authority-position="${esc(p.position || mandate?.position || mandate?.participacao || '')}" data-public-authority-status="${esc(p.employmentStatus || mandate?.employmentStatus || mandate?.exercicio || '')}" data-public-authority-institution="${esc(p.institution || '')}" data-public-authority-sphere="${esc(p.sphere || '')}" data-public-authority-uf="${esc(p.uf || '')}" data-public-authority-source="${esc(p.sourceUrl || mandate?.sourceUrl || '')}"`;
 const CARGO = { deputado: 'Deputado(a) federal', senador: 'Senador(a)' };
 const CARGO_PL = { deputado: 'deputados(as)', senador: 'senadores(as)' };
 const MES_LONGO = ['', 'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
@@ -77,6 +78,17 @@ function cidAvatar(p, size = 44) {
 const cidNome = n => { const s = String(n || ''); return s === s.toUpperCase() ? s.toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase()) : s; };
 function cidQuem(p) {
   return [CARGO[p.role] || 'Parlamentar', p.party, p.uf].filter(Boolean).map(esc).join(' · ') + (p.foraDaLista ? ' · fora da lista atual' : '');
+}
+function cidSenadoFotografia(p) {
+  if (p?.role !== 'senador') return '';
+  const position = String(p.position || '').trim();
+  const employmentStatus = String(p.employmentStatus || '').trim();
+  if (!position && !employmentStatus) return '';
+  return `<section class="card"><span class="k">Na fotografia da fonte</span>
+    ${position ? `<p><b>Participação no mandato:</b> ${esc(position)}</p>` : ''}
+    ${employmentStatus ? `<p>${esc(employmentStatus)}</p>` : ''}
+    ${p.sourceUrl ? `<a class="fchip" href="${esc(p.sourceUrl)}" target="_blank" rel="noopener">Fonte do Senado ↗</a>` : ''}
+  </section>`;
 }
 const cidMil = v => v >= 1e6 ? 'R$ ' + (v / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mi' : 'R$ ' + Math.round(v / 1e3).toLocaleString('pt-BR') + ' mil';
 const cidFonte = p => {
@@ -198,8 +210,8 @@ function cidLoadPol(more) {
   if (!more) { p.key = key; p.page = 1; p.itens = []; p.total = null; }
   p.loading = true; p.erro = null;
   const qs = `/api/c/politicos?pageSize=25&page=${p.page}&ordem=${p.ordem}${p.cargo ? '&cargo=' + p.cargo : ''}${p.q ? '&q=' + encodeURIComponent(p.q) : ''}`;
-  cidGet(qs).then(d => { if (p.key !== key) return; p.itens = p.itens.concat(d.itens); p.total = d.total; p.medias = d.medias; p.cobertura = d.cobertura; p.loading = false; if (state.view === 'politicos') cidRenderPolList(); })
-    .catch(e => { if (p.key !== key) return; p.loading = false; p.erro = cidErroMsg(e); if (state.view === 'politicos') cidRenderPolList(); });
+  cidGet(qs).then(d => { if (p.key !== key) return; p.itens = p.itens.concat(d.itens); p.total = d.total; p.medias = d.medias; p.cobertura = d.cobertura; p.loading = false; if (['politicos', 'deputados'].includes(state.view)) cidRenderPolList(); })
+    .catch(e => { if (p.key !== key) return; p.loading = false; p.erro = cidErroMsg(e); if (['politicos', 'deputados'].includes(state.view)) cidRenderPolList(); });
 }
 function cidPolRow(x, max) {
   const hasExpenseData = x.hasExpenseData === undefined ? x.gasto != null : Boolean(x.hasExpenseData);
@@ -260,8 +272,8 @@ function vPoliticos() {
     <div id="cid-pol-list" class="cid-stack" aria-live="polite">${cidPolListHTML()}</div>
     <div id="cid-pol-notes">${cidPolCoverageNotesHTML(p.cobertura)}</div>
     <span class="src">Valor: quanto cada um(a) gastou da cota em 2026, pelas notas publicadas. Não é salário. A barra roxa mais forte indica gasto acima da média.</span>
-    ${destaque ? `<details class="card"><summary><b>${D.length} perfis com informações adicionais</b></summary>
-      <p class="muted">Conteúdo editorial complementar para este grupo de deputados(as).</p>
+    ${destaque ? `<details class="card"><summary><b>Detalhes editoriais disponíveis para ${D.length} perfis</b></summary>
+      <p class="muted">Complementos editoriais desta amostra. Todos os perfis abrem a mesma ficha parlamentar.</p>
       <div class="faces">${D.map(d => `<button type="button" class="face" data-dep="${d.id}"><img src="${d.foto}" alt=""><span>${esc(first(d.nome))}</span></button>`).join('')}</div>
     </details>` : ''}
     ${advLink('data-public-go="autoridades"', 'Busca avançada: ministros(as), juízes(as) e servidores(as)')}`;
@@ -281,29 +293,38 @@ function vPolitico() {
   if (cid.fichaErro) return back + `<section class="card"><p>Não deu para abrir esta ficha.</p><p class="muted">${esc(cid.fichaErro)}</p></section>`;
   const f = cid.ficha;
   if (!f) return back + skel('ficha');
-  const p = f.pessoa, hasExpenseData = f.hasExpenseData === undefined ? f.total != null : Boolean(f.hasExpenseData);
+  const shared = profileData(f.pessoa || id), p = shared?.pessoa || f.pessoa, profileId = shared?.id || p.id || id;
+  const sections = profileSectionsHTML(p);
+  const authorityAttrs = cidPublicAuthorityAttrs(p, shared?.mandato);
+  const localId = cidLocalId(profileId), hasEditorial = !!byId[localId];
+  const profileActions = `<div class="cid-actions"><button type="button" class="fchip" data-cmp-start="${esc(profileId)}">Comparar com outro(a) →</button>
+    ${hasEditorial ? `<button type="button" class="fchip" data-editorial-ficha="${esc(localId)}">Detalhes da amostra editorial</button><button type="button" class="fchip dl-only" data-pdf="${esc(localId)}">Baixar PDF dos detalhes editoriais</button>` : ''}</div>`;
+  const hasExpenseData = f.hasExpenseData === undefined ? f.total != null : Boolean(f.hasExpenseData);
   const media = f.media || 0;
   if (!hasExpenseData) return `${back}
     <div class="profile">${cidAvatar(p, 64)}<div style="display:flex;flex-direction:column;gap:3px;min-width:0"><span class="n">${esc(cidNome(p.name))}</span><span class="muted">${cidQuem(p)}</span></div></div>
-    <div class="cid-actions"><button type="button" class="fchip" data-cmp-start="${esc(p.id)}">Comparar com outro(a) →</button></div>
+    ${cidSenadoFotografia(p)}
+    ${profileActions}
     <section class="card hero"><span class="k">Cota parlamentar em 2026</span><div class="huge">Sem dados</div>
       <span class="muted">Nenhuma despesa de reembolso foi observada para este perfil no recorte importado.</span></section>
     ${extFichaExtra(p.id)}
+    ${sections}
     <section class="card"><span class="k">Despesas</span><p class="muted">Não há lançamentos observados para calcular total, média, série mensal ou alertas.</p></section>
     ${cidFonte(p) ? `<a class="fchip" style="align-self:flex-start" href="${esc(cidFonte(p))}" target="_blank" rel="noopener">Página oficial ↗</a>` : ''}
-    ${advLink(`data-public-authority="${esc(p.id)}" data-public-authority-name="${esc(cidNome(p.name))}" data-public-authority-role="${esc(p.role || '')}"`, 'Busca avançada: todos os lançamentos')}`;
+    ${advLink(authorityAttrs, 'Busca avançada: todos os lançamentos')}`;
   const dif = media ? f.total / media - 1 : 0;
   const totalLabel = f.total === 0 ? '0' : Math.round(f.total / 1e3).toLocaleString('pt-BR') + ' mil';
   const maxMes = Math.max(1, ...f.meses.map(m => m.valor)), catTot = f.categorias.reduce((s, c) => s + c.valor, 0) || 1;
   const camara = String(p.id).startsWith('camara:');
   return `${back}
   <div class="profile">${cidAvatar(p, 64)}<div style="display:flex;flex-direction:column;gap:3px;min-width:0"><span class="n">${esc(cidNome(p.name))}</span><span class="muted">${cidQuem(p)}</span></div></div>
-  <div class="cid-actions"><button type="button" class="fchip" data-cmp-start="${esc(p.id)}">Comparar com outro(a) →</button></div>
+  ${cidSenadoFotografia(p)}
+  ${profileActions}
 
   <section class="card hero">
     <span class="k">Cota parlamentar em 2026</span>
     <div class="huge"><small>R$</small>${totalLabel}</div>
-    <span class="muted">gastos com o trabalho (escritório, divulgação, carro, viagens). Não é o salário, que é de R$ 46.366 por mês e vem à parte.</span>
+    <span class="muted">Gastos com o trabalho registrados nas notas da cota (escritório, divulgação, carro e viagens). Cota é reembolso; remuneração é informada separadamente quando a fonte publica.</span>
     ${media ? `<div class="cid-vs">
       <div><span>${esc(first(cidNome(p.name)))}</span><b class="mono">${cidMil(f.total)}</b></div><div class="cid-vsbar"><i style="width:${Math.min(100, f.total / Math.max(f.total, media) * 100)}%"></i></div>
       <div><span>Média dos(as) ${CARGO_PL[p.role] || 'colegas'}</span><b class="mono">${cidMil(media)}</b></div><div class="cid-vsbar avg"><i style="width:${Math.min(100, media / Math.max(f.total, media) * 100)}%"></i></div>
@@ -312,6 +333,7 @@ function vPolitico() {
   </section>
 
   ${extFichaExtra(p.id)}
+  ${sections}
 
   <h2 class="h cid-alert-h" style="margin-top:6px">${f.alertas.length ? `${f.alertas.length} ${f.alertas.length === 1 ? 'alerta' : 'alertas'}` : 'Nenhum alerta'}</h2>
   ${f.alertas.length ? f.alertas.map(a => cidCard(a, { semPessoa: true })).join('') : '<p class="note">Nada fora do normal nas regras que checamos: nenhum mês com gasto muito acima do normal e nenhuma empresa com metade do dinheiro.</p>'}
@@ -335,14 +357,16 @@ function vPolitico() {
 
   ${cidFonte(p) ? `<a class="fchip" style="align-self:flex-start" href="${esc(cidFonte(p))}" target="_blank" rel="noopener">Página oficial ↗</a>` : ''}
   <span class="src">Fonte: notas da cota publicadas pela ${camara ? 'Câmara (sem as passagens aéreas, que ficam fora do arquivo aberto)' : 'Senado'}. Retrato de ${f.snapshotAt ? dmy(f.snapshotAt) : 'out/2026'}.</span>
-  ${advLink(`data-public-authority="${esc(p.id)}" data-public-authority-name="${esc(cidNome(p.name))}" data-public-authority-role="${esc(p.role || '')}"`, 'Busca avançada: todos os lançamentos')}`;
+  ${advLink(authorityAttrs, 'Busca avançada: todos os lançamentos')}`;
 }
 
 /* ---------- Eventos ---------- */
 function cidOpenPol(id) {
-  const local = cidLocalId(id);
-  if (byId[local]) { state.dep = local; state.plimit = 12; state.pfilter = 'todos'; go('ficha'); return; }
-  state.pol = id; go('politico');
+  const canonical = String(id || '').includes(':') ? String(id) : 'camara:' + String(id || '');
+  state.pol = canonical;
+  state.dep = cidLocalId(canonical);
+  state.plimit = 12; state.pfilter = 'todos';
+  go('politico');
 }
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-pol],[data-lupa-tipo],[data-lupa-cargo],[data-lupa-more],[data-lupa-retry],[data-pol-cargo],[data-pol-ordem],[data-pol-more],[data-pol-retry]');

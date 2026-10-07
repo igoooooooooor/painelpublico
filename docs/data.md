@@ -36,6 +36,22 @@ python3 ingest/editorial/coleta.py build
 make build
 ```
 
+As fichas federais têm um coletor complementar manual, sem dependências externas:
+
+```sh
+make collect-profiles                 # completa caches ausentes das fichas
+python3 ingest/profiles.py --collect --refresh  # atualiza os caches oficiais
+python3 ingest/profiles.py            # reconstrói o snapshot sem rede
+make build
+```
+
+`ingest/profiles.py` usa os IDs das listas oficiais em `data/imports/legislative.json` e escreve
+`data/snapshots/perfis.json`. O cache em `data/raw/profiles/` contém somente campos selecionados de contato
+institucional, mandato, projetos e gabinete; respostas de detalhe com CPF e outros dados pessoais não são
+salvas integralmente. A coleta usa no máximo quatro consultas concorrentes. Falhas preservam a última
+observação disponível e sua data, com indicação de falha; não produzem valor zero. `--limit N` permite
+uma coleta curta de diagnóstico. Nenhum desses comandos agenda atualizações.
+
 Esses comandos escrevem os snapshots complementares em `data/snapshots/` e cache em `data/raw/editorial-extra/`. `arrecadacao.json` é um snapshot editorial atualizado manualmente com a fonte e a data. Os demais coletores em `ingest/editorial/` reconstruíam a amostra original de dez perfis: dependem de insumos históricos que não estão todos neste repositório. Não fazem parte de `make dev`; alguns exigem `pip install -r ingest/editorial/requirements.txt` em ambiente virtual.
 
 ## Base e recursos
@@ -53,8 +69,9 @@ são limitadas à fonte e não garantem conciliação de empresas com nomes igua
 
 A interface busca autoridades e fornecedores e aceita papéis como deputado, senador, presidente, ministro, magistrado e servidor,
 mas os dados disponíveis dependem da cobertura abaixo. Filtra despesas/remunerações por natureza, categoria, fonte, período e
-valor, ordena e exporta resultados em CSV. Comparações usam mesmo mês, fonte, instituição, cargo, situação funcional, UF e
-natureza e exigem cinco outras pessoas com registros observados. Ausência de linha não é zero; o mês pode estar incompleto. Diferenças
+valor, ordena e exporta resultados em CSV. Comparações usam mesmo mês, fonte, instituição, cargo, UF e natureza e exigem cinco
+outras pessoas com registros observados. Na remuneração também exigem cargo funcional e situação equivalentes; participação
+no mandato e datas de exercício não dividem os pares de reembolso. Ausência de linha não é zero; o mês pode estar incompleto. Diferenças
 da mediana/quartis são descritivas. Na folha mensal, competência conhecida não é tratada como data de emissão.
 
 O radar aplica três cortes a reembolsos: lançamento de pelo menos R$ 10.000; concentração de pelo menos 50% do total anual com
@@ -98,12 +115,20 @@ ocultadas; isso também pode ocultar um número de documento legítimo nesse for
 
 ## Cobertura das telas de parlamentares
 
-A consulta principal usa as listas oficiais importadas: 513 deputados e 82 registros de senadores nesta fotografia. Os 513 IDs da Câmara coincidem com as seis páginas coletadas da API. O total do Senado não é uma contagem de cadeiras: o XML inclui Lourdinha Pereira como segunda suplente, com exercício encerrando em 6/10/2026 por retorno do titular. A UF dessa linha está no bloco de mandato e ainda não é capturada pelo adaptador; isso fica pendente de reconciliação na próxima coleta.
+A consulta principal usa as listas oficiais importadas: 513 deputados e 82 registros de senadores nesta fotografia. Os 513 IDs da Câmara coincidem com as seis páginas coletadas da API. O total do Senado não é uma contagem de cadeiras: o XML inclui Lourdinha Pereira como segunda suplente, com exercício de 5/8/2026 a 6/10/2026 e motivo publicado de retorno do titular.
 
-Há reembolsos associados a 509 dos deputados e 79 dos registros do Senado. Os demais devem aparecer como dados ausentes, não como zero. As fichas básicas consultam esses dados para todos os cadastros listados; dez deputados têm informação editorial adicional.
+A reconciliação de 7/10/2026 reprocessa essa mesma fotografia do XML (`Metadados/Versao`: `06/10/2026 19:19:34`), sem nova coleta nem mudança de cobertura. O adaptador usa `Mandato/UfParlamentar` quando a identificação não informa UF; assim recupera MA para esse registro. Importa `Mandato/DescricaoParticipacao` em `position` e descreve em `employmentStatus` o exercício com a data de início mais recente, independentemente da ordem do XML. A ficha do Senado mostra participação, intervalo e motivo de término quando informados, com link da fonte. Datas ausentes, inválidas ou conflitantes não geram uma situação inferida; intervalo sem término informado não confirma exercício na data de hoje. Os 82 IDs da lista e as despesas históricas são preservados. Não se deduplicam suplentes e titulares como se fossem a mesma pessoa.
 
-A presença complementar cobre 512 dos 513 deputados; Gilmar Machado não tem dias extraídos no snapshot. As votações complementares cobrem quatro votações escolhidas para o Placar. Cadastro completo não significa histórico de presença, votações e remunerações completo.
+Há reembolsos associados a 509 dos deputados e 79 dos registros do Senado. Os demais devem aparecer como dados ausentes, não como zero. A home, a lista, o Placar e as comparações abrem a mesma ficha parlamentar; a busca avançada usa as mesmas seções complementares. Dez deputados mantêm detalhes e PDF da amostra editorial em uma entrada identificada separadamente.
+
+`frontend/scripts/profile-data.js` concentra a leitura do snapshot complementar, presença e votos. Contatos e situação da Câmara vêm do detalhe oficial de cada deputado; verba e equipe de gabinete vêm da página oficial, com ano, meses publicados e data de atualização. Projetos da Câmara abrangem PL, PLP e PEC apresentados desde 1/2/2023: total só é confirmado quando todas as páginas da consulta são lidas. O resumo dessa API não fornece a situação atual de cada projeto, que permanece ausente. Contatos e participação/exercício do Senado vêm do XML reconciliado; gabinete e projetos do Senado ainda não têm fonte integrada validada. O antigo serviço de autoria anuncia descontinuação e o filtro por autor da API substituta não foi confirmado.
+
+Na coleta de 7/10/2026, o complemento contém os 595 IDs da lista: 513 deputados e 82 registros do Senado. Na Câmara, há e-mail para 513, telefone/endereço para 512, gasto de gabinete para 512 e equipe ativa para 512; dois perfis têm a seção de gabinete parcial. A consulta de projetos concluiu a paginação dos 513 perfis (quatro com zero resultados no recorte): são 35.746 associações entre autor e projeto, correspondentes a 19.878 IDs de proposição distintos, pois há coautorias. No Senado, o XML da fotografia de 6/10 informa e-mail para 78 e telefone para 80; 81 registros têm ao menos um desses contatos. Campos não publicados continuam sem valor. Essas contagens não ampliam o recorte de despesas no SQLite.
+
+O salário nas fichas e comparações é o subsídio bruto de referência do cargo, com fonte oficial e vigência; não comprova pagamento individual. Folha, descontos e outras verbas parlamentares ainda não foram importados. Cota, verba de gabinete e subsídio não são somados. Quando um campo mantém complemento editorial, a ficha informa esse recorte.
+
+A presença complementar cobre 512 dos 513 deputados; Gilmar Machado não tem dias extraídos no snapshot. Somente denominadores positivos e contagens consistentes entram nas porcentagens. As votações complementares cobrem quatro votações escolhidas para o Placar. Linha ausente significa registro não importado, nunca a inferência de que a pessoa não votou; votação secreta informa somente participação. As comparações de concordância usam apenas votações com registro para ambos. Cadastro completo não significa histórico de presença, votações e remunerações completo.
 
 ### Comparar partidos
 
-`/api/c/partidos` agrupa os cadastros atuais de deputados e senadores pela sigla da lista oficial. Para cada cargo informa bancada, quantos têm notas importadas, gasto somado, média por parlamentar com notas e alertas (`pico` e `fornecedor`), além dos três maiores gastos do partido. Quem não tem nota importada não entra na média; partido sem nenhuma nota fica com gasto e média nulos. A tela soma a isso a presença média e os votos por partido calculados dos snapshots da Câmara (sem votações secretas e sem quem não votou); o Senado não tem presença nem votos nesta versão. A sigla é a atual de cada parlamentar, não a da época de cada voto.
+`/api/c/partidos` agrupa os cadastros atuais de deputados e senadores pela sigla da lista oficial. Para cada cargo informa quantos registros integram a lista, quantos têm notas importadas, gasto somado, média por parlamentar com notas e alertas (`pico` e `fornecedor`), além dos três maiores gastos do partido. Quem não tem nota importada não entra na média; partido sem nenhuma nota fica com gasto e média nulos. A tela soma a isso a presença média e os votos por partido calculados dos snapshots da Câmara (sem votações secretas); o Senado não tem presença nem votos nesta versão. Cota usa a sigla da lista atual; presença usa a sigla do respectivo snapshot e votos usam a sigla publicada na votação. Esses recortes podem divergir após mudanças de partido.

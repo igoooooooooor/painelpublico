@@ -1,5 +1,5 @@
 /* Contador de impostos, presença de todos(as), quem votou o quê e comparação de perfis.
-   Dados: data/snapshots (ingest/editorial/coleta.py) embutidos por scripts/build.py em DATA.arrecadacao, DATA.presencaTodos e DATA.votosCompletos. */
+   A leitura de presença e votos passa pelos helpers compartilhados de perfil. */
 const ext = { voto: {}, votoLim: 40, votoQ: '', presOrd: 'menos', presQ: '', presLim: 40, cmp: [], cmpQ: '', cmpRes: null, cmpErro: null, cmpLoading: false };
 const extCam = id => 'camara:' + id;
 const extPct = (a, b) => b ? Math.round(a / b * 100) : 0;
@@ -39,12 +39,24 @@ function extImpostoCard() {
 })();
 
 /* ---------- Presença de todos(as) ---------- */
-function extPres(id) { return (DATA.presencaTodos || []).find(x => String(x.id) === String(id)); }
+function extPresRows() {
+  const rows = typeof profilePresenceRows === 'function' ? profilePresenceRows() : (DATA.presencaTodos || []);
+  return rows.filter(p => p && Number.isFinite(p.dias) && p.dias > 0
+    && [p.presente, p.falta, p.justificadas].every(n => Number.isFinite(n) && n >= 0)
+    && p.presente + p.falta + p.justificadas === p.dias);
+}
+function extPres(id) {
+  const p = typeof profilePresence === 'function'
+    ? profilePresence(String(id).includes(':') ? String(id) : extCam(id))
+    : extPresRows().find(x => String(x.id) === String(id));
+  return p && Number.isFinite(p.dias) && p.dias > 0 ? p : null;
+}
 function extPresBar(p) {
+  if (!p || !Number.isFinite(p.dias) || p.dias <= 0) return '';
   return `<span class="pbar" role="img" aria-label="${p.presente} presenças, ${p.justificadas} faltas justificadas, ${p.falta} faltas em ${p.dias} dias"><i style="width:${p.presente / p.dias * 100}%"></i><i class="j" style="width:${p.justificadas / p.dias * 100}%"></i><i class="f" style="width:${p.falta / p.dias * 100}%"></i></span>`;
 }
 function vPresenca() {
-  const all = DATA.presencaTodos || [];
+  const all = extPresRows();
   const q = cidFold(ext.presQ);
   const lista = all.filter(p => !q || cidFold(`${p.nome} ${p.partido} ${p.uf}`).includes(q))
     .sort((a, b) => ext.presOrd === 'menos' ? a.presente / a.dias - b.presente / b.dias || a.nome.localeCompare(b.nome) : b.presente / b.dias - a.presente / a.dias || a.nome.localeCompare(b.nome));
@@ -76,15 +88,13 @@ const cidFold = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').to
 /* ---------- Quem votou o quê ---------- */
 const EXT_VOTO = { 'Sim': 'Sim', 'Não': 'Não', 'Abstenção': 'Abstenção', 'Obstrução': 'Obstrução', 'Artigo 17': 'Presidiu' };
 function extVotos(v) {
-  const lista = DATA.votosCompletos?.[v.id];
-  if (!lista) return null;
-  const quem = new Set(lista.map(x => String(x[0])));
-  const naoVotou = (DATA.presencaTodos || []).filter(p => !quem.has(String(p.id))).map(p => [p.id, p.nome, p.partido, p.uf, 'Não votou']);
-  return lista.map(x => [x[0], x[1], x[2], x[3], x[4] ? (EXT_VOTO[x[4]] || x[4]) : 'Presente']).concat(naoVotou);
+  const lista = typeof profileVoteRows === 'function' ? profileVoteRows(v) : DATA.votosCompletos?.[v.id];
+  if (!Array.isArray(lista)) return null;
+  return lista.map(x => [x[0], x[1], x[2], x[3], v.secreta ? 'Presente' : (x[4] ? (EXT_VOTO[x[4]] || x[4]) : 'Presente')]);
 }
 function extQuemVotou(v) {
   const todos = extVotos(v);
-  if (!todos) return '';
+  if (!todos?.length) return `<section class="card wide" id="quem-votou"><span class="k">Quem votou o quê</span><p class="muted">Sem registros individuais importados para esta votação.</p></section>`;
   const grupos = {};
   todos.forEach(x => (grupos[x[4]] = grupos[x[4]] || []).push(x));
   const ordem = ['Sim', 'Não', 'Abstenção', 'Obstrução', 'Presidiu', 'Presente', 'Não votou'].filter(g => grupos[g]);
@@ -108,22 +118,48 @@ function extQuemVotou(v) {
 
 /* ---------- Ficha leve: presença e votos de quem é deputado(a) ---------- */
 function extVotosDe(num) {
-  return DATA.votacoes.map(v => { const t = extVotos(v); const x = t && t.find(r => String(r[0]) === String(num)); return { v, voto: x ? x[4] : null }; }).filter(r => r.voto);
+  const id = String(num).includes(':') ? String(num) : extCam(num);
+  const rows = typeof profileVotes === 'function' ? profileVotes(id) : (DATA.votacoes || []).map(v => {
+    const t = extVotos(v) || [];
+    const x = t.find(r => String(r[0]) === String(num).replace(/^camara:/, ''));
+    return { v, voto: x?.[4] ?? null };
+  });
+  return (rows || []).filter(r => r?.v && String(r.v.data || '').startsWith('2026'))
+    .sort((a, b) => String(b.v.data).localeCompare(String(a.v.data)));
 }
 function extFichaExtra(id) {
   const [casa, num] = String(id).split(':');
+  if (casa === 'senado') {
+    const official = typeof cidFonte === 'function' ? cidFonte({ id })
+      : /^\d+$/.test(num || '') ? `https://www25.senado.leg.br/web/senadores/senador/-/perfil/${encodeURIComponent(num)}` : null;
+    return `<section class="card"><span class="k">Presença no Senado</span>
+      <p class="muted">Sem dados de presença do Senado importados neste painel.</p>
+      <span class="k">Votações individuais no Senado</span>
+      <p class="muted">Sem registros individuais de votação do Senado importados neste painel.</p>
+      ${official ? `<a class="fchip" href="${esc(official)}" target="_blank" rel="noopener">Conferir no Senado ↗</a>` : ''}
+    </section>`;
+  }
   if (casa !== 'camara') return '';
-  const p = extPres(num), votos = extVotosDe(num);
+  const p = extPres(num), votos = extVotosDe(id), presRows = extPresRows();
+  const media = presRows.length ? presRows.reduce((s, x) => s + x.presente / x.dias, 0) / presRows.length : null;
+  const votacoes = votos.length;
+  const presenceUrl = /^\d+$/.test(num || '') ? `https://www.camara.leg.br/deputados/${encodeURIComponent(num)}/presenca-plenario/2026` : null;
   return `${p ? `<section class="card ${p.presente / p.dias < 0.5 ? 'alarm' : ''}">
     <span class="k">Presença nas sessões de votação · 2026</span>
-    <div><span class="big">${p.presente}/${p.dias}</span> <span class="muted">dias · média da Câmara ${extPct((DATA.presencaTodos || []).reduce((s, x) => s + x.presente / x.dias, 0), (DATA.presencaTodos || []).length)}%</span></div>
+    <div><span class="big">${p.presente}/${p.dias}</span> <span class="muted">dias${media === null ? '' : ` · média dos registros válidos ${Math.round(media * 100)}%`}</span></div>
     ${extPresBar(p)}
     <div class="legend"><span><i style="background:var(--accent)"></i>Presente ${p.presente}</span><span><i style="background:var(--muted);opacity:.55"></i>Justificada ${p.justificadas}</span><span><i style="background:var(--warn)"></i>Falta ${p.falta}</span></div>
     ${p.motivos?.length ? `<p class="note">Justificativas: ${p.motivos.map(([k, n]) => `${esc(k.toLowerCase())} (${n})`).join(', ')}.</p>` : ''}
     <button type="button" class="more" data-go="presenca">Ver a presença de todos(as)</button>
-  </section>` : ''}
-  ${votos.length ? `<section class="card"><span class="k">Como votou · toque para entender</span>
-    <div class="votes">${votos.map(({ v, voto }) => `<button type="button" class="vt" data-vote="${v.id}"><b>${esc(v.secreta ? 'voto secreto' : voto.toLowerCase())}</b><span>${esc(v.titulo)}</span></button>`).join('')}</div></section>` : ''}`;
+  </section>` : `<section class="card"><span class="k">Presença nas sessões de votação · 2026</span><p class="muted">Sem registro importado para este perfil. Ausência de dado não significa zero presença.</p></section>`}
+  <section class="card"><span class="k">Votações selecionadas do Placar · ${votacoes}</span>
+    ${votacoes ? `<div class="votes">${votos.map(({ v, voto }) => {
+      const label = voto == null ? 'Sem registro importado' : v.secreta ? 'Presença registrada · voto secreto' : String(voto).toLowerCase();
+      return `<button type="button" class="vt" data-vote="${esc(v.id)}"><b>${esc(label)}</b><span>${esc(v.titulo)}</span></button>`;
+    }).join('')}</div>` : '<p class="muted">Nenhuma votação selecionada do Placar em 2026.</p>'}
+    <span class="muted">A lista cobre apenas as votações selecionadas no Placar; falta de registro não identifica motivo nem situação do mandato.</span>
+  </section>
+  <span class="src">Fonte: Câmara dos Deputados. ${presenceUrl ? `<a href="${esc(presenceUrl)}" target="_blank" rel="noopener">Presença no Plenário ↗</a>` : ''} Os botões de votação abrem o resumo e as fontes oficiais de cada votação.</span>`;
 }
 
 /* ---------- Comparar perfis ---------- */
@@ -160,8 +196,54 @@ function vComparar() {
   ${ext.cmp.length ? `<div class="cmp-slots">${ext.cmp.map(id => { const f = cid.cache.get('/api/c/politico/' + encodeURIComponent(id)); const p = f?.pessoa || { id, name: '…' }; return `<div class="cmp-slot">${cidAvatar(p, 40)}<span><b>${esc(cidNome(p.name))}</b><small>${esc([p.party, p.uf].filter(Boolean).join(' · '))}</small></span><button type="button" class="cmp-x" data-cmp-del="${esc(id)}" aria-label="Tirar ${esc(cidNome(p.name))} da comparação">×</button></div>`; }).join('')}</div>` : ''}
   ${picker}${corpo}`;
 }
+function extCmpPerfil(f) {
+  return typeof profileData === 'function' ? profileData(f.pessoa || f.pessoa?.id) || {} : {};
+}
+function extCmpParticipacao(profile) {
+  const mandato = profile.mandato || {}, pessoa = profile.pessoa || {};
+  const values = [mandato.participacao || pessoa.position, mandato.exercicio || pessoa.employmentStatus].filter(Boolean);
+  if (!values.length && pessoa.foraDaLista) values.push('Fora da lista atual');
+  return values.length ? values.map(esc).join('<br>') : 'Sem informação importada';
+}
+function extCmpContato(profile) {
+  const c = profile.contato;
+  if (!c) return 'Sem dados importados';
+  const available = [c.email, c.endereco, ...(Array.isArray(c.telefones) ? c.telefones : []), ...(Array.isArray(c.redes) ? c.redes.map(r => r.url) : [])].some(Boolean);
+  if (!available) return 'Sem contato informado neste recorte';
+  return c.status === 'partial' ? 'Disponível em recorte parcial' : 'Dados disponíveis';
+}
+function extCmpProjetos(profile) {
+  const projects = profile.projetos;
+  if (!projects) return 'Sem dados importados';
+  if (projects.status === 'partial') return 'Disponíveis em recorte parcial';
+  if (projects.status === 'imported' || Number.isInteger(projects.total)) return 'Dados disponíveis';
+  return projects.items?.length ? 'Disponíveis neste recorte' : 'Sem dados importados';
+}
+function extCmpRemuneracao(profile) {
+  const salary = profile.remuneracao;
+  if (!salary || !Number.isFinite(salary.amount)) return 'Sem referência importada';
+  return `${salary.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} por mês · referência do cargo, não pagamento individual`;
+}
+function extCmpGabinete(profile) {
+  const office = profile.gabinete;
+  if (!office) return 'Sem dados importados';
+  const value = Number.isFinite(office.amount)
+    ? office.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    : 'valor não informado';
+  const period = office.period || (Number.isFinite(office.months) ? `${office.months} meses` : 'período não informado');
+  const monthNames = ['', 'jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+  const months = Object.keys(office.months || {}).map(Number).filter(n => n >= 1 && n <= 12).sort((a, b) => a - b);
+  const observed = months.length ? ` · meses: ${months.map(m => monthNames[m]).join(', ')}` : '';
+  const staff = Number.isFinite(office.staffActive) ? `${office.staffActive} pessoas ativas` : 'equipe não informada';
+  const fetched = office.fetchedAt ? `fotografia ${String(office.fetchedAt).slice(0, 10)}` : 'fotografia sem data';
+  return `${value} · ${esc(period)}${observed} · ${staff} · ${esc(fetched)}`;
+}
+function extCmpInfoRow(label, a, b) {
+  return `<div class="cmp-row"><span class="cmp-l">${esc(label)}</span><div class="cmp-v">${a}</div><div class="cmp-v">${b}</div></div>`;
+}
 function extCmpTabela([a, b]) {
   const pa = a.pessoa, pb = b.pessoa, maxT = Math.max(a.total, b.total, 1);
+  const perfilA = extCmpPerfil(a), perfilB = extCmpPerfil(b);
   const nome = p => esc(cidNome(p.name).split(' ')[0]);
   const lado = (va, vb, fmt, maiorPior = true) => {
     const ganha = va == null || vb == null || va === vb || va < 0 || vb < 0 ? '' : (va > vb) === maiorPior ? 'b' : 'a';
@@ -174,21 +256,28 @@ function extCmpTabela([a, b]) {
   const topForn = f => f.fornecedores[0] ? `${esc(cidNome(f.fornecedores[0].name))} <small>${extPct(f.fornecedores[0].valor, f.total)}%</small>` : '—';
   const numA = String(pa.id).split(':')[1], numB = String(pb.id).split(':')[1];
   const ambosDep = String(pa.id).startsWith('camara:') && String(pb.id).startsWith('camara:');
-  const votos = ambosDep ? DATA.votacoes.filter(v => !v.secreta).map(v => { const t = extVotos(v) || []; const x = t.find(r => String(r[0]) === numA), y = t.find(r => String(r[0]) === numB); return { v, va: x?.[4] || '—', vb: y?.[4] || '—' }; }) : [];
-  const iguais = votos.filter(r => r.va === r.vb && r.va !== '—').length;
+  const votos = ambosDep ? DATA.votacoes.filter(v => !v.secreta).map(v => { const t = extVotos(v) || []; const x = t.find(r => String(r[0]) === numA), y = t.find(r => String(r[0]) === numB); return { v, va: x?.[4] ?? null, vb: y?.[4] ?? null }; }) : [];
+  const comparaveis = votos.filter(r => r.va !== null && r.vb !== null);
+  const iguais = comparaveis.filter(r => r.va === r.vb).length;
   return `<section class="card cmp wide">
     <div class="cmp-head"><span></span>${[a, b].map(f => `<button type="button" class="cmp-who" data-pol="${esc(f.pessoa.id)}">${cidAvatar(f.pessoa, 56)}<b>${esc(cidNome(f.pessoa.name))}</b><small>${esc([CARGO[f.pessoa.role], f.pessoa.party, f.pessoa.uf].filter(Boolean).join(' · '))}</small></button>`).join('')}</div>
     <div class="cmp-row"><span class="cmp-l">Cota gasta em 2026</span>${lado(a.total, b.total, v => `<b class="mono">${cidMil(v)}</b>`)}</div>
     <div class="cmp-row cmp-bars"><span class="cmp-l"></span><div><i style="width:${a.total == null ? 0 : a.total / maxT * 100}%"></i></div><div><i style="width:${b.total == null ? 0 : b.total / maxT * 100}%"></i></div></div>
     <div class="cmp-row"><span class="cmp-l">Comparado à média do cargo</span>${lado(vsMedia(a), vsMedia(b), v => `<b>${v > 0 ? '+' : ''}${v}%</b>`)}</div>
     <div class="cmp-row"><span class="cmp-l">Alertas</span>${lado(a.total == null ? null : a.alertas.length, b.total == null ? null : b.alertas.length, v => `<b>${v}</b>`)}</div>
-    ${pA || pB ? `<div class="cmp-row"><span class="cmp-l">Presença no Plenário</span>${lado(pA ? pA.presente / pA.dias : -1, pB ? pB.presente / pB.dias : -1, v => v < 0 ? '—' : `<b>${Math.round(v * 100)}%</b>`, false)}</div>` : ''}
+    <div class="cmp-row"><span class="cmp-l">Presença no Plenário · Câmara</span>${lado(pA ? pA.presente / pA.dias : null, pB ? pB.presente / pB.dias : null, v => `<b>${Math.round(v * 100)}%</b>`, false)}</div>
+    ${extCmpInfoRow('Participação e exercício', extCmpParticipacao(perfilA), extCmpParticipacao(perfilB))}
+    ${extCmpInfoRow('Contato institucional', esc(extCmpContato(perfilA)), esc(extCmpContato(perfilB)))}
+    ${extCmpInfoRow('Projetos', esc(extCmpProjetos(perfilA)), esc(extCmpProjetos(perfilB)))}
+    ${extCmpInfoRow('Equipe e verba de gabinete', extCmpGabinete(perfilA), extCmpGabinete(perfilB))}
+    ${extCmpInfoRow('Remuneração de referência', esc(extCmpRemuneracao(perfilA)), esc(extCmpRemuneracao(perfilB)))}
     <div class="cmp-row"><span class="cmp-l">Onde mais gastou</span><div class="cmp-v">${topCat(a)}</div><div class="cmp-v">${topCat(b)}</div></div>
     <div class="cmp-row"><span class="cmp-l">Empresa que mais recebeu</span><div class="cmp-v">${topForn(a)}</div><div class="cmp-v">${topForn(b)}</div></div>
   </section>
   ${votos.length ? `<section class="card wide"><span class="k">Como votaram</span>
-    <h2 class="h" style="font-size:21px">${nome(pa)} e ${nome(pb)} votaram igual em ${iguais} de ${votos.length} votações.</h2>
-    ${votos.map(r => `<button type="button" class="cmp-vote" data-vote="${r.v.id}"><span>${esc(r.v.titulo)}</span><span class="vchip ${r.va === 'Sim' ? 'sim' : r.va === 'Não' ? 'nao' : ''}">${esc(r.va.toLowerCase())}</span><span class="vchip ${r.vb === 'Sim' ? 'sim' : r.vb === 'Não' ? 'nao' : ''}">${esc(r.vb.toLowerCase())}</span><em>${r.va === r.vb ? 'igual' : 'diferente'}</em></button>`).join('')}
+    <h2 class="h" style="font-size:21px">${nome(pa)} e ${nome(pb)} registraram o mesmo voto em ${iguais} de ${comparaveis.length} votações comparáveis.</h2>
+    ${votos.map(r => `<button type="button" class="cmp-vote" data-vote="${esc(r.v.id)}"><span>${esc(r.v.titulo)}</span><span class="vchip ${r.va === 'Sim' ? 'sim' : r.va === 'Não' ? 'nao' : ''}">${esc(r.va === null ? 'Sem registro importado' : r.va.toLowerCase())}</span><span class="vchip ${r.vb === 'Sim' ? 'sim' : r.vb === 'Não' ? 'nao' : ''}">${esc(r.vb === null ? 'Sem registro importado' : r.vb.toLowerCase())}</span><em>${r.va === null || r.vb === null ? 'sem registro comparável' : r.va === r.vb ? 'igual' : 'diferente'}</em></button>`).join('')}
+    <span class="muted">A comparação considera apenas votos registrados por ambos; ausência de registro não significa que a pessoa não votou.</span>
   </section>` : ''}
   <span class="src">Destaque em roxo: quem gastou menos, teve menos alertas ou foi mais às sessões. Gastos pelas notas da cota publicadas pela Câmara e pelo Senado (sem as passagens aéreas da Câmara).</span>`;
 }
@@ -208,7 +297,7 @@ document.addEventListener('click', e => {
 let extTimer = null;
 document.addEventListener('input', e => {
   const id = e.target.id;
-  if (id === 'ext-pres-q') { ext.presQ = e.target.value; ext.presLim = 40; const q = cidFold(ext.presQ); const el = document.getElementById('ext-pres-list'); if (el) { const all = DATA.presencaTodos || []; el.innerHTML = extPresList(all.filter(p => !q || cidFold(`${p.nome} ${p.partido} ${p.uf}`).includes(q)).sort((a, b) => ext.presOrd === 'menos' ? a.presente / a.dias - b.presente / b.dias : b.presente / b.dias - a.presente / a.dias)); } }
+  if (id === 'ext-pres-q') { ext.presQ = e.target.value; ext.presLim = 40; const q = cidFold(ext.presQ); const el = document.getElementById('ext-pres-list'); if (el) { const all = extPresRows(); el.innerHTML = extPresList(all.filter(p => !q || cidFold(`${p.nome} ${p.partido} ${p.uf}`).includes(q)).sort((a, b) => ext.presOrd === 'menos' ? a.presente / a.dias - b.presente / b.dias : b.presente / b.dias - a.presente / a.dias)); } }
   if (id === 'ext-voto-q') { ext.votoQ = e.target.value; const pos = e.target.selectionStart; rerender(); const i = document.getElementById('ext-voto-q'); if (i) { i.focus(); i.setSelectionRange(pos, pos); } }
   if (id === 'ext-cmp-q') { clearTimeout(extTimer); const v = e.target.value; extTimer = setTimeout(() => extCmpBusca(v), 250); }
 });

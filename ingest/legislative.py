@@ -514,6 +514,45 @@ def load_camara_expenses(path: Path, year: int, authorities: dict[str, dict[str,
     }
 
 
+def senate_exercise_status(item: ET.Element) -> str | None:
+    """Describe the latest source interval without inferring present-day tenure."""
+    exercises = item.findall("./Mandato/Exercicios/Exercicio")
+    if not exercises:
+        return None
+    dated = [(parse_date(exercise.findtext("DataInicio")), exercise) for exercise in exercises]
+    # An undated interval could be the latest one; do not guess from XML order.
+    if any(start is None for start, _ in dated):
+        return None
+    latest_start = max(start for start, _ in dated)
+    latest = [exercise for start, exercise in dated if start == latest_start]
+    statuses = set()
+    for exercise in latest:
+        raw_end = (exercise.findtext("DataFim") or "").strip()
+        end = parse_date(raw_end)
+        if raw_end and (not end or end < latest_start):
+            return None
+        if end:
+            status = f"Exercício de {date_br(latest_start)} a {date_br(end)}"
+            reason = (exercise.findtext("DescricaoCausaAfastamento") or "").strip()
+            if reason:
+                status += f" — {reason}"
+        else:
+            status = f"Exercício sem término informado desde {date_br(latest_start)}"
+        statuses.add(status)
+    # Conflicting intervals with the same start do not establish one status.
+    return statuses.pop() if len(statuses) == 1 else None
+
+
+def senate_roster_detail(roster: list[dict[str, Any]], version: str | None) -> str:
+    return (
+        f"A lista oficial consultada contém {len(roster)} registros do Senado; "
+        f"versão declarada pela fonte: {version or 'não informada'}. "
+        "Registros não equivalem a cadeiras: a lista pode incluir suplentes em transição. "
+        "Participação no mandato e último exercício são os publicados nessa fotografia; "
+        "término ausente não confirma exercício na data de hoje."
+    )
+
+
 def senate_xml_authorities(content: bytes, source_id: str, source_url: str) -> tuple[list[dict[str, Any]], str | None]:
     root = ET.fromstring(content)
     metadata = root.find("Metadados")
@@ -535,12 +574,17 @@ def senate_xml_authorities(content: bytes, source_id: str, source_url: str) -> t
                 "branch": "legislativo",
                 "sphere": "federal",
                 "institution": "Senado Federal",
-                "uf": (info.findtext("UfParlamentar") or "").strip() or None,
+                "uf": ((info.findtext("UfParlamentar") or "").strip()
+                       or (item.findtext("Mandato/UfParlamentar") or "").strip() or None),
                 "party": (info.findtext("SiglaPartidoParlamentar") or "").strip() or None,
+                "position": (item.findtext("Mandato/DescricaoParticipacao") or "").strip() or None,
+                "employmentStatus": senate_exercise_status(item),
                 "sourceId": source_id,
                 "sourceUrl": source_url,
             }
         )
+    if not rows:
+        raise ValueError("Official Senado roster contained no senators")
     return rows, source_version
 
 
@@ -767,14 +811,11 @@ def import_year(year: int, output: Path) -> dict[str, Any]:
         for authority in senate_roster:
             authorities[authority["id"]] = authority
         senate_roster_status = "imported"
-        senate_roster_detail = (
-            f"A lista oficial de senadores em exercício contém {len(senate_roster)} registros; "
-            f"versão declarada pela fonte: {senate_version or 'não informada'}."
-        )
+        roster_detail = senate_roster_detail(senate_roster, senate_version)
         senate_roster_debug = None
     except Exception as error:
         senate_roster_status = "unavailable"
-        senate_roster_detail = "Não foi possível consultar a lista atual de senadores do Senado Federal."
+        roster_detail = "Não foi possível consultar a lista atual de senadores do Senado Federal."
         senate_roster_debug = f"{type(error).__name__}: {error}"
     sources.append(
         source_record(
@@ -784,7 +825,7 @@ def import_year(year: int, output: Path) -> dict[str, Any]:
             "Senadores em exercício conforme a lista oficial do Senado Federal.",
             "Lista em vigor na consulta",
             senate_roster_status,
-            senate_roster_detail,
+            roster_detail,
             utc_now(),
             senate_roster_debug,
         )

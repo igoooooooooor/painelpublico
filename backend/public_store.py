@@ -345,20 +345,26 @@ def benchmark(db, authority):
         return {'available': False, 'reason': 'Este cadastro reúne vários cargos/vínculos. A remuneração agregada não pode ser comparada como salário de um único cargo.'}
     if kind == 'remuneracao' and not authority.get('position'):
         return {'available': False, 'reason': 'Sem cargo funcional detalhado para comparar remunerações equivalentes.'}
-    clauses = "e.sourceId=? AND a.role=? AND a.institution=? AND COALESCE(a.uf,'')=? AND e.year=? AND e.month=? AND e.kind=? AND COALESCE(a.position,'')=? AND COALESCE(a.employmentStatus,'')=? AND COALESCE(a.positionCount,1)=1"
-    params = (expense_source, authority['role'], authority['institution'], authority.get('uf') or '', year, month, kind,
-              authority.get('position') or '', authority.get('employmentStatus') or '')
+    clauses = "e.sourceId=? AND a.role=? AND a.institution=? AND COALESCE(a.uf,'')=? AND e.year=? AND e.month=? AND e.kind=?"
+    params = (expense_source, authority['role'], authority['institution'], authority.get('uf') or '', year, month, kind)
+    # Mandate participation and source exercise dates do not define salary peers
+    # for reimbursements. Functional position/status apply only to remuneration.
+    if kind == 'remuneracao':
+        clauses += " AND COALESCE(a.position,'')=? AND COALESCE(a.employmentStatus,'')=? AND COALESCE(a.positionCount,1)=1"
+        params += (authority.get('position') or '', authority.get('employmentStatus') or '')
     group = rows(db, f'''SELECT a.id,SUM(e.amountCents) value FROM authorities a JOIN expenses e ON e.authorityId=a.id
         WHERE {clauses} GROUP BY a.id''', params)
     peers = sorted(r['value'] / 100 for r in group if r['id'] != authority['id'])
     value = next((r['value'] / 100 for r in group if r['id'] == authority['id']), None)
     if len(peers) < 5:
         return {'available': False, 'peerCount': len(peers), 'reason': 'A comparação exige pelo menos 5 outras pessoas com registros na mesma fonte, órgão, cargo, UF, natureza e mês.'}
+    scope = 'Mesma fonte, órgão, cargo' + (', situação funcional' if kind == 'remuneracao' else '')
+    scope += f' e UF ({authority.get("uf") or "não informada"}). '
+    scope += 'Somente pessoas com registros neste mês; o mês pode estar incompleto. Diferença não comprova irregularidade.'
     return {'available': True, 'peerCount': len(peers), 'median': percentile(peers, .5),
             'q1': percentile(peers, .25), 'q3': percentile(peers, .75), 'amount': value,
             'period': f'{year:04d}-{month:02d}', 'kind': kind,
-            'scope': f'Mesma fonte, órgão, cargo, situação funcional e UF ({authority.get("uf") or "não informada"}). '
-                     'Somente pessoas com registros neste mês; o mês pode estar incompleto. Diferença não comprova irregularidade.'}
+            'scope': scope}
 
 
 def authority_detail(db, identifier):

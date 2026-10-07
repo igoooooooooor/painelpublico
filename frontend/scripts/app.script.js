@@ -208,7 +208,7 @@ function vDeputados() {
   <span class="src">Nesta versão de teste, 10 deputados(as) de partidos e estados diferentes. O valor ao lado é quanto cada um(a) custa por mês.</span>`;
 }
 
-function vFicha() {
+function vFichaEditorial() {
   const d = byId[state.dep], p = pres(d), c = d.cota, r = res(d.eleicao), mot = motivos(d);
   const presP = pct(p.ok, p.total), gov = d.governo.total >= 20 ? pct(d.governo.ok, d.governo.total) : null;
   const ctot = c.total || 1, top3 = c.categorias.slice(0, 3), rest = ctot - top3.reduce((s, x) => s + x.valor, 0);
@@ -286,28 +286,42 @@ function vFicha() {
   <span class="src">Câmara dos Deputados (página oficial do(a) deputado(a), dados abertos e arquivo da cota) e TSE.</span>`;
 }
 
+/* Compatibilidade para entradas antigas que ainda chamem a rota ficha. */
+function vFicha() {
+  if (state.dep) state.pol = String(state.dep).includes(':') ? String(state.dep) : 'camara:' + state.dep;
+  return vPolitico();
+}
+
 function render() {
   const v = state.view;
   const html = { inicio: vHoje, base: vBasePublica, autoridades: vAutoridades, despesas: vDespesas, fornecedores: vFornecedores,
     fornecedor: vFornecedor, autoridade: vAutoridade, radar: vRadarPublico, cobertura: vCobertura, investigacoes: vInvestigacoes,
-    hoje: vHoje, votacoes: vVotacoes, deputados: vDeputados, ficha: vFicha, votacao: vVotacao, gastos: vGastos, gasto: vGasto,
+    hoje: vHoje, votacoes: vVotacoes, deputados: vPoliticos, ficha: vFicha, editorialFicha: vFichaEditorial, votacao: vVotacao, gastos: vGastos, gasto: vGasto,
     lupa: vLupa, politicos: vPoliticos, politico: vPolitico, presenca: vPresenca, comparar: vComparar, partidos: vPartidos }[v]();
   $app.innerHTML = `<div class="view">${html}</div>`;
   document.body.dataset.view = v;
-  const tab = ['autoridade', 'autoridades', 'ficha', 'deputados', 'politicos', 'politico', 'presenca', 'comparar', 'partidos'].includes(v) ? 'politicos' :
+  const tab = ['autoridade', 'autoridades', 'ficha', 'editorialFicha', 'deputados', 'politicos', 'politico', 'presenca', 'comparar', 'partidos'].includes(v) ? 'politicos' :
     v === 'votacao' ? 'votacoes' : ['gasto', 'gastos', 'radar', 'despesas', 'fornecedor', 'fornecedores', 'lupa'].includes(v) ? 'lupa' :
     ['hoje', 'base', 'cobertura', 'investigacoes'].includes(v) ? 'inicio' : v;
   document.querySelectorAll('nav.tabs button').forEach(b => b.dataset.go === tab ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
-  if (!['inicio', 'hoje', 'lupa', 'politicos', 'politico', 'ficha', 'votacao', 'votacoes', 'deputados', 'gastos', 'gasto', 'presenca', 'comparar', 'partidos'].includes(v)) loadPublicView(v);
+  if (!['inicio', 'hoje', 'lupa', 'politicos', 'politico', 'ficha', 'editorialFicha', 'votacao', 'votacoes', 'deputados', 'gastos', 'gasto', 'presenca', 'comparar', 'partidos'].includes(v)) loadPublicView(v);
   state.publicContext = Object.fromEntries(['publicAuthority', 'publicSupplier', 'authority', 'expense', 'supplier', 'signal'].map(k => [k, JSON.parse(JSON.stringify(publicState[k]))]));
 }
 const hist = [];
-function go(view, keep) { if (!keep) hist.push({ view: state.view, dep: state.dep, vote: state.vote, pol: state.pol, y: window.scrollY, publicContext: state.publicContext }); state.view = view; render(); window.scrollTo(0, 0); }
+function go(view, keep) {
+  if (view === 'deputados') view = 'politicos';
+  if (view === 'ficha') {
+    if (state.dep) state.pol = String(state.dep).includes(':') ? state.dep : 'camara:' + state.dep;
+    view = 'politico';
+  }
+  if (!keep) hist.push({ view: state.view, dep: state.dep, vote: state.vote, pol: state.pol, y: window.scrollY, publicContext: state.publicContext });
+  state.view = view; render(); window.scrollTo(0, 0);
+}
 function back() { const h = hist.pop() || { view: 'inicio', y: 0 }; Object.assign(state, { view: h.view, dep: h.dep, vote: h.vote, pol: h.pol }); if (h.publicContext) Object.assign(publicState, h.publicContext); render(); window.scrollTo(0, h.y || 0); }
 const rerender = () => { const y = window.scrollY; render(); window.scrollTo(0, y); };
 
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-copy],[data-go],[data-dep],[data-quiz],[data-open],[data-follow],[data-vote],[data-back],[data-pmore],[data-pf],[data-spending-detail],[data-spending-type],[data-spending-mode],[data-export-alerts]');
+  const t = e.target.closest('[data-copy],[data-go],[data-dep],[data-editorial-ficha],[data-quiz],[data-open],[data-follow],[data-vote],[data-back],[data-pmore],[data-pf],[data-spending-detail],[data-spending-type],[data-spending-mode],[data-export-alerts]');
   if (!t) return;
   if (t.dataset.spendingDetail) { goSpendingDetail(t.dataset.spendingDetail); return; }
   if (t.dataset.spendingType || t.dataset.spendingMode) {
@@ -324,13 +338,14 @@ document.addEventListener('click', e => {
     return;
   }
   if (t.hasAttribute('data-back')) return back();
+  if (t.dataset.editorialFicha) { state.dep = t.dataset.editorialFicha; return go('editorialFicha'); }
   if (t.hasAttribute('data-pmore')) { state.plimit += 20; return rerender(); }
   if (t.dataset.pf) { state.pfilter = t.dataset.pf; state.plimit = 12; return rerender(); }
   if (t.dataset.quiz) { state.quiz = t.dataset.quiz; return rerender(); }
   if (t.dataset.open) { state.open[t.dataset.open] = true; return rerender(); }
   if (t.dataset.follow) { const id = t.dataset.follow; state.follow = state.follow.includes(id) ? state.follow.filter(x => x !== id) : [...state.follow, id]; store.set('nl-follow', state.follow); return rerender(); }
   if (t.dataset.vote) { state.vote = t.dataset.vote; return go('votacao'); }
-  if (t.dataset.dep) { state.dep = t.dataset.dep; state.plimit = 12; state.pfilter = 'todos'; return go('ficha'); }
+  if (t.dataset.dep) { state.plimit = 12; state.pfilter = 'todos'; return cidOpenPol('camara:' + t.dataset.dep); }
   if (t.dataset.go) { hist.length = 0; go(t.dataset.go, true); }
 });
 document.addEventListener('change', e => {

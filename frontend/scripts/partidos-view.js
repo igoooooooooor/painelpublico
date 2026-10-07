@@ -1,4 +1,4 @@
-/* Comparar partidos: bancada e cota (API /api/c/partidos), presença e votos (snapshots editoriais).
+/* Comparar partidos: registros e cota (API /api/c/partidos), presença e votos (helpers compartilhados).
    Ausência não vira zero: partido sem nota importada ou sem deputado(a) na presença aparece como "Sem dados". */
 const par = { sel: [], data: null, erro: null, loading: false };
 const PAR_PATH = '/api/c/partidos';
@@ -18,7 +18,8 @@ function parLoad() {
 function parVotos(sigla) {
   return DATA.votacoes.filter(v => !v.secreta).map(v => {
     const linhas = (typeof extVotos === 'function' ? extVotos(v) : null) || [];
-    const meus = linhas.filter(x => x[2] === sigla && x[4] !== 'Não votou');
+    // extVotos contém somente linhas registradas na fonte; não completar ausentes pela lista atual.
+    const meus = linhas.filter(x => x[2] === sigla);
     const sim = meus.filter(x => x[4] === 'Sim').length, nao = meus.filter(x => x[4] === 'Não').length;
     const maioria = !sim && !nao ? null : sim > nao ? 'Sim' : nao > sim ? 'Não' : 'Dividido';
     return { v, sim, nao, outros: meus.length - sim - nao, maioria };
@@ -29,7 +30,10 @@ function parUnidade(votos) {
   return base ? votos.reduce((s, r) => s + Math.max(r.sim, r.nao), 0) / base : null;
 }
 function parPresenca(sigla) {
-  const membros = (DATA.presencaTodos || []).filter(p => p.partido === sigla && p.dias);
+  const rows = typeof profilePresenceRows === 'function' ? profilePresenceRows() : (DATA.presencaTodos || []);
+  const membros = rows.filter(p => p && p.partido === sigla && Number.isFinite(p.dias) && p.dias > 0
+    && [p.presente, p.falta, p.justificadas].every(n => Number.isFinite(n) && n >= 0)
+    && p.presente + p.falta + p.justificadas === p.dias);
   return membros.length ? { media: membros.reduce((s, p) => s + p.presente / p.dias, 0) / membros.length, n: membros.length } : null;
 }
 
@@ -53,10 +57,10 @@ function parTabela(a, b) {
   const porDez = p => { const tot = (p.deputado?.alertas || 0) + (p.senador?.alertas || 0); const n = (p.deputado?.comDados || 0) + (p.senador?.comDados || 0); return n ? tot / n * 10 : null; };
   const comparaveis = va.map((r, i) => [r, vb[i]]).filter(([x, y]) => x.maioria && y.maioria);
   const iguais = comparaveis.filter(([x, y]) => x.maioria === y.maioria).length;
-  const bancada = p => `<b>${p.membros}</b><small>${[p.deputado ? `${p.deputado.membros} dep.` : '', p.senador ? `${p.senador.membros} sen.` : ''].filter(Boolean).join(' · ')}</small>`;
+  const totalRegistros = p => `<b>${p.membros}</b><small>${[p.deputado ? `${p.deputado.membros} dep.` : '', p.senador ? `${p.senador.membros} sen.` : ''].filter(Boolean).join(' · ')}</small>`;
   return `<section class="card cmp wide par-cmp">
-    <div class="cmp-head"><span></span>${[a, b].map(p => `<div class="par-who"><span class="par-sigla" style="--fit:${Math.min(30, Math.round(170 / Math.max(5, p.sigla.length)))}px">${esc(p.sigla)}</span><small>${p.membros} parlamentares em exercício</small></div>`).join('')}</div>
-    <div class="cmp-row"><span class="cmp-l">Bancada no Congresso</span><div class="cmp-v par-stack">${bancada(a)}</div><div class="cmp-v par-stack">${bancada(b)}</div></div>
+    <div class="cmp-head"><span></span>${[a, b].map(p => `<div class="par-who"><span class="par-sigla" style="--fit:${Math.min(30, Math.round(170 / Math.max(5, p.sigla.length)))}px">${esc(p.sigla)}</span><small>${p.membros} registros da lista</small></div>`).join('')}</div>
+    <div class="cmp-row"><span class="cmp-l">Registros na lista disponível</span><div class="cmp-v par-stack">${totalRegistros(a)}</div><div class="cmp-v par-stack">${totalRegistros(b)}</div></div>
     ${parLinha('Gasto médio de cota por deputado(a) em 2026', a.deputado?.media, b.deputado?.media, v => `<b class="mono">${cidMil(v)}</b>`, 'menor')}
     ${parLinha('Gasto médio de cota por senador(a) em 2026', a.senador?.media, b.senador?.media, v => `<b class="mono">${cidMil(v)}</b>`, 'menor')}
     ${parLinha('Alertas a cada 10 parlamentares', porDez(a), porDez(b), v => `<b>${v.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</b>`, 'menor')}
@@ -76,7 +80,7 @@ function parTabela(a, b) {
 function vPartidos() {
   parLoad();
   const head = `<button type="button" class="back" data-back>‹ Voltar</button>
-  ${pageHead('Câmara e Senado', 'Comparar partidos', 'Bancada, gastos com a cota, presença e votos de dois partidos lado a lado.')}`;
+  ${pageHead('Câmara e Senado', 'Comparar partidos', 'Registros da lista, gastos com a cota, presença e votos de dois partidos lado a lado.')}`;
   if (par.erro) return `${head}<section class="card wide"><p>Não deu para carregar os partidos agora.</p><p class="muted">${esc(par.erro)}</p><button type="button" class="more" data-par-retry>Tentar de novo</button></section>`;
   if (!par.data) return `${head}<section class="card wide par-pick sk-card">${skL('140px', 10)}${skel('chips', 12)}</section>${skel('cmp')}`;
   const porSigla = Object.fromEntries(par.data.itens.map(p => [p.sigla, p]));
@@ -84,7 +88,7 @@ function vPartidos() {
   return `${head}
   <section class="card wide par-pick"><span class="k">Escolha dois partidos</span>
     <div class="chips" role="group" aria-label="Partidos">${par.data.itens.map(p => `<button type="button" class="fchip" data-par="${esc(p.sigla)}" aria-pressed="${par.sel.includes(p.sigla)}">${esc(p.sigla)} <b>${p.membros}</b></button>`).join('')}</div>
-    <span class="muted">O número ao lado é a bancada (deputados(as) + senadores(as)). Toque para trocar; o mais antigo da comparação sai.</span>
+    <span class="muted">O número ao lado conta registros incluídos na lista (deputados(as) + senadores(as)); o Senado tem 81 cadeiras e a lista pode incluir suplentes em transição. Toque para trocar; o mais antigo da comparação sai.</span>
   </section>
   ${a && b ? parTabela(a, b) : '<p class="note">Escolha dois partidos para comparar.</p>'}
   <span class="src">Destaque em roxo: menor gasto médio, menos alertas ou mais presença. Partidos maiores tendem a ter mais variação interna; compare a média, não o total. Gastos pelas notas da cota (sem passagens aéreas da Câmara); presença e votos só da Câmara.</span>`;

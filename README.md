@@ -35,6 +35,7 @@ python3 -m backend.server --port 8000
 | `make db-backup` | Backup SQLite consistente e datado |
 | `make import` | Importar arquivos locais de `data/imports/` |
 | `make collect-legislative YEAR=2026` | Baixar dados da Câmara e do Senado |
+| `make collect-profiles` | Coletar manualmente os complementos das fichas; depois rode `make build` |
 | `make prod` | Rodar como em produção (cache, só localhost) |
 | `make deploy` / `make deploy-db` | Publicar código / banco no servidor ([Publicação](docs/deploy.md)) |
 

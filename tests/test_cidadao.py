@@ -24,7 +24,11 @@ class CidadaoPoliticosTests(unittest.TestCase):
                 self.authority('camara:no-data', 'Ada Sem Dados', 'deputado', 'camara_deputies_current'),
                 self.authority('camara:zero', 'Beto Zero', 'deputado', 'camara_deputies_current'),
                 self.authority('camara:paid', 'Caio Pago', 'deputado', 'camara_deputies_current'),
-                self.authority('senado:current', 'Dora Senadora', 'senador', 'senado_senators_current'),
+                {
+                    **self.authority('senado:current', 'Dora Senadora', 'senador', 'senado_senators_current'),
+                    'position': 'Mandato <titular> & participação',
+                    'employmentStatus': 'Exercício de 05/08/2026 a 06/10/2026 — Retorno do titular',
+                },
                 self.authority('camara:former', 'Eva Ex-Deputada', 'deputado', 'camara_ceap'),
             ],
             'expenses': [
@@ -67,6 +71,7 @@ class CidadaoPoliticosTests(unittest.TestCase):
             first = cidadao.politicos(db, {'page': 1, 'pageSize': 2})
             second = cidadao.politicos(db, {'page': 2, 'pageSize': 2})
             senators = cidadao.politicos(db, {'cargo': 'senador', 'pageSize': 100})
+            senator_profile = cidadao.politico(db, 'senado:current')
             deputies_by_spend = cidadao.politicos(
                 db, {'cargo': 'deputado', 'ordem': 'gasto', 'pageSize': 100},
             )
@@ -82,6 +87,13 @@ class CidadaoPoliticosTests(unittest.TestCase):
         )
         self.assertEqual(senators['total'], 1)
         self.assertEqual([item['id'] for item in senators['itens']], ['senado:current'])
+        senator = senators['itens'][0]
+        self.assertEqual(senator['position'], 'Mandato <titular> & participação')
+        self.assertEqual(senator['employmentStatus'], 'Exercício de 05/08/2026 a 06/10/2026 — Retorno do titular')
+        self.assertEqual(senator['sourceUrl'], 'https://example.gov.br/parlamentar')
+        self.assertEqual(senator_profile['pessoa']['position'], 'Mandato <titular> & participação')
+        self.assertEqual(senator_profile['pessoa']['employmentStatus'], 'Exercício de 05/08/2026 a 06/10/2026 — Retorno do titular')
+        self.assertIsNone(first['itens'][0]['position'])
         self.assertEqual(first['cobertura'], {
             'deputado': {'count': 3, 'withExpenses': 2},
             'senador': {'count': 1, 'withExpenses': 1},
@@ -104,6 +116,8 @@ class CidadaoPoliticosTests(unittest.TestCase):
         self.assertEqual(rows['camara:zero']['gasto'], 0)
         self.assertTrue(rows['camara:zero']['hasExpenseData'])
         self.assertEqual(rows['camara:zero']['expenseCount'], 1)
+        self.assertIsNone(no_data['pessoa']['position'])
+        self.assertIsNone(no_data['pessoa']['employmentStatus'])
 
         self.assertIsNone(no_data['total'])
         self.assertFalse(no_data['hasExpenseData'])

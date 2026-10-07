@@ -48,13 +48,16 @@ def rows(db, sql, args=()):
 
 
 def _pessoas(db, ids):
-    """Nome, cargo, partido e UF. Registros que só existem no arquivo de despesas
-    (sem partido) herdam partido/UF do cadastro atual de mesmo nome, quando existe."""
+    """Nome, cargo, partido, UF e metadados da fotografia oficial.
+
+    Registros que só existem no arquivo de despesas (sem partido) herdam partido/UF
+    do cadastro atual de mesmo nome, quando existe.
+    """
     ids = list(dict.fromkeys(i for i in ids if i))
     if not ids:
         return {}
     marks = ','.join('?' * len(ids))
-    out = {r['id']: r for r in rows(db, f'SELECT id,name,role,party,uf,sourceId,sourceUrl FROM authorities WHERE id IN ({marks})', ids)}
+    out = {r['id']: r for r in rows(db, f'SELECT id,name,role,party,uf,sourceId,sourceUrl,position,employmentStatus FROM authorities WHERE id IN ({marks})', ids)}
     faltando = [r for r in out.values() if not r.get('party')]
     if faltando:
         atuais = {}
@@ -206,7 +209,7 @@ def politicos(db, params):
     page, size, offset = store.page_args(params)
     where = ' AND '.join(clauses)
     total = db.execute(f'SELECT COUNT(*) FROM authorities a WHERE {where}', args).fetchone()[0]
-    itens = rows(db, f'''SELECT a.id,a.name,a.role,a.party,a.uf,
+    itens = rows(db, f'''SELECT a.id,a.name,a.role,a.party,a.uf,a.position,a.employmentStatus,a.sourceUrl,
         CASE WHEN t.authorityId IS NULL THEN NULL ELSE t.amountCents/100.0 END gasto,
         (t.authorityId IS NOT NULL) hasExpenseData,COALESCE(t.count,0) expenseCount,
         (SELECT COUNT(*) FROM signals s WHERE s.authorityId=a.id AND s.type IN ('pico','fornecedor')) alertas

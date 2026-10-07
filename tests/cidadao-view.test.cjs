@@ -8,6 +8,14 @@ const source = fs.readFileSync(
   path.join(__dirname, '..', 'frontend', 'scripts', 'cidadao-view.js'),
   'utf8',
 );
+const appSource = fs.readFileSync(
+  path.join(__dirname, '..', 'frontend', 'scripts', 'app.script.js'),
+  'utf8',
+);
+const profileSource = fs.readFileSync(
+  path.join(__dirname, '..', 'frontend', 'scripts', 'profile-data.js'),
+  'utf8',
+);
 
 function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'); }, schedule = setTimeout } = {}) {
   const events = {};
@@ -16,10 +24,12 @@ function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'
     'cid-pol-list': { innerHTML: '' },
   };
   const state = { view: 'politicos', pol: null };
+  const byId = {};
   const context = {
     AbortController,
-    byId: {},
+    byId,
     clearTimeout,
+    DATA: { deputados: [], geradoEm: '2026-10-07', perfis: { profiles: {} }, presencaTodos: [], votacoes: [], votosCompletos: {} },
     document: {
       addEventListener(name, handler) { events[name] = handler; },
       getElementById(id) { return elements[id] || null; },
@@ -30,12 +40,15 @@ function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'
     },
     extFichaExtra() { return ''; },
     fetch: fetchImpl,
+    first(value) { return String(value || '').split(' ')[0]; },
+    go(view) { state.view = view; },
     setTimeout: schedule,
+    URL,
     state,
   };
   vm.createContext(context);
-  vm.runInContext(source + '\nthis.__api = { cid, cidPolRow, cidPolCoverageHTML, cidPolCoverageNotesHTML, cidLoadPol, vPolitico };', context);
-  return { api: context.__api, elements, state, events };
+  vm.runInContext(profileSource + '\n' + source + '\nthis.__api = { cid, cidOpenPol, cidPolRow, cidPolCoverageHTML, cidPolCoverageNotesHTML, cidLoadPol, profileData, profileSectionsHTML, vPolitico };', context);
+  return { api: context.__api, elements, state, events, byId };
 }
 
 test('clearing a search updates state before debounce so another filter cannot restore the old query', () => {
@@ -88,7 +101,90 @@ test('the roster and profile distinguish missing reimbursements from an observed
   const profile = api.vPolitico();
   assert.match(profile, /Sem dados/);
   assert.match(profile, /Nenhuma despesa de reembolso foi observada/);
+  assert.match(profile, /Salário parlamentar/);
+  assert.match(profile, /Equipe e verba de gabinete/);
+  assert.match(profile, /Projetos apresentados/);
   assert.doesNotMatch(profile, /cid-months|Nenhum alerta|R\$.*0 mil/);
+});
+
+test('sampled and unsampled people use the same profile route', () => {
+  const { api, state, byId } = makeView();
+  byId['123'] = { id: '123', nome: 'Amostra editorial' };
+
+  api.cidOpenPol('123');
+  assert.equal(state.view, 'politico');
+  assert.equal(state.pol, 'camara:123');
+  assert.equal(state.dep, '123');
+
+  api.cidOpenPol('camara:987');
+  assert.equal(state.view, 'politico');
+  assert.equal(state.pol, 'camara:987');
+  assert.equal(state.dep, '987');
+});
+
+test('legacy ficha alias preserves canonical Senate identity', () => {
+  const match = appSource.match(/function vFicha\(\) \{[\s\S]*?\n\}/);
+  assert.ok(match, 'legacy vFicha compatibility function exists');
+  const state = { dep: 'senado:77', pol: null };
+  const context = { state, vPolitico() { return state.pol; } };
+  vm.createContext(context);
+  vm.runInContext(`${match[0]}\nthis.__vFicha = vFicha;`, context);
+
+  assert.equal(context.__vFicha(), 'senado:77');
+  context.state.dep = '77';
+  assert.equal(context.__vFicha(), 'camara:77');
+});
+
+test('profiles with observed expenses still receive shared sections and separate cota from pay', () => {
+  const { api, state } = makeView();
+  state.pol = 'camara:55';
+  api.cid.fichaId = state.pol;
+  api.cid.ficha = {
+    pessoa: { id: state.pol, name: 'Perfil com despesas', role: 'deputado', party: 'PV', uf: 'RJ' },
+    total: 80000, media: 70000, hasExpenseData: true,
+    meses: [], categorias: [], fornecedores: [], maiores: [], alertas: [],
+  };
+
+  const profile = api.vPolitico();
+  assert.match(profile, /Salário parlamentar/);
+  assert.match(profile, /Equipe e verba de gabinete/);
+  assert.match(profile, /Cota é reembolso/);
+  assert.match(profile, /subsídio bruto mensal de referência do cargo/);
+  assert.doesNotMatch(profile, /Não é o salário, que é de/);
+});
+
+test('Senate profiles show source snapshot metadata safely and omit empty fields', () => {
+  const { api, state } = makeView();
+  state.pol = 'senado:current';
+  api.cid.fichaId = state.pol;
+  api.cid.ficha = {
+    pessoa: {
+      id: state.pol, name: 'Dora Senadora', role: 'senador',
+      position: 'Mandato <titular> & participação',
+      employmentStatus: 'Exercício de 05/08/2026 a 06/10/2026 — Retorno do titular',
+      sourceUrl: 'https://senado.example.test/lista?x=" onmouseover="alert(1)',
+    },
+    total: null, hasExpenseData: false, expenseCount: 0,
+  };
+
+  const profile = api.vPolitico();
+  assert.match(profile, /Na fotografia da fonte/);
+  assert.match(profile, /Mandato &lt;titular&gt; &amp; participação/);
+  assert.match(profile, /Exercício de 05\/08\/2026 a 06\/10\/2026 — Retorno do titular/);
+  assert.match(profile, /href="https:\/\/senado\.example\.test\/lista\?x=&quot; onmouseover=&quot;alert\(1\)" target="_blank"/);
+  assert.doesNotMatch(profile, /href="[^"]*" onmouseover=/);
+  assert.match(profile, /data-public-authority="senado:current"/);
+  assert.match(profile, /data-public-authority-position="Mandato &lt;titular&gt; &amp; participação"/);
+  assert.match(profile, /data-public-authority-status="Exercício de 05\/08\/2026 a 06\/10\/2026 — Retorno do titular"/);
+  assert.match(profile, /data-public-authority-source="https:\/\/senado\.example\.test\/lista\?x=&quot; onmouseover=&quot;alert\(1\)"/);
+
+  state.pol = 'senado:without-metadata';
+  api.cid.fichaId = state.pol;
+  api.cid.ficha = {
+    pessoa: { id: state.pol, name: 'Sem Metadados', role: 'senador' },
+    total: null, hasExpenseData: false, expenseCount: 0,
+  };
+  assert.doesNotMatch(api.vPolitico(), /Na fotografia da fonte|Fonte do Senado/);
 });
 
 test('a stale roster response cannot overwrite newer coverage counts', async () => {

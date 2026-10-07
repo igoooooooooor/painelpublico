@@ -5,10 +5,11 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const viewSource = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'scripts', 'public-data-view.js'), 'utf8');
+const profileSource = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'scripts', 'profile-data.js'), 'utf8');
 const CASES_KEY = 'nl-public-investigations-v1';
 const FOLLOW_KEY = 'nl-public-authorities-v1';
 
-function makeView({ failSet = false, seed = {}, fetchImpl, caseTitle = 'Investigation', caseNote = '' } = {}) {
+function makeView({ failSet = false, seed = {}, fetchImpl, caseTitle = 'Investigation', caseNote = '', data } = {}) {
   const values = new Map();
   const failedKeys = new Set(failSet === true ? [CASES_KEY] : Array.isArray(failSet) ? failSet : []);
   for (const [key, value] of Object.entries(seed)) values.set(key, JSON.stringify(value));
@@ -49,6 +50,7 @@ function makeView({ failSet = false, seed = {}, fetchImpl, caseTitle = 'Investig
     document,
     localStorage,
     state,
+    DATA: data || { deputados: [], geradoEm: '2026-10-07', perfis: { profiles: {} }, presencaTodos: [], votacoes: [], votosCompletos: {} },
     fetch: fetchImpl || (async () => { throw new Error('Unexpected fetch'); }),
     esc(value) {
       return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -57,10 +59,16 @@ function makeView({ failSet = false, seed = {}, fetchImpl, caseTitle = 'Investig
     brl(value, digits = 2) { return `R$ ${Number(value).toFixed(digits).replace('.', ',')}`; },
     render() { renders.push(state.view); },
     go(view) { navigations.push(view); state.view = view; },
+    cidSenadoFotografia(person) {
+      return person?.role === 'senador'
+        ? `<section class="test-senate-photo">${String(person.position || '')} ${String(person.employmentStatus || '')}</section>`
+        : '';
+    },
+    extFichaExtra() { return ''; },
     salvarArquivo(blob, name) { savedFiles.push({ blob, name }); }
   };
   vm.createContext(context);
-  vm.runInContext(`${viewSource}\nthis.__publicTest = {
+  vm.runInContext(`${profileSource}\n${viewSource}\nthis.__publicTest = {
     publicState, publicRead, publicAuthorityDetailHTML, publicExpenseRow, publicSaveCase,
     publicGoToAuthorityExpenses, publicInvestigateSignal, publicSignalCard,
     publicExportRows, publicToggleFollow, publicUnfollow, loadPublicView
@@ -79,6 +87,100 @@ test('authority summary preserves real zero and distinguishes an absent kind', (
   assert.match(html, /R\$ 0,00/);
   assert.match(html, /Sem valores importados/);
   assert.match(html, /1 registros/);
+});
+
+test('federal legislative authority profiles include shared contacts and projects while retaining public expenses', () => {
+  const data = {
+    deputados: [], geradoEm: '2026-10-07', presencaTodos: [], votacoes: [], votosCompletos: {},
+    perfis: { profiles: { 'camara:123': {
+      role: 'deputado', name: 'Ana Parlamentar', party: 'PV', uf: 'SP',
+      contato: { email: 'ana@example.test', telefones: ['(11) 4000-1234'], endereco: 'Gabinete 123', redes: [], sourceUrl: 'https://camara.example.test/perfil', fetchedAt: '2026-10-07', status: 'imported' },
+      projetos: { status: 'imported', period: '2023–2026', total: 1, sourceUrl: 'https://camara.example.test/projetos', fetchedAt: '2026-10-07', items: [
+        { id: '42', titulo: 'Projeto de exemplo', ementa: 'Resumo do projeto', situacao: 'Em tramitação', url: 'https://camara.example.test/projeto/42' }
+      ] }
+    } } }
+  };
+  const { api } = makeView({ data });
+  api.publicState.publicAuthority = { id: 'camara:123', name: 'Ana Parlamentar', role: 'deputado', party: 'PV', uf: 'SP' };
+
+  const html = api.publicAuthorityDetailHTML({
+    authority: { id: 'camara:123', role: 'deputado' },
+    summary: [{ kind: 'reembolso', amount: 12345.67, count: 2 }],
+    benchmark: { available: false }
+  });
+
+  assert.match(html, /Salário parlamentar/);
+  assert.match(html, /Contato e gabinete/);
+  assert.match(html, /ana@example\.test/);
+  assert.match(html, /Projetos apresentados/);
+  assert.match(html, /Projeto de exemplo/);
+  assert.match(html, /R\$ 12345,67/);
+  assert.match(html, /data-pol="camara:123"/);
+  assert.match(html, /data-public-authority-expenses="camara:123"/);
+});
+
+test('Senate detail metadata fills a basic selected authority in the public profile', () => {
+  const { api } = makeView();
+  api.publicState.publicAuthority = { id: 'senado:77', name: 'Senadora Exemplo', role: 'senador' };
+
+  const html = api.publicAuthorityDetailHTML({
+    authority: {
+      id: 'senado:77', role: 'senador', position: 'Titular em exercício',
+      employmentStatus: 'Exercício desde 2023', sourceUrl: 'https://senado.example.test/perfil'
+    },
+    summary: [], benchmark: { available: false }
+  });
+
+  assert.match(html, /Titular em exercício/);
+  assert.match(html, /Exercício desde 2023/);
+  assert.match(html, /data-pol="senado:77"/);
+});
+
+test('empty authority detail fields do not erase metadata already known by the selected profile', async () => {
+  const response = data => ({ ok: true, json: async () => data });
+  const fetchImpl = async url => {
+    if (url.startsWith('/api/authorities/')) return response({ authority: {
+      id: 'authority-2', name: 'Pessoa Exemplo', role: 'servidor',
+      position: '', employmentStatus: null, sourceUrl: ''
+    }, summary: [] });
+    if (url.startsWith('/api/expenses?')) return response({ items: [], total: 0 });
+    if (url.startsWith('/api/signals?')) return response({ items: [], total: 0 });
+    throw new Error(`Unexpected URL: ${url}`);
+  };
+  const { api, state } = makeView({ fetchImpl });
+  api.publicState.coverage = { sources: [] };
+  api.publicState.publicAuthority = {
+    id: 'authority-2', name: 'Pessoa Exemplo', role: 'servidor',
+    position: 'Analista', employmentStatus: 'Ativo', sourceUrl: 'https://data.example.test/profile'
+  };
+  state.view = 'autoridade';
+
+  await api.loadPublicView('autoridade');
+
+  assert.equal(api.publicState.publicAuthority.position, 'Analista');
+  assert.equal(api.publicState.publicAuthority.employmentStatus, 'Ativo');
+  assert.equal(api.publicState.publicAuthority.sourceUrl, 'https://data.example.test/profile');
+});
+
+test('state and local deputies do not inherit federal parliamentary profile sections', () => {
+  const { api } = makeView({ data: {
+    deputados: [], geradoEm: '2026-10-07', presencaTodos: [], votacoes: [], votosCompletos: {},
+    perfis: { profiles: { 'camara:123': {
+      role: 'deputado', contato: { email: 'federal@example.test' },
+      projetos: { status: 'imported', total: 1, items: [{ titulo: 'Projeto federal' }] }
+    } } }
+  } });
+  api.publicState.publicAuthority = { id: '123', name: 'Deputado Estadual', role: 'deputado_estadual' };
+
+  const html = api.publicAuthorityDetailHTML({
+    authority: { id: '123', role: 'deputado_estadual' },
+    summary: [{ kind: 'reembolso', amount: 50, count: 1 }],
+    benchmark: { available: false }
+  });
+
+  assert.doesNotMatch(html, /Salário parlamentar|Contato e gabinete|Projetos apresentados|data-pol=/);
+  assert.doesNotMatch(html, /federal@example\.test|Projeto federal/);
+  assert.match(html, /R\$ 50,00/);
 });
 
 test('external expense and source text is escaped before entering profile HTML', () => {

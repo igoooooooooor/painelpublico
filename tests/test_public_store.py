@@ -133,6 +133,28 @@ class PublicStoreTests(unittest.TestCase):
         with closing(store.connect(self.db_path)) as db, db:
             self.assertFalse(store.authority_detail(db, 'p:0')['benchmark']['available'])
 
+    def test_mandate_metadata_does_not_split_reimbursement_peers(self):
+        for i, authority in enumerate(self.payload['authorities']):
+            authority.update(role='senador', institution='Senado Federal',
+                             position='Titular' if i else '2º Suplente',
+                             employmentStatus=f'Exercício sem término informado desde 0{i + 1}/10/2026')
+        self.import_data()
+        with closing(store.connect(self.db_path)) as db:
+            result = store.authority_detail(db, 'p:0')['benchmark']
+            self.assertTrue(result['available'])
+            self.assertEqual(result['peerCount'], 6)
+            self.assertEqual(result['median'], 10003.5)
+            self.assertNotIn('situação funcional', result['scope'])
+
+        # Salary comparisons must still require matching position and status.
+        for expense in self.payload['expenses']:
+            expense['kind'] = 'remuneracao'
+        self.import_data()
+        with closing(store.connect(self.db_path)) as db:
+            result = store.authority_detail(db, 'p:0')['benchmark']
+            self.assertFalse(result['available'])
+            self.assertEqual(result['peerCount'], 0)
+
     def test_salary_not_added_to_reimbursements_and_missing_not_zero(self):
         salary = {**self.payload['expenses'][0], 'id': 'pay', 'kind': 'remuneracao', 'amount': 0, 'supplier': None}
         self.payload['expenses'].append(salary)
