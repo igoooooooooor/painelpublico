@@ -468,3 +468,100 @@ seu aviso. População de período anterior não substitui um cache mais recente
 falha temporária. Se um cache necessário a um snapshot já preenchido desaparecer,
 a reconstrução é recusada, preservando o snapshot; restaure o cache ou execute a
 coleta. O snapshot não agenda atualizações.
+
+## Minha cidade — Emendas parlamentares (Fase 2)
+
+A fonte é o [download nacional do Portal da Transparência](https://portaldatransparencia.gov.br/download-de-dados/emendas-parlamentares),
+com [dicionário oficial por emenda](https://portaldatransparencia.gov.br/dicionario-de-dados-emendas-parlamentares).
+O endpoint público `/download-de-dados/emendas-parlamentares/UNICO` redireciona para
+[EmendasParlamentares.zip](https://dadosabertos-download.cgu.gov.br/PortalDaTransparencia/saida/emendas-parlamentares/EmendasParlamentares.zip).
+A coleta de 7/10/2026 recebeu 32.447.704 bytes, com `Last-Modified` de 1/10/2026.
+A tabela `EmendasParlamentares.csv` usa Windows-1252 e separador ponto e vírgula.
+O ZIP fica em memória; só os campos públicos necessários da tabela por emenda são
+projetados no cache. As outras tabelas, inclusive a de favorecidos com
+identificadores de pessoas, não são processadas nem salvas pelo coletor.
+
+### Recorte e interpretação
+
+A interface usa **ano da proposta 2026**, não ano do pagamento. Os valores são a
+execução acumulada publicada na fonte: empenhado, pago e restos a pagar pagos
+permanecem separados, em centavos inteiros. Empenho não comprova pagamento; restos
+a pagar não são somados ao campo pago. Ausência ou valor inválido torna o agregado
+daquela natureza indisponível, sem preencher com zero. Ajustes negativos válidos
+são preservados.
+
+Cada linha da tabela é um desdobramento por emenda, localidade e classificação
+orçamentária. Não se deduplica apenas pelo código da emenda: isso perderia valores
+legítimos. A leitura das 5.634 linhas de 2026 reconcilia com o painel nacional
+consultado: **R$ 40.060.378.330,46 empenhados** e **R$ 25.878.742.486,65 pagos**.
+Esses totais incluem destinos sem código municipal e não são atribuídos às cidades.
+A tabela por favorecido não é somada à tabela por emenda, evitando duplicação de
+fluxos. No detalhe, linhas da mesma emenda, autoria e tipo podem ser agrupadas.
+
+Só há associação quando `Código Município IBGE` consta no catálogo nacional de
+5.571 localidades. Não se deduz destino pelo nome, UF, endereço de favorecido ou
+área de atuação parlamentar. A localidade da emenda vem da regionalização
+orçamentária; não representa todos os gastos federais nem necessariamente o
+endereço do destinatário final.
+
+Transferências especiais são identificadas exclusivamente pelo tipo oficial
+`Emenda Individual - Transferências Especiais`. O bloco “Pix” é um subconjunto já
+incluído no total, nunca uma parcela adicional. Não se infere esse tipo pelo nome
+da autoria ou por valores.
+
+A ligação às fichas compara o nome público exato normalizado com o **roster nacional
+atual**, com unicidade nos dois sentidos. O catálogo de autorias inclui também as
+linhas sem destino municipal; códigos com nomes conflitantes ficam sem ligação.
+Não se usa a UF de destino como UF do autor nem se confunde o código de autoria
+SIAFI com o identificador da Câmara ou do Senado. Bancadas, comissões e relatorias
+não são ligadas a uma pessoa. Sem correspondência, permanece o nome da fonte.
+
+### Coleta e reconstrução
+
+```sh
+make collect-amendments YEAR=2026
+python3 ingest/amendments.py --collect --refresh --year 2026
+python3 ingest/amendments.py --year 2026
+```
+
+Sem `--collect`, a reconstrução é local e não faz rede. O cache nacional contém
+anos de proposta de 2014 a 2026; `--year` escolhe um recorte para o único snapshot
+`data/snapshots/amendments.json` servido pela tela. Não há atualização agendada.
+O snapshot independente mantém a API municipal sem alteração de esquema SQLite.
+Caches e snapshots não entram no Git. Falhas preservam a base útil anterior;
+a interface indica fotografia anterior quando uma atualização falha.
+
+### Cobertura verificada em 7/10/2026
+
+| Medida do recorte de propostas de 2026 | Cobertura |
+| --- | ---: |
+| Localidades com página e tratamento de ausência | 5.571 |
+| Localidades com emendas e código municipal identificado | 511 |
+| Localidades sem registro municipal identificável | 5.060 |
+| Linhas com município identificado / linhas nacionais | 716 / 5.634 |
+| Linhas com código `Sem informação`, excluídas do recorte municipal | 4.918 |
+| Linhas de transferências especiais com município identificado | 135 |
+| Localidades com transferências especiais identificadas | 119 |
+| Autorias individuais nas linhas municipais / coletivas | 295 / 8 |
+| Autorias municipais ligadas a fichas atuais | 281 |
+| Individuais sem nome exato no roster / com nomes conflitantes | 13 / 1 |
+
+As oito autorias coletivas permanecem sem ficha pessoal. A unicidade foi conferida
+nas 630 autorias nacionais de 2026, incluindo 592 individuais e 38 coletivas;
+561 individuais têm correspondência no roster, mas apenas 281 aparecem nas linhas
+com destino municipal identificável. Nenhum vínculo depende da UF do destino.
+A cobertura eleitoral da Fase 1 não mudou: 69.213 eleitos municipais, 1.666 gerais
+e 288 eleitos federais ligados a fichas atuais.
+
+As linhas municipais somam R$ 1.352.830.217,02 empenhados e R$ 646.802.169,64 pagos.
+O subconjunto de transferências especiais soma R$ 236.162.367,48 empenhados e
+R$ 169.685.593,49 pagos. Dos 678 registros nacionais desse tipo, 543 não identificam
+município e ficam fora da distribuição municipal. A contagem de 120 valores distintos
+no campo municipal inclui o marcador `Sem informação`; há 119 códigos válidos.
+
+São Paulo/SP tem três emendas de três autores, R$ 1.884.410,26 empenhados e
+R$ 499.934,88 pagos, sem transferências especiais identificadas neste recorte.
+Serra da Saudade/MG não tem linha com destino municipal identificado para 2026;
+a tela explica a ausência. Nenhum desses resultados comprova o total recebido
+pelo município. A distribuição municipal incompleta é a principal limitação desta
+fase; os valores sem destino não são rateados nem atribuídos por inferência.

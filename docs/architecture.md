@@ -54,3 +54,16 @@ eleição não comprova exercício do mandato. A ligação de uma candidatura el
 com uma única candidatura por ficha e uma única ficha por candidatura. Não consulta
 CPF, título, e-mail ou nascimento. Casos sem correspondência continuam visíveis
 como resultados do TSE, sem link inventado.
+
+## Minha cidade — Emendas
+
+`ingest/amendments.py` projeta somente a tabela por emenda do ZIP do Portal da
+Transparência e reconstrói `data/snapshots/amendments.json` sem rede por padrão.
+O ZIP permanece em memória; tabelas de favorecidos não são processadas ou salvas.
+O snapshot independente evita migração e reimportação do banco eleitoral.
+
+`backend/amendments.py` complementa a mesma rota de detalhe da cidade e usa o cache
+por modificação de arquivo. Ausência do snapshot ou do código municipal recebe
+estado explícito. A ligação com fichas consulta o roster nacional somente para
+leitura: nome público exato e único, sem usar a UF de destino como UF do autor.
+Os valores permanecem em centavos até a formatação na interface.
