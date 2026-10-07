@@ -97,7 +97,7 @@ const normalizeView = view => LEGACY_VIEWS[view] || view;
 function render() {
   state.view = normalizeView(state.view);
   const views = { home: homeView, votes: votesView, politicians: politiciansView, profile: profileView, vote: voteView,
-    alerts: alertsView, attendance: attendanceView, compare: comparisonView, parties: partiesView };
+    alerts: alertsView, attendance: attendanceView, compare: comparisonView, parties: partiesView, city: cityView };
   if (!views[state.view]) state.view = 'home';
   const v = state.view;
   $app.innerHTML = `<div class="view">${views[v]()}</div>`;
@@ -116,7 +116,7 @@ function navigateBack() { const h = navigationHistory.pop() || { view: 'home', y
 const rerender = () => { const y = window.scrollY; render(); window.scrollTo(0, y); };
 
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-copy],[data-go],[data-deputy],[data-quiz],[data-vote],[data-back],[data-summary-retry]');
+  const t = e.target.closest('[data-copy],[data-go],[data-deputy],[data-quiz],[data-vote],[data-back],[data-summary-retry],[data-city-select],[data-city-search],[data-city-search-submit],[data-city-retry-search],[data-city-retry-detail]');
   if (!t) return;
   if (t.dataset.copy) {
     const done = () => { t.textContent = 'Copiado'; setTimeout(() => { t.textContent = 'Copiar'; }, 1500); };
@@ -125,6 +125,16 @@ document.addEventListener('click', e => {
     return;
   }
   if (t.hasAttribute('data-summary-retry')) { homeReset(); return rerender(); }
+  if (t.hasAttribute('data-city-select')) return citySelect(t.dataset.citySelect);
+  if (t.hasAttribute('data-city-search')) {
+    cityViewState.selectedId = null; cityViewState.selectedCity = null; cityViewState.detail = null;
+    cityViewState.detailError = null; cityViewState.detailLoading = false; cityViewState.detailSequence++;
+    cityViewState.suggestionsOpen = true;
+    return navigateToView('city', true);
+  }
+  if (t.hasAttribute('data-city-search-submit')) return citySearchSubmit();
+  if (t.hasAttribute('data-city-retry-search')) return citySearchSubmit();
+  if (t.hasAttribute('data-city-retry-detail')) return cityLoadDetail();
   if (t.hasAttribute('data-back')) return navigateBack();
   if (t.dataset.quiz) { state.quiz = t.dataset.quiz; return rerender(); }
   if (t.dataset.vote) { state.voteId = t.dataset.vote; return navigateToView('vote'); }

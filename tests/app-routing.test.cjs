@@ -26,7 +26,7 @@ function loadApp() {
   const votes = JSON.parse(fs.readFileSync(path.join(__dirname, '../frontend/data/votes.json'), 'utf8'));
   const data = { votacoes: votes.map(vote => ({ ...vote, partidos: [] })), presencaTodos: [],
     votosCompletos: {}, arrecadacao: null, perfis: { profiles: {} }, senado: {}, ultimaVotacao: null };
-  const names = ['profile-data.js', 'citizen-view.js', 'extras-view.js', 'parties-view.js', 'home-view.js', 'app.script.js'];
+  const names = ['profile-data.js', 'citizen-view.js', 'extras-view.js', 'parties-view.js', 'home-view.js', 'city-view.js', 'app.script.js'];
   const source = names.map(name => fs.readFileSync(path.join(__dirname, '../frontend/scripts', name), 'utf8')).join('\n');
   vm.runInContext(source.replace('/*DATA*/null', JSON.stringify(data)), context);
   const click = dataset => {
@@ -41,10 +41,11 @@ function loadApp() {
 test('combined scripts boot and navigate through all public views with unavailable data', () => {
   const { context, document, app } = loadApp();
   assert.equal(document.body.dataset.view, 'home');
-  for (const view of ['votes', 'politicians', 'alerts', 'attendance', 'compare', 'parties', 'home']) {
+  for (const view of ['votes', 'politicians', 'alerts', 'attendance', 'compare', 'parties', 'city', 'home']) {
     vm.runInContext(`navigateToView(${JSON.stringify(view)})`, context);
     assert.equal(document.body.dataset.view, view);
     assert.ok(app.innerHTML.length > 50);
+    if (view === 'city') assert.match(app.innerHTML, /Qual cidade você quer consultar\?/);
   }
 });
 

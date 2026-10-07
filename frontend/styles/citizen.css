@@ -345,3 +345,77 @@ a.vt, a.cmp-vote { color: inherit; text-decoration: none; }
 
 /* Escala do ano em cada alerta: quem gasta pouco não parece igual a quem gasta muito. */
 .citizen-context { margin: 0; padding: 8px 10px; border-radius: 10px; background: var(--chip); font-size: 13px; line-height: 1.4; color: var(--ink-2); }
+
+/* Minha cidade */
+body[data-view="city"] .app { max-width: 1080px; }
+body[data-view="city"] .site-foot { max-width: 1080px; }
+body[data-view="city"] nav.tabs .in { max-width: 1080px; }
+nav.tabs .in { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+nav.tabs button svg { flex: none; }
+.city-search-card { gap: var(--space-2); }
+.city-search-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.city-search-row .search { min-width: 0; }
+.city-search-row .fchip { min-height: 50px; justify-content: center; padding-inline: 16px; }
+.city-results { min-height: 28px; }
+.city-search-message { margin: 4px 0; font-size: 13px; color: var(--ink-2); }
+.city-suggestions { display: flex; flex-direction: column; max-height: 320px; overflow-y: auto; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--surface); }
+.city-suggestion { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; min-height: 56px; cursor: pointer; border-bottom: 1px solid var(--line); }
+.city-suggestion:last-child { border-bottom: 0; }
+.city-suggestion:hover, .city-suggestion[aria-selected="true"] { background: var(--chip); }
+.city-suggestion:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+.city-suggestion-name { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.city-suggestion-name b { overflow-wrap: anywhere; }
+.city-uf { flex: none; color: var(--muted); font: 600 12px var(--f-data); }
+.city-geography-note { margin: 0; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--chip); color: var(--ink-2); font-size: 13px; line-height: 1.5; }
+.city-intro-card { gap: var(--space-3); }
+.city-intro-grid { display: grid; gap: var(--space-3); }
+.city-intro-grid p { display: flex; flex-direction: column; gap: 4px; margin: 0; }
+.city-intro-grid p span { color: var(--ink-2); font-size: 13px; }
+.city-detail-header { display: flex; flex-direction: column; gap: 5px; }
+.city-detail-header .h { font-size: clamp(30px, 7vw, 42px); }
+.city-detail-header .ph-lead { margin: 0; }
+.city-special-note { padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--chip); color: var(--ink-2); font-size: 13px; line-height: 1.5; }
+.city-overview { display: flex; flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); }
+.city-overview .src { flex: 1 1 220px; text-align: right; }
+.city-overview-label { display: flex; flex-direction: column; gap: 2px; }
+.city-population { font: 700 clamp(28px, 7vw, 40px) var(--f-data); letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+.city-content-grid { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.city-data-section { min-width: 0; }
+.city-section-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.city-section-heading .h { margin-top: 2px; font-size: 21px; }
+.city-section-heading .pill { flex: none; }
+.city-subheading { margin: var(--space-2) 0 0; padding-top: var(--space-2); border-top: 1px solid var(--line); font-size: 14px; }
+.city-people-list { display: flex; flex-direction: column; gap: 0; margin: 0; padding: 0; list-style: none; }
+.city-person { display: flex; align-items: center; gap: 10px; min-height: 56px; padding-block: 8px; border-top: 1px solid var(--line); }
+.city-person-main { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 2px; }
+.city-person-main > b { overflow-wrap: anywhere; }
+.city-person-main .muted { line-height: 1.35; }
+.city-votes { flex: none; font-size: 13px; text-align: right; }
+.city-profile-link { flex: none; display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--surface); color: var(--ink-2); text-decoration: none; font: 600 12px var(--f-body); cursor: pointer; }
+.city-profile-link:hover { background: var(--chip); }
+.city-collapsible { border-top: 1px solid var(--line); }
+.city-collapsible summary { display: flex; align-items: center; min-height: 52px; padding-block: 8px; cursor: pointer; font-weight: 600; color: var(--ink-2); }
+.city-collapsible summary::after { content: "+"; margin-left: auto; padding-left: 10px; font: 600 18px var(--f-data); }
+.city-collapsible[open] summary::after { content: "−"; }
+.city-collapsible[open] summary { margin-bottom: 4px; }
+.city-collapsible .city-people-list { padding-bottom: 4px; }
+.city-ranked-list { counter-reset: city-rank; }
+.city-ranked-list .city-person { counter-increment: city-rank; }
+.city-ranked-list .city-person::before { content: counter(city-rank); flex: none; width: 24px; color: var(--muted); font: 600 13px var(--f-data); text-align: center; }
+@media (min-width: 720px) {
+  body[data-view="city"] .view > .card, .city-geography-note { grid-column: 1 / -1; }
+  body[data-view="city"] .view { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: var(--space-3) var(--space-4); }
+  body[data-view="city"] .view > .ph, body[data-view="city"] .view > .back, .city-detail-header, .city-special-note { grid-column: 1 / -1; }
+  .city-content-grid { display: contents; }
+  .city-content-grid > .card { min-width: 0; }
+  .city-intro-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 420px) {
+  nav.tabs button { font-size: 10px; }
+  .city-search-row { grid-template-columns: minmax(0, 1fr); }
+  .city-search-row .fchip { min-height: 44px; }
+  .city-suggestion { align-items: flex-start; flex-direction: column; gap: 2px; }
+  .city-person { align-items: flex-start; flex-wrap: wrap; }
+  .city-profile-link { margin-left: auto; }
+  .city-overview .src { text-align: left; flex-basis: 100%; }
+}
