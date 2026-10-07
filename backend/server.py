@@ -8,7 +8,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
-from . import citizen, database, profiles, public_store as store
+from . import cities, citizen, database, profiles, public_store as store
 from .config import BUILD_PATH
 
 QUERY_SECONDS = 8      # consulta que passar disso é abortada (protege o servidor público)
@@ -87,6 +87,15 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self.send_body(BUILD_PATH.read_bytes(), 'text/html; charset=utf-8',
                            cache='public, max-age=60' if prod else 'no-store')
+            return
+        if url.path == '/api/c/cities':
+            query = parse_qs(url.query).get('q', [''])[-1]
+            self.send_json(cities.search(query))
+            return
+        if url.path.startswith('/api/c/cities/'):
+            found = cities.detail(unquote(url.path[len('/api/c/cities/'):]), self.server.db_path)
+            self.send_json(found if found is not None else {'error': 'Cidade não encontrada na base local.'},
+                           200 if found is not None else 404)
             return
         if url.path.startswith('/api/c/perfil/'):
             # Não depende do banco: vem do snapshot de perfis, carregado sob demanda pela ficha.

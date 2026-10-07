@@ -33,6 +33,30 @@ class ProdServerTests(unittest.TestCase):
             body = r.read()
             return r, json.loads(gzip.decompress(body) if r.headers.get('Content-Encoding') == 'gzip' else body)
 
+    def test_cities_api_works_without_database_and_observes_snapshot_updates(self):
+        snapshot = Path(self.temp.name) / 'cities.json'
+        original = srv.cities.SNAPSHOTS_PATH
+        srv.cities.SNAPSHOTS_PATH = Path(self.temp.name)
+        self.httpd.db_path = Path(self.temp.name) / 'absent.sqlite3'
+        try:
+            snapshot.write_text(json.dumps({'municipalities': [
+                {'id': '3550308', 'name': 'São Paulo', 'uf': 'SP', 'population': None}]}))
+            _, found = self.get('/api/c/cities?q=sao%20paulo')
+            self.assertEqual(found['total'], 1)
+            _, detail = self.get('/api/c/cities/3550308')
+            self.assertIsNone(detail['municipality']['population'])
+            self.assertTrue(detail['messages']['votes'])
+            self.assertEqual(len(self.httpd.cache.items), 0)
+            snapshot.unlink()
+            _, absent = self.get('/api/c/cities?q=sao')
+            self.assertFalse(absent['available'])
+            with self.assertRaises(urllib.error.HTTPError) as ctx:
+                self.get('/api/c/cities/3550308')
+            self.assertEqual(ctx.exception.code, 404)
+            ctx.exception.close()
+        finally:
+            srv.cities.SNAPSHOTS_PATH = original
+
     def test_cached_response_is_reused_until_the_database_file_changes(self):
         r, first = self.get('/api/c/partidos')
         self.assertEqual(first['itens'][0]['sigla'], 'AAA')
