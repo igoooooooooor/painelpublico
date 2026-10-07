@@ -24,7 +24,9 @@ Antes de entrar no roadmap, cada item passa por duas perguntas:
    - **Feito (7/10):** a lista oficial agora fica separada do cadastro (tabela `roster`). Quem sai deixa de aparecer como em exercício e fica marcado como fora da lista atual, sem perder notas nem alertas; uma coleta indisponível mantém a lista anterior.
    - **Feito (7/10):** cada ficha mostra o resultado de 2026 no TSE (eleito, reeleito, suplente, não eleito, 2º turno) quando há uma única candidatura correspondente; 551 dos 595 registros foram ligados. **Falta:** nova coleta depois do 2º turno (25/10) e, com a lista da nova legislatura, a troca em 1º/2/2027.
    - O bloco eleitoral só volta à home com cobertura ampla.
-2. **Minha cidade, versão 1.** A pessoa digita a cidade e vê quem a representa e quanto custa. A base é nacional e igual para as 5.570 cidades:
+2. **Minha cidade, versão 1.** A pessoa digita a cidade e vê quem a representa e quanto custa. A base é nacional e usa as mesmas regras para as 5.571 localidades atuais do IBGE:
+   - **Fase 1 implementada localmente (7/10), aguardando aprovação:** busca por cidade, população de 2026, tabela oficial TSE–IBGE, eleitos ordinários de 2024 e 2026, votos municipais de deputados federais eleitos e links conservadores às fichas. São 5.571 localidades com população e votos, 69.213 eleitos municipais, 1.666 estaduais/federais e 288 ligações de eleitos federais ao roster. Lacunas (inclusive Iporá/GO) e recortes estão em [Dados e SQLite](data.md). Sem merge ou publicação nesta etapa.
+   - **Fases 2 e 3 pendentes de aprovação:** emendas parlamentares e contas da prefeitura; bens e financiamento também ficam fora da Fase 1.
    - **TSE:** prefeito(a), vice e vereadores eleitos em 2024; governador(a) e deputados(as) estaduais eleitos em 2026; bens declarados e financiamento de campanha; deputados(as) federais mais votados(as) na cidade.
    - **Emendas parlamentares (Portal da Transparência):** quanto cada deputado(a) e senador(a) destinou para a cidade.
    - **SICONFI (Tesouro Nacional):** quanto a prefeitura e o estado arrecadam e gastam com saúde, educação e pessoal, comparados com cidades do mesmo porte.

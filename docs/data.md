@@ -105,8 +105,8 @@ O app não grava nada no navegador: não há cadastro, anotações nem acompanha
   competência.
 Remunerações de servidores federais (SIAPE), do Judiciário (DadosJusBr) e a composição do STF foram retiradas em 7/10/2026:
 o painel cobre quem exerce mandato federal eleito. O banco anterior, com esses recortes, ficou guardado só localmente, em
-`data/backups/na-lupa-antes-de-remover-servidores-20261007.sqlite3`. Estados, municípios e eleições estão planejados em
-[Próximas etapas](roadmap.md) e não têm cobertura até haver fonte validada.
+`data/backups/na-lupa-antes-de-remover-servidores-20261007.sqlite3`. A cobertura eleitoral de estados e municípios está descrita na seção Minha cidade, abaixo.
+Despesas estaduais e municipais continuam planejadas em [Próximas etapas](roadmap.md).
 
 Fontes: [CEAP da Câmara](https://www.camara.leg.br/cotas/Ano-2026.csv.zip), [CEAPS do
 Senado](https://adm.senado.gov.br/adm-dadosabertos/api/v1/senadores/despesas_ceaps/2026).
@@ -338,3 +338,133 @@ completa, com fonte, data e método, em "Fontes e datas". O 2º turno exige nova
 
 O snapshot `data/snapshots/eleicoes-2026.json` guarda só cargo, UF, número, nome de urna, partido, turno e situação de cada
 candidatura ligada, além de fonte, método e cobertura. `/api/c/perfil/<id>` o anexa à ficha como `eleicao2026`.
+
+## Minha cidade — Fase 1: IBGE e TSE
+
+```sh
+make collect-cities              # coleta manual; downloads podem ser grandes
+python3 ingest/cities.py          # reconstrói o snapshot sem acessar a rede
+make build
+```
+
+A página usa a mesma base nacional para todas as localidades. O catálogo vem da
+[API de localidades do IBGE](https://servicodados.ibge.gov.br/api/v1/localidades/municipios),
+com código IBGE, nome e UF. População é um conjunto separado: a API de localidades
+não informa habitantes. População ausente permanece nula, com fonte e ano próprios.
+Brasília e Fernando de Noronha constam no cadastro do IBGE, mas não elegem prefeito
+nem vereadores; suas páginas explicam a diferença administrativa.
+
+O cruzamento utiliza a
+[tabela oficial de códigos TSE e IBGE](https://dadosabertos.tse.jus.br/dataset/codigos-oficiais-de-uf-e-municipios-segundo-o-tse-e-o-ibge).
+Código TSE nunca é tratado como se fosse código IBGE. As candidaturas vêm dos
+arquivos `consulta_cand_2024.zip` e `consulta_cand_2026.zip` do TSE; situação eleitoral
+é a publicada em `DS_SIT_TOT_TURNO`. A tela descreve resultados eleitorais, não uma
+certificação de exercício atual: pode haver substituições, decisões judiciais e
+novas eleições depois da fotografia consultada. Resultados de 2026 não antecipam
+os mandatos de 2027. Ausência de eleitos confirmados não vira zero representantes.
+
+A lista federal atual vem do roster já importado da Câmara e do Senado, com sua
+própria fonte e data. A ligação de eleitos de 2026 às fichas exige nome civil ou de
+urna normalizado, UF e cargo iguais e correspondência única nos dois sentidos.
+Nomes abreviados, grafias divergentes, troca de cargo, candidaturas sem ficha e
+homônimos podem permanecer sem link. Não se reutiliza o cache de nascimento do
+coletor anterior; CPF, título, e-mail e nascimento não entram nesta funcionalidade.
+
+O recorte de mais votados inclui apenas candidatos a deputado federal confirmados
+como eleitos no estado. Mostra votos nominais observados no município, não votos
+no estado nem votos de legenda. A restrição a eleitos evita dar destaque a pessoas
+não eleitas e fica explícita na interface. Isso não é uma lista de todos os
+candidatos que receberam votos na cidade.
+
+Foi escolhido um snapshot local em vez de novas tabelas SQLite: os dados são uma
+fotografia de consulta por município, não participam dos agregados de despesas e
+podem ser substituídos sem migração ou reimportação parlamentar. O servidor carrega
+o snapshot sob demanda e entrega só a cidade selecionada. Caches, downloads,
+snapshots e capturas de revisão ficam fora do Git.
+
+Bens declarados e financiamento de campanha ficam para uma etapa posterior: será
+necessário validar os respectivos leiautes, períodos, unidades monetárias (centavos)
+e junções por identificador de candidatura, mantendo a mesma projeção de privacidade.
+Emendas e contas municipais pertencem às Fases 2 e 3, ainda não implementadas.
+
+### Cobertura verificada em 7/10/2026
+
+| Conjunto | Cobertura observada |
+| --- | ---: |
+| Localidades do cadastro IBGE, com população de 2026 | 5.571 |
+| Localidades com correspondência oficial TSE–IBGE | 5.571; nenhuma sem correspondência |
+| Eleitos municipais nas eleições ordinárias de 2024 | 69.213 |
+| Prefeitos / vice-prefeitos / vereadores | 5.530 / 5.530 / 58.153 |
+| Localidades com algum eleito municipal confirmado | 5.568 |
+| Eleitos de 2026 nos cargos estaduais, distritais e federais considerados | 1.666, nas 27 UFs |
+| Governadores / vices / deputados estaduais / distritais | 20 / 20 / 1.035 / 24 |
+| Deputados federais / senadores eleitos em 2026 | 513 / 54 |
+| Localidades com votos nominais observados para deputados federais eleitos | 5.571 |
+| Eleitos federais ligados às fichas da lista parlamentar atual | 288 de 567 |
+
+O cadastro inclui os 5.569 municípios, Brasília e Fernando de Noronha. A diferença
+em relação ao planejamento de 5.570 localidades é Boa Esperança do Norte/MT
+(IBGE `5101837`, TSE `73709`), presente nas fontes oficiais consultadas. População
+vem da [tabela 6579, variável 9324, período 2026 do IBGE](https://servicodados.ibge.gov.br/api/v3/agregados/6579/periodos/2026/variaveis/9324?localidades=N6%5Ball%5D),
+com valor observado para todas as localidades. Não há comparação de contas ou
+faixas populacionais nesta fase.
+
+Brasília e Fernando de Noronha não têm eleição municipal. Iporá/GO não tem eleitos
+confirmados no recorte ordinário do arquivo consultado; a página mantém população,
+eleição estadual e representação federal, com aviso de ausência municipal.
+Outros municípios têm vereadores confirmados, mas não prefeito e vice: ao todo,
+39 dos 5.569 municípios não têm prefeito eleito confirmado neste recorte.
+Não se infere o motivo jurídico dessa ausência nem se preenche com resultados
+suplementares. As 7 UFs sem governador eleito confirmado de 2026 mantêm os demais
+cargos e o aviso de resultado ausente para o Executivo.
+
+Os 279 eleitos federais sem link continuam listados: 265 não têm nome civil ou de
+urna exatamente correspondente no roster da mesma UF; 14 têm nome correspondente,
+mas cargo diferente. Isso pode refletir novos eleitos, variações de nome ou mudança
+de cargo; não é prova de que sejam pessoas diferentes ou que não exista ficha.
+Os 595 registros do roster atual continuam disponíveis em suas UFs, independentemente
+dessa ligação. Falha de atualização do roster mostra a lista anterior com aviso
+junto à fonte e não comprova que a fotografia esteja atualizada.
+
+### Recorte, leiautes e reconstrução
+
+Os `leiame.pdf` dos arquivos anuais foram conferidos: `SG_UE` é código TSE de
+município nas candidaturas municipais; `CD_MUNICIPIO` é o código TSE no arquivo de
+votos; `SQ_CANDIDATO` identifica a candidatura. Só os estados `ELEITO`,
+`ELEITO POR QP` e `ELEITO POR MÉDIA` entram. O turno mais recente da mesma
+candidatura prevalece independentemente da ordem das linhas.
+
+O arquivo de 2024 também contém eleições suplementares realizadas posteriormente.
+Para não misturar pleitos e apresentar dois prefeitos na mesma cidade, a seleção
+exige `CD_TIPO_ELEICAO = 2`, `NM_TIPO_ELEICAO = ELEIÇÃO ORDINÁRIA` e datas de
+6/10 ou 27/10/2024; em 2026, 4/10 ou 25/10/2026. A fotografia atual de 2026 é do
+primeiro turno e deve ser recoletada após o segundo. A lista de 2024 não é uma
+reconstituição congelada do dia da apuração: conserva a situação publicada na
+consulta, que pode refletir alterações posteriores do TSE.
+
+As novas candidaturas são baixadas em memória e imediatamente reduzidas a uma lista
+permitida de campos eleitorais. Apenas os eleitos são gravados nos caches
+`data/raw/tse/candidacies_2024_v2.jsonl` e `candidacies_2026_v2.jsonl`; identificadores
+federais sem nome são guardados à parte para conferir a consistência dos votos.
+O ZIP de 2026 preexistente pode ser lido com a mesma projeção. Nenhum novo ZIP bruto
+de candidaturas, CPF, título, nascimento ou e-mail é gravado pelo coletor.
+
+O [arquivo de votos por município e zona de 2026](https://cdn.tse.jus.br/estatistica/sead/odsele/votacao_candidato_munzona/votacao_candidato_munzona_2026.zip)
+consultado tem 448.161.667 bytes. A leitura percorre os CSVs estaduais linha a linha,
+sem somar novamente os arquivos nacionais duplicados. Agrega primeiro turno por
+município e candidatura, preferindo `QT_VOTOS_NOMINAIS_VALIDOS` quando a coluna existe
+e usando `QT_VOTOS_NOMINAIS` apenas no leiaute sem aquela coluna. Não mistura os dois
+campos. Exibe até dez eleitos com votos positivos, incluindo empates na última
+posição; empates usam nome em ordem alfabética. Totais ausentes ou inválidos em uma
+zona impedem publicar como completo o agregado daquela candidatura/município.
+Nesta leitura não houve totais inválidos, candidatos desconhecidos nem códigos
+municipais sem correspondência. Foram identificadas 6.749 candidaturas federais
+não eleitas nos votos, excluídas do destaque público.
+
+`--collect` completa caches; `--collect --refresh` atualiza fontes já guardadas.
+Sem `--collect`, não há chamadas de rede. Respostas IBGE vazias ou inválidas não
+substituem caches válidos; uma falha de atualização mantém os dados anteriores e
+seu aviso. População de período anterior não substitui um cache mais recente por
+falha temporária. Se um cache necessário a um snapshot já preenchido desaparecer,
+a reconstrução é recusada, preservando o snapshot; restaure o cache ou execute a
+coleta. O snapshot não agenda atualizações.
