@@ -13,5 +13,10 @@ else:
     DB_PATH = ROOT / "data" / "na-lupa.sqlite3"
 
 BUILD_PATH = ROOT / "dist" / "index.html"
+# Snapshots editoriais (fora do Git). No servidor ficam junto do banco: PAINEL_SNAPSHOTS=/opt/painel/data/snapshots.
+_snapshots_setting = os.environ.get("PAINEL_SNAPSHOTS")
+SNAPSHOTS_PATH = Path(_snapshots_setting).expanduser() if _snapshots_setting else ROOT / "data" / "snapshots"
+if not SNAPSHOTS_PATH.is_absolute():
+    SNAPSHOTS_PATH = ROOT / SNAPSHOTS_PATH
 SCHEMA_PATH = Path(__file__).resolve().parent / "schema.sql"
 SCHEMA_VERSION = 1

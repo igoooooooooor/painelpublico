@@ -48,11 +48,29 @@ class ProdServerTests(unittest.TestCase):
         self.assertEqual(second['itens'][0]['sigla'], 'BBB')
         self.assertEqual(len(self.httpd.cache.items), 1)
 
+    def test_profile_is_served_on_demand_from_snapshot_and_missing_is_404(self):
+        snap = Path(self.temp.name) / 'perfis.json'
+        snap.write_text(json.dumps({'generatedAt': 'x', 'profiles': {'camara:1': {'name': 'Ana', 'projetos': {'total': 2}}}}),
+                        encoding='utf-8')
+        original = srv.perfis.SNAPSHOTS_PATH
+        srv.perfis.SNAPSHOTS_PATH = Path(self.temp.name)
+        try:
+            _, found = self.get('/api/c/perfil/camara%3A1')
+            self.assertEqual(found['name'], 'Ana')
+            self.assertEqual(found['projetos']['total'], 2)
+            with self.assertRaises(urllib.error.HTTPError) as ctx:
+                self.get('/api/c/perfil/camara%3A2')
+            self.assertEqual(ctx.exception.code, 404)
+            ctx.exception.close()
+        finally:
+            srv.perfis.SNAPSHOTS_PATH = original
+
     def test_healthcheck_reports_missing_database(self):
         self.db.unlink()
         with self.assertRaises(urllib.error.HTTPError) as ctx:
             self.get('/healthz')
         self.assertEqual(ctx.exception.code, 503)
+        ctx.exception.close()
 
 
 if __name__ == '__main__':

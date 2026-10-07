@@ -80,3 +80,23 @@ test('external fields and URLs are safe in shared cards', () => {
   assert.match(html, /&lt;img onerror=x&gt;/);
   assert.doesNotMatch(html, /href="(?:javascript|data):|user:secret|<script>|<img onerror/);
 });
+
+test('profiles load on demand once, show a skeleton meanwhile and never fetch without the snapshot', async () => {
+  const calls = [];
+  let release;
+  const ctx = load({ perfis: { profiles: {}, sobDemanda: true } });
+  ctx.skel = () => '<skeleton>';
+  ctx.rerender = () => calls.push('rerender');
+  ctx.fetch = url => { calls.push(url); return new Promise(ok => { release = () => ok({ ok: true, json: async () => ({ name: 'Ana', role: 'deputado', contato: { email: 'ana@camara.leg.br' } }) }); }); };
+  assert.equal(ctx.profileSectionsHTML({ id: 'camara:7', role: 'deputado' }), '<skeleton>');
+  ctx.profileData('camara:7');
+  assert.deepEqual(calls, ['/api/c/perfil/camara%3A7']);
+  release(); await new Promise(r => setTimeout(r, 0)); await new Promise(r => setTimeout(r, 0));
+  assert.equal(ctx.profileData('camara:7').contato.email, 'ana@camara.leg.br');
+  assert.equal(calls.filter(c => c !== 'rerender').length, 1);
+  assert.ok(calls.includes('rerender'));
+
+  const offline = load({ perfis: { profiles: {} } });
+  offline.fetch = () => { throw new Error('não deveria buscar'); };
+  assert.equal(offline.profileData('camara:8').loading, false);
+});

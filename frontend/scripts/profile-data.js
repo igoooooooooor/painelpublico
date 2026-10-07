@@ -44,8 +44,23 @@ function profileVotes(id) {
   const num = canonical.slice(7);
   return (DATA.votacoes || []).map(v => ({ v, voto: profileVoteRows(v).find(r => String(r[0]) === num)?.[4] ?? null }));
 }
+/* Perfis complementares chegam um a um pela API (antes iam todos dentro da página, ~14 MB). */
+const PROFILE_LOAD = { pending: new Set(), done: new Set() };
+function profileEnsure(id) {
+  if (!DATA.perfis) DATA.perfis = { profiles: {} };
+  const stored = DATA.perfis.profiles || (DATA.perfis.profiles = {});
+  if (id in stored || PROFILE_LOAD.pending.has(id) || PROFILE_LOAD.done.has(id)) return;
+  // Só busca se o build encontrou perfis.json; sem o snapshot, a ficha mostra os dados como ausentes.
+  if (!DATA.perfis.sobDemanda || typeof fetch !== 'function' || !/^(camara|senado):\d+$/.test(id)) return;
+  PROFILE_LOAD.pending.add(id);
+  fetch('/api/c/perfil/' + encodeURIComponent(id), { headers: { Accept: 'application/json' } })
+    .then(r => (r.ok ? r.json() : null)).then(d => { if (d) stored[id] = d; })
+    .catch(() => {})
+    .finally(() => { PROFILE_LOAD.pending.delete(id); PROFILE_LOAD.done.add(id); if (typeof rerender === 'function') rerender(); });
+}
 function profileData(value) {
   const id = profileId(value), supplied = typeof value === 'object' && value !== null ? value : {};
+  profileEnsure(id);
   const snapshot = DATA.perfis?.profiles?.[id] || {};
   const editorial = profileEditorial(id);
   const role = supplied.role || snapshot.role || (id.startsWith('camara:') ? 'deputado' : id.startsWith('senado:') ? 'senador' : null);
@@ -75,6 +90,7 @@ function profileData(value) {
       detail: 'Complemento da amostra editorial. Verba da equipe, separada do subsídio e dos reembolsos.' }
       : snapshot.gabinete || null;
   return { id, pessoa, contato, projetos, editorial, gabinete, mandato: snapshot.mandato || null,
+    loading: PROFILE_LOAD.pending.has(id),
     presenca: profilePresence(id), votos: profileVotes(id),
     remuneracao: PROFILE_SALARY[role] ? { ...PROFILE_SALARY[role], individual: null } : null };
 }
@@ -87,6 +103,7 @@ function profileSource(section, label = 'Conferir na fonte') {
 function profileSectionsHTML(value) {
   const p = profileData(value);
   if (!['deputado', 'senador'].includes(p.pessoa.role)) return '';
+  if (p.loading) return typeof skel === 'function' ? skel('cards', 2) : '';
   const money = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const c = p.contato, salary = p.remuneracao, office = p.gabinete, mandate = p.mandato;
   const hasOffice = Number.isFinite(office?.amount);

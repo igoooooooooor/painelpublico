@@ -8,7 +8,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
-from . import cidadao, public_store as store
+from . import cidadao, perfis, public_store as store
 from .config import BUILD_PATH
 
 QUERY_SECONDS = 8      # consulta que passar disso é abortada (protege o servidor público)
@@ -87,6 +87,12 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self.send_body(BUILD_PATH.read_bytes(), 'text/html; charset=utf-8',
                            cache='public, max-age=60' if prod else 'no-store')
+            return
+        if url.path.startswith('/api/c/perfil/'):
+            # Não depende do banco: vem do snapshot de perfis, carregado sob demanda pela ficha.
+            found = perfis.perfil(unquote(url.path[len('/api/c/perfil/'):]))
+            self.send_json(found if found is not None else {'error': 'Perfil complementar não encontrado.'},
+                           200 if found is not None else 404, 'public, max-age=300' if prod else 'no-store')
             return
         if not url.path.startswith('/api/'):
             self.send_json({'error': 'Recurso não encontrado.'}, 404)

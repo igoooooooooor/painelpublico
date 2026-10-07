@@ -9,3 +9,5 @@ _backup-antes-do-claude/
 node_modules/
 .venv/
 .github/
+# A página é montada no servidor, com os snapshots que só existem lá.
+dist/

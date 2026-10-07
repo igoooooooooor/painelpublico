@@ -36,7 +36,7 @@ visitante → Cloudflare (HTTPS, cache, proteção) → túnel → 127.0.0.1:800
 | O que mudou | Comando |
 |---|---|
 | Código, telas ou snapshots | `make deploy` |
-| Banco (nova coleta/importação) | `make db-check` e depois `make deploy-db` |
+| Banco ou snapshots (nova coleta/importação) | `make db-check` e depois `make deploy-data` (alias `deploy-db`) |
 | Ver se está no ar | `make deploy-status` |
 
 Logs: `ssh SERVIDOR journalctl -u painel -f`.
@@ -52,7 +52,7 @@ Para mostrar o site sem servidor: rode `make prod` e, em outro terminal, `cloudf
 
 ## Publicação automática pelo GitHub
 
-O workflow `.github/workflows/deploy.yml` roda `make check` em todo push e pull request. Em push na `main`, se os testes passarem, ele envia o código para o servidor e reinicia o serviço. O banco continua indo pelo `make deploy-db`, do seu computador.
+O workflow `.github/workflows/deploy.yml` roda `make ci` (sintaxe e testes, sem dados privados) em todo push e pull request. Em push na `main`, se passar, ele envia o código e o servidor monta a página com os snapshots que já estão lá (`/opt/painel/data/snapshots`). Banco e snapshots nunca passam pelo GitHub: vão pelo `make deploy-data`, do seu computador. **Antes do primeiro deploy automático, rode `make deploy-data` uma vez.**
 
 Configuração (uma vez):
 
@@ -60,3 +60,7 @@ Configuração (uma vez):
 2. Autorize-a no servidor: `ssh painel 'cat >> ~/.ssh/authorized_keys' < ~/.ssh/painel-deploy.pub`.
 3. No repositório do GitHub, em *Settings > Secrets and variables > Actions*, crie `DEPLOY_HOST` (IP), `DEPLOY_USER` (`ubuntu`) e `DEPLOY_SSH_KEY` (conteúdo de `~/.ssh/painel-deploy`, a chave **privada**).
 4. Opcional: em *Settings > Environments*, crie `production` e exija aprovação manual antes de publicar.
+
+## Peso da página
+
+A página leva só os dados pequenos (amostra editorial, presença, votos, arrecadação): ~1,3 MB, ~600 KB comprimida. Os perfis complementares (`perfis.json`, ~15 MB com projetos) ficam no servidor e cada ficha busca o seu em `/api/c/perfil/<id>`. Não volte a embutir arquivos grandes em `scripts/build.py`.

@@ -8,6 +8,7 @@ Wants=network-online.target
 User=painel
 WorkingDirectory=/opt/painel/app
 Environment=PAINEL_DB=/opt/painel/data/na-lupa.sqlite3
+Environment=PAINEL_SNAPSHOTS=/opt/painel/data/snapshots
 # Escuta só localmente: o acesso público entra pelo Cloudflare Tunnel.
 ExecStart=/usr/bin/python3 -m backend.server --prod --host 127.0.0.1 --port 8000
 Restart=always

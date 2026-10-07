@@ -1,5 +1,6 @@
 # A cada push na main: roda make check e, se passar, publica o código no servidor.
-# O banco SQLite não vai pelo GitHub; continua com make deploy-db a partir do seu computador.
+# Banco e snapshots não vão pelo GitHub (ficam só no servidor, via make deploy-data); por isso o CI
+# roda make ci (sem build) e a página é montada no próprio servidor.
 # Segredos (Settings > Secrets and variables > Actions):
 #   DEPLOY_HOST     IP do servidor (ex.: 203.0.113.10)
 #   DEPLOY_USER     usuário SSH (ex.: ubuntu)
@@ -21,13 +22,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: make check
+      - run: make ci
 
   deploy:
     needs: check
@@ -48,11 +46,10 @@ jobs:
           printf '%s\n' "$KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
           ssh-keyscan -T 15 "$HOST" >> ~/.ssh/known_hosts
           printf 'Host painel\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/deploy\n' "$HOST" "${{ secrets.DEPLOY_USER }}" > ~/.ssh/config
-      - name: Gerar e publicar
+      - name: Enviar código e montar no servidor
         run: |
-          make build
           rsync -az --delete --rsync-path="sudo rsync" --exclude-from=deploy/rsync-exclude.txt ./ painel:/opt/painel/app/
-          ssh painel "sudo sh -c 'chown -R painel:painel /opt/painel/app && install -m 0644 /opt/painel/app/deploy/painel.service /etc/systemd/system/painel.service && systemctl daemon-reload && systemctl restart painel'"
+          ssh painel "sudo sh -c 'cd /opt/painel/app && PAINEL_SNAPSHOTS=/opt/painel/data/snapshots python3 scripts/build.py && chown -R painel:painel /opt/painel/app && install -m 0644 deploy/painel.service /etc/systemd/system/painel.service && systemctl daemon-reload && systemctl restart painel'"
       - name: Conferir se está no ar
         run: |
           for i in 1 2 3 4 5; do ssh painel 'curl -fsS http://127.0.0.1:8000/healthz' && exit 0; sleep 3; done

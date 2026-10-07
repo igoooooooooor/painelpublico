@@ -1,10 +1,11 @@
 """Build estático sem dependências: python3 scripts/build.py."""
 import json
+import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FRONTEND = ROOT / "frontend"
-SNAPSHOTS = ROOT / "data" / "snapshots"
+SNAPSHOTS = Path(os.environ.get("PAINEL_SNAPSHOTS") or ROOT / "data" / "snapshots")
 STYLES = ("tokens.css", "base.css", "public-data.css", "cidadao.css")
 # Ordem explícita: helpers/views antes do bootstrap e router.
 SCRIPTS = ("profile-data.js", "spending-analysis.js", "spending-view.js", "public-data-view.js",
@@ -20,9 +21,11 @@ def build(output=None):
         )
     data = json.loads(editorial.read_text(encoding="utf-8"))
     for key, filename in (("votosCompletos", "votos.json"), ("presencaTodos", "presenca.json"),
-                          ("arrecadacao", "arrecadacao.json"), ("perfis", "perfis.json")):
+                          ("arrecadacao", "arrecadacao.json")):
         path = SNAPSHOTS / filename
         data[key] = json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+    # perfis.json (~15 MB) não entra na página: cada ficha busca o seu em /api/c/perfil/<id>.
+    data["perfis"] = {"profiles": {}, "sobDemanda": (SNAPSHOTS / "perfis.json").exists()}
     payload = json.dumps(data, ensure_ascii=False, allow_nan=False).replace("<", "\\u003c")
     script = "\n".join((FRONTEND / "scripts" / name).read_text(encoding="utf-8") for name in SCRIPTS)
     if script.count("/*DATA*/null") != 1:
