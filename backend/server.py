@@ -109,7 +109,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         cache = getattr(self.server, 'cache', None)
         key = None
-        if cache is not None and url.path != '/api/expenses.csv':
+        if cache is not None and url.path != '/api/c/gastos.csv':
             key = (self.server.db_path.stat().st_mtime_ns, self.path)
             hit = cache.get(key)
             if hit:
@@ -119,14 +119,9 @@ class Handler(BaseHTTPRequestHandler):
         deadline = time.monotonic() + QUERY_SECONDS
         db.set_progress_handler(lambda: time.monotonic() > deadline, 20000)
         try:
-            # Keep counts, rows and the follow cursor on the same imported snapshot.
+            # Counts and rows of one response come from the same imported snapshot.
             db.execute('BEGIN')
-            routes = {'/api/coverage': lambda: store.coverage(db),
-                      '/api/authorities': lambda: store.authorities(db, params),
-                      '/api/expenses': lambda: store.expenses(db, params),
-                      '/api/signals': lambda: store.signals(db, params),
-                      '/api/suppliers': lambda: store.suppliers(db, params),
-                      '/api/c/radar': lambda: cidadao.radar(db, params),
+            routes = {'/api/c/radar': lambda: cidadao.radar(db, params),
                       '/api/c/resumo': lambda: cidadao.resumo(db),
                       '/api/c/politicos': lambda: cidadao.politicos(db, params),
                       '/api/c/partidos': lambda: cidadao.partidos(db)}
@@ -134,21 +129,18 @@ class Handler(BaseHTTPRequestHandler):
                 result = routes[url.path]()
             elif url.path.startswith('/api/c/politico/'):
                 result = cidadao.politico(db, unquote(url.path[len('/api/c/politico/'):]))
-            elif url.path.startswith('/api/authorities/'):
-                result = store.authority_detail(db, unquote(url.path[len('/api/authorities/'):]))
-            elif url.path.startswith('/api/suppliers/'):
-                result = store.supplier_detail(db, unquote(url.path[len('/api/suppliers/'):]))
-            elif url.path == '/api/expenses.csv':
-                store.expense_query(params)  # Validate filters before sending response headers.
+            elif url.path == '/api/c/gastos.csv' and (export := cidadao.gastos_csv(db, params.get('id', ''))):
+                filename, chunks = export
                 self.send_response(200)
                 self.send_header('Content-Type', 'text/csv; charset=utf-8')
-                self.send_header('Content-Disposition', 'attachment; filename="painel-publico-despesas.csv"')
-                self.send_header('Cache-Control', 'no-store')
+                self.send_header('Content-Disposition', f'attachment; filename="{filename}"')
+                self.common_headers('no-store')
                 self.send_header('Connection', 'close')  # tamanho desconhecido: o fim da conexão marca o fim do arquivo
                 self.close_connection = True
                 self.end_headers()
-                for chunk in store.csv_chunks(db, params):
-                    self.wfile.write(chunk.encode('utf-8'))
+                if self.command != 'HEAD':
+                    for chunk in chunks:
+                        self.wfile.write(chunk.encode('utf-8'))
                 return
             else:
                 result = None

@@ -11,8 +11,6 @@ const dmy = s => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}/.test(s) ? `${+s.s
 const first = n => n.split(' ')[0];
 const CATS = ['--cat1', '--cat2', '--cat3', '--cat4', '--cat5', '--cat6'];
 const CATS_H = ['--cat1', '--hero-fg', '--cat3', '--cat4', '--cat5', '--cat6']; // em fundo escuro, o tom escuro some
-const store = { get(k, f) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : f; } catch (e) { return f; } },
-                set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
 let state = { view: 'inicio', dep: null, vote: null, quiz: null };
 
 function cardVoto(v) {
@@ -90,19 +88,15 @@ function vFicha() {
 }
 
 function render() {
+  const views = { inicio: vHoje, hoje: vHoje, votacoes: vVotacoes, deputados: vPoliticos, ficha: vFicha, votacao: vVotacao, gastos: vLupa, gasto: vFicha,
+    lupa: vLupa, politicos: vPoliticos, politico: vPolitico, presenca: vPresenca, comparar: vComparar, partidos: vPartidos };
+  if (!views[state.view]) state.view = 'inicio';
   const v = state.view;
-  const html = { inicio: vHoje, base: vBasePublica, autoridades: vAutoridades, despesas: vDespesas, fornecedores: vFornecedores,
-    fornecedor: vFornecedor, autoridade: vAutoridade, radar: vRadarPublico, cobertura: vCobertura, investigacoes: vInvestigacoes,
-    hoje: vHoje, votacoes: vVotacoes, deputados: vPoliticos, ficha: vFicha, votacao: vVotacao, gastos: vLupa, gasto: vFicha,
-    lupa: vLupa, politicos: vPoliticos, politico: vPolitico, presenca: vPresenca, comparar: vComparar, partidos: vPartidos }[v]();
-  $app.innerHTML = `<div class="view">${html}</div>`;
+  $app.innerHTML = `<div class="view">${views[v]()}</div>`;
   document.body.dataset.view = v;
-  const tab = ['autoridade', 'autoridades', 'ficha', 'deputados', 'politicos', 'politico', 'presenca', 'comparar', 'partidos'].includes(v) ? 'politicos' :
-    v === 'votacao' ? 'votacoes' : ['gasto', 'gastos', 'radar', 'despesas', 'fornecedor', 'fornecedores', 'lupa'].includes(v) ? 'lupa' :
-    ['hoje', 'base', 'cobertura', 'investigacoes'].includes(v) ? 'inicio' : v;
+  const tab = ['ficha', 'deputados', 'politicos', 'politico', 'presenca', 'comparar', 'partidos'].includes(v) ? 'politicos' :
+    v === 'votacao' ? 'votacoes' : ['gasto', 'gastos', 'lupa'].includes(v) ? 'lupa' : v === 'hoje' ? 'inicio' : v;
   document.querySelectorAll('nav.tabs button').forEach(b => b.dataset.go === tab ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
-  if (!['inicio', 'hoje', 'lupa', 'politicos', 'politico', 'ficha', 'votacao', 'votacoes', 'deputados', 'gastos', 'gasto', 'presenca', 'comparar', 'partidos'].includes(v)) loadPublicView(v);
-  state.publicContext = Object.fromEntries(['publicAuthority', 'publicSupplier', 'authority', 'expense', 'supplier', 'signal'].map(k => [k, JSON.parse(JSON.stringify(publicState[k]))]));
 }
 const hist = [];
 function go(view, keep) {
@@ -112,10 +106,10 @@ function go(view, keep) {
     if (state.dep) state.pol = String(state.dep).includes(':') ? state.dep : 'camara:' + state.dep;
     view = 'politico';
   }
-  if (!keep) hist.push({ view: state.view, dep: state.dep, vote: state.vote, pol: state.pol, y: window.scrollY, publicContext: state.publicContext });
+  if (!keep) hist.push({ view: state.view, dep: state.dep, vote: state.vote, pol: state.pol, y: window.scrollY });
   state.view = view; render(); window.scrollTo(0, 0);
 }
-function back() { const h = hist.pop() || { view: 'inicio', y: 0 }; Object.assign(state, { view: h.view, dep: h.dep, vote: h.vote, pol: h.pol }); if (h.publicContext) Object.assign(publicState, h.publicContext); render(); window.scrollTo(0, h.y || 0); }
+function back() { const h = hist.pop() || { view: 'inicio', y: 0 }; Object.assign(state, { view: h.view, dep: h.dep, vote: h.vote, pol: h.pol }); render(); window.scrollTo(0, h.y || 0); }
 const rerender = () => { const y = window.scrollY; render(); window.scrollTo(0, y); };
 
 document.addEventListener('click', e => {
@@ -134,18 +128,4 @@ document.addEventListener('click', e => {
   if (t.dataset.dep) return cidOpenPol(t.dataset.dep);
   if (t.dataset.go) { hist.length = 0; go(t.dataset.go, true); }
 });
-initPublicData();
 render();
-
-/* Downloads da busca avançada: dados do filtro atual. */
-function salvarArquivo(blob, nome) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = nome;
-  document.body.appendChild(link);
-  try { link.click(); } finally {
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-  }
-}

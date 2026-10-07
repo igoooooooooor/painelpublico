@@ -7,7 +7,6 @@
 .cid-carousel > .cid-alert { flex: 0 0 88%; }
 .cid-cta, .cid-more { justify-content: center; background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .cid-skel { color: var(--muted); font-size: 14px; min-height: 88px; justify-content: center; }
-.cid-adv { align-self: flex-start; background: none; border: 0; padding: 8px 0; min-height: var(--control-height); color: var(--muted); font: 600 13px var(--f-body); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; text-align: left; }
 
 /* cartão de alerta */
 .cid-alert { gap: 10px; position: relative; overflow: hidden; }
@@ -96,7 +95,6 @@
 .vbar { display: flex; gap: 2px; height: 8px; border-radius: 4px; overflow: hidden; background: var(--chip); }
 .vbar i:first-child { background: var(--accent); }
 .vbar i:nth-child(2) { background: var(--no); }
-.cid-adv { display: inline-flex; align-items: center; gap: 7px; }
 .cid-stack { display: flex; flex-direction: column; gap: 10px; }
 
 /* avatar com foto oficial por cima das iniciais */
@@ -117,10 +115,6 @@
 .cid-mini { padding: 3px 8px; font-size: 11px; }
 .cid-mini i { width: 6px; height: 6px; }
 
-/* perfil da busca avançada */
-.public-profile { display: flex; align-items: center; gap: 14px; }
-.public-profile .k { display: block; margin-bottom: 4px; }
-.public-profile .radar-title { font-size: 30px; }
 .brand { font-size: 22px; white-space: nowrap; }
 .top { gap: 10px; }
 .top .pill { white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -196,14 +190,12 @@ b.warn { color: var(--warn); }
   .view > .top .brand { display: none; }
   .view > .top { justify-content: flex-end; }
 
-  .view, .public-view, .public-results { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px; align-items: start; }
+  .view { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px; align-items: start; }
   .view > .back { justify-self: start; }
   body[data-view="votacoes"] .view > article.card { grid-column: span 6 !important; }
-  .view > *, .public-view > *, .public-results > * { grid-column: 1 / -1; min-width: 0; }
-  .view > .card, .public-view > .card, .public-results > .card, .public-signal-section > .card { grid-column: span 6; }
-  .view > .card.wide, .view > .card.cid-list, .public-results > .public-results-list, .public-results > .public-expense-list, .public-view > .public-filters { grid-column: 1 / -1; }
-  .public-signal-section { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 14px 20px; }
-  .public-signal-section > :not(.card) { grid-column: 1 / -1; }
+  .view > * { grid-column: 1 / -1; min-width: 0; }
+  .view > .card { grid-column: span 6; }
+  .view > .card.wide, .view > .card.cid-list { grid-column: 1 / -1; }
 
   /* cabeçalho ao lado do resumo escuro */
   .view > .ph { grid-column: 1 / span 6; align-self: center; padding-right: 24px; }
@@ -230,7 +222,7 @@ b.warn { color: var(--warn); }
   .faces { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }
 @media (min-width: 1240px) {
-  .view > .cid-alert, .view > article.card:not(.wide), .public-signal-section > .card { grid-column: span 4; }
+  .view > .cid-alert, .view > article.card:not(.wide) { grid-column: span 4; }
 }
 
 /* ---------- Encaixe tipo bento: alturas iguais por fileira, conteúdo preenche o card ---------- */
@@ -243,10 +235,10 @@ b.warn { color: var(--warn); }
 .carousel > .card > .more:last-child, .cid-alert > .cid-actions:last-child, .card > .cid-actions:last-child, .card > a.src:last-child, .card > .opt:last-child { margin-top: auto; }
 .cid-alert > .cid-why { margin-top: auto; }
 @media (min-width: 900px) {
-  .view, .public-view, .public-results, .public-signal-section { align-items: stretch; }
-  .view > :not(.card), .public-view > :not(.card), .public-results > :not(.card) { align-self: start; }
+  .view { align-items: stretch; }
+  .view > :not(.card) { align-self: start; }
   .view > .ph { align-self: center; }
-  .card > .more:last-child, .card > .muted:last-child, .card > .src:last-child, .card > button.fchip:last-child, .card > .legend:last-child, .card > .radar-note:last-child { margin-top: auto; }
+  .card > .more:last-child, .card > .muted:last-child, .card > .src:last-child, .card > button.fchip:last-child, .card > .legend:last-child { margin-top: auto; }
   .card.hero > .opt:last-child { margin-top: auto; }
   .party-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 40px; }
   .imposto .imposto-rel { margin-top: auto; }

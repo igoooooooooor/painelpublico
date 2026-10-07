@@ -416,7 +416,7 @@ document.addEventListener('input', e => {
    os cards dela se alargam para ocupar o espaço: nada de buraco na grade. */
 function bentoFix() {
   const desk = matchMedia('(min-width: 900px)').matches;
-  document.querySelectorAll('#app .view, #app .public-view, #app .public-results, #app .public-signal-section').forEach(box => {
+  document.querySelectorAll('#app .view').forEach(box => {
     const kids = [...box.children];
     kids.forEach(k => { if (k.dataset.bento) { k.style.gridColumn = ''; delete k.dataset.bento; } });
     if (!desk) return;

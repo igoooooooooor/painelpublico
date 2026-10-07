@@ -7,9 +7,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 FRONTEND = ROOT / "frontend"
 SNAPSHOTS = Path(os.environ.get("PAINEL_SNAPSHOTS") or ROOT / "data" / "snapshots")
-STYLES = ("tokens.css", "base.css", "public-data.css", "cidadao.css")
+STYLES = ("tokens.css", "base.css", "cidadao.css")
 # Ordem explícita: helpers/views antes do bootstrap e router.
-SCRIPTS = ("profile-data.js", "public-data-view.js", "cidadao-view.js",
+SCRIPTS = ("profile-data.js", "cidadao-view.js",
            "extras-view.js", "partidos-view.js", "home-view.js", "app.script.js")
 VOTE_METADATA = FRONTEND / "data" / "votacoes.json"
 

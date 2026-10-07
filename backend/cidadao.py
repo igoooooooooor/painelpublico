@@ -2,8 +2,11 @@
 
 Não recalcula nem altera os sinais de public_store.py. Só reúne o que cada alerta
 precisa para ser entendido sem conhecimento técnico: quem, quanto, comparado com o quê,
-e onde conferir. Rotas no server.py: /api/c/resumo, /api/c/radar, /api/c/politicos, /api/c/politico/<id>.
+e onde conferir. Rotas no server.py: /api/c/resumo, /api/c/radar, /api/c/politicos, /api/c/politico/<id>
+e /api/c/gastos.csv?id=<id>.
 """
+import csv
+import io
 import re
 from statistics import median
 
@@ -172,7 +175,7 @@ def radar(db, params):
     """Feed do cidadão. Por padrão só picos e concentração em fornecedor: notas altas sozinhas
     (aluguel de carro de R$ 10 mil, por exemplo) são comuns e viram ruído para quem não é do ramo."""
     tipos = [t for t in (params.get('tipo') or 'pico,fornecedor').split(',') if t in ('pico', 'fornecedor', 'nota')]
-    # Só parlamentares: contas institucionais (lideranças) ficam na busca avançada.
+    # Só parlamentares: contas institucionais (lideranças) não aparecem nas telas.
     clauses, args = [f"s.type IN ({','.join('?' * len(tipos))})", "a.role IN ('deputado','senador')"], list(tipos)
     if params.get('cargo') in ROLES:
         clauses.append('a.role=?'); args.append(params['cargo'])
@@ -340,6 +343,49 @@ def politico(db, identifier):
             'categorias': [{'nome': k, 'valor': v} for k, v in sorted(cats.items(), key=lambda kv: -kv[1])],
             'fornecedores': forns, 'maiores': maiores, 'alertas': [_alerta(db, s, pessoas, cache) for s in sinais],
             'media': medias.get(p.get('role'), {}).get('media'), 'snapshotAt': _snapshot(db)}
+
+
+CSV_COLUNAS = ['Parlamentar', 'Competência', 'Data de emissão', 'Categoria', 'Valor (R$)', 'Fornecedor', 'CNPJ',
+               'Documento', 'Link do documento', 'Fonte', 'Link da fonte', 'Data da coleta']
+
+
+def _csv_texto(value):
+    # Planilhas executam células que começam com =, +, - ou @; o apóstrofo transforma em texto.
+    value = '' if value is None else str(value)
+    return "'" + value if re.match(r'^[\s\x00-\x1f]*[=+@-]', value) else value
+
+
+def gastos_csv(db, identifier):
+    """Todas as notas da cota de um(a) parlamentar, para conferir em planilha (CSV com ';').
+
+    Devolve (nome do arquivo, gerador de linhas) ou None se a pessoa não for deputado(a) ou senador(a) da base.
+    """
+    pessoa = db.execute("SELECT id,name FROM authorities WHERE id=? AND role IN ('deputado','senador')", (identifier,)).fetchone()
+    if not pessoa:
+        return None
+    nome = pessoa[1]
+
+    def linhas():
+        buffer = io.StringIO()
+        writer = csv.writer(buffer, delimiter=';')
+
+        def linha(values):
+            writer.writerow(values)
+            text = buffer.getvalue()
+            buffer.seek(0); buffer.truncate(0)
+            return text
+        yield '\ufeff' + linha(CSV_COLUNAS)
+        for e in db.execute('''SELECT e.year,e.month,e.date,e.category,e.amountCents,s.name,s.cnpj,e.documentId,e.documentUrl,
+                src.label,src.url,src.fetchedAt FROM expenses e INDEXED BY expense_authority JOIN sources src ON src.id=e.sourceId
+                LEFT JOIN suppliers s ON s.key=e.supplierKey WHERE e.authorityId=? AND e.kind='reembolso'
+                ORDER BY e.year,e.month,e.date,e.id''', (identifier,)):
+            year, month, date, category, cents, supplier, cnpj, document, document_url, source, source_url, fetched = tuple(e)
+            valor = f'{"-" if cents < 0 else ""}{abs(cents) // 100},{abs(cents) % 100:02d}'
+            yield linha([_csv_texto(nome), f'{year:04d}-{month:02d}', date or '', _csv_texto(category), valor,
+                         _csv_texto(supplier), cnpj or '', _csv_texto(document), store.safe_url(document_url) or '',
+                         _csv_texto(source), store.safe_url(source_url) or '', fetched or ''])
+    slug = re.sub(r'[^a-z0-9]+', '-', store.fold(nome)).strip('-') or 'parlamentar'
+    return f'gastos-cota-{slug}.csv', linhas()
 
 
 def partidos(db):

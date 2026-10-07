@@ -228,6 +228,7 @@ test('profiles with observed expenses still receive shared sections and separate
   assert.match(profile, /Cota é reembolso/);
   assert.match(profile, /subsídio bruto mensal de referência do cargo/);
   assert.doesNotMatch(profile, /Não é o salário, que é de/);
+  assert.match(profile, /<a class="fchip" href="\/api\/c\/gastos\.csv\?id=camara%3A55" download>Baixar todas as notas \(CSV\)<\/a>/);
 });
 
 test('profile starts with three ordered answers and keeps the complementary details', () => {
@@ -426,10 +427,8 @@ test('Senate profiles show source snapshot metadata safely and omit empty fields
   assert.match(profile, /Exercício de 05\/08\/2026 a 06\/10\/2026 — Retorno do titular/);
   assert.match(profile, /href="https:\/\/senado\.example\.test\/lista\?x=%22%20onmouseover=%22alert\(1\)" target="_blank"/);
   assert.doesNotMatch(profile, /href="[^"]*" onmouseover=/);
-  assert.match(profile, /data-public-authority="senado:current"/);
-  assert.match(profile, /data-public-authority-position="Mandato &lt;titular&gt; &amp; participação"/);
-  assert.match(profile, /data-public-authority-status="Exercício de 05\/08\/2026 a 06\/10\/2026 — Retorno do titular"/);
-  assert.match(profile, /data-public-authority-source="https:\/\/senado\.example\.test\/lista\?x=&quot; onmouseover=&quot;alert\(1\)"/);
+  assert.doesNotMatch(profile, /Busca avançada|data-public-/);
+  assert.doesNotMatch(profile, /gastos\.csv/);
 
   state.pol = 'senado:without-metadata';
   api.cid.fichaId = state.pol;

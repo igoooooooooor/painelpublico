@@ -173,6 +173,21 @@ class ProdServerTests(unittest.TestCase):
         self.assertEqual(minimal['generatedAt'], 'projects-date')
         self.assertIsNone(srv.perfis.perfil('senado:12', profile_path))
 
+    def test_profile_csv_downloads_notes_and_unknown_or_removed_routes_are_404(self):
+        with urllib.request.urlopen(self.base + '/api/c/gastos.csv?id=camara%3A1') as r:
+            body = r.read().decode('utf-8')
+            self.assertEqual(r.headers['Content-Type'], 'text/csv; charset=utf-8')
+            self.assertIn('filename="gastos-cota-ana.csv"', r.headers['Content-Disposition'])
+            self.assertEqual(r.headers['Cache-Control'], 'no-store')
+        self.assertTrue(body.startswith('﻿Parlamentar;Competência;'))
+        self.assertEqual(len(self.httpd.cache.items), 0)
+        for path in ('/api/c/gastos.csv?id=camara%3A2', '/api/authorities', '/api/expenses.csv', '/api/coverage'):
+            with self.subTest(path=path):
+                with self.assertRaises(urllib.error.HTTPError) as ctx:
+                    self.get(path)
+                self.assertEqual(ctx.exception.code, 404)
+                ctx.exception.close()
+
     def test_healthcheck_reports_missing_database(self):
         self.db.unlink()
         with self.assertRaises(urllib.error.HTTPError) as ctx:

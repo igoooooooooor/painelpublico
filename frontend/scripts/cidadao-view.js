@@ -1,5 +1,5 @@
 /* Telas do cidadão: "Gastos incomuns" (Home), "Alertas", "Políticos" (busca) e a ficha leve.
-   Tudo em linguagem simples. A busca avançada continua acessível por um link discreto. */
+   Tudo em linguagem simples. */
 const cid = {
   cache: new Map(), pending: new Set(),
   lupa: { tipo: 'pico,fornecedor', cargo: '', page: 1, itens: [], total: null, loading: false, erro: null, key: '' },
@@ -39,8 +39,6 @@ function skel(tipo = 'cards', n = 3) {
 function pageHead(kicker, title, lead) {
   return `<header class="ph"><span class="k">${kicker}</span><h1 class="h ph-t">${title}</h1>${lead ? `<p class="ph-lead">${lead}</p>` : ''}</header>`;
 }
-const advLink = (attrs, label = 'Busca avançada') => `<button type="button" class="cid-adv" ${attrs}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>${label} →</button>`;
-const cidPublicAuthorityAttrs = (p, mandate) => `data-public-authority="${esc(p.id || '')}" data-public-authority-name="${esc(cidNome(p.name))}" data-public-authority-role="${esc(p.role || '')}" data-public-authority-position="${esc(p.position || mandate?.position || mandate?.participacao || '')}" data-public-authority-status="${esc(p.employmentStatus || mandate?.employmentStatus || mandate?.exercicio || '')}" data-public-authority-institution="${esc(p.institution || '')}" data-public-authority-sphere="${esc(p.sphere || '')}" data-public-authority-uf="${esc(p.uf || '')}" data-public-authority-source="${esc(p.sourceUrl || mandate?.sourceUrl || '')}"`;
 const CARGO = { deputado: 'Deputado(a) federal', senador: 'Senador(a)' };
 const CARGO_PL = { deputado: 'deputados(as)', senador: 'senadores(as)' };
 const MES_LONGO = ['', 'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
@@ -203,8 +201,7 @@ function vLupa() {
       <p><b>Mês acima do habitual:</b> o gasto do mês passou de 1,75 vez o habitual dos meses anteriores.</p>
       <p><b>Mesmo fornecedor:</b> metade ou mais do dinheiro do ano foi para a mesma empresa.</p>
       <p class="muted">Pode ter explicação, como um evento no estado ou um contrato fixo. Os dados vêm das notas que a Câmara e o Senado publicam; as passagens aéreas da Câmara não entram nessa conta.</p>
-    </section>
-    ${advLink('data-public-go="radar"')}`;
+    </section>`;
 }
 
 /* ---------- Aba "Políticos" ---------- */
@@ -274,8 +271,7 @@ function vPoliticos() {
     <div class="cid-actions"><button type="button" class="fchip" data-cmp-start="">Comparar dois(duas) lado a lado →</button><button type="button" class="fchip" data-go="partidos">Comparar partidos →</button><button type="button" class="fchip" data-go="presenca">Presença dos deputados →</button></div>
     <div id="cid-pol-list" class="cid-stack" aria-live="polite">${cidPolListHTML()}</div>
     <div id="cid-pol-notes">${cidPolCoverageNotesHTML(p.cobertura)}</div>
-    <span class="src">Valor: quanto cada um(a) gastou da cota em 2026, pelas notas publicadas. Não é salário. A barra roxa mais forte indica gasto acima da média.</span>
-    ${advLink('data-public-go="autoridades"', 'Busca avançada: ministros(as), juízes(as) e servidores(as)')}`;
+    <span class="src">Valor: quanto cada um(a) gastou da cota em 2026, pelas notas publicadas. Não é salário. A barra roxa mais forte indica gasto acima da média.</span>`;
 }
 
 /* ---------- Ficha leve (qualquer deputado ou senador) ---------- */
@@ -396,7 +392,7 @@ function vPolitico() {
     ${!camara ? profileAttendanceSources(shared.id) : ''}
     <p class="muted">Alertas indicam registros para conferir, não conclusões de irregularidade. “Parecido com a média” mantém a faixa de diferença inferior a 10% na cota.</p>
     ${cidFonte(p) ? `<a class="fchip" href="${esc(cidFonte(p))}" target="_blank" rel="noopener">Página oficial ↗</a>` : ''}
-    ${advLink(cidPublicAuthorityAttrs(p, shared.mandato), 'Busca avançada: todos os lançamentos')}`;
+    ${hasExpenseData ? `<a class="fchip" href="${esc('/api/c/gastos.csv?id=' + encodeURIComponent(p.id))}" download>Baixar todas as notas (CSV)</a>` : ''}`;
   return `${back}
     <div class="cid-profile-head"><div class="profile">${cidAvatar(p, 64)}<div><h1 class="n">${esc(cidNome(p.name))}</h1><span class="muted">${cidQuem(p)}</span></div></div>
       <button type="button" class="fchip" data-cmp-start="${esc(shared.id)}">Comparar com outro(a) →</button></div>
