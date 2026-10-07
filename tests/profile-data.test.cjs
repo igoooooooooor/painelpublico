@@ -5,12 +5,27 @@ const path = require('node:path');
 const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, '../frontend/scripts/profile-data.js'), 'utf8');
 
-function load(data = {}) {
+function load(data = {}, { width = 390 } = {}) {
+  const elements = new Map();
+  const accordionButtons = [];
+  const viewport = { width };
+  const media = query => ({ matches: query.includes('900') && viewport.width >= 900, addEventListener() {} });
   const context = {
     DATA: { deputados: [], votacoes: [], presencaTodos: [], ...data }, URL,
+    innerWidth: width,
+    window: { innerWidth: width, matchMedia: media },
+    matchMedia: media,
+    document: {
+      documentElement: { clientWidth: width },
+      getElementById: id => elements.get(id) || null,
+      querySelectorAll: () => accordionButtons,
+      _elements: elements,
+      _accordionButtons: accordionButtons,
+    },
     esc: value => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;')
       .replaceAll('>', '&gt;').replaceAll('"', '&quot;'),
   };
+  context.__setWidth = next => { viewport.width = next; };
   vm.createContext(context); vm.runInContext(source, context);
   return context;
 }
@@ -59,7 +74,11 @@ test('missing vote rows never become absences and secret votes never reveal a ch
 
 test('every legislative profile has explicit coverage for salary, staff, contact and projects', () => {
   const ctx = load();
-  const html = ctx.profileSectionsHTML({ id: 'senado:9', role: 'senador' });
+  const html = ctx.profileSectionsHTML({ id: 'senado:9', role: 'senador' }, {
+    gastos: '<p>Slot de gastos</p>', alertas: '<p>Slot de alertas</p>',
+    votos: '<p>Slot de votos</p>', fontes: '<p>Slot de fontes</p>',
+  });
+  assert.match(html, /cid-details/);
   assert.match(html, /subsídio bruto mensal de referência do cargo/);
   assert.match(html, /Pagamento individual, descontos e outras verbas não foram importados/);
   assert.match(html, /Gastos com a equipe ainda não importados/);
@@ -68,6 +87,126 @@ test('every legislative profile has explicit coverage for salary, staff, contact
   assert.doesNotMatch(html, /0 projetos|NaN|undefined/);
   assert.equal(ctx.profileSectionsHTML({ id: 'siape:9', role: 'servidor' }), '');
 });
+
+test('shared detail accordions keep their DOM order, accessible controls and responsive defaults', () => {
+  const keys = ['gastos', 'alertas', 'votos', 'projetos', 'equipe', 'contato', 'mandato', 'fontes'];
+  const slots = { gastos: '<p>Gastos</p>', alertas: '<p>Alertas</p>', votos: '<p>Votos</p>', fontes: '<p>Fontes</p>' };
+  const mobile = load().profileSectionsHTML({ id: 'senado:9', role: 'senador' }, slots);
+  const desktop = load({}, { width: 1024 }).profileSectionsHTML({ id: 'senado:9', role: 'senador' }, slots);
+  const domKeys = html => [...html.matchAll(/data-profile-section=["']([^"']+)["']/g)].map(match => match[1]);
+  assert.deepEqual(domKeys(mobile), keys);
+  assert.deepEqual(domKeys(desktop), keys);
+  assert.match(mobile, /<div class="cid-details[^"]*"/);
+
+  for (const html of [mobile, desktop]) {
+    for (const key of keys) {
+      const section = html.match(new RegExp(`<section[^>]*data-profile-section=["']${key}["'][\\s\\S]*?<\\/section>`))?.[0];
+      assert.ok(section, `section ${key} exists`);
+      const button = section.match(/<button[^>]*data-profile-toggle=["'][^"']+["'][^>]*>/)?.[0];
+      assert.ok(button, `${key} has a toggle button`);
+      const panelId = button.match(/aria-controls=["']([^"']+)["']/)?.[1];
+      assert.ok(panelId, `${key} toggle identifies its panel`);
+      assert.match(section, new RegExp(`id=["']${panelId}["']`));
+      assert.match(button, /aria-expanded=["'](?:true|false)["']/);
+      const expanded = /aria-expanded=["']true["']/.test(button);
+      const panel = section.match(new RegExp(`<[^>]+id=["']${panelId}["'][^>]*>`))?.[0];
+      assert.ok(panel, `${key} panel exists`);
+      assert.equal(/\shidden(?:[ =]|>)/.test(panel), !expanded, `${key} hidden state matches aria-expanded`);
+    }
+  }
+
+  const expanded = html => Object.fromEntries([...html.matchAll(/<button[^>]*data-profile-toggle=["']([^"']+)["'][^>]*aria-expanded=["'](true|false)["']/g)]
+    .map(match => [match[1], match[2] === 'true']));
+  assert.deepEqual(expanded(mobile), Object.fromEntries(keys.map(key => [key, key === 'gastos'])));
+  assert.deepEqual(expanded(desktop), Object.fromEntries(keys.map(key => [key, ['gastos', 'votos'].includes(key)])));
+});
+
+test('accordion choices update their panel and persist when the profile HTML is rendered again', () => {
+  const ctx = load();
+  const slots = { gastos: '<p>Gastos</p>', alertas: '<p>Alertas</p>', votos: '<p>Votos</p>', fontes: '<p>Fontes</p>' };
+  const value = { id: 'camara:1', role: 'deputado' };
+  const html = ctx.profileSectionsHTML(value, slots);
+  const section = html.match(/<section[^>]*data-profile-section="alertas"[\s\S]*?<\/section>/)?.[0] || '';
+  const tag = section.match(/<button[^>]*data-profile-toggle="alertas"[^>]*>/)?.[0] || '';
+  const panelId = tag.match(/aria-controls="([^"]+)"/)?.[1];
+  assert.ok(panelId);
+  const panel = { hidden: true };
+  ctx.document._elements.set(panelId, panel);
+  const attrs = {
+    'aria-expanded': tag.match(/aria-expanded="([^"]+)"/)?.[1],
+    'aria-controls': panelId,
+  };
+  const button = {
+    dataset: { profileToggle: 'alertas', profileId: 'camara:1' },
+    getAttribute(name) {
+      if (name === 'data-profile-toggle') return 'alertas';
+      if (name === 'data-profile-id') return 'camara:1';
+      return attrs[name] ?? null;
+    },
+    setAttribute(name, value) { attrs[name] = value; },
+  };
+
+  assert.equal(ctx.profileToggle(button), true);
+  assert.equal(panel.hidden, false);
+  let rerendered = ctx.profileSectionsHTML(value, slots);
+  assert.match(rerendered, /data-profile-toggle="alertas"[^>]*aria-expanded="true"/);
+  assert.doesNotMatch(rerendered.match(/<div class="cid-detail-body"[^>]*id="[^"]*alertas"[^>]*>/)?.[0] || '', / hidden/);
+
+  assert.equal(ctx.profileToggle(button), false);
+  assert.equal(panel.hidden, true);
+  rerendered = ctx.profileSectionsHTML(value, slots);
+  assert.match(rerendered, /data-profile-toggle="alertas"[^>]*aria-expanded="false"/);
+});
+
+test('responsive refresh applies defaults and preserves explicit accordion choices', () => {
+  const ctx = load();
+  const slots = { gastos: '<p>Gastos</p>', alertas: '<p>Alertas</p>', votos: '<p>Votos</p>', fontes: '<p>Fontes</p>' };
+  const html = ctx.profileSectionsHTML({ id: 'camara:1', role: 'deputado' }, slots);
+  const keys = ['gastos', 'alertas', 'votos', 'projetos', 'equipe', 'contato', 'fontes'];
+  for (const key of keys) {
+    const section = html.match(new RegExp(`<section[^>]*data-profile-section="${key}"[\\s\\S]*?<\\/section>`))?.[0] || '';
+    const tag = section.match(/<button[^>]*>/)?.[0] || '';
+    const button = makeButton(tag, key, 'camara:1', ctx.document._elements);
+    ctx.document._accordionButtons.push(button);
+  }
+  const alertas = ctx.document._accordionButtons.find(button => button.dataset.profileToggle === 'alertas');
+  const votos = ctx.document._accordionButtons.find(button => button.dataset.profileToggle === 'votos');
+  ctx.profileToggle(alertas); // Explicitly open the mobile-collapsed section.
+  ctx.profileToggle(votos);
+  ctx.profileToggle(votos); // Explicitly keep desktop's default-open section closed.
+
+  ctx.__setWidth(1024);
+  ctx.profileRefreshAccordions();
+  const current = Object.fromEntries(ctx.document._accordionButtons.map(button => [
+    button.dataset.profileToggle,
+    button.getAttribute('aria-expanded') === 'true',
+  ]));
+  assert.equal(current.gastos, true);
+  assert.equal(current.projetos, false);
+  assert.equal(current.alertas, true);
+  assert.equal(current.votos, false);
+  assert.equal(ctx.document._elements.get(alertas.getAttribute('aria-controls')).hidden, false);
+  assert.equal(ctx.document._elements.get(votos.getAttribute('aria-controls')).hidden, true);
+});
+
+function makeButton(tag, key, profile, elements) {
+  const attr = name => tag.match(new RegExp(`${name}="([^"]*)"`))?.[1] ?? null;
+  const attrs = {
+    'aria-expanded': attr('aria-expanded'),
+    'aria-controls': attr('aria-controls'),
+    'data-profile-toggle': key,
+    'data-profile-id': profile,
+    'data-profile-desktop-open': attr('data-profile-desktop-open'),
+    'data-profile-mobile-open': attr('data-profile-mobile-open'),
+  };
+  const body = { hidden: tag.includes('aria-expanded="true"') ? false : true };
+  elements.set(attrs['aria-controls'], body);
+  return {
+    dataset: { profileToggle: key, profileId: profile },
+    getAttribute(name) { return attrs[name] ?? null; },
+    setAttribute(name, value) { attrs[name] = value; },
+  };
+}
 
 test('only a complete project collection supports an observed zero', () => {
   const ctx = load({ perfis: { profiles: {
@@ -91,14 +230,19 @@ test('external fields and URLs are safe in shared cards', () => {
   assert.doesNotMatch(html, /href="(?:javascript|data):|user:secret|<script>|<img onerror/);
 });
 
-test('profiles outside the old sample load on demand once, show a skeleton meanwhile and never fetch without the snapshot', async () => {
+test('profiles outside the old sample load on demand once and keep detail headings while loading', async () => {
   const calls = [];
   let release;
   const ctx = load({ perfis: { profiles: {}, sobDemanda: true } });
   ctx.skel = () => '<skeleton>';
   ctx.rerender = () => calls.push('rerender');
   ctx.fetch = url => { calls.push(url); return new Promise(ok => { release = () => ok({ ok: true, json: async () => ({ name: 'Ana', role: 'deputado', contato: { email: 'ana@camara.leg.br' } }) }); }); };
-  assert.equal(ctx.profileSectionsHTML({ id: 'camara:513', role: 'deputado' }), '<skeleton>');
+  const loading = ctx.profileSectionsHTML({ id: 'camara:513', role: 'deputado' });
+  assert.match(loading, /data-profile-section=["']projetos["']/);
+  assert.match(loading, /data-profile-section=["']equipe["']/);
+  assert.match(loading, /data-profile-section=["']contato["']/);
+  assert.match(loading, /data-profile-section=["']fontes["']/);
+  assert.match(loading, /<skeleton>/);
   ctx.profileData('camara:513');
   assert.deepEqual(calls, ['/api/c/perfil/camara%3A513']);
   release(); await new Promise(r => setTimeout(r, 0)); await new Promise(r => setTimeout(r, 0));

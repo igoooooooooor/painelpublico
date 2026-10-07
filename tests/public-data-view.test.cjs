@@ -109,7 +109,8 @@ test('federal legislative authority profiles include shared contacts and project
     benchmark: { available: false }
   });
 
-  assert.match(html, /Salário parlamentar/);
+  assert.match(html, /Subsídio parlamentar/);
+  assert.match(html, /data-profile-section="fontes"/);
   assert.match(html, /Contato e gabinete/);
   assert.match(html, /ana@example\.test/);
   assert.match(html, /Projetos apresentados/);

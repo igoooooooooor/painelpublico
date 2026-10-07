@@ -263,3 +263,71 @@ b.warn { color: var(--warn); }
 .par-tops .cid-row { grid-template-columns: 40px minmax(0, 1fr) auto; min-height: 60px; }
 .par-pick .chips { max-height: 132px; overflow-y: auto; }
 @media (max-width: 560px) { .par-who .par-sigla { font-size: var(--fit, 30px); white-space: nowrap; overflow-wrap: normal; } .par-tops { grid-template-columns: 1fr; } .par-vote { grid-template-columns: minmax(0, 1fr) 64px 64px; } }
+
+/* Ficha: três respostas primeiro; o aprofundamento fica nos acordeões. */
+.cid-profile-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.cid-profile-head .profile { min-width: 0; }
+.cid-profile-head .profile > div { min-width: 0; }
+.cid-profile-head h1 { margin: 0; line-height: 1.15; }
+.cid-answer-label { margin-top: var(--space-2); }
+.cid-answers { display: grid; gap: var(--space-3); }
+.cid-answer { gap: var(--space-3); }
+.cid-answer p { margin: 0; }
+.cid-answer .huge { font-size: clamp(42px, 12vw, 54px); }
+.cid-answer .huge small { margin-left: 3px; }
+.cid-answer .cid-salary { font-size: 14px; color: var(--hero-muted); }
+.cid-answer .cid-vs { gap: 5px; }
+.cid-answer .cid-vs > div { gap: var(--space-2); }
+.cid-answer .cid-vs b { white-space: nowrap; }
+.cid-answer .legend { gap: 6px 12px; }
+.cid-answer .pbar { height: 10px; flex: none; }
+.cid-answer .cid-verdict { align-self: flex-start; margin-top: auto; font-size: 12px; min-height: 30px; cursor: default; background: var(--chip); }
+.cid-answer.hero .cid-verdict { background: var(--hero-chip); border-color: var(--hero-line); color: var(--hero-fg); }
+.cid-vote-count { font-size: 14px; }
+.cid-empty { font-family: var(--f-display); font-size: 24px; line-height: 1.2; text-wrap: balance; }
+.cid-answer-alert { background: var(--warn-soft); }
+.cid-answer-alert .cid-title { font-size: 22px; }
+.cid-answer-alert .cid-frase { font-size: 13px; }
+.cid-answer-alert .cid-ref span { background: var(--warn-soft); }
+.cid-answer-alert .more { margin-top: auto; }
+.cid-answer .cid-alert-count { align-self: flex-start; color: var(--warn); background: var(--surface); cursor: default; min-height: 30px; font-size: 12px; }
+.cid-details { display: grid; gap: var(--space-3); min-width: 0; align-items: start; }
+.cid-detail { padding: 0; gap: 0; min-width: 0; }
+.cid-detail > h2, .cid-detail > h3 { margin: 0; font-size: inherit; }
+.cid-detail-toggle { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); width: 100%; min-height: 58px; padding: 16px 18px; background: none; border: 0; border-radius: var(--radius-card); text-align: left; font-weight: 700; cursor: pointer; scroll-margin-top: 80px; }
+.cid-detail-toggle::after { content: '+'; flex: none; font-size: 23px; font-weight: 400; color: var(--muted); }
+.cid-detail-toggle[aria-expanded="true"]::after { content: '−'; }
+.cid-detail-body { display: flex; flex-direction: column; gap: var(--space-3); padding: 0 18px 18px; overflow-wrap: anywhere; }
+.cid-detail-body[hidden] { display: none; }
+.cid-detail-body p { margin: 0; }
+.cid-detail-body .big { font-size: 28px; }
+.cid-detail-part { display: flex; flex-direction: column; gap: var(--space-2); }
+.cid-detail-part + .cid-detail-part { border-top: 1px solid var(--line); padding-top: var(--space-4); margin-top: var(--space-2); }
+.cid-detail-part h3 { margin: 0; }
+.cid-detail-part .item { min-width: 0; }
+.cid-detail-part .item > .mono:last-child { flex: none; white-space: nowrap; }
+.cid-detail-body .votes { grid-template-columns: 1fr; }
+.cid-detail-body .vt { text-align: left; cursor: pointer; }
+@media (max-width: 899px) {
+  .cid-detail-part .item { flex-wrap: wrap; gap: var(--space-2); }
+  .cid-detail-part .item .g { min-width: 120px; }
+}
+@media (min-width: 900px) {
+  .cid-answers { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); align-items: stretch; }
+  .cid-details { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3) var(--space-4); }
+  .cid-details > [data-profile-section="gastos"] { grid-column: 1; grid-row: 1; }
+  .cid-details > [data-profile-section="votos"] { grid-column: 2; grid-row: 1; }
+}
+.cid-source, .cid-source-list { display: flex; flex-direction: column; gap: var(--space-2); }
+.cid-source-list { gap: var(--space-4); }
+/* O resumo de custo continua escuro também quando o tema do sistema é escuro. */
+:root[data-theme="dark"] .cid-answer.hero {
+  --hero-bg: var(--bg); --hero-fg: var(--ink); --hero-muted: var(--muted); --hero-line: var(--line); --hero-chip: var(--chip);
+  border-color: var(--line);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .cid-answer.hero {
+    --hero-bg: var(--bg); --hero-fg: var(--ink); --hero-muted: var(--muted); --hero-line: var(--line); --hero-chip: var(--chip);
+    border-color: var(--line);
+  }
+}

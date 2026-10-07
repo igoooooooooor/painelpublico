@@ -29,6 +29,9 @@ function skel(tipo = 'cards', n = 3) {
   if (tipo === 'ficha') return `${SK_MSG}<div class="profile" aria-hidden="true">${skO(64)}<span class="sk-col" style="flex:1">${skL('55%', 24)}${skL('40%', 12)}</span></div>
     <section class="card hero sk-card" aria-hidden="true">${skL('40%', 10)}${skL('62%', 56)}${skL('90%')}${skL('100%', 10)}${skL('100%', 10)}</section>
     ${rep(2, () => `<section class="card sk-card" aria-hidden="true">${skL('35%', 10)}${skL('50%', 30)}${skL('100%', 8)}${skL('88%')}${skL('70%')}</section>`)}`;
+  if (tipo === 'ficha-respostas') return `${SK_MSG}<div class="profile" aria-hidden="true">${skO(64)}<span class="sk-col" style="flex:1">${skL('55%', 24)}${skL('40%', 12)}</span></div>
+    <span class="k">Em 3 respostas</span><div class="cid-answers" aria-hidden="true">${rep(3, i => `<section class="card ${i === 0 ? 'hero' : ''} sk-card">${skL('50%', 24)}${skL('65%', 56)}${skL('90%')}${skL('100%', 10)}${skL('100%', 10)}</section>`)}</div>
+    ${skL('110px', 24)}${rep(4, () => `<div class="card sk-card" aria-hidden="true">${skL('70%', 24)}</div>`)}`;
   if (tipo === 'cmp') return `${SK_MSG}<section class="card wide sk-card cmp" aria-hidden="true"><div class="cmp-head"><span></span>${rep(2, () => `<div class="sk-colc">${skO(56)}${skL('70%', 13)}${skL('50%', 10)}</div>`)}</div>
     ${rep(5, () => `<div class="cmp-row">${skL('80%', 11)}${skL('70%', 16)}${skL('70%', 16)}</div>`)}</section>`;
   return SK_MSG + rep(n, () => `<section class="card sk-card" aria-hidden="true">${skL('35%', 10)}${skL('70%', 20)}${skL('100%')}${skL('92%')}${skL('64%')}</section>`);
@@ -281,76 +284,114 @@ function cidLoadFicha(id) {
   cidGet('/api/c/politico/' + encodeURIComponent(id)).then(d => { if (cid.fichaId !== id) return; cid.ficha = d; cid.fichaLoading = false; if (state.view === 'politico') rerender(); })
     .catch(e => { if (cid.fichaId !== id) return; cid.fichaLoading = false; cid.fichaErro = cidErroMsg(e); if (state.view === 'politico') rerender(); });
 }
+function cidCustoResposta(f, p, hasExpenseData) {
+  const media = f.media || 0, dif = media ? f.total / media - 1 : 0;
+  const totalLabel = f.total === 0 ? '0' : Math.round(f.total / 1e3).toLocaleString('pt-BR') + ' mil';
+  const verdict = Math.abs(dif) < 0.1 ? 'Parecido com a média' : `${Math.round(Math.abs(dif) * 100)}% ${dif > 0 ? 'acima' : 'abaixo'} da média`;
+  return `<section class="card hero cid-answer" data-profile-answer="custo">
+    <h2 class="h">Quanto custa?</h2><span class="k">Cota parlamentar · 2026</span>
+    <div class="huge">${hasExpenseData ? `<small>R$</small>${totalLabel}` : 'Sem dados'}</div>
+    <p class="cid-salary">Salário à parte: ${brl(PROFILE_SALARY[p.role].amount)}/mês</p>
+    ${hasExpenseData ? (media ? `<div class="cid-vs">
+      <div><span>${esc(cidNome(p.name).split(' ')[0])}</span><b class="mono">${f.total === 0 ? 'R$ 0' : cidMil(f.total)}</b></div><div class="cid-vsbar"><i style="width:${Math.min(100, f.total / Math.max(f.total, media) * 100)}%"></i></div>
+      <div><span>Média dos(as) ${CARGO_PL[p.role] || 'colegas'}</span><b class="mono">${cidMil(media)}</b></div><div class="cid-vsbar avg"><i style="width:${Math.min(100, media / Math.max(f.total, media) * 100)}%"></i></div>
+    </div><span class="fchip cid-verdict">${verdict}</span>` : '<p class="muted">Média do cargo indisponível neste recorte.</p>')
+    : '<p class="muted">Nenhuma despesa de reembolso foi observada para este perfil no recorte importado. Ausência não significa gasto zero.</p>'}
+  </section>`;
+}
+function cidTrabalhoResposta(shared) {
+  const head = '<section class="card cid-answer" data-profile-answer="trabalho"><h2 class="h">Trabalha?</h2>';
+  if (shared.pessoa.role === 'senador') return `${head}<span class="k">Presença e votos · Senado</span>
+    <p class="cid-empty">Presença e votos do Senado ainda não foram coletados.</p><p class="muted">Sem dados para avaliar neste recorte.</p></section>`;
+  const p = shared.presenca, rows = profilePresenceRows();
+  const media = rows.length ? Math.round(rows.reduce((s, x) => s + x.presente / x.dias, 0) / rows.length * 100) : null;
+  const percent = p ? Math.round(p.presente / p.dias * 100) : null;
+  const votos = extVotosDe(shared.id), known = votos.filter(r => r.voto !== null);
+  const presenceOnly = known.filter(r => ['Presente', 'Presidiu'].includes(r.voto)).length;
+  const identified = known.filter(r => !['Presente', 'Presidiu'].includes(r.voto));
+  const voted = identified.filter(r => r.voto !== 'Não votou').length;
+  return `${head}<span class="k">Presença no Plenário · 2026</span>
+    ${p ? `<div class="huge">${percent}<small>%</small></div>
+      <p>${p.presente} de ${p.dias} dias${media !== null ? ` · média da Câmara: ${media}%` : ''}</p>
+      ${extPresBar(p)}
+      <div class="legend"><span><i style="background:var(--accent)"></i>Presente ${p.presente}</span><span><i style="background:var(--muted);opacity:.55"></i>Justificada ${p.justificadas}</span><span><i style="background:var(--warn)"></i>Falta ${p.falta}</span></div>`
+      : '<p class="cid-empty">Presença sem registro importado.</p><p class="muted">Ausência de dado não significa zero presença.</p>'}
+    <p class="cid-vote-count">${identified.length ? `Votou em <b>${voted} de ${votos.length}</b> votações do Placar` : presenceOnly ? 'Sem voto nominal identificado neste recorte.' : 'Sem registros individuais nas votações do Placar.'}</p>
+    ${presenceOnly ? `<p class="muted">${presenceOnly} ${presenceOnly === 1 ? 'registro só de presença ou presidência' : 'registros só de presença ou presidência'}.</p>` : ''}
+    ${p && media !== null ? `<span class="fchip cid-verdict">${percent === media ? 'Perto da média' : percent > media ? 'Acima da média' : 'Abaixo da média'}</span>` : ''}
+  </section>`;
+}
+function cidAlertaResposta(alertas, hasExpenseData) {
+  const ranks = { alto: 3, medio: 2, info: 1 };
+  const top = [...alertas].sort((a, b) => (ranks[b.nivel] || 0) - (ranks[a.nivel] || 0))[0];
+  return `<section class="card cid-answer cid-answer-alert" data-profile-answer="alerta">
+    <h2 class="h">Tem algo estranho?</h2>
+    ${top ? `<span class="fchip cid-alert-count">${alertas.length} ${alertas.length === 1 ? 'alerta' : 'alertas'}</span>
+      <h3 class="cid-title">${esc(top.titulo)}</h3>${cidVisual(top)}<p class="cid-frase">${esc(top.frase)}</p>
+      <button type="button" class="more" data-profile-open="alertas">${alertas.length > 1 ? `Ver os demais alertas (${alertas.length - 1})` : 'Ver alerta em detalhe'} →</button>`
+    : `<p class="cid-empty">${hasExpenseData ? 'Nada fora do normal nas regras que checamos' : 'Sem dados de cota para checar alertas.'}</p>`}
+  </section>`;
+}
+function cidVotosDetalhe(shared) {
+  if (shared.pessoa.role === 'senador') return '<p class="muted">Votos nominais do Senado ainda não foram coletados.</p>';
+  const votos = extVotosDe(shared.id), p = shared.presenca;
+  return `<span class="k">Votações selecionadas do Placar · ${votos.length}</span>
+    ${votos.length ? `<div class="votes">${votos.map(({ v, voto }) => {
+      const label = voto == null ? 'Sem registro importado' : v.secreta ? 'Presença registrada · voto secreto' : String(voto).toLowerCase();
+      return `<button type="button" class="vt" data-vote="${esc(v.id)}"><b>${esc(label)}</b><span>${esc(v.titulo)}</span></button>`;
+    }).join('')}</div>` : '<p class="muted">Nenhuma votação selecionada do Placar em 2026.</p>'}
+    <p class="muted">O resumo conta votos identificados na fonte. Presença em voto secreto e quem presidiu aparecem à parte. Ausência de registro não significa que a pessoa não votou.</p>
+    ${p?.motivos?.length ? `<p class="note">Justificativas de presença: ${p.motivos.map(([k, n]) => `${esc(k.toLowerCase())} (${n})`).join(', ')}.</p>` : ''}
+    <button type="button" class="more" data-go="presenca">Ver a presença de todos(as)</button>`;
+}
+function cidGastosDetalhe(f, hasExpenseData) {
+  if (!hasExpenseData) return '<p class="muted">Não há lançamentos observados para calcular total, média, série mensal ou alertas.</p>';
+  const maxMes = Math.max(1, ...f.meses.map(m => m.valor)), catTot = f.categorias.reduce((s, c) => s + c.valor, 0) || 1;
+  return `<section class="cid-detail-part"><h3 class="k">Mês a mês</h3>
+    <div class="cid-months">${f.meses.map(m => `<div><small>${Math.round(m.valor / 1e3)}k</small><b class="mt"><i style="height:${m.valor > 0 ? Math.max(2, m.valor / maxMes * 100) : 0}%" class="${f.alertas.some(a => a.tipo === 'pico' && a.mes === m.month) ? 'hot' : ''}"></i></b><span>${MES[m.month]}</span></div>`).join('')}</div>
+    <p class="muted">Os últimos meses ainda podem crescer: as notas são publicadas com atraso.</p>
+  </section>
+  <section class="cid-detail-part"><h3 class="k">Com o que gastou</h3>
+    ${f.categorias.slice(0, 6).map(c => `<div class="cid-bar"><div><span>${esc(c.nome)}</span><b class="mono">${c.valor === 0 ? 'R$ 0' : cidMil(c.valor)}</b></div><div class="bar"><i style="width:${f.categorias[0].valor ? c.valor / f.categorias[0].valor * 100 : 0}%"></i></div><small class="muted">${Math.round(c.valor / catTot * 100)}% do total</small></div>`).join('')}
+  </section>
+  <section class="cid-detail-part"><h3 class="k">Para quem foi o dinheiro</h3>
+    ${f.fornecedores.map(x => `<div class="cid-bar"><div><span>${esc(cidNome(x.name))}</span><b class="mono">${cidMil(x.valor)}</b></div><div class="bar"><i style="width:${f.total ? x.valor / f.total * 100 : 0}%;background:${f.total && x.valor / f.total >= 0.5 ? 'var(--warn)' : 'var(--accent)'}"></i></div><small class="muted">${f.total ? Math.round(x.valor / f.total * 100) : 0}% do total · ${x.notas} ${x.notas === 1 ? 'nota' : 'notas'}</small></div>`).join('')}
+  </section>
+  <section class="cid-detail-part"><h3 class="k">Maiores notas do ano</h3>
+    ${f.maiores.map(m => `<${m.documentUrl ? `a href="${esc(m.documentUrl)}" target="_blank" rel="noopener"` : 'div'} class="item"><span class="mono muted" style="width:52px">${MES[m.month]}/${String(m.year).slice(2)}</span><span class="g"><span>${esc(cidNome(m.fornecedor || 'Fornecedor não informado'))}</span><span class="muted">${esc(m.categoria)}${m.documentUrl ? ' · ver nota ↗' : ''}</span></span><span class="mono" style="font-weight:700">${brl(m.valor)}</span></${m.documentUrl ? 'a' : 'div'}>`).join('')}
+  </section>`;
+}
 function vPolitico() {
   const id = state.pol;
   cidLoadFicha(id);
   const back = '<button type="button" class="back" data-back>‹ Voltar</button>';
   if (cid.fichaErro) return back + `<section class="card"><p>Não deu para abrir esta ficha.</p><p class="muted">${esc(cid.fichaErro)}</p></section>`;
   const f = cid.ficha;
-  if (!f) return back + skel('ficha');
-  const shared = profileData(f.pessoa || id), p = shared?.pessoa || f.pessoa, profileId = shared?.id || p.id || id;
-  const sections = profileSectionsHTML(p);
-  const authorityAttrs = cidPublicAuthorityAttrs(p, shared?.mandato);
-  const profileActions = `<div class="cid-actions"><button type="button" class="fchip" data-cmp-start="${esc(profileId)}">Comparar com outro(a) →</button></div>`;
+  if (!f) return back + skel('ficha-respostas');
+  const shared = profileData(f.pessoa || id), p = shared.pessoa;
   const hasExpenseData = f.hasExpenseData === undefined ? f.total != null : Boolean(f.hasExpenseData);
-  const media = f.media || 0;
-  if (!hasExpenseData) return `${back}
-    <div class="profile">${cidAvatar(p, 64)}<div style="display:flex;flex-direction:column;gap:3px;min-width:0"><span class="n">${esc(cidNome(p.name))}</span><span class="muted">${cidQuem(p)}</span></div></div>
-    ${cidSenadoFotografia(p)}
-    ${profileActions}
-    <section class="card hero"><span class="k">Cota parlamentar em 2026</span><div class="huge">Sem dados</div>
-      <span class="muted">Nenhuma despesa de reembolso foi observada para este perfil no recorte importado.</span></section>
-    ${extFichaExtra(p.id)}
-    ${sections}
-    <section class="card"><span class="k">Despesas</span><p class="muted">Não há lançamentos observados para calcular total, média, série mensal ou alertas.</p></section>
-    ${cidFonte(p) ? `<a class="fchip" style="align-self:flex-start" href="${esc(cidFonte(p))}" target="_blank" rel="noopener">Página oficial ↗</a>` : ''}
-    ${advLink(authorityAttrs, 'Busca avançada: todos os lançamentos')}`;
-  const dif = media ? f.total / media - 1 : 0;
-  const totalLabel = f.total === 0 ? '0' : Math.round(f.total / 1e3).toLocaleString('pt-BR') + ' mil';
-  const maxMes = Math.max(1, ...f.meses.map(m => m.valor)), catTot = f.categorias.reduce((s, c) => s + c.valor, 0) || 1;
-  const camara = String(p.id).startsWith('camara:');
+  const alertas = f.alertas || [], camara = p.role === 'deputado';
+  const num = String(p.id).split(':')[1];
+  const presenceUrl = camara && /^\d+$/.test(num || '') ? `https://www.camara.leg.br/deputados/${num}/presenca-plenario/2026` : null;
+  const fontes = `<p>Cota é reembolso de gastos com o trabalho: escritório, divulgação, carro e viagens.</p>
+    <p class="src">Fonte: notas da cota publicadas ${camara ? 'pela Câmara (sem as passagens aéreas, que ficam fora do arquivo aberto)' : 'pelo Senado'}. Retrato de ${f.snapshotAt ? esc(f.snapshotAt.slice(0, 10)) : 'data não informada'}.</p>
+    ${camara ? `<p class="muted">Presença em sessões deliberativas de 2026. Média da Câmara: média das proporções individuais entre registros válidos. O selo compara os percentuais arredondados. Os dias observados podem variar entre mandatos.</p>
+    ${presenceUrl ? `<a class="src" href="${esc(presenceUrl)}" target="_blank" rel="noopener">Fonte da presença no Plenário ↗</a>` : ''}
+    <p class="muted">Os votos cobrem apenas a seleção do Placar em 2026. Cada votação abre seu resumo e fontes oficiais.</p>` : ''}
+    <p class="muted">Alertas indicam registros para conferir, não conclusões de irregularidade. “Parecido com a média” mantém a faixa de diferença inferior a 10% na cota.</p>
+    ${cidFonte(p) ? `<a class="fchip" href="${esc(cidFonte(p))}" target="_blank" rel="noopener">Página oficial ↗</a>` : ''}
+    ${advLink(cidPublicAuthorityAttrs(p, shared.mandato), 'Busca avançada: todos os lançamentos')}`;
   return `${back}
-  <div class="profile">${cidAvatar(p, 64)}<div style="display:flex;flex-direction:column;gap:3px;min-width:0"><span class="n">${esc(cidNome(p.name))}</span><span class="muted">${cidQuem(p)}</span></div></div>
-  ${cidSenadoFotografia(p)}
-  ${profileActions}
-
-  <section class="card hero">
-    <span class="k">Cota parlamentar em 2026</span>
-    <div class="huge"><small>R$</small>${totalLabel}</div>
-    <span class="muted">Gastos com o trabalho registrados nas notas da cota (escritório, divulgação, carro e viagens). Cota é reembolso; remuneração é informada separadamente quando a fonte publica.</span>
-    ${media ? `<div class="cid-vs">
-      <div><span>${esc(cidNome(p.name).split(' ')[0])}</span><b class="mono">${cidMil(f.total)}</b></div><div class="cid-vsbar"><i style="width:${Math.min(100, f.total / Math.max(f.total, media) * 100)}%"></i></div>
-      <div><span>Média dos(as) ${CARGO_PL[p.role] || 'colegas'}</span><b class="mono">${cidMil(media)}</b></div><div class="cid-vsbar avg"><i style="width:${Math.min(100, media / Math.max(f.total, media) * 100)}%"></i></div>
-    </div>
-    <p class="cid-verdict">${Math.abs(dif) < 0.1 ? 'Gasta parecido com a média.' : dif > 0 ? `Gasta <b>${Math.round(dif * 100)}% a mais</b> que a média.` : `Gasta <b>${Math.round(-dif * 100)}% a menos</b> que a média.`}</p>` : ''}
-  </section>
-
-  ${extFichaExtra(p.id)}
-  ${sections}
-
-  <h2 class="h cid-alert-h" style="margin-top:6px">${f.alertas.length ? `${f.alertas.length} ${f.alertas.length === 1 ? 'alerta' : 'alertas'}` : 'Nenhum alerta'}</h2>
-  ${f.alertas.length ? f.alertas.map(a => cidCard(a, { semPessoa: true })).join('') : '<p class="note">Nada fora do normal nas regras que checamos: nenhum mês com gasto muito acima do normal e nenhuma empresa com metade do dinheiro.</p>'}
-
-  <section class="card"><span class="k">Mês a mês</span>
-    <div class="cid-months">${f.meses.map(m => `<div><small>${Math.round(m.valor / 1e3)}k</small><b class="mt"><i style="height:${m.valor > 0 ? Math.max(2, m.valor / maxMes * 100) : 0}%" class="${f.alertas.some(a => a.tipo === 'pico' && a.mes === m.month) ? 'hot' : ''}"></i></b><span>${MES[m.month]}</span></div>`).join('')}</div>
-    <span class="muted">Os últimos meses ainda podem crescer: as notas são publicadas com atraso.</span>
-  </section>
-
-  <section class="card"><span class="k">Com o que gastou</span>
-    ${f.categorias.slice(0, 6).map(c => `<div class="cid-bar"><div><span>${esc(c.nome)}</span><b class="mono">${c.valor === 0 ? 'R$ 0' : cidMil(c.valor)}</b></div><div class="bar"><i style="width:${f.categorias[0].valor ? c.valor / f.categorias[0].valor * 100 : 0}%"></i></div><small class="muted">${Math.round(c.valor / catTot * 100)}% do total</small></div>`).join('')}
-  </section>
-
-  <section class="card"><span class="k">Para quem foi o dinheiro</span>
-    ${f.fornecedores.map(x => `<div class="cid-bar"><div><span>${esc(cidNome(x.name))}</span><b class="mono">${cidMil(x.valor)}</b></div><div class="bar"><i style="width:${x.valor / f.total * 100}%;background:${x.valor / f.total >= 0.5 ? 'var(--warn)' : 'var(--accent)'}"></i></div><small class="muted">${Math.round(x.valor / f.total * 100)}% do total · ${x.notas} ${x.notas === 1 ? 'nota' : 'notas'}</small></div>`).join('')}
-  </section>
-
-  <section class="card"><span class="k">Maiores notas do ano</span>
-    ${f.maiores.map(m => `<${m.documentUrl ? `a href="${esc(m.documentUrl)}" target="_blank" rel="noopener"` : 'div'} class="item"><span class="mono muted" style="width:52px">${MES[m.month]}/${String(m.year).slice(2)}</span><span class="g"><span>${esc(cidNome(m.fornecedor || 'Fornecedor não informado'))}</span><span class="muted">${esc(m.categoria)}${m.documentUrl ? ' · ver nota ↗' : ''}</span></span><span class="mono" style="font-weight:700">${brl(m.valor)}</span></${m.documentUrl ? 'a' : 'div'}>`).join('')}
-  </section>
-
-  ${cidFonte(p) ? `<a class="fchip" style="align-self:flex-start" href="${esc(cidFonte(p))}" target="_blank" rel="noopener">Página oficial ↗</a>` : ''}
-  <span class="src">Fonte: notas da cota publicadas pela ${camara ? 'Câmara (sem as passagens aéreas, que ficam fora do arquivo aberto)' : 'Senado'}. Retrato de ${f.snapshotAt ? dmy(f.snapshotAt) : 'out/2026'}.</span>
-  ${advLink(authorityAttrs, 'Busca avançada: todos os lançamentos')}`;
+    <div class="cid-profile-head"><div class="profile">${cidAvatar(p, 64)}<div><h1 class="n">${esc(cidNome(p.name))}</h1><span class="muted">${cidQuem(p)}</span></div></div>
+      <button type="button" class="fchip" data-cmp-start="${esc(shared.id)}">Comparar com outro(a) →</button></div>
+    <span class="k cid-answer-label">Em 3 respostas</span>
+    <div class="cid-answers">${cidCustoResposta(f, p, hasExpenseData)}${cidTrabalhoResposta(shared)}${cidAlertaResposta(alertas, hasExpenseData)}</div>
+    <h2 class="h">Ver mais</h2>
+    ${profileSectionsHTML(p, {
+      gastos: cidGastosDetalhe(f, hasExpenseData),
+      alertas: alertas.length ? alertas.map(a => cidCard(a, { semPessoa: true })).join('') : `<p class="muted">${hasExpenseData ? 'Nada fora do normal nas regras que checamos: nenhum mês com gasto muito acima do normal e nenhuma empresa com metade do dinheiro.' : 'Sem dados de cota para checar alertas.'}</p>`,
+      votos: cidVotosDetalhe(shared), fontes,
+    })}`;
 }
 
 /* ---------- Eventos ---------- */
@@ -361,8 +402,14 @@ function cidOpenPol(id) {
   go('politico');
 }
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-pol],[data-home-retry],[data-lupa-tipo],[data-lupa-cargo],[data-lupa-more],[data-lupa-retry],[data-pol-cargo],[data-pol-ordem],[data-pol-more],[data-pol-retry]');
+  const t = e.target.closest('[data-profile-toggle],[data-profile-open],[data-pol],[data-home-retry],[data-lupa-tipo],[data-lupa-cargo],[data-lupa-more],[data-lupa-retry],[data-pol-cargo],[data-pol-ordem],[data-pol-more],[data-pol-retry]');
   if (!t) return;
+  if (t.dataset.profileToggle) { profileToggle(t); return; }
+  if (t.dataset.profileOpen) {
+    const button = document.querySelector(`[data-profile-toggle="${t.dataset.profileOpen}"]`);
+    if (button) { profileToggle(button, true); button.focus(); button.scrollIntoView({ block: 'start', behavior: 'instant' }); }
+    return;
+  }
   if (t.dataset.pol) { e.preventDefault(); cidOpenPol(t.dataset.pol); return; }
   if (t.hasAttribute('data-home-retry')) { const path = '/api/c/radar?pageSize=8&tipo=pico,fornecedor'; cid.cache.delete(path); cid.pending.delete(path); return rerender(); }
   const l = cid.lupa, p = cid.pol;
@@ -382,3 +429,7 @@ document.addEventListener('input', e => {
   cid.pol.q = e.target.value.trim();
   cidTimer = setTimeout(() => { cidLoadPol(false); cidRenderPolList(); }, 250);
 });
+// Atualiza apenas os padrões responsivos; escolhas feitas nos acordeões são preservadas.
+if (typeof matchMedia === 'function') {
+  matchMedia('(min-width: 900px)').addEventListener('change', profileRefreshAccordions);
+}

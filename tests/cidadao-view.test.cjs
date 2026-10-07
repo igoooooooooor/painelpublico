@@ -39,6 +39,9 @@ function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'
     extFichaExtra() { return ''; },
     fetch: fetchImpl,
     first(value) { return String(value || '').split(' ')[0]; },
+    brl(value, digits = 0) { return 'R$ ' + Number(value).toLocaleString('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: digits }); },
+    MES: ['', 'jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'],
+    matchMedia() { return { matches: false, addEventListener() {} }; },
     go(view) { state.view = view; },
     rerender() {},
     setTimeout: schedule,
@@ -46,9 +49,42 @@ function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'
     state,
   };
   vm.createContext(context);
-  vm.runInContext(profileSource + '\n' + source + '\nthis.__api = { cid, cidOpenPol, cidAvatar, cidTemFicha, cidPolRow, cidPolCoverageHTML, cidPolCoverageNotesHTML, cidLoadPol, vPoliticos, cidHomeCard, profileData, profileSectionsHTML, vPolitico };', context);
+  vm.runInContext(profileSource + '\n' + source + '\nthis.__api = { cid, cidOpenPol, cidAvatar, cidTemFicha, cidPolRow, cidPolCoverageHTML, cidPolCoverageNotesHTML, cidLoadPol, vPoliticos, cidHomeCard, profileData, profileSectionsHTML, vPolitico, skel };', context);
+  context.extVotosDe = id => context.profileVotes(id).filter(row => String(row.v.data || '').startsWith('2026'));
+  context.extPresBar = presence => presence
+    ? `<span class="pbar" data-presence-days="${presence.dias}"></span>` : '';
   return { api: context.__api, elements, state, events, context };
 }
+
+function ficha(api, state, id, fields = {}) {
+  state.pol = id;
+  api.cid.fichaId = id;
+  api.cid.ficha = {
+    pessoa: { id, name: 'Pessoa Parlamentar', role: id.startsWith('senado:') ? 'senador' : 'deputado', party: 'PT', uf: 'SP' },
+    total: null, media: 100000, hasExpenseData: false, expenseCount: 0,
+    meses: [], categorias: [], fornecedores: [], maiores: [], alertas: [],
+    ...fields,
+  };
+}
+
+test('the home ficha skeleton remains byte-for-byte intact while a loading politician gets the three-answer shape', () => {
+  const { api, state } = makeView();
+  const oldFichaSkeleton = [
+    '<span class="sr-only" role="status">Carregando…</span><div class="profile" aria-hidden="true"><i class="sk sk-o" style="width:64px;height:64px"></i><span class="sk-col" style="flex:1"><i class="sk " style="width:55%;height:24px"></i><i class="sk " style="width:40%;height:12px"></i></span></div>',
+    '    <section class="card hero sk-card" aria-hidden="true"><i class="sk " style="width:40%;height:10px"></i><i class="sk " style="width:62%;height:56px"></i><i class="sk " style="width:90%;height:12px"></i><i class="sk " style="width:100%;height:10px"></i><i class="sk " style="width:100%;height:10px"></i></section>',
+    '    <section class="card sk-card" aria-hidden="true"><i class="sk " style="width:35%;height:10px"></i><i class="sk " style="width:50%;height:30px"></i><i class="sk " style="width:100%;height:8px"></i><i class="sk " style="width:88%;height:12px"></i><i class="sk " style="width:70%;height:12px"></i></section><section class="card sk-card" aria-hidden="true"><i class="sk " style="width:35%;height:10px"></i><i class="sk " style="width:50%;height:30px"></i><i class="sk " style="width:100%;height:8px"></i><i class="sk " style="width:88%;height:12px"></i><i class="sk " style="width:70%;height:12px"></i></section>',
+  ].join('\n');
+  assert.equal(api.skel('ficha'), oldFichaSkeleton);
+  assert.doesNotMatch(api.skel('ficha'), /Em 3 respostas/);
+
+  state.pol = 'camara:55';
+  api.cid.fichaId = state.pol;
+  api.cid.ficha = null;
+  const loadingProfile = api.vPolitico();
+  assert.match(loadingProfile, /Em 3 respostas/);
+  assert.match(loadingProfile, /class="cid-answers"/);
+  assert.equal([...loadingProfile.matchAll(/<section class="card(?:\s+hero)?\s+sk-card"/g)].length, 3);
+});
 
 test('clearing a search updates state before debounce so another filter cannot restore the old query', () => {
   const { api, events } = makeView({ schedule: () => 1 });
@@ -100,7 +136,7 @@ test('the roster and profile distinguish missing reimbursements from an observed
   const profile = api.vPolitico();
   assert.match(profile, /Sem dados/);
   assert.match(profile, /Nenhuma despesa de reembolso foi observada/);
-  assert.match(profile, /Salário parlamentar/);
+  assert.match(profile, /Salário à parte:.*46\.366/);
   assert.match(profile, /Equipe e verba de gabinete/);
   assert.match(profile, /Projetos apresentados/);
   assert.doesNotMatch(profile, /Detalhes da amostra editorial|data-editorial-ficha|data-pdf/);
@@ -187,11 +223,144 @@ test('profiles with observed expenses still receive shared sections and separate
   };
 
   const profile = api.vPolitico();
-  assert.match(profile, /Salário parlamentar/);
+  assert.match(profile, /Salário à parte:.*46\.366/);
   assert.match(profile, /Equipe e verba de gabinete/);
   assert.match(profile, /Cota é reembolso/);
   assert.match(profile, /subsídio bruto mensal de referência do cargo/);
   assert.doesNotMatch(profile, /Não é o salário, que é de/);
+});
+
+test('profile starts with three ordered answers and keeps the complementary details', () => {
+  const { api, state } = makeView();
+  ficha(api, state, 'camara:55', {
+    total: 80000, hasExpenseData: true,
+    meses: [], categorias: [], fornecedores: [], maiores: [],
+    alertas: [{ nivel: 'medio', tipo: 'valor', titulo: 'Alerta preservado', frase: 'Conferir registro.' }],
+  });
+  const html = api.vPolitico();
+  const answers = [...html.matchAll(/data-profile-answer="([^"]+)"/g)].map(match => match[1]);
+  assert.deepEqual(answers, ['custo', 'trabalho', 'alerta']);
+  assert.match(html, /Em 3 respostas/);
+  assert.ok(html.indexOf('Quanto custa?') < html.indexOf('Trabalha?'));
+  assert.ok(html.indexOf('Trabalha?') < html.indexOf('Tem algo estranho?'));
+  assert.match(html, /class="cid-details/);
+  const detailKeys = [...html.matchAll(/data-profile-section="([^"]+)"/g)].map(match => match[1]);
+  assert.deepEqual(detailKeys, ['gastos', 'alertas', 'votos', 'projetos', 'equipe', 'contato', 'fontes']);
+  assert.match(html, /Alerta preservado/);
+});
+
+test('profile distinguishes missing cota from an observed zero and treats a difference under ten percent as similar', () => {
+  const { api, state } = makeView();
+  ficha(api, state, 'camara:55');
+  const missing = api.vPolitico();
+  const missingAnswer = missing.match(/<section[^>]*data-profile-answer="custo"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(missingAnswer, /Sem dados/);
+  assert.match(missingAnswer, /Ausência não significa gasto zero/);
+  assert.match(missingAnswer, /Salário à parte:.*46\.366/);
+  assert.doesNotMatch(missingAnswer, /R\$ 0/);
+
+  ficha(api, state, 'camara:55', { total: 0, hasExpenseData: true });
+  const zero = api.vPolitico();
+  const zeroAnswer = zero.match(/<section[^>]*data-profile-answer="custo"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(zeroAnswer, /R\$ 0/);
+  assert.doesNotMatch(zeroAnswer, /Sem dados/);
+
+  ficha(api, state, 'camara:55', { total: 109000, hasExpenseData: true, media: 100000 });
+  const nearAverage = api.vPolitico();
+  assert.match(nearAverage, /<span class="fchip cid-verdict">Parecido com a média<\/span>/);
+});
+
+test('work answer uses the average of individual presence rates and counts only recorded votes', () => {
+  const { api, state, context } = makeView();
+  context.DATA.presencaTodos = [
+    { id: 1, dias: 250, presente: 201, falta: 49, justificadas: 0 },
+    { id: 2, dias: 200, presente: 161, falta: 39, justificadas: 0 },
+  ];
+  context.DATA.votacoes = [
+    { id: 'yes', data: '2026-09-01', titulo: 'Votação com sim', secreta: false },
+    { id: 'missing', data: '2026-09-02', titulo: 'Sem linha individual', secreta: false },
+    { id: 'not-voted', data: '2026-09-03', titulo: 'Registro não votou', secreta: false },
+  ];
+  context.DATA.votosCompletos = {
+    yes: [[1, 'Pessoa Parlamentar', 'PT', 'SP', 'Sim']],
+    missing: [[2, 'Outra pessoa', 'PL', 'RJ', 'Sim']],
+    'not-voted': [[1, 'Pessoa Parlamentar', 'PT', 'SP', 'Não votou']],
+  };
+  ficha(api, state, 'camara:1');
+  const html = api.vPolitico();
+  const work = html.match(/<section[^>]*data-profile-answer="trabalho"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(work, /201 de 250 dias/);
+  assert.match(work, /média da Câmara: 80%/);
+  assert.match(work, /Perto da média/);
+  assert.match(work, /Votou em <b>1 de 3<\/b> votações do Placar/);
+  assert.match(html, /Sem registro importado[\s\S]*Sem linha individual/);
+  assert.match(html, /Presença em voto secreto e quem presidiu aparecem à parte/);
+});
+
+test('secret votes and chairing are shown as records, not nominal votes or inferred absences', () => {
+  const { api, state, context } = makeView();
+  context.DATA.votacoes = [
+    { id: 'secret', data: '2026-09-01', titulo: 'Voto secreto', secreta: true },
+    { id: 'chair', data: '2026-09-02', titulo: 'Presidência da sessão', secreta: false },
+    { id: 'missing', data: '2026-09-03', titulo: 'Sem linha individual', secreta: false },
+  ];
+  context.DATA.votosCompletos = {
+    secret: [[1, 'Pessoa Parlamentar', 'PT', 'SP', 'Sim']],
+    chair: [[1, 'Pessoa Parlamentar', 'PT', 'SP', 'Artigo 17']],
+    missing: [[2, 'Outra pessoa', 'PL', 'RJ', 'Sim']],
+  };
+  ficha(api, state, 'camara:1');
+  let html = api.vPolitico();
+  let work = html.match(/<section[^>]*data-profile-answer="trabalho"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(work, /Sem voto nominal identificado neste recorte/);
+  assert.match(work, /2 registros só de presença ou presidência/);
+  assert.doesNotMatch(work, /Votou em <b>0 de/);
+  assert.match(html, /data-vote="secret"><b>Presença registrada · voto secreto<\/b>/);
+  assert.match(html, /data-vote="chair"><b>presidiu<\/b>/);
+  assert.match(html, /data-vote="missing"><b>Sem registro importado<\/b>/);
+  assert.doesNotMatch(work, /Não votou|não compareceu|faltou à votação/);
+
+  context.DATA.votacoes = [{ id: 'not-voted', data: '2026-09-04', titulo: 'Ausência publicada', secreta: false }];
+  context.DATA.votosCompletos = { 'not-voted': [[1, 'Pessoa Parlamentar', 'PT', 'SP', 'Não votou']] };
+  html = api.vPolitico();
+  work = html.match(/<section[^>]*data-profile-answer="trabalho"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(work, /Votou em <b>0 de 1<\/b> votações do Placar/);
+  assert.match(html, /data-vote="not-voted"><b>não votou<\/b>/);
+});
+
+test('Senate work answer stays unavailable even when a Câmara record has the same number', () => {
+  const { api, state, context } = makeView();
+  context.DATA.presencaTodos = [{ id: 77, dias: 10, presente: 8, falta: 2, justificadas: 0 }];
+  context.DATA.votacoes = [{ id: 'camara-77', data: '2026-09-01', titulo: 'Votação da Câmara', secreta: false }];
+  context.DATA.votosCompletos = { 'camara-77': [[77, 'Homônimo numérico', 'PT', 'SP', 'Sim']] };
+  ficha(api, state, 'senado:77');
+  const html = api.vPolitico();
+  const work = html.match(/<section[^>]*data-profile-answer="trabalho"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(work, /Presença e votos do Senado ainda não foram coletados/);
+  assert.match(html, /Votos nominais do Senado ainda não foram coletados/);
+  assert.doesNotMatch(work, /8\/10|201 de 250|Votou em|votações do Placar · 1/);
+});
+
+test('three-answer alert highlights only the strongest alert while details retain every alert in source order', () => {
+  const { api, state } = makeView();
+  ficha(api, state, 'camara:55', {
+    total: 120000, media: 100000, hasExpenseData: true,
+    alertas: [
+      { nivel: 'info', tipo: 'valor', titulo: 'Primeiro alerta informativo', frase: 'Informação inicial.' },
+      { nivel: 'alto', tipo: 'valor', titulo: 'Primeiro alerta alto', frase: 'Maior gravidade, primeiro.' },
+      { nivel: 'medio', tipo: 'valor', titulo: 'Alerta médio', frase: 'Gravidade média.' },
+      { nivel: 'alto', tipo: 'valor', titulo: 'Segundo alerta alto', frase: 'Mesmo nível, depois.' },
+    ],
+  });
+  const html = api.vPolitico();
+  const answer = html.match(/<section[^>]*data-profile-answer="alerta"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(answer, /4 alertas/);
+  assert.match(answer, /Primeiro alerta alto/);
+  assert.doesNotMatch(answer, /Primeiro alerta informativo|Alerta médio|Segundo alerta alto/);
+  const details = html.slice(html.indexOf('data-profile-section="alertas"'));
+  const order = ['Primeiro alerta informativo', 'Primeiro alerta alto', 'Alerta médio', 'Segundo alerta alto'];
+  assert.ok(order.every(title => details.includes(title)));
+  assert.deepEqual(order.map(title => details.indexOf(title)), [...order.map(title => details.indexOf(title))].sort((a, b) => a - b));
 });
 
 test('Senate profiles show source snapshot metadata safely and omit empty fields', () => {
@@ -209,10 +378,10 @@ test('Senate profiles show source snapshot metadata safely and omit empty fields
   };
 
   const profile = api.vPolitico();
-  assert.match(profile, /Na fotografia da fonte/);
+  assert.match(profile, /data-profile-section="mandato"/);
   assert.match(profile, /Mandato &lt;titular&gt; &amp; participação/);
   assert.match(profile, /Exercício de 05\/08\/2026 a 06\/10\/2026 — Retorno do titular/);
-  assert.match(profile, /href="https:\/\/senado\.example\.test\/lista\?x=&quot; onmouseover=&quot;alert\(1\)" target="_blank"/);
+  assert.match(profile, /href="https:\/\/senado\.example\.test\/lista\?x=%22%20onmouseover=%22alert\(1\)" target="_blank"/);
   assert.doesNotMatch(profile, /href="[^"]*" onmouseover=/);
   assert.match(profile, /data-public-authority="senado:current"/);
   assert.match(profile, /data-public-authority-position="Mandato &lt;titular&gt; &amp; participação"/);

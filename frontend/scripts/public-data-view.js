@@ -254,7 +254,7 @@ function publicAuthorityDetailHTML(data) {
   const parliamentary = !!legislativeId;
   const profile = parliamentary && legislativeId ? profileData({ ...authority, id: legislativeId }) : null;
   const person = profile?.pessoa || authority;
-  const legislativeProfile = parliamentary ? `${cidSenadoFotografia(person)}${profileSectionsHTML(person)}${extFichaExtra(profile?.id || legislativeId)}
+  const legislativeProfile = parliamentary ? `${profileSectionsHTML(person)}${extFichaExtra(profile?.id || legislativeId)}
     <button type="button" class="fchip" data-pol="${esc(profile?.id || legislativeId)}">Abrir ficha parlamentar</button>` : '';
   const summary = data.summary || [];
   const categories = data.categories || [];
