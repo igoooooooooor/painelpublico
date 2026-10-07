@@ -5,6 +5,7 @@ from pathlib import Path
 import re
 import sqlite3
 
+from . import amendments
 from .config import SNAPSHOTS_PATH
 from .database import fold
 from .profiles import _load
@@ -121,6 +122,7 @@ def detail(identifier, db_path):
     return {'municipality': {key: city.get(key) for key in CITY_FIELDS},
             'generatedAt': data.get('generatedAt'), 'sources': sources,
             'municipalElected': municipal, 'stateElected': state, 'topFederalVotes': votes,
+            'amendments': amendments.detail(identifier, db_path, SNAPSHOTS_PATH / 'amendments.json'),
             'currentFederal': roster, 'coverage': data.get('coverage', {}),
             'messages': {
                 'municipalElection': municipal_message,
