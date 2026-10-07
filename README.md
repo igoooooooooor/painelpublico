@@ -1,6 +1,6 @@
 # Painel Público
 
-Protótipo para entender gastos, presença e votações de parlamentares e consultar recortes de remuneração pública. Alertas indicam registros para conferir, não conclusões de irregularidade.
+Protótipo para entender, em linguagem simples, gastos, presença e votações de deputados(as) e senadores(as). Alertas indicam registros para conferir, não conclusões de irregularidade.
 
 É um projeto pessoal, independente e apartidário, sem vínculo com partidos, políticos ou órgãos públicos. Ele apenas reúne e organiza informações que os próprios órgãos já publicam. Veja o [Aviso legal](AVISO-LEGAL.md).
 

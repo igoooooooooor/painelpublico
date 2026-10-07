@@ -10,7 +10,7 @@ O Painel Público é um **projeto pessoal, independente e apartidário**. Ele re
 
 ## Origem das informações
 
-- Todas as informações vêm de fontes públicas: dados abertos e páginas oficiais da Câmara dos Deputados, do Senado Federal, do Portal da Transparência e de publicações de tribunais, inclusive por meio de projetos de dados abertos que compilam essas publicações (como o DadosJusBr). A lista de fontes e a cobertura de cada uma estão em [Dados e SQLite](docs/data.md).
+- Todas as informações vêm de fontes públicas: dados abertos e páginas oficiais de órgãos públicos, como a Câmara dos Deputados e o Senado Federal. A lista de fontes e a cobertura de cada uma estão em [Dados e SQLite](docs/data.md).
 - O projeto não produz dados novos sobre ninguém, não usa informações sigilosas e não obtém dados por meios não públicos. O trabalho é reunir arquivos já publicados, calcular totais e comparações e indicar onde conferir.
 - A divulgação dessas informações pelos órgãos decorre do princípio da publicidade (Constituição Federal, art. 37) e da Lei de Acesso à Informação (Lei nº 12.527/2011). O uso de dados pessoais de acesso público segue a finalidade e o interesse público que justificaram sua publicação (LGPD, Lei nº 13.709/2018, art. 7º, § 3º): transparência sobre o uso de recursos públicos e a atuação no cargo.
 - Sempre que possível, cada tela indica a fonte, a data da fotografia dos dados e um link para conferir no órgão de origem.
@@ -32,7 +32,7 @@ Se você encontrar um erro, ou se uma informação sobre você estiver incorreta
 
 ## Visitantes
 
-O site não tem cadastro, anúncios nem ferramentas de análise de visitantes. Anotações e acompanhamentos ficam salvos apenas no seu navegador. O servidor, a rede de entrega e o serviço de fontes tipográficas (Google Fonts) podem registrar dados técnicos de acesso, como endereço IP, para funcionamento e segurança.
+O site não tem cadastro, anúncios nem ferramentas de análise de visitantes. O site também não guarda informações no seu navegador. O servidor, a rede de entrega e o serviço de fontes tipográficas (Google Fonts) podem registrar dados técnicos de acesso, como endereço IP, para funcionamento e segurança.
 
 ## Licença
 

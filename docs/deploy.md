@@ -15,7 +15,7 @@ visitante → Cloudflare (HTTPS, cache, proteção) → túnel → 127.0.0.1:800
 
 ## Primeira vez
 
-1. **Servidor.** Um VPS Ubuntu pequeno resolve (1 vCPU, 2 GB de RAM, 20 GB de disco: o banco tem ~1,3 GB). Prepare com:
+1. **Servidor.** Um VPS Ubuntu pequeno resolve (1 vCPU, 2 GB de RAM, 20 GB de disco: o banco tem cerca de 85 MB). Prepare com:
    `ssh painel 'sudo bash -s' < deploy/setup-server.sh` (com `root`: `ssh root@IP 'bash -s' < ...`)
 2. **Configuração local.** `cp .env.example .env` e preencha `SERVER` (o atalho do `~/.ssh/config`, ex.: `painel`). Com usuário comum (`ubuntu`) os comandos usam `sudo`; entrando como root, defina `SUDO=` vazio.
 3. **Banco e código.** `make deploy-db` e depois `make deploy`. O `deploy` roda `make check` antes e para se algum teste falhar.
@@ -48,7 +48,7 @@ Para mostrar o site sem servidor: rode `make prod` e, em outro terminal, `cloudf
 ## Cuidados
 
 - `.env`, o banco e os backups não vão para o git nem para a pasta do código no servidor.
-- A ferramenta de busca avançada expõe CSV de despesas; o limite de tempo protege o servidor, mas, se houver abuso, ative *Rate limiting* na Cloudflare para `/api/`.
+- Cada ficha oferece o CSV com as notas da pessoa (`/api/c/gastos.csv`); o limite de tempo protege o servidor, mas, se houver abuso, ative *Rate limiting* na Cloudflare para `/api/`.
 
 ## Publicação automática pelo GitHub
 

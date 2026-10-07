@@ -17,8 +17,6 @@ Backup usa a API do SQLite, podendo operar com o app aberto. Para restaurar: par
 
 ```sh
 python3 ingest/legislative.py --year 2026
-python3 ingest/executive_judicial.py --month 202608
-python3 ingest/judiciary.py --year 2026 --month 8
 make db-backup
 make import
 make db-check
@@ -65,18 +63,16 @@ O esquema normalizado contém `sources(id,label,url,scope,period,status,detail,f
 `authority_totals`, `supplier_totals`, `signals` e `meta` guardam agregados, sinais e controle do retrato. Valores em
 `amountCents` são centavos. A natureza separa reembolso de remuneração; os dois não são somados como um custo único.
 
-Na fotografia de 6 de outubro de 2026 havia 652.693 cadastros, 667.241 lançamentos, 22.216 chaves de fornecedor e 3.593 sinais.
-Cadastros não são pessoas únicas nacionais. Fornecedores são associados por CNPJ quando a fonte o publica; chaves alternativas
+Na fotografia de 6 de outubro de 2026 (importada em 7/10), o banco tem 671 cadastros — 513 deputados e 82 registros do Senado
+nas listas atuais, mais 64 registros que só aparecem nos arquivos de despesas, inclusive 12 contas institucionais de lideranças —,
+127.778 notas de reembolso, 22.216 chaves de fornecedor e 3.572 sinais. Fornecedores são associados por CNPJ quando a fonte o publica; chaves alternativas
 são limitadas à fonte e não garantem conciliação de empresas com nomes iguais.
 
 A home, o resumo e a lista parlamentar consultam o roster atual da Câmara e do Senado no SQLite, junto com todos os reembolsos importados desses registros. As contagens cobrem a lista inteira; médias incluem somente parlamentares com reembolso observado e ausências continuam sem valor, nunca zero. A classificação mostra cinco nomes por espaço visual, mas considera todos os deputados com dados. Não há resultados eleitorais para a lista completa; o bloco eleitoral da home foi removido até haver cobertura ampla.
 
-A interface de busca avançada consulta autoridades e fornecedores e aceita papéis como deputado, senador, presidente, ministro, magistrado e servidor,
-mas os dados disponíveis dependem da cobertura abaixo. Filtra despesas/remunerações por natureza, categoria, fonte, período e
-valor, ordena e exporta resultados em CSV. Comparações usam mesmo mês, fonte, instituição, cargo, UF e natureza e exigem cinco
-outras pessoas com registros observados. Na remuneração também exigem cargo funcional e situação equivalentes; participação
-no mandato e datas de exercício não dividem os pares de reembolso. Ausência de linha não é zero; o mês pode estar incompleto. Diferenças
-da mediana/quartis são descritivas. Na folha mensal, competência conhecida não é tratada como data de emissão.
+Cada ficha com notas importadas oferece o download de todas as notas da cota da pessoa em CSV (`/api/c/gastos.csv?id=<id>`,
+separador `;`): competência, data de emissão, categoria, valor, fornecedor, CNPJ, documento e fonte. Células de texto que começam
+com `=`, `+`, `-` ou `@` recebem um apóstrofo para não virarem fórmulas na planilha. Não há outra exportação nem busca avançada.
 
 O radar aplica três cortes a reembolsos: lançamento de pelo menos R$ 10.000; concentração de pelo menos 50% do total anual com
 um fornecedor na mesma fonte, com soma mínima de R$ 30.000; e mês pelo menos 1,75 vez a mediana anterior, com diferença mínima
@@ -90,11 +86,9 @@ exigem conferência na fonte. Referências idênticas não são deduplicadas com
 Cada alerta da visão cidadã traz uma linha de contexto com o total do ano na cota e a diferença para a média do cargo
 (deputados ou senadores com notas importadas); diferenças menores que 10% aparecem como “parecido com a média”. A ordem
 “Maior valor em alerta” soma os valores dos alertas `pico` e `fornecedor` de cada pessoa, em vez de contar alertas. O radar
-da visão cidadã lista só deputados e senadores; contas institucionais (lideranças) seguem na busca avançada.
+da visão cidadã lista só deputados e senadores; contas institucionais (lideranças) continuam na base, mas não aparecem nas telas.
 
-Investigações, anotações e autoridades acompanhadas ficam no `localStorage` deste navegador. Seleções não salvas ficam só em memória e
-podem ser exportadas em CSV. Ao abrir perfil acompanhado, consulta-se o que foi incluído ou alterado desde a visita anterior;
-não há alerta, consulta em segundo plano ou atualização automática. O acompanhamento usa a versão importada como marco; o horário da visita é apenas informativo.
+O app não grava nada no navegador: não há cadastro, anotações nem acompanhamento salvos localmente.
 
 ## Cobertura em 6 de outubro de 2026
 
@@ -102,28 +96,16 @@ não há alerta, consulta em segundo plano ou atualização automática. O acomp
   a 5/10/2026. Inclui contas institucionais de lideranças; valores negativos mantêm o sinal da fonte.
 - **Senado:** lista oficial de 82 senadores; CEAPS 2026 parcial, 14.713 linhas consultadas. A data do documento pode divergir da
   competência.
-- **Executivo federal:** SIAPE 2026-08 lista 629.305 IDs públicos e 516.754 registros. Só importa `REMUNERAÇÃO BÁSICA BRUTA
-  (R$)`, não total líquido, remuneração completa ou custo do vínculo. 112.551 IDs não têm linha associada; ausência não
-  significa zero.
-- **Judiciário:** DadosJusBr 2026-08 é uma coleta de terceiro baseada em publicações de tribunais. Importa categoria `base` de
-  74 dos 94 órgãos catalogados (22.709 registros); outras verbas e descontos ficam de fora. Identificadores derivados de campos
-  publicados podem mudar e confundir homônimos no mesmo órgão.
-- **STF:** a página oficial lista a composição, mas não remuneração. Não foi inferido pagamento dela; o painel CNJ não forneceu
-  arquivo integrado neste recorte.
-
-Faltam folhas do Executivo e Legislativo estaduais/municipais, servidores do Legislativo, arquivos separados do Banco Central e
-de militares. SIAPE não cobre toda a força de trabalho pública. Vínculos e homônimos podem ser difíceis de conciliar; cadastros
-não devem ser somados como pessoas nacionais únicas.
+Remunerações de servidores federais (SIAPE), do Judiciário (DadosJusBr) e a composição do STF foram retiradas em 7/10/2026:
+o painel cobre quem exerce mandato federal eleito. O banco anterior, com esses recortes, ficou guardado só localmente, em
+`data/backups/na-lupa-antes-de-remover-servidores-20261007.sqlite3`. Estados, municípios e eleições estão planejados em
+[Próximas etapas](roadmap.md) e não têm cobertura até haver fonte validada.
 
 Fontes: [CEAP da Câmara](https://www.camara.leg.br/cotas/Ano-2026.csv.zip), [CEAPS do
-Senado](https://adm.senado.gov.br/adm-dadosabertos/api/v1/senadores/despesas_ceaps/2026),
-[SIAPE](https://portaldatransparencia.gov.br/download-de-dados/servidores/202608_Servidores_SIAPE), [dicionário
-SIAPE](https://portaldatransparencia.gov.br/dicionario-de-dados/servidores-remuneracao),
-[DadosJusBr](https://api.dadosjusbr.org/uiapi/v2/download?anos=2026&meses=8&categorias=base),
-[CNJ](https://www.cnj.jus.br/transparencia-cnj/remuneracao-dos-magistrados/).
+Senado](https://adm.senado.gov.br/adm-dadosabertos/api/v1/senadores/despesas_ceaps/2026).
 
-CPFs e matrículas brutos não são exportados pelo importador SIAPE. Referências documentais numéricas ambíguas com 11 dígitos são
-ocultadas; isso também pode ocultar um número de documento legítimo nesse formato.
+Referências documentais numéricas ambíguas com 11 dígitos (formato de CPF) são ocultadas; isso também pode ocultar um número de
+documento legítimo nesse formato.
 
 ## Cobertura das telas de parlamentares
 
@@ -131,7 +113,7 @@ A consulta principal usa as listas oficiais importadas: 513 deputados e 82 regis
 
 A reconciliação de 7/10/2026 reprocessa essa mesma fotografia do XML (`Metadados/Versao`: `06/10/2026 19:19:34`), sem nova coleta nem mudança de cobertura. O adaptador usa `Mandato/UfParlamentar` quando a identificação não informa UF; assim recupera MA para esse registro. Importa `Mandato/DescricaoParticipacao` em `position` e descreve em `employmentStatus` o exercício com a data de início mais recente, independentemente da ordem do XML. A ficha do Senado mostra participação, intervalo e motivo de término quando informados, com link da fonte. Datas ausentes, inválidas ou conflitantes não geram uma situação inferida; intervalo sem término informado não confirma exercício na data de hoje. Os 82 IDs da lista e as despesas históricas são preservados. Não se deduplicam suplentes e titulares como se fossem a mesma pessoa.
 
-Há reembolsos associados a 509 dos deputados e 79 dos registros do Senado. Os demais devem aparecer como dados ausentes, não como zero. A lista, o Placar e as comparações abrem a mesma ficha parlamentar; a busca avançada usa as mesmas seções complementares. Os antigos detalhes e PDF de dez deputados e a análise editorial de despesas foram removidos.
+Há reembolsos associados a 509 dos deputados e 79 dos registros do Senado. Os demais devem aparecer como dados ausentes, não como zero. A lista, o Placar e as comparações abrem a mesma ficha parlamentar. Os antigos detalhes e PDF de dez deputados e a análise editorial de despesas foram removidos.
 
 `frontend/scripts/profile-data.js` concentra a leitura do snapshot complementar, presença e votos. Contatos e situação da Câmara vêm do detalhe oficial de cada deputado; verba e equipe de gabinete vêm da página oficial, com ano, meses publicados e data de atualização. Projetos da Câmara abrangem PL, PLP e PEC apresentados desde 1/2/2023: total só é confirmado quando todas as páginas da consulta são lidas. O resumo dessa API não fornece a situação atual; a coleta separada da Etapa 3, descrita abaixo, consulta os IDs já listados e preserva lacunas. Contatos e participação/exercício do Senado vêm do XML reconciliado. Autoria do Senado usa a API substituta `/dadosabertos/processo`, com o filtro `codigoParlamentarAutor` validado; a cobertura está detalhada abaixo. Gabinete do Senado ainda não tem fonte integrada.
 
