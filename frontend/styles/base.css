@@ -5,7 +5,7 @@ a { color: var(--accent); }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .search:focus-within { outline: 2px solid var(--ink); outline-offset: 2px; }
-.app { max-width: 480px; margin: 0 auto; padding-inline: var(--space-4); padding-block: 14px 110px; }
+.app { max-width: 480px; margin: 0 auto; padding-inline: var(--space-4); padding-block: 14px 28px; }
 .view { display: flex; flex-direction: column; gap: 14px; }
 .mono { font-family: var(--f-data); font-variant-numeric: tabular-nums; }
 .top { display: flex; align-items: center; justify-content: space-between; }
@@ -127,6 +127,14 @@ nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify
 nav.tabs .in { width: 100%; max-width: 480px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 nav.tabs button { display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 52px; justify-content: center; background: none; border: 0; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; }
 nav.tabs button[aria-current="page"] { color: var(--accent); }
+/* Rodapé fixo do template: independência, fontes e links do projeto. O recuo inferior deixa espaço para a navegação. */
+.site-foot { max-width: 480px; margin: 0 auto; padding: 0 var(--space-4) 110px; }
+.site-foot .in { border-top: 1px solid var(--line); padding-top: 18px; display: flex; flex-direction: column; gap: var(--space-2); font-size: 12px; line-height: 1.5; color: var(--muted); }
+.site-foot p { margin: 0; }
+.site-foot b { color: var(--ink-2); }
+.site-foot-links { display: flex; flex-wrap: wrap; gap: 0 var(--space-4); }
+.site-foot-links a { display: inline-flex; align-items: center; min-height: 32px; color: var(--ink-2); font-weight: 600; text-decoration: none; }
+.site-foot-links a:hover { text-decoration: underline; }
 /* Análise de gastos */
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .radar-intro { background: var(--accent-soft); }

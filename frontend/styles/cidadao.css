@@ -189,7 +189,8 @@ b.warn { color: var(--warn); }
   nav.tabs button svg { width: 19px; height: 19px; }
   nav.tabs button[aria-current="page"] { border-bottom-color: var(--line); }
   nav.tabs .nav-brand { display: inline-flex !important; margin-right: auto; padding-left: 0; font-family: var(--f-display); font-size: 22px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; gap: 10px; border-bottom: 0; }
-  .app { max-width: 1200px; padding: 96px 32px 64px; }
+  .app { max-width: 1200px; padding: 96px 32px 40px; }
+  .site-foot { max-width: 1200px; padding: 0 32px 40px; }
   .view > .top .brand { display: none; }
   .view > .top { justify-content: flex-end; }
 
