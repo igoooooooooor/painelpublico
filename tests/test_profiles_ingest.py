@@ -49,7 +49,7 @@ class ProfileIngestTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             xml_path = Path(tmp) / 'senadores-atual.xml'
             xml_path.write_bytes(senate_xml())
-            extracted = profiles._senado_xml_profiles(
+            extracted = profiles._senate_xml_profiles(
                 {'senado_senators_current': {'fetchedAt': '2026-10-07T10:00:00+00:00'}}, xml_path
             )['senado:6358']
             self.assertEqual(extracted['mandato']['participacao'], '1ª Suplente')
@@ -59,7 +59,7 @@ class ProfileIngestTests(unittest.TestCase):
             self.assertEqual(extracted['contact']['telefones'], ['(61) 3303-0000'])
             self.assertIsNone(extracted['contact']['endereco'])
 
-    def test_chamber_detail_and_cache_drop_personal_fields_and_public_json_uses_contato(self):
+    def test_chamber_detail_and_cache_drop_personal_fields_and_public_json_uses_contact(self):
         detail = {
             'dados': {
                 'nomeCivil': 'Nome Civil de Teste', 'cpf': '00000000000', 'dataNascimento': '1900-01-01',
@@ -69,7 +69,7 @@ class ProfileIngestTests(unittest.TestCase):
                     'gabinete': {'telefone': '0000', 'predio': 'IV', 'andar': '3', 'sala': '301'}},
             }
         }
-        parsed = profiles.parse_camara_detail(detail, 'camara:204379', '2026-10-07T10:00:00+00:00')
+        parsed = profiles.parse_chamber_detail(detail, 'camara:204379', '2026-10-07T10:00:00+00:00')
         with tempfile.TemporaryDirectory() as tmp:
             raw_root = Path(tmp)
             profiles._write_profile_cache('camara:204379', {
@@ -96,18 +96,18 @@ class ProfileIngestTests(unittest.TestCase):
                     'links': [{'rel': 'next', 'href': page_two}]},
             page_two: {'dados': [], 'links': []},
         }
-        result = profiles.fetch_camara_projects('camara:204379', lambda url: pages[url])
+        result = profiles.fetch_chamber_projects('camara:204379', lambda url: pages[url])
         self.assertEqual((result['status'], result['total']), ('imported', 1))
         self.assertIsNone(result['items'][0]['situacao'])
 
-        zero = profiles.fetch_camara_projects('camara:204379', lambda url: {'dados': [], 'links': []})
+        zero = profiles.fetch_chamber_projects('camara:204379', lambda url: {'dados': [], 'links': []})
         self.assertEqual((zero['status'], zero['total']), ('imported', 0))
 
         def fail_second(url):
             if url == first:
                 return pages[first]
             raise OSError('offline')
-        partial = profiles.fetch_camara_projects('camara:204379', fail_second)
+        partial = profiles.fetch_chamber_projects('camara:204379', fail_second)
         self.assertEqual(partial['status'], 'partial')
         self.assertIsNone(partial['total'])
         self.assertEqual(len(partial['items']), 1)
@@ -136,7 +136,7 @@ class ProfileIngestTests(unittest.TestCase):
                        'fetchedAt': '2026-09-01', 'status': 'imported'}
             mandate = {'participacao': 'Titular', 'exercicio': 'Titular', 'sourceUrl': contact['sourceUrl'],
                        'fetchedAt': '2026-09-01'}
-            complete = {'status': 'imported', 'period': profiles.CAMARA_PROJECTS_PERIOD,
+            complete = {'status': 'imported', 'period': profiles.CHAMBER_PROJECTS_PERIOD,
                         'sourceUrl': 'https://dadosabertos.camara.leg.br/api/v2/proposicoes',
                         'fetchedAt': '2026-09-01', 'total': 1,
                         'items': [{'id': '7', 'titulo': 'PL 9/2024', 'ementa': 'Ementa',
@@ -144,12 +144,12 @@ class ProfileIngestTests(unittest.TestCase):
             profiles._write_profile_cache('camara:204379', {
                 'contact': contact, 'mandato': mandate, 'projetos': complete,
             }, raw_root)
-            failed = {'status': 'unavailable', 'period': profiles.CAMARA_PROJECTS_PERIOD,
+            failed = {'status': 'unavailable', 'period': profiles.CHAMBER_PROJECTS_PERIOD,
                       'sourceUrl': complete['sourceUrl'], 'fetchedAt': '2026-10-07', 'total': None,
                       'items': [], 'detail': 'Falha na página 1 de proposições (RuntimeError); resultado incompleto.'}
             with patch.object(profiles, '_request_json', side_effect=OSError('offline')), \
                     patch.object(profiles, '_office_section', return_value={'status': 'unavailable'}), \
-                    patch.object(profiles, 'fetch_camara_projects', return_value=failed) as fetch:
+                    patch.object(profiles, 'fetch_chamber_projects', return_value=failed) as fetch:
                 result = profiles.build_profile(authority, {}, {}, {}, raw_root=raw_root,
                                                  collect=True, refresh=True)
             fetch.assert_called_once_with('camara:204379')
@@ -166,7 +166,7 @@ class ProfileIngestTests(unittest.TestCase):
             }, raw_root)
             refreshed = dict(complete, fetchedAt='2026-10-07')
             with patch.object(profiles, '_office_section', return_value={'status': 'unavailable'}), \
-                    patch.object(profiles, 'fetch_camara_projects', return_value=refreshed) as fetch:
+                    patch.object(profiles, 'fetch_chamber_projects', return_value=refreshed) as fetch:
                 result = profiles.build_profile(authority, {}, {}, {}, raw_root=raw_root, collect=True)
             fetch.assert_called_once_with('camara:204379')
             self.assertEqual(result['projetos']['status'], 'imported')

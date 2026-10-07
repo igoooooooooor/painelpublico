@@ -27,14 +27,14 @@ Os importadores atuais usam apenas a biblioteca padrão do Python. Downloads pod
 Complementos manuais da Câmara:
 
 ```sh
-python3 ingest/editorial/coleta.py deps
-python3 ingest/editorial/coleta.py pres 150
-python3 ingest/editorial/coleta.py build
-python3 ingest/editorial/coleta.py votos
+python3 ingest/editorial/collect.py deputies
+python3 ingest/editorial/collect.py presence 150
+python3 ingest/editorial/collect.py build
+python3 ingest/editorial/collect.py votes
 make build
 ```
 
-`deps` segue todos os links de paginação da API oficial e grava um cache completo separado do cache antigo. `pres SEGUNDOS` consulta os perfis dentro do tempo informado; pode ser repetido para preencher o cache local. `build` processa somente páginas de presença disponíveis e informa quantos registros foram montados. Perfil sem resposta continua ausente, sem virar zero. `votos` lê os IDs selecionados e versionados em `frontend/data/votacoes.json` e coleta todas as linhas de participação de cada votação. As respostas oficiais ficam em `data/raw/editorial-extra/`; os snapshots resultantes são opcionais. Esses comandos só rodam quando chamados: `make dev`, `make build` e o uso do app não iniciam coleta nem atualização automática.
+`deputies` segue todos os links de paginação da API oficial e grava um cache completo separado do cache antigo. `presence SECONDS` consulta os perfis dentro do tempo informado; pode ser repetido para preencher o cache local. `build` processa somente páginas de presença disponíveis e informa quantos registros foram montados. Perfil sem resposta continua ausente, sem virar zero. `votes` lê os IDs selecionados e versionados em `frontend/data/votes.json` e coleta todas as linhas de participação de cada votação. As respostas oficiais ficam em `data/raw/editorial-extra/`; os snapshots resultantes são opcionais. Esses comandos só rodam quando chamados: `make dev`, `make build` e o uso do app não iniciam coleta nem atualização automática.
 
 As fichas federais têm um coletor complementar manual, sem dependências externas:
 
@@ -134,15 +134,15 @@ A presença complementar cobre 512 dos 513 deputados; Gilmar Machado não tem di
 
 ```sh
 # Só a coleta de PDFs de presença requer esta dependência opcional:
-python3 -m pip install -r ingest/senado-requirements.txt
+python3 -m pip install -r ingest/senate-requirements.txt
 make collect-senate YEAR=2026
-python3 ingest/senado_attendance.py --collect --refresh --year 2026
-python3 ingest/senado_projects.py --collect --refresh --year 2026
-python3 ingest/senado_activity.py --collect --refresh --year 2026
+python3 ingest/senate_attendance.py --collect --refresh --year 2026
+python3 ingest/senate_projects.py --collect --refresh --year 2026
+python3 ingest/senate_activity.py --collect --refresh --year 2026
 # Reconstrução dos snapshots sem acessar a rede:
-python3 ingest/senado_attendance.py --year 2026
-python3 ingest/senado_projects.py --year 2026
-python3 ingest/senado_activity.py --year 2026
+python3 ingest/senate_attendance.py --year 2026
+python3 ingest/senate_projects.py --year 2026
+python3 ingest/senate_activity.py --year 2026
 make build
 ```
 
@@ -317,11 +317,11 @@ nos metadados. Esta fotografia e os caches são locais e não estão no Git.
 
 ```sh
 make collect-elections            # baixa as candidaturas do TSE e completa nomes civis e nascimentos
-python3 ingest/eleicoes_2026.py   # reconstrói o snapshot sem rede, a partir do cache
+python3 ingest/elections_2026.py   # reconstrói o snapshot sem rede, a partir do cache
 make build
 ```
 
-`ingest/eleicoes_2026.py` liga cada nome da lista oficial atual (595 registros) a uma candidatura do
+`ingest/elections_2026.py` liga cada nome da lista oficial atual (595 registros) a uma candidatura do
 [arquivo de candidaturas de 2026 do TSE](https://dadosabertos.tse.jus.br/dataset/candidatos-2026). Nome civil e data de
 nascimento vêm das APIs da Câmara (`/deputados/{id}`) e do Senado (`/senador/{codigo}`) e ficam só no cache local
 `data/raw/tse/identidades-2026.json`; CPF não é lido nem guardado. A ligação usa a primeira regra que der uma única

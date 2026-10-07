@@ -7,11 +7,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 FRONTEND = ROOT / "frontend"
 SNAPSHOTS = Path(os.environ.get("PAINEL_SNAPSHOTS") or ROOT / "data" / "snapshots")
-STYLES = ("tokens.css", "base.css", "cidadao.css")
+STYLES = ("tokens.css", "base.css", "citizen.css")
 # Ordem explícita: helpers/views antes do bootstrap e router.
-SCRIPTS = ("profile-data.js", "cidadao-view.js",
-           "extras-view.js", "partidos-view.js", "home-view.js", "app.script.js")
-VOTE_METADATA = FRONTEND / "data" / "votacoes.json"
+SCRIPTS = ("profile-data.js", "citizen-view.js",
+           "extras-view.js", "parties-view.js", "home-view.js", "app.script.js")
+VOTE_METADATA = FRONTEND / "data" / "votes.json"
 
 
 def _read_json(path, default):
@@ -43,7 +43,7 @@ def _party_totals(vote, rows):
 def build(output=None):
     metadata = _read_json(VOTE_METADATA, [])
     if not isinstance(metadata, list):
-        raise ValueError("frontend/data/votacoes.json deve conter uma lista")
+        raise ValueError("frontend/data/votes.json deve conter uma lista")
 
     # O arquivo versionado guarda só os resumos das quatro votações selecionadas.
     # A participação completa vem dos snapshots locais e fica separada dos metadados.
@@ -53,29 +53,29 @@ def build(output=None):
     selected_ids = [str(record["id"]) for record in metadata if isinstance(record, dict) and "id" in record]
     votes = {vote_id: votes_source[vote_id] for vote_id in selected_ids
              if isinstance(votes_source.get(vote_id), list)}
-    votacoes = []
+    vote_summaries = []
     for record in metadata:
         if not isinstance(record, dict):
             continue
         vote = dict(record)
         vote["partidos"] = _party_totals(vote, votes.get(str(vote.get("id")), []))
-        votacoes.append(vote)
+        vote_summaries.append(vote)
 
     presence = _read_json(SNAPSHOTS / "presenca.json", [])
     if not isinstance(presence, list):
         presence = []
-    arrecadacao = _read_json(SNAPSHOTS / "arrecadacao.json", None)
-    if not isinstance(arrecadacao, dict):
-        arrecadacao = None
+    revenue = _read_json(SNAPSHOTS / "arrecadacao.json", None)
+    if not isinstance(revenue, dict):
+        revenue = None
 
-    dates = [vote.get("data") for vote in votacoes if isinstance(vote.get("data"), str)]
+    dates = [vote.get("data") for vote in vote_summaries if isinstance(vote.get("data"), str)]
     data = {
         "geradoEm": None,
         "ultimaVotacao": max(dates) if dates else None,
-        "votacoes": votacoes,
+        "votacoes": vote_summaries,
         "presencaTodos": presence,
         "votosCompletos": votes,
-        "arrecadacao": arrecadacao,
+        "arrecadacao": revenue,
         "perfis": {"profiles": {}, "sobDemanda": any(
             (SNAPSHOTS / name).exists() for name in ("perfis.json", "senado-projetos.json", "eleicoes-2026.json")
         )},

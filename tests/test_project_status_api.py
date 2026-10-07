@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from backend import perfis
+from backend import profiles
 
 
 class ProjectStatusProfileTests(unittest.TestCase):
@@ -41,38 +41,38 @@ class ProjectStatusProfileTests(unittest.TestCase):
                   'consultadoEm': '2026-10-07T18:05:00Z', 'status': 'imported'}
         self.write(self.statuses, {'projects': {'camara:10': chamber, 'senado:10': senate,
                                               'camara:999': {'grupo': 'arquivado'}}})
-        first = perfis.perfil('camara:1', self.base)
+        first = profiles.profile('camara:1', self.base)
         self.assertEqual(first['projetos']['total'], 2)
         self.assertEqual(first['projetos']['items'][0]['situacaoAtual'], chamber)
         self.assertIsNone(first['projetos']['items'][0]['situacao'])
         self.assertNotIn('situacaoAtual', first['projetos']['items'][1])
         first['projetos']['items'][0]['situacaoAtual']['grupo'] = 'arquivado'
         first['projetos']['items'][0]['situacaoAtual']['normas'][0]['numero'] = 'alterado'
-        self.assertEqual(perfis.perfil('camara:1', self.base)['projetos']['items'][0]['situacaoAtual'], chamber)
-        self.assertEqual(perfis._load(self.statuses)['projects']['camara:10'], chamber)
-        self.assertEqual(perfis.perfil('camara:2', self.base)['projetos']['items'][0]['situacaoAtual'], chamber)
+        self.assertEqual(profiles.profile('camara:1', self.base)['projetos']['items'][0]['situacaoAtual'], chamber)
+        self.assertEqual(profiles._load(self.statuses)['projects']['camara:10'], chamber)
+        self.assertEqual(profiles.profile('camara:2', self.base)['projetos']['items'][0]['situacaoAtual'], chamber)
         for person in ('senado:1', 'senado:2'):
-            self.assertEqual(perfis.perfil(person, self.base)['projetos']['items'][0]['situacaoAtual'], senate)
-        self.assertEqual(perfis.perfil('senado:1', self.base)['contato']['email'], 'exemplo@senado.leg.br')
+            self.assertEqual(profiles.profile(person, self.base)['projetos']['items'][0]['situacaoAtual'], senate)
+        self.assertEqual(profiles.profile('senado:1', self.base)['contato']['email'], 'exemplo@senado.leg.br')
         self.assertNotIn('camara:999', json.dumps(first))
-        self.assertNotIn('situacaoAtual', json.dumps(perfis._load(self.base)))
+        self.assertNotIn('situacaoAtual', json.dumps(profiles._load(self.base)))
 
     def test_status_update_or_removal_does_not_leave_an_old_join_in_the_base_cache(self):
         self.write(self.statuses, {'projects': {'camara:10': {'grupo': 'tramitando'}}})
-        self.assertEqual(perfis.perfil('camara:1', self.base)['projetos']['items'][0]['situacaoAtual']['grupo'], 'tramitando')
+        self.assertEqual(profiles.profile('camara:1', self.base)['projetos']['items'][0]['situacaoAtual']['grupo'], 'tramitando')
         self.write(self.statuses, {'projects': {'camara:10': {'grupo': 'arquivado'}}})
-        self.assertEqual(perfis.perfil('camara:1', self.base)['projetos']['items'][0]['situacaoAtual']['grupo'], 'arquivado')
+        self.assertEqual(profiles.profile('camara:1', self.base)['projetos']['items'][0]['situacaoAtual']['grupo'], 'arquivado')
         self.statuses.unlink()
-        self.assertNotIn('situacaoAtual', perfis.perfil('camara:1', self.base)['projetos']['items'][0])
+        self.assertNotIn('situacaoAtual', profiles.profile('camara:1', self.base)['projetos']['items'][0])
 
     def test_missing_or_malformed_status_keeps_projects_and_absence(self):
         for value in ({'projects': []}, {'projects': {'camara:10': None}}, {'projects': {}}):
             self.write(self.statuses, value)
-            profile = perfis.perfil('camara:1', self.base)
+            profile = profiles.profile('camara:1', self.base)
             self.assertEqual(profile['projetos']['total'], 2)
             self.assertNotIn('situacaoAtual', profile['projetos']['items'][0])
         self.statuses.write_text('{invalid', encoding='utf-8')
-        self.assertEqual(perfis.perfil('senado:2', self.base)['projetos']['total'], 1)
+        self.assertEqual(profiles.profile('senado:2', self.base)['projetos']['total'], 1)
 
 
 if __name__ == '__main__':

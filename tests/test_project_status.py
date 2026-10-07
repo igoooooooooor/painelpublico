@@ -108,13 +108,13 @@ class ProjectStatusCollectionTests(unittest.TestCase):
         project_status.build_snapshot(root=self.root, collect=True, request=self.request)
         raw = self.root / 'data' / 'raw' / 'projetos-situacao' / 'camara' / 'proposicoes-2026.json'
         raw.write_bytes(encoded({'dados': []}))
-        url = project_status.CAMARA + '/arquivos/proposicoes/json/proposicoes-2026.json'
+        url = project_status.CHAMBER + '/arquivos/proposicoes/json/proposicoes-2026.json'
         payload, meta, error = project_status.cached_json(url, raw)
         self.assertIsNone(payload)
         self.assertIsNone(meta)
         self.assertIsNotNone(error)
 
-    def test_camara_detail_failure_keeps_annual_consultation_and_marks_partial(self):
+    def test_chamber_detail_failure_keeps_annual_consultation_and_marks_partial(self):
         self.write('perfis.json', {'profiles': {'camara:1': {'projetos': {'items': [
             {'id': '10', 'titulo': 'PL 1/2026'},
         ]}}}})
@@ -129,15 +129,15 @@ class ProjectStatusCollectionTests(unittest.TestCase):
                 raise OSError('detalhe indisponível')
             raise AssertionError(f'Consulta inesperada: {url}')
 
-        with patch.object(project_status.project_status_camara, 'needs_detail', return_value=True):
+        with patch.object(project_status.project_status_chamber, 'needs_detail', return_value=True):
             snapshot = project_status.build_snapshot(root=self.root, collect=True, request=request)
 
         record = snapshot['projects']['camara:10']
-        annual_url = project_status.CAMARA + '/arquivos/proposicoes/json/proposicoes-2026.json'
+        annual_url = project_status.CHAMBER + '/arquivos/proposicoes/json/proposicoes-2026.json'
         self.assertEqual(record['status'], 'partial')
         self.assertEqual(record['consultaUrl'], annual_url)
         self.assertEqual(record['consultadoEm'], snapshot['sources'][0]['consultadoEm'])
-        self.assertEqual(record['sourceUrl'], project_status.CAMARA + '/api/v2/proposicoes/10')
+        self.assertEqual(record['sourceUrl'], project_status.CHAMBER + '/api/v2/proposicoes/10')
         self.assertIn('Falha na consulta (OSError)', record['detail'])
         self.assertIn('A situação e a data do arquivo anual foram preservadas.', record['detail'])
 

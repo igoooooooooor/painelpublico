@@ -8,7 +8,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
-from . import cidadao, database, perfis, public_store as store
+from . import citizen, database, profiles, public_store as store
 from .config import BUILD_PATH
 
 QUERY_SECONDS = 8      # consulta que passar disso é abortada (protege o servidor público)
@@ -90,13 +90,13 @@ class Handler(BaseHTTPRequestHandler):
             return
         if url.path.startswith('/api/c/perfil/'):
             # Não depende do banco: vem do snapshot de perfis, carregado sob demanda pela ficha.
-            found = perfis.perfil(unquote(url.path[len('/api/c/perfil/'):]))
+            found = profiles.profile(unquote(url.path[len('/api/c/perfil/'):]))
             self.send_json(found if found is not None else {'error': 'Perfil complementar não encontrado.'},
                            200 if found is not None else 404, 'public, max-age=300' if prod else 'no-store')
             return
         if url.path == '/api/c/senado/atividade':
             # O arquivo local é lido somente quando esta rota é chamada e pode mudar entre consultas.
-            found = perfis.atividade_senado()
+            found = profiles.senate_activity()
             self.send_json(found if found is not None else {'error': 'Atividade do Senado não encontrada.'},
                            200 if found is not None else 404)
             return
@@ -121,15 +121,15 @@ class Handler(BaseHTTPRequestHandler):
         try:
             # Counts and rows of one response come from the same imported snapshot.
             db.execute('BEGIN')
-            routes = {'/api/c/radar': lambda: cidadao.radar(db, params),
-                      '/api/c/resumo': lambda: cidadao.resumo(db),
-                      '/api/c/politicos': lambda: cidadao.politicos(db, params),
-                      '/api/c/partidos': lambda: cidadao.partidos(db)}
+            routes = {'/api/c/radar': lambda: citizen.radar(db, params),
+                      '/api/c/resumo': lambda: citizen.summary(db),
+                      '/api/c/politicos': lambda: citizen.politicians(db, params),
+                      '/api/c/partidos': lambda: citizen.parties(db)}
             if url.path in routes:
                 result = routes[url.path]()
             elif url.path.startswith('/api/c/politico/'):
-                result = cidadao.politico(db, unquote(url.path[len('/api/c/politico/'):]))
-            elif url.path == '/api/c/gastos.csv' and (export := cidadao.gastos_csv(db, params.get('id', ''))):
+                result = citizen.politician(db, unquote(url.path[len('/api/c/politico/'):]))
+            elif url.path == '/api/c/gastos.csv' and (export := citizen.expenses_csv(db, params.get('id', ''))):
                 filename, chunks = export
                 self.send_response(200)
                 self.send_header('Content-Type', 'text/csv; charset=utf-8')

@@ -23,10 +23,10 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from ingest import project_status_camara, project_status_senado
+from ingest import project_status_chamber, project_status_senate
 
-CAMARA = 'https://dadosabertos.camara.leg.br'
-SENADO = 'https://legis.senado.leg.br/dadosabertos'
+CHAMBER = 'https://dadosabertos.camara.leg.br'
+SENATE = 'https://legis.senado.leg.br/dadosabertos'
 GROUPS = ('lei', 'emenda', 'tramitando', 'arquivado')
 _last_request = 0.0
 
@@ -157,7 +157,7 @@ def _chamber_statuses(targets, raw, options):
     for year in years:
         if year < 1900 or year > datetime.now().year:
             continue
-        url = f'{CAMARA}/arquivos/proposicoes/json/proposicoes-{year}.json'
+        url = f'{CHAMBER}/arquivos/proposicoes/json/proposicoes-{year}.json'
         payload, meta, error = cached_json(url, raw / 'camara' / f'proposicoes-{year}.json',
             validate=lambda p: isinstance(p, dict) and isinstance(p.get('dados'), list), **options)
         sources.append({'sourceUrl': url, 'consultadoEm': meta.get('consultadoEm') if meta else None, 'detail': error})
@@ -176,28 +176,28 @@ def _chamber_statuses(targets, raw, options):
             matched[identifier] = (stamp, row, meta, error)
         print(f'Câmara: arquivo {year} consultado; {len(matched)}/{len(targets)} IDs encontrados.', flush=True)
     for identifier in targets:
-        source_url = f'{CAMARA}/api/v2/proposicoes/{identifier}'
+        source_url = f'{CHAMBER}/api/v2/proposicoes/{identifier}'
         observation = matched.get(identifier)
         if observation:
             _, row, meta, error = observation
-            record = project_status_camara.normalize_status(row, meta['consultadoEm'], source_url)
+            record = project_status_chamber.normalize_status(row, meta['consultadoEm'], source_url)
             record = _annotate(record, meta, error)
         else:
             record = unavailable(source_url, 'Projeto não encontrado nos arquivos anuais disponíveis.')
         # Detalhes só para IDs ausentes e para a referência normativa direta.
-        if not observation or project_status_camara.needs_detail(row) or record.get('grupo') in ('lei', 'emenda'):
+        if not observation or project_status_chamber.needs_detail(row) or record.get('grupo') in ('lei', 'emenda'):
             payload, meta, error = cached_json(source_url, raw / 'camara' / f'projeto-{identifier}.json',
                 validate=lambda p: isinstance(p, dict) and isinstance(p.get('dados'), dict)
                     and str(p['dados'].get('id')) == identifier, **options)
             if payload is not None and not error:
-                record = _annotate(project_status_camara.normalize_status(payload['dados'], meta['consultadoEm'], source_url), meta, error)
+                record = _annotate(project_status_chamber.normalize_status(payload['dados'], meta['consultadoEm'], source_url), meta, error)
             elif observation:
                 failure = error or 'Detalhe individual da proposição indisponível.'
                 record = {**record, 'status': 'partial', 'detail': ' '.join(filter(None, (
                     record.get('detail'), failure, 'A situação e a data do arquivo anual foram preservadas.',
                 )))}
             elif payload is not None:
-                record = _annotate(project_status_camara.normalize_status(payload['dados'], meta['consultadoEm'], source_url), meta, error)
+                record = _annotate(project_status_chamber.normalize_status(payload['dados'], meta['consultadoEm'], source_url), meta, error)
             else:
                 record['detail'] = error or record['detail']
         records[f'camara:{identifier}'] = record
@@ -209,7 +209,7 @@ def _senate_statuses(targets, raw, options):
     records, sources = {}, []
     for start in range(0, len(identifiers), 100):
         batch = identifiers[start:start + 100]
-        url = SENADO + '/processo?' + urlencode([('idProcesso', identifier) for identifier in batch])
+        url = SENATE + '/processo?' + urlencode([('idProcesso', identifier) for identifier in batch])
         key = hashlib.sha256(','.join(batch).encode()).hexdigest()[:20]
         payload, meta, error = cached_json(url, raw / 'senado' / f'lote-{key}.json', validate=lambda p: isinstance(p, list), **options)
         sources.append({'sourceUrl': url, 'consultadoEm': meta.get('consultadoEm') if meta else None, 'detail': error})
@@ -222,18 +222,18 @@ def _senate_statuses(targets, raw, options):
                     duplicates.add(identifier)
                 by_id[identifier] = row
         for identifier in batch:
-            source_url = f'{SENADO}/processo/{identifier}'
+            source_url = f'{SENATE}/processo/{identifier}'
             row = by_id.get(identifier)
             if not row or identifier in duplicates:
                 records[f'senado:{identifier}'] = unavailable(source_url, error or 'ID ausente ou repetido na consulta oficial; situação não confirmada.')
                 continue
             detail = None
             detail_error = None
-            if project_status_senado.needs_detail(row):
+            if project_status_senate.needs_detail(row):
                 detail, detail_meta, detail_error = cached_json(source_url, raw / 'senado' / f'processo-{identifier}.json',
                     validate=lambda p: isinstance(p, dict) and str(p.get('id')) == identifier, **options)
                 # A lista fornece a situação principal; a data do detalhe fica explícita.
-            record = project_status_senado.normalize_status(row, meta['consultadoEm'], source_url, detail=detail)
+            record = project_status_senate.normalize_status(row, meta['consultadoEm'], source_url, detail=detail)
             if detail is not None:
                 record['detalheConsultadoEm'] = detail_meta['consultadoEm']
             record = _annotate(record, meta, error or detail_error)

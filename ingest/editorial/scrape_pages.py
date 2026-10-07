@@ -7,7 +7,7 @@ from paths import SNAPSHOTS, RAW
 H = str(SNAPSHOTS)
 OUT = os.path.join(RAW, "paginas"); os.makedirs(OUT, exist_ok=True)
 IDS = sys.argv[1:]
-MES = {m: i + 1 for i, m in enumerate("JAN FEV MAR ABR MAI JUN JUL AGO SET OUT NOV DEZ".split())}
+MONTH = {m: i + 1 for i, m in enumerate("JAN FEV MAR ABR MAI JUN JUL AGO SET OUT NOV DEZ".split())}
 
 
 def fetch(url, fn):
@@ -26,23 +26,23 @@ def text(t):
 num = lambda s: float(s.replace(".", "").replace(",", "."))
 
 
-def bloco(s, titulo):
+def block(s, title):
     """Lê 'Total (R$) Percentual Gasto X% Não utilizado Y%' e a tabela mês a mês de um bloco."""
-    i = s.find(titulo + " ?")
+    i = s.find(title + " ?")
     b = s[i:i + 1500]
-    for fim in ("Detalhamento", "Veja mais"):
-        if fim in b: b = b[:b.find(fim)]
+    for end in ("Detalhamento", "Veja mais"):
+        if end in b: b = b[:b.find(end)]
     m = re.search(r"Percentual Gasto ([\d.,]+) [\d.,]+% Não utilizado ([\d.,]+)", b)
-    meses = {MES[k]: num(v) for k, v in re.findall(r"\b(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ) ([\d.,]+)", b)}
-    return {"gasto": num(m.group(1)), "naoUsado": num(m.group(2)), "meses": meses}
+    months = {MONTH[k]: num(v) for k, v in re.findall(r"\b(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ) ([\d.,]+)", b)}
+    return {"gasto": num(m.group(1)), "naoUsado": num(m.group(2)), "meses": months}
 
 
 res = {}
 for did in IDS:
     s = text(fetch(f"https://www.camara.leg.br/deputados/{did}?ano=2026", f"{did}.html"))
-    pres = re.search(r"Presenças na Câmara (\d+) dias Ausências justificadas (\d+) dias Ausências não justificadas (\d+) dias", s)
-    r = {"presencas": int(pres.group(1)), "justificadas": int(pres.group(2)), "naoJustificadas": int(pres.group(3)),
-         "cota": bloco(s, "Cota parlamentar"), "gabinete": bloco(s, "Verba de gabinete")}
+    presence = re.search(r"Presenças na Câmara (\d+) dias Ausências justificadas (\d+) dias Ausências não justificadas (\d+) dias", s)
+    r = {"presencas": int(presence.group(1)), "justificadas": int(presence.group(2)), "naoJustificadas": int(presence.group(3)),
+         "cota": block(s, "Cota parlamentar"), "gabinete": block(s, "Verba de gabinete")}
     m = re.search(r"Pessoal de gabinete \? (\d+) pessoas neste ano, sendo (\d+) ativas", s)
     r["pessoal"] = {"ano": int(m.group(1)), "ativos": int(m.group(2))} if m else None
     r["salario"] = num(re.search(r"Salário mensal bruto \? R\$ ([\d.,]+)", s).group(1))
@@ -52,8 +52,8 @@ for did in IDS:
     m = re.search(r"Informações de gastos atualizadas em ([\d/]+)", s); r["atualizado"] = m.group(1) if m else None
     # presença dia a dia
     t = fetch(f"https://www.camara.leg.br/deputados/{did}/presenca-plenario/2026", f"pres_{did}.html")
-    dias = re.findall(r'info-data__data-formatada">\s*(\d\d/\d\d/\d{4}).*?</td>\s*<td[^>]*>.*?</td>\s*<td class="info-presenca-dia">\s*(.*?)\s*</td>', t, flags=re.S)
-    r["dias"] = [{"d": f"{d[6:10]}-{d[3:5]}-{d[0:2]}", "s": html.unescape(re.sub(r"<[^>]+>", "", st)).strip()} for d, st in dias]
+    days = re.findall(r'info-data__data-formatada">\s*(\d\d/\d\d/\d{4}).*?</td>\s*<td[^>]*>.*?</td>\s*<td class="info-presenca-dia">\s*(.*?)\s*</td>', t, flags=re.S)
+    r["dias"] = [{"d": f"{d[6:10]}-{d[3:5]}-{d[0:2]}", "s": html.unescape(re.sub(r"<[^>]+>", "", st)).strip()} for d, st in days]
     res[did] = r
     print(did, r["presencas"], r["justificadas"], r["naoJustificadas"], len(r["dias"]), r["cota"]["gasto"], r["gabinete"]["gasto"], r["pessoal"], r["auxilioMoradia"], r["imovelFuncional"])
 json.dump(res, open(os.path.join(OUT, "paginas.json"), "w"), ensure_ascii=False)

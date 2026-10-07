@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from urllib.parse import parse_qs, urlsplit
 
-from ingest import senado_projects
+from ingest import senate_projects
 
 
 def process(identifier='9000001', title='PL 123/2026', *, objective='Iniciadora',
@@ -32,10 +32,10 @@ class SenateProjectsTests(unittest.TestCase):
             {'id': 'senado:x', 'name': 'ID inválido', 'role': 'senador',
              'sourceId': 'senado_senators_current'},
         ]}
-        self.assertEqual(senado_projects._senator_ids(payload), ['senado:5322'])
+        self.assertEqual(senate_projects._senator_ids(payload), ['senado:5322'])
 
     def test_query_uses_author_code_dates_and_all_three_project_types(self):
-        url = senado_projects._project_url('senado:5322', 2026, date(2026, 10, 7))
+        url = senate_projects._project_url('senado:5322', 2026, date(2026, 10, 7))
         query = parse_qs(urlsplit(url).query)
         self.assertEqual(query['codigoParlamentarAutor'], ['5322'])
         self.assertEqual(query['sigla'], ['PL', 'PLP', 'PEC'])
@@ -51,7 +51,7 @@ class SenateProjectsTests(unittest.TestCase):
             calls.append(url)
             return [coauthored]
 
-        result = senado_projects.fetch_senado_projects(
+        result = senate_projects.fetch_senate_projects(
             'senado:5322', request_json=request, today=date(2026, 10, 7)
         )
         self.assertEqual(len(calls), 1)
@@ -67,16 +67,16 @@ class SenateProjectsTests(unittest.TestCase):
             '8989920', 'PL 365/2026 (Substitutivo-CD)', objective='Substitutivo',
             presented='2026-02-04', authors='Câmara dos Deputados',
         )
-        result = senado_projects.fetch_senado_projects(
+        result = senate_projects.fetch_senate_projects(
             'senado:5322', request_json=lambda _: [substitute], today=date(2026, 10, 7)
         )
         self.assertEqual((result['status'], result['total'], result['items']), ('imported', 0, []))
 
     def test_successful_empty_list_is_zero_but_invalid_payload_is_unavailable(self):
-        zero = senado_projects.fetch_senado_projects(
+        zero = senate_projects.fetch_senate_projects(
             'senado:5322', request_json=lambda _: [], today=date(2026, 10, 7)
         )
-        failed = senado_projects.fetch_senado_projects(
+        failed = senate_projects.fetch_senate_projects(
             'senado:5322', request_json=lambda _: {'error': 'not an array'}, today=date(2026, 10, 7)
         )
         self.assertEqual((zero['status'], zero['total']), ('imported', 0))
@@ -95,7 +95,7 @@ class SenateProjectsTests(unittest.TestCase):
                  'sourceId': 'senado_senators_current'},
             ]}), encoding='utf-8')
             cache_root = root / 'data' / 'raw' / 'senado-projetos'
-            senado_projects._write_cache('senado:5322', 2026, {
+            senate_projects._write_cache('senado:5322', 2026, {
                 'status': 'imported', 'period': '2026-01-01 a 2026-10-07',
                 'sourceUrl': 'https://legis.senado.leg.br/dadosabertos/processo',
                 'fetchedAt': '2026-10-07T12:00:00+00:00', 'total': 1,
@@ -104,7 +104,7 @@ class SenateProjectsTests(unittest.TestCase):
                            'url': 'https://legis.senado.gov.br/sdleg-getter/documento?dm=9000002'}],
             }, cache_root)
 
-            snapshot, stats = senado_projects.build_snapshot(root=root, today=date(2026, 10, 7))
+            snapshot, stats = senate_projects.build_snapshot(root=root, today=date(2026, 10, 7))
             self.assertEqual(snapshot['year'], 2026)
             self.assertEqual(snapshot['profiles']['senado:5322']['projetos']['total'], 1)
             self.assertEqual(snapshot['profiles']['senado:5323']['projetos']['status'], 'unavailable')
@@ -120,9 +120,9 @@ class SenateProjectsTests(unittest.TestCase):
                 'sourceUrl': 'https://legis.senado.leg.br/dadosabertos/processo',
                 'fetchedAt': '2026-10-06T12:00:00+00:00', 'total': 0, 'items': [],
             }
-            senado_projects._write_cache('senado:5322', 2026, previous, cache_root)
+            senate_projects._write_cache('senado:5322', 2026, previous, cache_root)
 
-            refreshed = senado_projects._collect_one(
+            refreshed = senate_projects._collect_one(
                 'senado:5322', 2026, cache_root, True,
                 lambda _: (_ for _ in ()).throw(OSError('offline')),
                 date(2026, 10, 7),
@@ -132,7 +132,7 @@ class SenateProjectsTests(unittest.TestCase):
             self.assertEqual(refreshed['fetchedAt'], previous['fetchedAt'])
             self.assertTrue(refreshed['stale'])
             self.assertIn('Falha ao atualizar', refreshed['detail'])
-            self.assertEqual(senado_projects._read_cache('senado:5322', 2026, cache_root), refreshed)
+            self.assertEqual(senate_projects._read_cache('senado:5322', 2026, cache_root), refreshed)
 
 
 if __name__ == '__main__':

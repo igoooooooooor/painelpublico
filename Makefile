@@ -62,15 +62,15 @@ collect-profiles:
 	$(PYTHON) ingest/profiles.py --collect
 
 collect-senate:
-	$(PYTHON) ingest/senado_attendance.py --collect --year $(or $(YEAR),2026)
-	$(PYTHON) ingest/senado_activity.py --collect --year $(or $(YEAR),2026)
-	$(PYTHON) ingest/senado_projects.py --collect --year $(or $(YEAR),2026)
+	$(PYTHON) ingest/senate_attendance.py --collect --year $(or $(YEAR),2026)
+	$(PYTHON) ingest/senate_activity.py --collect --year $(or $(YEAR),2026)
+	$(PYTHON) ingest/senate_projects.py --collect --year $(or $(YEAR),2026)
 
 collect-project-status:
 	$(PYTHON) ingest/project_status.py --collect
 
 collect-elections:
-	$(PYTHON) ingest/eleicoes_2026.py --collect
+	$(PYTHON) ingest/elections_2026.py --collect
 
 prod: build
 	$(PYTHON) -m backend.server --prod --host 127.0.0.1 --port $(PORT)
@@ -81,7 +81,7 @@ SSH ?= ssh
 # Usuário comum com sudo (ex.: ubuntu na Magalu Cloud). Para root, use SUDO= (vazio).
 SUDO ?= sudo
 # Monta a página no servidor com os snapshots complementares que estiverem lá e reinicia o serviço.
-REMOTE_BUILD = cd $(APP_DIR)/app && PAINEL_SNAPSHOTS=$(APP_DIR)/data/snapshots python3 scripts/build.py && chown -R painel:painel $(APP_DIR)/app && install -m 0644 deploy/painel.service /etc/systemd/system/painel.service && systemctl daemon-reload && systemctl enable --now painel && systemctl restart painel
+REMOTE_BUILD = cd $(APP_DIR)/app && PAINEL_SNAPSHOTS=$(APP_DIR)/data/snapshots python3 scripts/build.py && chown -R painel:painel $(APP_DIR)/app && install -m 0644 deploy/dashboard.service /etc/systemd/system/painel.service && systemctl daemon-reload && systemctl enable --now painel && systemctl restart painel
 
 deploy: check
 	@test -n "$(SERVER)" || (echo "Defina SERVER=usuario@host (ou no .env)"; exit 1)

@@ -46,15 +46,15 @@ def _load(path):
         return raw
 
 
-def atividade_senado(path=None):
+def senate_activity(path=None):
     """Snapshot de presença e votações do Senado, ou None se estiver ausente ou inválido."""
     return _load(Path(path) if path is not None else SNAPSHOTS_PATH / 'senado-atividade.json')
 
 
-def _senado_projetos(identifier, perfil_path):
+def _senate_projects(identifier, profile_path):
     if not _SENATE_ID.fullmatch(identifier):
         return None, None
-    data = _load(perfil_path.parent / 'senado-projetos.json')
+    data = _load(profile_path.parent / 'senado-projetos.json')
     if data is None:
         return None, None
     profiles = data.get('profiles')
@@ -66,7 +66,7 @@ def _senado_projetos(identifier, perfil_path):
     return profile['projetos'], data.get('generatedAt')
 
 
-def _com_situacoes_projetos(result, identifier, profile_path):
+def _attach_project_statuses(result, identifier, profile_path):
     """Anexa somente a situação dos projetos desta ficha, sem alterar o cache base."""
     chamber = identifier.split(':', 1)[0]
     projects = result.get('projetos')
@@ -89,9 +89,9 @@ def _com_situacoes_projetos(result, identifier, profile_path):
     return {**result, 'projetos': {**projects, 'items': enriched}}
 
 
-def _eleicao(identifier, perfil_path):
+def _election_result(identifier, profile_path):
     """Resultado de 2026 desta ficha (eleicoes-2026.json), com fonte e método; None se ausente."""
-    data = _load(perfil_path.parent / 'eleicoes-2026.json')
+    data = _load(profile_path.parent / 'eleicoes-2026.json')
     profiles = data.get('profiles') if data is not None else None
     item = profiles.get(identifier) if isinstance(profiles, dict) else None
     if not isinstance(item, dict):
@@ -100,7 +100,7 @@ def _eleicao(identifier, perfil_path):
             'segundoTurno': data.get('segundoTurno'), 'generatedAt': data.get('generatedAt')}
 
 
-def perfil(identifier, path=None):
+def profile(identifier, path=None):
     """Perfil complementar de um parlamentar ou None se o arquivo ou o registro não existirem."""
     profile_path = Path(path) if path is not None else SNAPSHOTS_PATH / 'perfis.json'
     data = _load(profile_path)
@@ -109,10 +109,10 @@ def perfil(identifier, path=None):
     if not isinstance(profile, dict):
         profile = None
 
-    projects, projects_generated_at = _senado_projetos(identifier, profile_path)
-    eleicao = _eleicao(identifier, profile_path)
+    projects, projects_generated_at = _senate_projects(identifier, profile_path)
+    election_result = _election_result(identifier, profile_path)
     if profile is None:
-        if projects is None and eleicao is None:
+        if projects is None and election_result is None:
             return None
         result = {'id': identifier, 'role': 'senador' if identifier.startswith('senado:') else 'deputado'}
         if projects is not None:
@@ -124,6 +124,6 @@ def perfil(identifier, path=None):
         result = {**profile, 'generatedAt': data.get('generatedAt')}
         if projects is not None:
             result['projetos'] = projects
-    if eleicao is not None:
-        result['eleicao2026'] = eleicao
-    return _com_situacoes_projetos(result, identifier, profile_path)
+    if election_result is not None:
+        result['eleicao2026'] = election_result
+    return _attach_project_statuses(result, identifier, profile_path)

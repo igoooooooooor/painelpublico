@@ -221,7 +221,7 @@ def _parse_projects(
     return result
 
 
-def fetch_senado_projects(
+def fetch_senate_projects(
     authority_id: str,
     year: int = 2026,
     request_json: Callable[[str], Any] = _request_json,
@@ -350,7 +350,7 @@ def _collect_one(
     ):
         return previous
     try:
-        refreshed = fetch_senado_projects(authority_id, year, request_json, today)
+        refreshed = fetch_senate_projects(authority_id, year, request_json, today)
     except Exception as error:
         refreshed = _empty_projects(authority_id, year, "", today)
         refreshed["detail"] = f"Falha ao processar a consulta ({type(error).__name__}); total não confirmado."

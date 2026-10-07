@@ -15,13 +15,13 @@ from urllib.parse import urlsplit
 from typing import Any
 
 
-CAMARA_API = "https://dadosabertos.camara.leg.br/api/v2"
-CAMARA_FICHA = "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao={}"
+CHAMBER_API = "https://dadosabertos.camara.leg.br/api/v2"
+CHAMBER_PROFILE = "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao={}"
 
 # These are the active labels observed in the official 2023–2026 annual
 # archives for IDs in the local profile snapshot. Unknown or newly introduced
 # labels remain unclassified until an explicit mapping is reviewed.
-TRAMITANDO_LABELS = frozenset({
+IN_PROGRESS_LABELS = frozenset({
     "aguardando apreciacao pelo senado federal",
     "aguardando apreciacao do veto",
     "aguardando autorizacao do despacho",
@@ -384,7 +384,7 @@ def normalize_status(row: Any, consulted_at: Any, source_url: Any) -> dict[str, 
         has_ec_urn or _has_ec_transformation(direct_texts) or dispatch_ec_norm
     ):
         group = "emenda"
-    elif proposition_type in PROJECT_TYPES and normalized_description in TRAMITANDO_LABELS:
+    elif proposition_type in PROJECT_TYPES and normalized_description in IN_PROGRESS_LABELS:
         group = "tramitando"
 
     status_code = latest.get("idSituacao")
@@ -401,7 +401,7 @@ def normalize_status(row: Any, consulted_at: Any, source_url: Any) -> dict[str, 
 
     individual_url = _official_url(data.get("uri"))
     if not individual_url and identifier:
-        individual_url = f"{CAMARA_API}/proposicoes/{identifier}"
+        individual_url = f"{CHAMBER_API}/proposicoes/{identifier}"
     resolved_source_url = individual_url or _official_url(source_url) or _official_url(latest.get("url"))
 
     return _status_result(

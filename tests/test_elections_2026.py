@@ -6,24 +6,24 @@ import unittest
 import zipfile
 from pathlib import Path
 
-from ingest import eleicoes_2026 as el
+from ingest import elections_2026 as el
 
 HEADER = ['DT_GERACAO', 'HH_GERACAO', 'NR_TURNO', 'DT_ELEICAO', 'SG_UF', 'NM_UE', 'DS_CARGO', 'SQ_CANDIDATO',
           'NR_CANDIDATO', 'NM_CANDIDATO', 'NM_URNA_CANDIDATO', 'NR_CPF_CANDIDATO', 'SG_PARTIDO', 'DT_NASCIMENTO',
           'DS_SIT_TOT_TURNO']
 
 
-def cand(sq, nome, urna, nasc, cargo='DEPUTADO FEDERAL', uf='SP', sit='ELEITO POR QP', turno='1'):
-    return {'DT_GERACAO': '07/10/2026', 'HH_GERACAO': '16:30:39', 'NR_TURNO': turno,
-            'DT_ELEICAO': '04/10/2026' if turno == '1' else '25/10/2026', 'SG_UF': uf, 'NM_UE': 'ESTADO',
-            'DS_CARGO': cargo, 'SQ_CANDIDATO': sq, 'NR_CANDIDATO': '1234', 'NM_CANDIDATO': nome,
-            'NM_URNA_CANDIDATO': urna, 'NR_CPF_CANDIDATO': '12345678901', 'SG_PARTIDO': 'AAA',
-            'DT_NASCIMENTO': nasc, 'DS_SIT_TOT_TURNO': sit}
+def cand(sq, name, ballot, birth, office='DEPUTADO FEDERAL', state='SP', status='ELEITO POR QP', round='1'):
+    return {'DT_GERACAO': '07/10/2026', 'HH_GERACAO': '16:30:39', 'NR_TURNO': round,
+            'DT_ELEICAO': '04/10/2026' if round == '1' else '25/10/2026', 'SG_UF': state, 'NM_UE': 'ESTADO',
+            'DS_CARGO': office, 'SQ_CANDIDATO': sq, 'NR_CANDIDATO': '1234', 'NM_CANDIDATO': name,
+            'NM_URNA_CANDIDATO': ballot, 'NR_CPF_CANDIDATO': '12345678901', 'SG_PARTIDO': 'AAA',
+            'DT_NASCIMENTO': birth, 'DS_SIT_TOT_TURNO': status}
 
 
-def person(identifier, name, uf='SP'):
+def person(identifier, name, state='SP'):
     source = 'senado_senators_current' if identifier.startswith('senado:') else 'camara_deputies_current'
-    return {'id': identifier, 'name': name, 'uf': uf, 'sourceId': source}
+    return {'id': identifier, 'name': name, 'uf': state, 'sourceId': source}
 
 
 ROSTER = [
@@ -49,18 +49,18 @@ IDENTITIES = {
 }
 CANDIDATES = [
     cand('1', 'ANA MARIA DA SÍLVA', 'ANA SILVA', '02/01/1980'),
-    cand('2', 'BRUNO SEGUNDO TURNO', 'BRUNO', '04/03/1975', 'GOVERNADOR', sit='2º TURNO'),
-    cand('2', 'BRUNO SEGUNDO TURNO', 'BRUNO', '04/03/1975', 'GOVERNADOR', sit='ELEITO', turno='2'),
-    cand('3', 'PEDRO HENRIQUE DE ANDRADE LIMA CARNEIRO CAMPOS', 'PEDRO CAMPOS', '28/10/1995', uf='PE'),
+    cand('2', 'BRUNO SEGUNDO TURNO', 'BRUNO', '04/03/1975', 'GOVERNADOR', status='2º TURNO'),
+    cand('2', 'BRUNO SEGUNDO TURNO', 'BRUNO', '04/03/1975', 'GOVERNADOR', status='ELEITO', round='2'),
+    cand('3', 'PEDRO HENRIQUE DE ANDRADE LIMA CARNEIRO CAMPOS', 'PEDRO CAMPOS', '28/10/1995', state='PE'),
     cand('4', 'ERIKA HILTON', 'ERIKA HILTON', '09/12/1992'),
-    cand('5', 'CARLA DE TAL', 'OUTRA URNA', '06/06/1990', uf='RJ'),
+    cand('5', 'CARLA DE TAL', 'OUTRA URNA', '06/06/1990', state='RJ'),
     cand('6', 'JADER FONTENELLE BARBALHO', 'JADER BARBALHO', '27/10/1945', '1º SUPLENTE', 'PA', 'ELEITO'),
     cand('7', 'JOAO PEREIRA', 'JOAO', '05/05/1970'),
-    cand('70', 'JOAO PEREIRA', 'JOAO P', '05/05/1970', sit='NÃO ELEITO'),
+    cand('70', 'JOAO PEREIRA', 'JOAO P', '05/05/1970', status='NÃO ELEITO'),
 ]
 
 
-class Eleicoes2026Tests(unittest.TestCase):
+class Elections2026Tests(unittest.TestCase):
     def test_names_and_dates_normalize(self):
         self.assertEqual(el.name_key('José  da Silva-Júnior'), 'jose da silva junior')
         self.assertEqual(el.birth_key('09/12/1992'), '1992-12-09')
@@ -110,12 +110,12 @@ class Eleicoes2026Tests(unittest.TestCase):
             self.assertNotIn(private, text)
 
     def test_identity_comes_from_official_apis_and_failures_keep_the_cache(self):
-        camara = {'dados': {'nomeCivil': ' ANA MARIA ', 'dataNascimento': '1980-01-02'}}
-        senado = {'DetalheParlamentar': {'Parlamentar': {'IdentificacaoParlamentar': {'NomeCompletoParlamentar': 'Dora Senadora'},
+        chamber = {'dados': {'nomeCivil': ' ANA MARIA ', 'dataNascimento': '1980-01-02'}}
+        senate = {'DetalheParlamentar': {'Parlamentar': {'IdentificacaoParlamentar': {'NomeCompletoParlamentar': 'Dora Senadora'},
                                                           'DadosBasicosParlamentar': {'DataNascimento': '1960-02-03'}}}}
-        found = el.fetch_identity('camara:1', lambda url: camara)
+        found = el.fetch_identity('camara:1', lambda url: chamber)
         self.assertEqual((found['nomeCivil'], found['nascimento']), ('ANA MARIA', '1980-01-02'))
-        self.assertEqual(el.fetch_identity('senado:2', lambda url: senado)['nascimento'], '1960-02-03')
+        self.assertEqual(el.fetch_identity('senado:2', lambda url: senate)['nascimento'], '1960-02-03')
         self.assertIsNone(el.fetch_identity('camara:3', lambda url: {'dados': {'nomeCivil': 'SEM DATA'}}))
 
         def failing(identifier):

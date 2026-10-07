@@ -1,7 +1,7 @@
 """Eleições de 2026 nas fichas: liga cada parlamentar da lista atual à sua candidatura no TSE.
 
-Coleta manual (rede):     python3 ingest/eleicoes_2026.py --collect
-Reconstrução (sem rede):  python3 ingest/eleicoes_2026.py
+Coleta manual (rede):     python3 ingest/elections_2026.py --collect
+Reconstrução (sem rede):  python3 ingest/elections_2026.py
 
 A ligação compara o nome civil e a data de nascimento publicados pelas APIs da Câmara e do Senado
 com o arquivo de candidaturas do TSE, em regras graduais (ver `match`). CPF não é lido nem guardado. Nome civil e nascimento ficam só
@@ -33,8 +33,8 @@ from ingest.profiles import _atomic_json, _current_roster, _json_from_path, _req
 YEAR = 2026
 CANDIDATES_URL = f"https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_cand/consulta_cand_{YEAR}.zip"
 DATASET_URL = f"https://dadosabertos.tse.jus.br/dataset/candidatos-{YEAR}"
-CAMARA_DETAIL = "https://dadosabertos.camara.leg.br/api/v2/deputados/{}"
-SENADO_DETAIL = "https://legis.senado.leg.br/dadosabertos/senador/{}.json"
+CHAMBER_DETAIL = "https://dadosabertos.camara.leg.br/api/v2/deputados/{}"
+SENATE_DETAIL = "https://legis.senado.leg.br/dadosabertos/senador/{}.json"
 # Calendário constitucional: 1º turno no primeiro domingo e 2º turno no último domingo de outubro.
 SECOND_ROUND = "2026-10-25"
 USER_AGENT = "QuantoCusta/1.0 (public-data importer)"
@@ -76,12 +76,12 @@ def fetch_identity(authority_id: str, request_json: Callable[[str], dict] = _req
     """Nome civil e nascimento na API oficial da Casa; None se faltar algum dos dois."""
     chamber, code = authority_id.split(":", 1)
     if chamber == "camara":
-        data = request_json(CAMARA_DETAIL.format(code)).get("dados") or {}
+        data = request_json(CHAMBER_DETAIL.format(code)).get("dados") or {}
         found = {"nomeCivil": data.get("nomeCivil"), "nascimento": data.get("dataNascimento")}
     elif chamber == "senado":
-        parlamentar = (request_json(SENADO_DETAIL.format(code)).get("DetalheParlamentar") or {}).get("Parlamentar") or {}
-        found = {"nomeCivil": (parlamentar.get("IdentificacaoParlamentar") or {}).get("NomeCompletoParlamentar"),
-                 "nascimento": (parlamentar.get("DadosBasicosParlamentar") or {}).get("DataNascimento")}
+        parliamentarian = (request_json(SENATE_DETAIL.format(code)).get("DetalheParlamentar") or {}).get("Parlamentar") or {}
+        found = {"nomeCivil": (parliamentarian.get("IdentificacaoParlamentar") or {}).get("NomeCompletoParlamentar"),
+                 "nascimento": (parliamentarian.get("DadosBasicosParlamentar") or {}).get("DataNascimento")}
     else:
         return None
     if not name_key(found["nomeCivil"]) or not birth_key(found["nascimento"]):
@@ -112,7 +112,7 @@ def download_candidates(zip_path: Path, meta_path: Path) -> None:
         content = response.read()
         modified = response.headers.get("Last-Modified")
     with zipfile.ZipFile(io.BytesIO(content)) as archive:  # Valida antes de substituir o cache.
-        if archive.testzip() is not None or not _brasil_csv(archive):
+        if archive.testzip() is not None or not _brazil_csv(archive):
             raise ValueError("Arquivo do TSE sem a tabela nacional de candidaturas")
     zip_path.parent.mkdir(parents=True, exist_ok=True)
     temporary = zip_path.with_suffix(".zip.tmp")
@@ -121,13 +121,13 @@ def download_candidates(zip_path: Path, meta_path: Path) -> None:
     _atomic_json(meta_path, {"url": CANDIDATES_URL, "lastModified": modified, "fetchedAt": utc_now()})
 
 
-def _brasil_csv(archive: zipfile.ZipFile) -> str | None:
+def _brazil_csv(archive: zipfile.ZipFile) -> str | None:
     return next((name for name in archive.namelist() if name.upper().endswith(f"_{YEAR}_BRASIL.CSV")), None)
 
 
 def read_candidates(zip_path: Path) -> list[dict[str, str]]:
     with zipfile.ZipFile(zip_path) as archive:
-        name = _brasil_csv(archive)
+        name = _brazil_csv(archive)
         if not name:
             raise ValueError("Arquivo do TSE sem a tabela nacional de candidaturas")
         text = archive.read(name).decode("latin-1")
@@ -186,24 +186,24 @@ def match(roster: list[dict[str, Any]], identities: dict[str, Any], candidates: 
         if previous is None or _turn(row) >= _turn(previous):  # o turno mais recente traz o resultado final
             latest[row["SQ_CANDIDATO"]] = row
     by_birth: dict[str, list[dict[str, str]]] = defaultdict(list)
-    by_name_uf: dict[tuple[str, str], list[dict[str, str]]] = defaultdict(list)
+    by_name_state: dict[tuple[str, str], list[dict[str, str]]] = defaultdict(list)
     for row in latest.values():
         by_birth[birth_key(row["DT_NASCIMENTO"]) or ""].append(row)
-        by_name_uf[(name_key(row["NM_CANDIDATO"]), row["SG_UF"])].append(row)
+        by_name_state[(name_key(row["NM_CANDIDATO"]), row["SG_UF"])].append(row)
     out = {}
     for authority in roster:
         identity = identities.get(authority["id"])
         if not identity:
             out[authority["id"]] = {"status": "indisponivel"}
             continue
-        civil, birth, uf = identity.get("nomeCivil"), birth_key(identity.get("nascimento")), authority.get("uf") or ""
+        civil, birth, state = identity.get("nomeCivil"), birth_key(identity.get("nascimento")), authority.get("uf") or ""
         pool = by_birth.get(birth or "", [])
         compact = name_key(civil).replace(" ", "")
         attempts = (
             ("nome", [r for r in pool if name_key(r["NM_CANDIDATO"]).replace(" ", "") == compact]),
             ("nome-parecido", [r for r in pool if similar_names(civil, r["NM_CANDIDATO"])]),
-            ("nome-de-urna", [r for r in pool if r["SG_UF"] == uf and name_key(r["NM_URNA_CANDIDATO"]) == name_key(authority.get("name"))]),
-            ("ano-divergente", [r for r in by_name_uf.get((name_key(civil), uf), []) if _one_year_apart(birth, birth_key(r["DT_NASCIMENTO"]))]),
+            ("nome-de-urna", [r for r in pool if r["SG_UF"] == state and name_key(r["NM_URNA_CANDIDATO"]) == name_key(authority.get("name"))]),
+            ("ano-divergente", [r for r in by_name_state.get((name_key(civil), state), []) if _one_year_apart(birth, birth_key(r["DT_NASCIMENTO"]))]),
         )
         rule, rows = next(((rule, rows) for rule, rows in attempts if rows), (None, []))
         if not rows:

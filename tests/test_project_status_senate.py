@@ -1,13 +1,13 @@
 import unittest
 
-from ingest.project_status_senado import needs_detail, normalize_status
+from ingest.project_status_senate import needs_detail, normalize_status
 
 
 CONSULTED = "2026-10-07T18:00:00Z"
 SOURCE = "https://legis.senado.leg.br/dadosabertos/processo?idProcesso=8993967"
 
 
-class SenadoProjectStatusTests(unittest.TestCase):
+class SenateProjectStatusTests(unittest.TestCase):
     def test_law_requires_explicit_generated_norm_and_keeps_observation_dates_separate(self):
         row = {
             "id": 8993967,
@@ -128,7 +128,7 @@ class SenadoProjectStatusTests(unittest.TestCase):
         self.assertEqual(result["grupo"], "arquivado")
         self.assertTrue(needs_detail(row))
 
-    def test_active_nonterminal_process_is_classified_as_tramitando(self):
+    def test_active_nonterminal_process_is_classified_as_in_progress(self):
         row = {
             "id": 703,
             "tramitando": "Sim",
@@ -140,7 +140,7 @@ class SenadoProjectStatusTests(unittest.TestCase):
         self.assertEqual(result["grupo"], "tramitando")
         self.assertFalse(needs_detail(row))
 
-    def test_tramitando_nao_alone_does_not_imply_archived_or_rejected(self):
+    def test_in_progress_alone_does_not_imply_archived_or_rejected(self):
         row = {"id": 704, "tramitando": "Não"}
 
         result = normalize_status(row, CONSULTED, SOURCE)

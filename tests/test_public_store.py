@@ -10,7 +10,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from backend import cidadao, public_store as store
+from backend import citizen, public_store as store
 from backend.config import SCHEMA_VERSION
 from backend.database import backup_database, check_database, ensure_schema, migrate
 
@@ -114,7 +114,7 @@ class PublicStoreTests(unittest.TestCase):
         self.payload['expenses'].append({**self.payload['expenses'][0], 'id': 'refund', 'amount': -0.01, 'category': '=1+1'})
         self.import_data()
         with closing(store.connect(self.db_path)) as db, db:
-            filename, chunks = cidadao.gastos_csv(db, 'p:0')
+            filename, chunks = citizen.expenses_csv(db, 'p:0')
             data = list(csv.reader(io.StringIO(''.join(chunks).lstrip('﻿')), delimiter=';'))
             self.assertEqual(filename, 'gastos-cota-hyperlink-x.csv')
             self.assertEqual(data[0][:5], ['Parlamentar', 'Competência', 'Data de emissão', 'Categoria', 'Valor (R$)'])
@@ -122,7 +122,7 @@ class PublicStoreTests(unittest.TestCase):
             self.assertTrue(data[1][0].startswith("'  ="))
             self.assertIn('-0,01', [row[4] for row in data[1:]])
             self.assertIn("'=1+1", [row[3] for row in data[1:]])
-            self.assertIsNone(cidadao.gastos_csv(db, 'inexistente'))
+            self.assertIsNone(citizen.expenses_csv(db, 'inexistente'))
 
     def test_streaming_gzip_import(self):
         path = self.root / 'stream.jsonl.gz'

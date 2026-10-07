@@ -28,15 +28,15 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW_DIR = ROOT / "data" / "raw" / "legislative"
-CAMARA_CEAP_URL = "https://www.camara.leg.br/cotas/Ano-{year}.csv.zip"
-CAMARA_DEPUTIES_URL = (
+CHAMBER_CEAP_URL = "https://www.camara.leg.br/cotas/Ano-{year}.csv.zip"
+CHAMBER_DEPUTIES_URL = (
     "https://dadosabertos.camara.leg.br/api/v2/deputados?itens=100&pagina=1"
 )
-SENADO_CEAPS_URL = (
+SENATE_CEAPS_URL = (
     "https://adm.senado.gov.br/adm-dadosabertos/api/v1/senadores/"
     "despesas_ceaps/{year}"
 )
-SENADO_ROSTER_URL = "https://legis.senado.leg.br/dadosabertos/senador/lista/atual"
+SENATE_ROSTER_URL = "https://legis.senado.leg.br/dadosabertos/senador/lista/atual"
 USER_AGENT = "QuantoCusta/1.0 (public-data importer)"
 CPF_IN_NAME = re.compile(
     r"(?<![A-Za-z0-9])(?:CPF\s*[:#-]?\s*)?(?:\d{11}|\d{3}\.\d{3}\.\d{3}-\d{2})(?![A-Za-z0-9])",
@@ -81,9 +81,9 @@ def request_json(url: str) -> dict[str, Any]:
     return payload
 
 
-def fetch_camara_roster() -> tuple[list[dict[str, Any]], int, str]:
+def fetch_chamber_roster() -> tuple[list[dict[str, Any]], int, str]:
     """Follow the official API's next links until the roster is exhausted."""
-    first_url = CAMARA_DEPUTIES_URL
+    first_url = CHAMBER_DEPUTIES_URL
     current_url = first_url
     seen: set[str] = set()
     rows: list[dict[str, Any]] = []
@@ -360,7 +360,7 @@ def sanitize_expense_suppliers(expenses: list[dict[str, Any]]) -> dict[str, int]
     return stats
 
 
-def camara_authority_id(row: dict[str, Any]) -> str:
+def chamber_authority_id(row: dict[str, Any]) -> str:
     profile_id = str(row.get("ideCadastro", "")).strip()
     if profile_id:
         return f"camara:{profile_id}"
@@ -374,11 +374,11 @@ def camara_authority_id(row: dict[str, Any]) -> str:
     return f"camara:group:{digest}"
 
 
-def add_camara_authority(
+def add_chamber_authority(
     authorities: dict[str, dict[str, Any]],
     authority_id: str,
     name: Any,
-    uf: Any,
+    state: Any,
     party: Any,
     source_id: str,
     source_url: str,
@@ -395,7 +395,7 @@ def add_camara_authority(
         "branch": "legislativo",
         "sphere": "federal",
         "institution": "Câmara dos Deputados",
-        "uf": str(uf or "").strip() or None,
+        "uf": str(state or "").strip() or None,
         "party": str(party or "").strip() or None,
         "sourceId": source_id,
         "sourceUrl": source_url,
@@ -411,7 +411,7 @@ def add_camara_authority(
                 current[key] = value[key]
 
 
-def load_camara_expenses(path: Path, year: int, authorities: dict[str, dict[str, Any]], source_id: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def load_chamber_expenses(path: Path, year: int, authorities: dict[str, dict[str, Any]], source_id: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     expenses: list[dict[str, Any]] = []
     native_ids: list[str | None] = []
     row_index = 0
@@ -440,9 +440,9 @@ def load_camara_expenses(path: Path, year: int, authorities: dict[str, dict[str,
                         for key, value in raw.items()
                         if key is not None
                     }
-                    authority_id = camara_authority_id(row)
-                    source_authority_url = CAMARA_CEAP_URL.format(year=year)
-                    add_camara_authority(
+                    authority_id = chamber_authority_id(row)
+                    source_authority_url = CHAMBER_CEAP_URL.format(year=year)
+                    add_chamber_authority(
                         authorities,
                         authority_id,
                         row.get("txNomeParlamentar"),
@@ -588,7 +588,7 @@ def senate_xml_authorities(content: bytes, source_id: str, source_url: str) -> t
     return rows, source_version
 
 
-def add_senado_expense_authorities(
+def add_senate_expense_authorities(
     rows: list[dict[str, Any]],
     authorities: dict[str, dict[str, Any]],
     source_id: str,
@@ -615,12 +615,12 @@ def add_senado_expense_authorities(
             authorities[authority_id] = authority
 
 
-def load_senado_expenses(path: Path, year: int, authorities: dict[str, dict[str, Any]], source_id: str, source_url: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def load_senate_expenses(path: Path, year: int, authorities: dict[str, dict[str, Any]], source_id: str, source_url: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, list):
         raise ValueError("Senate CEAPS endpoint did not return an array")
     rows = [row for row in payload if isinstance(row, dict)]
-    add_senado_expense_authorities(rows, authorities, source_id, source_url)
+    add_senate_expense_authorities(rows, authorities, source_id, source_url)
     expenses: list[dict[str, Any]] = []
     native_ids: list[Any] = []
     document_ids_redacted = 0
@@ -708,98 +708,98 @@ def import_year(year: int, output: Path) -> dict[str, Any]:
     expenses: list[dict[str, Any]] = []
     current_year = dt.datetime.now(dt.timezone.utc).year
 
-    camara_url = CAMARA_CEAP_URL.format(year=year)
-    camara_roster_rows: list[dict[str, Any]] = []
-    camara_roster_page_count = 0
-    camara_roster_status = "unavailable"
-    camara_roster_debug: str | None = None
+    chamber_url = CHAMBER_CEAP_URL.format(year=year)
+    chamber_roster_rows: list[dict[str, Any]] = []
+    chamber_roster_page_count = 0
+    chamber_roster_status = "unavailable"
+    chamber_roster_debug: str | None = None
     try:
-        camara_roster_rows, camara_roster_page_count, _ = fetch_camara_roster()
-        for row in camara_roster_rows:
+        chamber_roster_rows, chamber_roster_page_count, _ = fetch_chamber_roster()
+        for row in chamber_roster_rows:
             authority_id = f"camara:{row.get('id')}"
-            add_camara_authority(
+            add_chamber_authority(
                 authorities,
                 authority_id,
                 row.get("nome"),
                 row.get("siglaUf"),
                 row.get("siglaPartido"),
                 "camara_deputies_current",
-                str(row.get("uri") or CAMARA_DEPUTIES_URL),
+                str(row.get("uri") or CHAMBER_DEPUTIES_URL),
             )
-        camara_roster_status = "imported"
+        chamber_roster_status = "imported"
         roster_detail = (
             f"A lista oficial de deputados em exercício foi percorrida por completo: "
-            f"{len(camara_roster_rows)} nomes em {camara_roster_page_count} páginas da API."
+            f"{len(chamber_roster_rows)} nomes em {chamber_roster_page_count} páginas da API."
         )
     except Exception as error:  # Keep other chamber data importable if this source fails.
-        camara_roster_debug = f"{type(error).__name__}: {error}"
+        chamber_roster_debug = f"{type(error).__name__}: {error}"
         roster_detail = "Não foi possível consultar a lista atual de deputados da Câmara."
     sources.append(
         source_record(
             "camara_deputies_current",
             "Câmara dos Deputados: deputados em exercício",
-            CAMARA_DEPUTIES_URL,
+            CHAMBER_DEPUTIES_URL,
             "Deputados que a API oficial da Câmara lista como atualmente em exercício.",
             "Lista em vigor na consulta",
-            camara_roster_status,
+            chamber_roster_status,
             roster_detail,
             utc_now(),
-            camara_roster_debug,
+            chamber_roster_debug,
         )
     )
 
-    camara_path = RAW_DIR / f"camara-{year}.csv.zip"
+    chamber_path = RAW_DIR / f"camara-{year}.csv.zip"
     try:
-        camara_content = download(camara_url, camara_path)
-        if not zipfile.is_zipfile(io.BytesIO(camara_content)):
+        chamber_content = download(chamber_url, chamber_path)
+        if not zipfile.is_zipfile(io.BytesIO(chamber_content)):
             raise ValueError("Câmara endpoint did not return a valid ZIP archive")
-        camara_expenses, camara_stats = load_camara_expenses(
-            camara_path, year, authorities, "camara_ceap"
+        chamber_expenses, chamber_stats = load_chamber_expenses(
+            chamber_path, year, authorities, "camara_ceap"
         )
-        expenses.extend(camara_expenses)
+        expenses.extend(chamber_expenses)
         partial = year == current_year
-        camara_status = "partial" if partial else "imported"
-        camara_row_count = f"{camara_stats['rows']:,}".replace(",", ".")
+        chamber_status = "partial" if partial else "imported"
+        chamber_row_count = f"{chamber_stats['rows']:,}".replace(",", ".")
         detail = (
-            f"Arquivo anual oficial processado por completo: {camara_row_count} registros, "
-            f"com datas de emissão de {date_br(camara_stats['dateMin'])} a {date_br(camara_stats['dateMax'])}. "
-            f"O arquivo contém {camara_stats['authorityIdsInFile']} IDs: "
-            f"{camara_stats['deputyProfileIDs']} perfis de deputados e "
-            f"{camara_stats['institutionalAccounts']} contas institucionais de liderança. "
-            f"{camara_stats['negativeAmountRows']} valores negativos foram mantidos com o sinal original "
+            f"Arquivo anual oficial processado por completo: {chamber_row_count} registros, "
+            f"com datas de emissão de {date_br(chamber_stats['dateMin'])} a {date_br(chamber_stats['dateMax'])}. "
+            f"O arquivo contém {chamber_stats['authorityIdsInFile']} IDs: "
+            f"{chamber_stats['deputyProfileIDs']} perfis de deputados e "
+            f"{chamber_stats['institutionalAccounts']} contas institucionais de liderança. "
+            f"{chamber_stats['negativeAmountRows']} valores negativos foram mantidos com o sinal original "
             "(créditos/estornos, quando aplicável). "
-            f"{camara_stats['persistentIdRows']} lançamentos usam identificador documental exclusivo; "
-            f"{camara_stats['fingerprintRows']} usam ID derivado do conteúdo para preservar duplicatas "
+            f"{chamber_stats['persistentIdRows']} lançamentos usam identificador documental exclusivo; "
+            f"{chamber_stats['fingerprintRows']} usam ID derivado do conteúdo para preservar duplicatas "
             "idênticas sem identificador exclusivo."
         )
         if partial:
             detail += " O ano de 2026 ainda está em andamento; estes dados refletem o conteúdo disponível no arquivo consultado."
-        if camara_stats["fingerprintRows"]:
+        if chamber_stats["fingerprintRows"]:
             detail += " Correções nesses lançamentos podem aparecer como novos registros, pois não há ID nativo exclusivo."
-        if camara_stats["documentIdsRedacted"]:
-            detail += f" {camara_stats['documentIdsRedacted']} referências documentais ambíguas de 11 dígitos foram omitidas."
+        if chamber_stats["documentIdsRedacted"]:
+            detail += f" {chamber_stats['documentIdsRedacted']} referências documentais ambíguas de 11 dígitos foram omitidas."
     except Exception as error:
-        camara_status = "unavailable"
+        chamber_status = "unavailable"
         detail = f"Não foi possível importar o arquivo oficial de despesas da CEAP de {year}."
-        camara_debug = f"{type(error).__name__}: {error}"
-        camara_stats = {}
+        chamber_debug = f"{type(error).__name__}: {error}"
+        chamber_stats = {}
     else:
-        camara_debug = None
+        chamber_debug = None
     sources.append(
         source_record(
             "camara_ceap",
             "Câmara dos Deputados: despesas da cota parlamentar (CEAP)",
-            camara_url,
+            chamber_url,
             "Despesas da CEAP incluídas no arquivo anual oficial da Câmara para o ano solicitado.",
             f"{year} (parcial, ano em andamento)" if year == current_year else str(year),
-            camara_status,
+            chamber_status,
             detail,
             utc_now(),
-            camara_debug,
+            chamber_debug,
         )
     )
 
-    senate_roster_url = SENADO_ROSTER_URL
+    senate_roster_url = SENATE_ROSTER_URL
     senate_roster_path = RAW_DIR / "senadores-atual.xml"
     try:
         senate_content = download(
@@ -831,11 +831,11 @@ def import_year(year: int, output: Path) -> dict[str, Any]:
         )
     )
 
-    senate_url = SENADO_CEAPS_URL.format(year=year)
+    senate_url = SENATE_CEAPS_URL.format(year=year)
     senate_path = RAW_DIR / f"senado-{year}.json"
     try:
         senate_content = download(senate_url, senate_path)
-        senate_expenses, senate_stats = load_senado_expenses(
+        senate_expenses, senate_stats = load_senate_expenses(
             senate_path, year, authorities, "senado_ceaps", senate_url
         )
         expenses.extend(senate_expenses)

@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 EDITORIAL_DIR = ROOT / "ingest" / "editorial"
 if str(EDITORIAL_DIR) not in sys.path:
     sys.path.insert(0, str(EDITORIAL_DIR))
-collection = importlib.import_module("coleta")
+collection = importlib.import_module("collect")
 
 
 class EditorialCollectionTests(unittest.TestCase):
@@ -36,7 +36,7 @@ class EditorialCollectionTests(unittest.TestCase):
     def test_votes_use_the_versioned_metadata_file(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            metadata = root / "votacoes.json"
+            metadata = root / "votes.json"
             output = root / "votos.json"
             metadata.write_text(json.dumps([{"id": "123-4"}]), encoding="utf-8")
             requested = []

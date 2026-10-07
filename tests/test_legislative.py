@@ -2,7 +2,7 @@ import unittest
 from xml.etree import ElementTree as ET
 
 from ingest.legislative import (
-    add_senado_expense_authorities,
+    add_senate_expense_authorities,
     senate_exercise_status,
     senate_roster_detail,
     senate_xml_authorities,
@@ -22,15 +22,15 @@ def exercise(start, end=None, reason=None):
     return item
 
 
-def senator(code='1', uf=None, mandate_uf='MA', participation='2º Suplente', intervals=()):
+def senator(code='1', state=None, mandate_state='MA', participation='2º Suplente', intervals=()):
     item = ET.Element('Parlamentar')
     info = ET.SubElement(item, 'IdentificacaoParlamentar')
     for key, value in (('CodigoParlamentar', code), ('NomeParlamentar', f'Pessoa {code}'),
-                       ('UfParlamentar', uf), ('SiglaPartidoParlamentar', 'TESTE')):
+                       ('UfParlamentar', state), ('SiglaPartidoParlamentar', 'TESTE')):
         if value is not None:
             ET.SubElement(info, key).text = value
     mandate = ET.SubElement(item, 'Mandato')
-    for key, value in (('UfParlamentar', mandate_uf), ('DescricaoParticipacao', participation)):
+    for key, value in (('UfParlamentar', mandate_state), ('DescricaoParticipacao', participation)):
         if value is not None:
             ET.SubElement(mandate, key).text = value
     ET.SubElement(mandate, 'Exercicios').extend(intervals)
@@ -63,11 +63,11 @@ class SenateRosterTests(unittest.TestCase):
         self.assertIn('2 registros do Senado', detail)
         self.assertIn('Registros não equivalem a cadeiras', detail)
 
-    def test_uf_prefers_identification_then_mandate_and_keeps_missing_as_none(self):
-        for uf, mandate_uf, expected in [(' SP ', 'MA', 'SP'), (' ', ' MA ', 'MA'),
+    def test_state_prefers_identification_then_mandate_and_keeps_missing_as_none(self):
+        for state, mandate_state, expected in [(' SP ', 'MA', 'SP'), (' ', ' MA ', 'MA'),
                                          (None, None, None)]:
-            with self.subTest(uf=uf, mandate_uf=mandate_uf):
-                rows, _ = roster(senator(uf=uf, mandate_uf=mandate_uf, participation=None))
+            with self.subTest(state=state, mandate_state=mandate_state):
+                rows, _ = roster(senator(state=state, mandate_state=mandate_state, participation=None))
                 self.assertEqual(rows[0]['uf'], expected)
                 self.assertIsNone(rows[0]['position'])
                 self.assertIsNone(rows[0]['employmentStatus'])
@@ -93,7 +93,7 @@ class SenateRosterTests(unittest.TestCase):
         rows, _ = roster(senator(intervals=[exercise('2026-08-05', '2026-10-06')]))
         authorities = {row['id']: row for row in rows}
         original = dict(authorities['senado:1'])
-        add_senado_expense_authorities(
+        add_senate_expense_authorities(
             [{'codSenador': 1, 'nomeSenador': 'Nome da despesa'},
              {'codSenador': 3, 'nomeSenador': 'Pessoa histórica'}],
             authorities, 'senado_ceaps', SOURCE_URL,

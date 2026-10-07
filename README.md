@@ -2,7 +2,7 @@
 
 Protótipo para entender, em linguagem simples, gastos, presença e votações de deputados(as) e senadores(as). Alertas indicam registros para conferir, não conclusões de irregularidade.
 
-É um projeto pessoal, independente e apartidário, sem vínculo com partidos, políticos ou órgãos públicos. Ele apenas reúne e organiza informações que os próprios órgãos já publicam. Veja o [Aviso legal](AVISO-LEGAL.md).
+É um projeto pessoal, independente e apartidário, sem vínculo com partidos, políticos ou órgãos públicos. Ele apenas reúne e organiza informações que os próprios órgãos já publicam. Veja o [Aviso legal](LEGAL-NOTICE.md).
 
 ## Rodar localmente
 
@@ -69,4 +69,4 @@ O servidor usa `127.0.0.1` por padrão e serve somente o app e a API. O código 
 
 ## Licença
 
-Código sob a [licença MIT](LICENSE). Os dados exibidos pertencem às fontes públicas indicadas em [Dados e SQLite](docs/data.md); veja também o [Aviso legal](AVISO-LEGAL.md).
+Código sob a [licença MIT](LICENSE). Os dados exibidos pertencem às fontes públicas indicadas em [Dados e SQLite](docs/data.md); veja também o [Aviso legal](LEGAL-NOTICE.md).

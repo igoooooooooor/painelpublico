@@ -7,12 +7,12 @@ const vm = require('node:vm');
 function load(presence = [], request = async () => ({})) {
   const context = {
     DATA: { presencaTodos: presence, votacoes: [], votosCompletos: {}, perfis: { profiles: {} } }, URL,
-    state: { view: 'inicio', quiz: null }, cid: { cache: new Map() }, cidGet: request,
-    cidErroMsg: error => error.message, rerender() {},
+    state: { view: 'home', quiz: null }, citizenState: { cache: new Map() }, citizenGet: request,
+    citizenErrorMessage: error => error.message, rerender() {},
     esc: value => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;'),
     brl: value => 'R$ ' + value.toLocaleString('pt-BR'), mil: value => String(Math.round(value / 1000)),
-    cidMil: value => 'R$ ' + value, dmy: value => value.slice(0, 10),
-    cidAvatar: person => `<img data-id="${person.id}">`, extPresBar: () => '<span>barra</span>',
+    formatCitizenAmount: value => 'R$ ' + value, formatShortDate: value => value.slice(0, 10),
+    citizenAvatar: person => `<img data-id="${person.id}">`, attendanceBar: () => '<span>barra</span>',
     skel: () => 'Carregando', CATS_H: ['--cat1', '--cat2'],
   };
   vm.createContext(context);
@@ -37,7 +37,7 @@ test('home attendance considers every valid record, including a person beyond th
   rows.push({ id: 14, dias: 0, presente: 0, justificadas: 0, falta: 0 });
   const html = load(rows).homePresenceCard();
   assert.match(html, /Pessoa 13/);
-  assert.match(html, /data-pol="camara:13"/);
+  assert.match(html, /data-politician="camara:13"/);
   assert.match(html, /todos os 13 registros válidos/);
   assert.doesNotMatch(html, /Pessoa 14|NaN/);
 });
@@ -61,9 +61,9 @@ test('home category answer and ranking reflect complete API results, not named s
   assert.match(html, /Estorno R\$ -5/);
   assert.doesNotMatch(html, /Divulgação levou|NaN/);
   const ranking = ctx.homeTopCard(data);
-  assert.match(ranking, /data-pol="camara:100"/);
+  assert.match(ranking, /data-politician="camara:100"/);
   assert.match(ranking, /entre 13 deputados com dados/);
-  assert.equal((ranking.match(/data-pol=/g) || []).length, 5);
+  assert.equal((ranking.match(/data-politician=/g) || []).length, 5);
 });
 
 test('failed home summary stays explicit and can retry without any sample fallback', async () => {

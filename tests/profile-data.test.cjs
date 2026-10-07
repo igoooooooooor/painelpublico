@@ -20,7 +20,7 @@ function load(data = {}, { width = 390 } = {}) {
       documentElement: { clientWidth: width },
       addEventListener: (type, listener) => listeners.set(type, listener),
       getElementById: id => elements.get(id) || null,
-      querySelectorAll: selector => selector.includes('.cid-detail-toggle') ? accordionButtons : [],
+      querySelectorAll: selector => selector.includes('.citizen-detail-toggle') ? accordionButtons : [],
       _elements: elements,
       _accordionButtons: accordionButtons,
     },
@@ -41,16 +41,16 @@ test('canonical identities use API and profile snapshots without editorial roste
     projetos: { lista: [{ id: i + 1 }] }, custo: { gabineteGasto: 1000 },
   })) });
   assert.equal(ctx.profileData(1).id, 'camara:1');
-  assert.equal(ctx.profileData('camara:1').contato.email, 'dep@example.gov.br');
-  assert.equal(ctx.profileData({ id: 'camara:1', name: 'Nome no cadastro' }).pessoa.name, 'Nome no cadastro');
+  assert.equal(ctx.profileData('camara:1').contact.email, 'dep@example.gov.br');
+  assert.equal(ctx.profileData({ id: 'camara:1', name: 'Nome no cadastro' }).person.name, 'Nome no cadastro');
   const outsideOldSample = ctx.profileData('camara:12');
-  assert.equal(outsideOldSample.pessoa.name, undefined);
-  assert.equal(outsideOldSample.pessoa.party, undefined);
-  assert.equal(outsideOldSample.contato, null);
-  assert.equal(outsideOldSample.projetos, null);
-  assert.equal(outsideOldSample.gabinete, null);
+  assert.equal(outsideOldSample.person.name, undefined);
+  assert.equal(outsideOldSample.person.party, undefined);
+  assert.equal(outsideOldSample.contact, null);
+  assert.equal(outsideOldSample.projects, null);
+  assert.equal(outsideOldSample.office, null);
   assert.equal('editorial' in outsideOldSample, false);
-  assert.equal(ctx.profileData('senado:1').pessoa.role, 'senador');
+  assert.equal(ctx.profileData('senado:1').person.role, 'senador');
 });
 
 test('presence rejects zero denominators and incoherent counts without manufacturing attendance', () => {
@@ -70,8 +70,8 @@ test('missing vote rows never become absences and secret votes never reveal a ch
   const ctx = load({ votacoes: [open, secret], presencaTodos: [{ id: 2 }],
     votosCompletos: { v1: [[1, 'Pessoa', 'P', 'SP', 'Sim']], v2: [[1, 'Pessoa', 'P', 'SP', 'Não']] } });
   assert.equal(ctx.profileVoteRows(open).length, 1);
-  assert.equal(ctx.profileVotes('camara:2')[0].voto, null);
-  assert.equal(ctx.profileVotes('camara:1')[1].voto, 'Presente');
+  assert.equal(ctx.profileVotes('camara:2')[0].recordedVote, null);
+  assert.equal(ctx.profileVotes('camara:1')[1].recordedVote, 'Presente');
   assert.equal(ctx.profileVotes('senado:1').length, 0);
 });
 
@@ -93,8 +93,8 @@ test('Senate activity loads once on demand and keeps identities and non-vote rec
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(ctx.profileSenateLoading(), false);
   assert.equal(ctx.profilePresence('senado:1'), null);
-  assert.deepEqual(Array.from(ctx.profileVotes('senado:1'), r => r.voto), ['Sim', 'Presente', 'Atividade parlamentar', 'Presidiu']);
-  assert.ok(ctx.profileVotes('senado:2').every(r => r.voto === null));
+  assert.deepEqual(Array.from(ctx.profileVotes('senado:1'), record => record.recordedVote), ['Sim', 'Presente', 'Atividade parlamentar', 'Presidiu']);
+  assert.ok(ctx.profileVotes('senado:2').every(record => record.recordedVote === null));
   assert.equal(ctx.profileVotes('camara:1').length, 0);
   assert.equal(calls.length, 1);
 });
@@ -117,10 +117,10 @@ test('Senate secret votes are excluded even if a malformed snapshot contains a c
 test('every legislative profile has explicit coverage for salary, staff, contact and projects', () => {
   const ctx = load();
   const html = ctx.profileSectionsHTML({ id: 'senado:9', role: 'senador' }, {
-    gastos: '<p>Slot de gastos</p>', alertas: '<p>Slot de alertas</p>',
-    votos: '<p>Slot de votos</p>', fontes: '<p>Slot de fontes</p>',
+    expenses: '<p>Slot de gastos</p>', alerts: '<p>Slot de alertas</p>',
+    votes: '<p>Slot de votos</p>', sources: '<p>Slot de fontes</p>',
   });
-  assert.match(html, /cid-details/);
+  assert.match(html, /citizen-details/);
   assert.match(html, /subsídio bruto mensal de referência do cargo/);
   assert.match(html, /Pagamento individual, descontos e outras verbas não foram importados/);
   assert.match(html, /Gastos com a equipe ainda não importados/);
@@ -131,14 +131,14 @@ test('every legislative profile has explicit coverage for salary, staff, contact
 });
 
 test('shared detail accordions keep their DOM order, accessible controls and responsive defaults', () => {
-  const keys = ['gastos', 'alertas', 'votos', 'projetos', 'equipe', 'contato', 'mandato', 'fontes'];
-  const slots = { gastos: '<p>Gastos</p>', alertas: '<p>Alertas</p>', votos: '<p>Votos</p>', fontes: '<p>Fontes</p>' };
+  const keys = ['expenses', 'alerts', 'votes', 'projects', 'staff', 'contact', 'mandate', 'sources'];
+  const slots = { expenses: '<p>Gastos</p>', alerts: '<p>Alertas</p>', votes: '<p>Votos</p>', sources: '<p>Fontes</p>' };
   const mobile = load().profileSectionsHTML({ id: 'senado:9', role: 'senador' }, slots);
   const desktop = load({}, { width: 1024 }).profileSectionsHTML({ id: 'senado:9', role: 'senador' }, slots);
   const domKeys = html => [...html.matchAll(/data-profile-section=["']([^"']+)["']/g)].map(match => match[1]);
   assert.deepEqual(domKeys(mobile), keys);
   assert.deepEqual(domKeys(desktop), keys);
-  assert.match(mobile, /<div class="cid-details[^"]*"/);
+  assert.match(mobile, /<div class="citizen-details[^"]*"/);
 
   for (const html of [mobile, desktop]) {
     for (const key of keys) {
@@ -159,17 +159,17 @@ test('shared detail accordions keep their DOM order, accessible controls and res
 
   const expanded = html => Object.fromEntries([...html.matchAll(/<button[^>]*data-profile-toggle=["']([^"']+)["'][^>]*aria-expanded=["'](true|false)["']/g)]
     .map(match => [match[1], match[2] === 'true']));
-  assert.deepEqual(expanded(mobile), Object.fromEntries(keys.map(key => [key, key === 'gastos'])));
-  assert.deepEqual(expanded(desktop), Object.fromEntries(keys.map(key => [key, ['gastos', 'votos'].includes(key)])));
+  assert.deepEqual(expanded(mobile), Object.fromEntries(keys.map(key => [key, key === 'expenses'])));
+  assert.deepEqual(expanded(desktop), Object.fromEntries(keys.map(key => [key, ['expenses', 'votes'].includes(key)])));
 });
 
 test('accordion choices update their panel and persist when the profile HTML is rendered again', () => {
   const ctx = load();
-  const slots = { gastos: '<p>Gastos</p>', alertas: '<p>Alertas</p>', votos: '<p>Votos</p>', fontes: '<p>Fontes</p>' };
+  const slots = { expenses: '<p>Gastos</p>', alerts: '<p>Alertas</p>', votes: '<p>Votos</p>', sources: '<p>Fontes</p>' };
   const value = { id: 'camara:1', role: 'deputado' };
   const html = ctx.profileSectionsHTML(value, slots);
-  const section = html.match(/<section[^>]*data-profile-section="alertas"[\s\S]*?<\/section>/)?.[0] || '';
-  const tag = section.match(/<button[^>]*data-profile-toggle="alertas"[^>]*>/)?.[0] || '';
+  const section = html.match(/<section[^>]*data-profile-section="alerts"[\s\S]*?<\/section>/)?.[0] || '';
+  const tag = section.match(/<button[^>]*data-profile-toggle="alerts"[^>]*>/)?.[0] || '';
   const panelId = tag.match(/aria-controls="([^"]+)"/)?.[1];
   assert.ok(panelId);
   const panel = { hidden: true };
@@ -179,9 +179,9 @@ test('accordion choices update their panel and persist when the profile HTML is 
     'aria-controls': panelId,
   };
   const button = {
-    dataset: { profileToggle: 'alertas', profileId: 'camara:1' },
+    dataset: { profileToggle: 'alerts', profileId: 'camara:1' },
     getAttribute(name) {
-      if (name === 'data-profile-toggle') return 'alertas';
+      if (name === 'data-profile-toggle') return 'alerts';
       if (name === 'data-profile-id') return 'camara:1';
       return attrs[name] ?? null;
     },
@@ -191,31 +191,31 @@ test('accordion choices update their panel and persist when the profile HTML is 
   assert.equal(ctx.profileToggle(button), true);
   assert.equal(panel.hidden, false);
   let rerendered = ctx.profileSectionsHTML(value, slots);
-  assert.match(rerendered, /data-profile-toggle="alertas"[^>]*aria-expanded="true"/);
-  assert.doesNotMatch(rerendered.match(/<div class="cid-detail-body"[^>]*id="[^"]*alertas"[^>]*>/)?.[0] || '', / hidden/);
+  assert.match(rerendered, /data-profile-toggle="alerts"[^>]*aria-expanded="true"/);
+  assert.doesNotMatch(rerendered.match(/<div class="citizen-detail-body"[^>]*id="[^"]*alerts"[^>]*>/)?.[0] || '', / hidden/);
 
   assert.equal(ctx.profileToggle(button), false);
   assert.equal(panel.hidden, true);
   rerendered = ctx.profileSectionsHTML(value, slots);
-  assert.match(rerendered, /data-profile-toggle="alertas"[^>]*aria-expanded="false"/);
+  assert.match(rerendered, /data-profile-toggle="alerts"[^>]*aria-expanded="false"/);
 });
 
 test('responsive refresh applies defaults and preserves explicit accordion choices', () => {
   const ctx = load();
-  const slots = { gastos: '<p>Gastos</p>', alertas: '<p>Alertas</p>', votos: '<p>Votos</p>', fontes: '<p>Fontes</p>' };
+  const slots = { expenses: '<p>Gastos</p>', alerts: '<p>Alertas</p>', votes: '<p>Votos</p>', sources: '<p>Fontes</p>' };
   const html = ctx.profileSectionsHTML({ id: 'camara:1', role: 'deputado' }, slots);
-  const keys = ['gastos', 'alertas', 'votos', 'projetos', 'equipe', 'contato', 'fontes'];
+  const keys = ['expenses', 'alerts', 'votes', 'projects', 'staff', 'contact', 'sources'];
   for (const key of keys) {
     const section = html.match(new RegExp(`<section[^>]*data-profile-section="${key}"[\\s\\S]*?<\\/section>`))?.[0] || '';
     const tag = section.match(/<button[^>]*>/)?.[0] || '';
     const button = makeButton(tag, key, 'camara:1', ctx.document._elements);
     ctx.document._accordionButtons.push(button);
   }
-  const alertas = ctx.document._accordionButtons.find(button => button.dataset.profileToggle === 'alertas');
-  const votos = ctx.document._accordionButtons.find(button => button.dataset.profileToggle === 'votos');
-  ctx.profileToggle(alertas); // Explicitly open the mobile-collapsed section.
-  ctx.profileToggle(votos);
-  ctx.profileToggle(votos); // Explicitly keep desktop's default-open section closed.
+  const alerts = ctx.document._accordionButtons.find(button => button.dataset.profileToggle === 'alerts');
+  const votes = ctx.document._accordionButtons.find(button => button.dataset.profileToggle === 'votes');
+  ctx.profileToggle(alerts); // Explicitly open the mobile-collapsed section.
+  ctx.profileToggle(votes);
+  ctx.profileToggle(votes); // Explicitly keep desktop's default-open section closed.
 
   ctx.__setWidth(1024);
   ctx.profileRefreshAccordions();
@@ -223,12 +223,12 @@ test('responsive refresh applies defaults and preserves explicit accordion choic
     button.dataset.profileToggle,
     button.getAttribute('aria-expanded') === 'true',
   ]));
-  assert.equal(current.gastos, true);
-  assert.equal(current.projetos, false);
-  assert.equal(current.alertas, true);
-  assert.equal(current.votos, false);
-  assert.equal(ctx.document._elements.get(alertas.getAttribute('aria-controls')).hidden, false);
-  assert.equal(ctx.document._elements.get(votos.getAttribute('aria-controls')).hidden, true);
+  assert.equal(current.expenses, true);
+  assert.equal(current.projects, false);
+  assert.equal(current.alerts, true);
+  assert.equal(current.votes, false);
+  assert.equal(ctx.document._elements.get(alerts.getAttribute('aria-controls')).hidden, false);
+  assert.equal(ctx.document._elements.get(votes.getAttribute('aria-controls')).hidden, true);
 });
 
 function makeButton(tag, key, profile, elements) {
@@ -418,9 +418,9 @@ test('project filters expose empty results and persist per profile without repla
 });
 
 test('2026 election results are stated only for a single TSE match, in plain language', () => {
-  const fonte = { sourceUrl: 'https://dadosabertos.tse.jus.br/dataset/candidatos-2026', fetchedAt: '2026-10-07T20:00:00+00:00', geradoNoTse: '07/10/2026 16:30:39' };
-  const base = { fonte, metodo: 'Nome civil e data de nascimento, sem CPF.', segundoTurno: '2026-10-25' };
-  const found = (cargo, uf, situacao) => ({ ...base, status: 'encontrada', cargo, uf, situacao, dataEleicao: '2026-10-04' });
+  const sourceInfo = { sourceUrl: 'https://dadosabertos.tse.jus.br/dataset/candidatos-2026', fetchedAt: '2026-10-07T20:00:00+00:00', geradoNoTse: '07/10/2026 16:30:39' };
+  const base = { fonte: sourceInfo, metodo: 'Nome civil e data de nascimento, sem CPF.', segundoTurno: '2026-10-25' };
+  const found = (role, region, situation) => ({ ...base, status: 'encontrada', cargo: role, uf: region, situacao: situation, dataEleicao: '2026-10-04' });
   const ctx = load({ perfis: { profiles: {
     'camara:1': { role: 'deputado', eleicao2026: found('DEPUTADO FEDERAL', 'SP', 'ELEITO POR QP') },
     'camara:2': { role: 'deputado', eleicao2026: found('SENADOR', 'MG', 'NÃO ELEITO') },
@@ -432,19 +432,19 @@ test('2026 election results are stated only for a single TSE match, in plain lan
     'senado:8': { role: 'senador', eleicao2026: found('1º SUPLENTE', 'PA', 'ELEITO') },
   } } });
   const e = id => ctx.profileElection(ctx.profileData(id));
-  assert.equal(e('camara:1').curto, 'Reeleito(a) em 2026');
-  assert.equal(e('camara:1').frase, 'Reeleito(a) deputado(a) federal por SP na eleição de 4/10/2026.');
-  assert.equal(e('camara:2').curto, 'Não eleito(a) para senador(a)');
-  assert.equal(e('camara:2').frase, 'Concorreu a senador(a) por MG em 2026 e não foi eleito(a).');
-  assert.equal(e('senado:3').curto, '2º turno para governador(a)');
-  assert.equal(e('senado:3').frase, 'Disputa o 2º turno para governador(a) por AM em 25/10/2026.');
-  assert.equal(e('camara:4').curto, 'Não reeleito(a) em 2026');
-  assert.equal(e('camara:4').frase, 'Concorreu à reeleição para deputado(a) federal por RJ em 2026 e ficou como suplente.');
-  assert.equal(e('camara:5').curto, 'Candidato(a) a deputado(a) federal em 2026');
-  assert.equal(e('camara:6').curto, null);
-  assert.match(e('camara:6').frase, /^Não encontramos candidatura em 2026/);
-  assert.equal(e('senado:7').frase, 'Disputa o 2º turno para presidente em 25/10/2026.');
-  assert.equal(e('senado:8').curto, 'Eleito(a) 1º(ª) suplente de senador(a) em 2026');
+  assert.equal(e('camara:1').summary, 'Reeleito(a) em 2026');
+  assert.equal(e('camara:1').sentence, 'Reeleito(a) deputado(a) federal por SP na eleição de 4/10/2026.');
+  assert.equal(e('camara:2').summary, 'Não eleito(a) para senador(a)');
+  assert.equal(e('camara:2').sentence, 'Concorreu a senador(a) por MG em 2026 e não foi eleito(a).');
+  assert.equal(e('senado:3').summary, '2º turno para governador(a)');
+  assert.equal(e('senado:3').sentence, 'Disputa o 2º turno para governador(a) por AM em 25/10/2026.');
+  assert.equal(e('camara:4').summary, 'Não reeleito(a) em 2026');
+  assert.equal(e('camara:4').sentence, 'Concorreu à reeleição para deputado(a) federal por RJ em 2026 e ficou como suplente.');
+  assert.equal(e('camara:5').summary, 'Candidato(a) a deputado(a) federal em 2026');
+  assert.equal(e('camara:6').summary, null);
+  assert.match(e('camara:6').sentence, /^Não encontramos candidatura em 2026/);
+  assert.equal(e('senado:7').sentence, 'Disputa o 2º turno para presidente em 25/10/2026.');
+  assert.equal(e('senado:8').summary, 'Eleito(a) 1º(ª) suplente de senador(a) em 2026');
   assert.equal(ctx.profileElection(ctx.profileData('camara:99')), null);
   const html = ctx.profileSectionsHTML('camara:1');
   assert.match(html, /<b>Eleição de 2026<\/b><p>Reeleito\(a\) deputado\(a\) federal por SP na eleição de 4\/10\/2026\.<\/p>/);
@@ -481,15 +481,15 @@ test('profiles outside the old sample load on demand once and keep detail headin
   ctx.rerender = () => calls.push('rerender');
   ctx.fetch = url => { calls.push(url); return new Promise(ok => { release = () => ok({ ok: true, json: async () => ({ name: 'Ana', role: 'deputado', contato: { email: 'ana@camara.leg.br' } }) }); }); };
   const loading = ctx.profileSectionsHTML({ id: 'camara:513', role: 'deputado' });
-  assert.match(loading, /data-profile-section=["']projetos["']/);
-  assert.match(loading, /data-profile-section=["']equipe["']/);
-  assert.match(loading, /data-profile-section=["']contato["']/);
-  assert.match(loading, /data-profile-section=["']fontes["']/);
+  assert.match(loading, /data-profile-section=["']projects["']/);
+  assert.match(loading, /data-profile-section=["']staff["']/);
+  assert.match(loading, /data-profile-section=["']contact["']/);
+  assert.match(loading, /data-profile-section=["']sources["']/);
   assert.match(loading, /<skeleton>/);
   ctx.profileData('camara:513');
   assert.deepEqual(calls, ['/api/c/perfil/camara%3A513']);
   release(); await new Promise(r => setTimeout(r, 0)); await new Promise(r => setTimeout(r, 0));
-  assert.equal(ctx.profileData('camara:513').contato.email, 'ana@camara.leg.br');
+  assert.equal(ctx.profileData('camara:513').contact.email, 'ana@camara.leg.br');
   assert.equal(calls.filter(c => c !== 'rerender').length, 1);
   assert.ok(calls.includes('rerender'));
 

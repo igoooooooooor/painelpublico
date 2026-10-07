@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SPEC = importlib.util.spec_from_file_location("painel_build", ROOT / "scripts" / "build.py")
+SPEC = importlib.util.spec_from_file_location("dashboard_build", ROOT / "scripts" / "build.py")
 BUILD = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(BUILD)
 
@@ -79,7 +79,7 @@ class BuildTests(unittest.TestCase):
             self.assertEqual(data["senado"], {"sobDemanda": False})
 
     def test_editorial_sample_is_ignored_and_all_vote_rows_are_kept(self):
-        metadata = json.loads((ROOT / "frontend" / "data" / "votacoes.json").read_text(encoding="utf-8"))
+        metadata = json.loads((ROOT / "frontend" / "data" / "votes.json").read_text(encoding="utf-8"))
         selected_id = metadata[0]["id"]
         rows = [
             [10000 + index, f"Parlamentar fictício {index}", "XP" if index < 8 else "YZ",
@@ -119,7 +119,7 @@ class BuildTests(unittest.TestCase):
             self.assertNotIn("votos", vote)
 
     def test_versioned_vote_metadata_has_only_card_and_summary_fields(self):
-        metadata = json.loads((ROOT / "frontend" / "data" / "votacoes.json").read_text(encoding="utf-8"))
+        metadata = json.loads((ROOT / "frontend" / "data" / "votes.json").read_text(encoding="utf-8"))
         allowed = {
             "id", "proposicao", "titulo", "naPratica", "situacao", "texto", "ficha", "curto",
             "data", "sim", "nao", "aprovada", "secreta",

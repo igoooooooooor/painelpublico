@@ -12,13 +12,13 @@ from urllib.parse import urljoin, urlsplit
 
 from paths import CACHE, ROOT, SNAPSHOTS
 
-CAMARA_API = "https://dadosabertos.camara.leg.br/api/v2"
-DEPUTIES_URL = CAMARA_API + "/deputados?" + urllib.parse.urlencode({
+CHAMBER_API = "https://dadosabertos.camara.leg.br/api/v2"
+DEPUTIES_URL = CHAMBER_API + "/deputados?" + urllib.parse.urlencode({
     "itens": 100, "pagina": 1, "ordem": "ASC", "ordenarPor": "nome",
 })
 DEPUTIES_CACHE = CACHE / "deps-completo.json"
 LEGACY_DEPUTIES_CACHE = CACHE / "deps.json"
-VOTE_METADATA = ROOT / "frontend" / "data" / "votacoes.json"
+VOTE_METADATA = ROOT / "frontend" / "data" / "votes.json"
 
 
 def get(url, filename, js=False):
@@ -87,7 +87,7 @@ def write_json(path, data):
 def vote_metadata(path=VOTE_METADATA):
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(data, list) or any(not isinstance(item, dict) or not item.get("id") for item in data):
-        raise ValueError("frontend/data/votacoes.json deve listar os IDs das votações selecionadas")
+        raise ValueError("frontend/data/votes.json deve listar os IDs das votações selecionadas")
     return data
 
 
@@ -96,7 +96,7 @@ def collect_votes(fetch=get, output=SNAPSHOTS / "votos.json", metadata_path=VOTE
     out = {}
     for vote in vote_metadata(metadata_path):
         vote_id = str(vote["id"])
-        response = fetch(f"{CAMARA_API}/votacoes/{vote_id}/votos", f"votos_{vote_id}.json", js=True)
+        response = fetch(f"{CHAMBER_API}/votacoes/{vote_id}/votos", f"votos_{vote_id}.json", js=True)
         if not isinstance(response, dict) or not isinstance(response.get("dados"), list):
             raise ValueError(f"Resposta de votos incompleta para {vote_id}")
         participants = []
@@ -191,20 +191,20 @@ def build_presence(output=SNAPSHOTS / "presenca.json"):
 def main(argv=None):
     args = list(sys.argv[1:] if argv is None else argv)
     if not args:
-        raise SystemExit("Uso: coleta.py votos | deps | pres SEGUNDOS | build")
-    command = args[0]
-    if command == "votos":
+        raise SystemExit("Uso: collect.py votes | deputies | presence SEGUNDOS | build")
+    command = {"votos": "votes", "deps": "deputies", "pres": "presence"}.get(args[0], args[0])
+    if command == "votes":
         collect_votes()
-    elif command == "deps":
+    elif command == "deputies":
         collect_deputies()
-    elif command == "pres":
+    elif command == "presence":
         if len(args) < 2:
-            raise SystemExit("Uso: coleta.py pres SEGUNDOS")
+            raise SystemExit("Uso: collect.py presence SEGUNDOS")
         collect_presence(args[1])
     elif command == "build":
         build_presence()
     else:
-        raise SystemExit("Uso: coleta.py votos | deps | pres SEGUNDOS | build")
+        raise SystemExit("Uso: collect.py votes | deputies | presence SEGUNDOS | build")
 
 
 if __name__ == "__main__":

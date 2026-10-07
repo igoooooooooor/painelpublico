@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from ingest import senado_attendance as attendance
+from ingest import senate_attendance as attendance
 
 
 def roster(*rows):
@@ -16,9 +16,9 @@ def roster(*rows):
             "role": "senador",
             "sourceId": attendance.SOURCE_ID,
             "party": party,
-            "uf": uf,
+            "uf": state,
         }
-        for identifier, name, party, uf in rows
+        for identifier, name, party, state in rows
     ]}
 
 
@@ -385,7 +385,7 @@ Compareceram 2 senadores."""
             )
 
         errors = []
-        section, stats = attendance._build_presenca_section(
+        section, stats = attendance._build_attendance_section(
             2026, date(2026, 1, 1), date(2026, 1, 31),
             [month], [copy("123"), copy("124")], payload, errors,
         )

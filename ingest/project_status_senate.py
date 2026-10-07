@@ -81,7 +81,7 @@ def _project_id(row: dict[str, Any]) -> str | None:
     return text if text.isdigit() else None
 
 
-def _tramitando(value: Any) -> bool | None:
+def _in_progress(value: Any) -> bool | None:
     folded = _fold(value)
     if folded in {"S", "SIM", "TRUE", "1"}:
         return True
@@ -149,10 +149,10 @@ def needs_detail(row: Any) -> bool:
     code = row.get("siglaSituacao")
     if _state_needs_detail(code, situation):
         return True
-    if _tramitando(row.get("tramitando")) is False:
+    if _in_progress(row.get("tramitando")) is False:
         return True
     # A missing flag or situation is incomplete; do not infer activity from it.
-    if _tramitando(row.get("tramitando")) is None or not _text(situation):
+    if _in_progress(row.get("tramitando")) is None or not _text(situation):
         return True
     return False
 
@@ -314,11 +314,11 @@ def _merge_norms(row_value: Any, detail_value: Any) -> tuple[list[dict[str, Any]
 def _principal_history(detail: Any) -> tuple[dict[str, Any] | None, str | None, str | None]:
     if not isinstance(detail, dict):
         return None, None, None
-    autuacoes = detail.get("autuacoes")
-    if not isinstance(autuacoes, list):
+    filing_records = detail.get("autuacoes")
+    if not isinstance(filing_records, list):
         return None, None, None
     principal = [
-        item for item in autuacoes
+        item for item in filing_records
         if isinstance(item, dict) and _fold(item.get("descricao")) == "AUTUACAO PRINCIPAL"
     ]
     if len(principal) != 1:
@@ -400,7 +400,7 @@ def normalize_status(
     current_code = row.get("siglaSituacao")
     current_kind = _state_kind(current_code, current_description)
     current_unclassified = _unclassified_final(current_code, current_description)
-    active = _tramitando(row.get("tramitando"))
+    active = _in_progress(row.get("tramitando"))
     history_state, history_updated, history_error = _principal_history(detail)
     history_description = _text(history_state.get("descricao"), 300) if history_state else None
     history_code = history_state.get("sigla") if history_state else None

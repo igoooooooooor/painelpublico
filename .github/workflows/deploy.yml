@@ -5,7 +5,7 @@
 #   DEPLOY_HOST     IP do servidor (ex.: 203.0.113.10)
 #   DEPLOY_USER     usuário SSH (ex.: ubuntu)
 #   DEPLOY_SSH_KEY  chave privada criada só para o deploy (a pública fica no servidor)
-name: Testar e publicar
+name: Test and deploy
 
 on:
   push:
@@ -37,7 +37,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Chave SSH
+      - name: Configure SSH key
         env:
           KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           HOST: ${{ secrets.DEPLOY_HOST }}
@@ -46,11 +46,11 @@ jobs:
           printf '%s\n' "$KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
           ssh-keyscan -T 15 "$HOST" >> ~/.ssh/known_hosts
           printf 'Host painel\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/deploy\n' "$HOST" "${{ secrets.DEPLOY_USER }}" > ~/.ssh/config
-      - name: Enviar código e montar no servidor
+      - name: Upload code and build on server
         run: |
           rsync -az --delete --rsync-path="sudo rsync" --exclude-from=deploy/rsync-exclude.txt ./ painel:/opt/painel/app/
-          ssh painel "sudo sh -c 'cd /opt/painel/app && PAINEL_SNAPSHOTS=/opt/painel/data/snapshots python3 scripts/build.py && chown -R painel:painel /opt/painel/app && install -m 0644 deploy/painel.service /etc/systemd/system/painel.service && systemctl daemon-reload && systemctl restart painel'"
-      - name: Conferir se está no ar
+          ssh painel "sudo sh -c 'cd /opt/painel/app && PAINEL_SNAPSHOTS=/opt/painel/data/snapshots python3 scripts/build.py && chown -R painel:painel /opt/painel/app && install -m 0644 deploy/dashboard.service /etc/systemd/system/painel.service && systemctl daemon-reload && systemctl restart painel'"
+      - name: Check site availability
         run: |
           for i in 1 2 3 4 5; do ssh painel 'curl -fsS http://127.0.0.1:8000/healthz' && exit 0; sleep 3; done
           echo "O site não respondeu após o deploy"; exit 1

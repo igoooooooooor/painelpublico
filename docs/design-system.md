@@ -16,7 +16,7 @@ Os valores de cor e tipografia são definidos em `tokens.css`. O tema claro é o
 - `.card` e `.tile` são superfícies neutras; `.card.hero` usa a paleta de alto contraste.
 - `.fchip`, `.pill` e `.search` são controles visuais compartilhados. Campos usam `--control-height`, `--radius-control` e `--line`.
 - `.muted` e `.mono` padronizam texto secundário e números tabulares.
-- Regras de telas específicas ficam em `cidadao.css`; componentes compartilhados e navegação ficam em `base.css`.
+- Regras de telas específicas ficam em `citizen.css`; componentes compartilhados e navegação ficam em `base.css`.
 
 ## Bordas, estados e acessibilidade
 

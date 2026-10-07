@@ -1,6 +1,6 @@
 import unittest
 
-from ingest.project_status_camara import needs_detail, normalize_status
+from ingest.project_status_chamber import needs_detail, normalize_status
 
 
 CONSULTED_AT = "2026-10-07T18:00:00+00:00"
@@ -8,7 +8,7 @@ PROJECT_URI = "https://dadosabertos.camara.leg.br/api/v2/proposicoes/123"
 ARCHIVE_URL = "https://dadosabertos.camara.leg.br/arquivos/proposicoes/json/proposicoes-2026.json"
 
 
-class ProjectStatusCamaraTests(unittest.TestCase):
+class ProjectStatusChamberTests(unittest.TestCase):
     def annual_row(self, *, proposition_type="PL", description="Aguardando Parecer", **status_fields):
         latest = {
             "data": "2026-09-01T19:34:35",

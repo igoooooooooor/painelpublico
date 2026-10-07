@@ -182,7 +182,7 @@ nav.tabs button[aria-current="page"] { color: var(--accent); }
 .empty { padding: 24px 18px; text-align: center; }
 @media(max-width:360px) { .radar-filters { grid-template-columns: 1fr; } .radar-metrics b { font-size: 21px; } .rank-row { gap: 6px; } }
 
-/* Skeleton de carregamento (skel() em cidadao-view.js): mesma forma do conteúdo, sem texto. */
+/* Skeleton de carregamento (skel() em citizen-view.js): mesma forma do conteúdo, sem texto. */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .sk { display: block; flex: none; max-width: 100%; border-radius: 7px; background-color: color-mix(in srgb, var(--ink) 9%, var(--surface)); }
 .sk-o { border-radius: 50%; }

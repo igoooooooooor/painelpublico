@@ -62,8 +62,8 @@ class ProdServerTests(unittest.TestCase):
         snap = Path(self.temp.name) / 'perfis.json'
         snap.write_text(json.dumps({'generatedAt': 'x', 'profiles': {'camara:1': {'name': 'Ana', 'projetos': {'total': 2}}}}),
                         encoding='utf-8')
-        original = srv.perfis.SNAPSHOTS_PATH
-        srv.perfis.SNAPSHOTS_PATH = Path(self.temp.name)
+        original = srv.profiles.SNAPSHOTS_PATH
+        srv.profiles.SNAPSHOTS_PATH = Path(self.temp.name)
         try:
             _, found = self.get('/api/c/perfil/camara%3A1')
             self.assertEqual(found['name'], 'Ana')
@@ -73,16 +73,16 @@ class ProdServerTests(unittest.TestCase):
             self.assertEqual(ctx.exception.code, 404)
             ctx.exception.close()
         finally:
-            srv.perfis.SNAPSHOTS_PATH = original
+            srv.profiles.SNAPSHOTS_PATH = original
 
     def test_senate_activity_is_reloaded_and_served_without_a_database(self):
         snapshots = Path(self.temp.name) / 'snapshots'
         snapshots.mkdir()
         snap = snapshots / 'senado-atividade.json'
-        original = srv.perfis.SNAPSHOTS_PATH
+        original = srv.profiles.SNAPSHOTS_PATH
         old_db = self.httpd.db_path
         self.httpd.db_path = Path(self.temp.name) / 'missing.sqlite3'
-        srv.perfis.SNAPSHOTS_PATH = snapshots
+        srv.profiles.SNAPSHOTS_PATH = snapshots
         try:
             snap.write_text(json.dumps({'generatedAt': 'first', 'year': 2026}), encoding='utf-8')
             response, first = self.get('/api/c/senado/atividade')
@@ -101,22 +101,22 @@ class ProdServerTests(unittest.TestCase):
             self.assertEqual(ctx.exception.code, 404)
             ctx.exception.close()
         finally:
-            srv.perfis.SNAPSHOTS_PATH = original
+            srv.profiles.SNAPSHOTS_PATH = original
             self.httpd.db_path = old_db
 
     def test_malformed_senate_activity_snapshot_returns_404(self):
         snapshots = Path(self.temp.name) / 'snapshots'
         snapshots.mkdir()
         (snapshots / 'senado-atividade.json').write_text('{invalid', encoding='utf-8')
-        original = srv.perfis.SNAPSHOTS_PATH
-        srv.perfis.SNAPSHOTS_PATH = snapshots
+        original = srv.profiles.SNAPSHOTS_PATH
+        srv.profiles.SNAPSHOTS_PATH = snapshots
         try:
             with self.assertRaises(urllib.error.HTTPError) as ctx:
                 self.get('/api/c/senado/atividade')
             self.assertEqual(ctx.exception.code, 404)
             ctx.exception.close()
         finally:
-            srv.perfis.SNAPSHOTS_PATH = original
+            srv.profiles.SNAPSHOTS_PATH = original
 
     def test_snapshot_cache_is_scoped_to_path_and_cleared_after_removal(self):
         first_path = Path(self.temp.name) / 'first.json'
@@ -125,13 +125,13 @@ class ProdServerTests(unittest.TestCase):
         first_stat = first_path.stat()
         second_path.write_text(json.dumps({'generatedAt': 'second'}), encoding='utf-8')
 
-        self.assertEqual(srv.perfis.atividade_senado(first_path)['generatedAt'], 'first')
-        self.assertEqual(srv.perfis.atividade_senado(second_path)['generatedAt'], 'second')
+        self.assertEqual(srv.profiles.senate_activity(first_path)['generatedAt'], 'first')
+        self.assertEqual(srv.profiles.senate_activity(second_path)['generatedAt'], 'second')
         first_path.unlink()
-        self.assertIsNone(srv.perfis.atividade_senado(first_path))
+        self.assertIsNone(srv.profiles.senate_activity(first_path))
         first_path.write_text(json.dumps({'generatedAt': 'recreated'}), encoding='utf-8')
         os.utime(first_path, ns=(first_stat.st_atime_ns, first_stat.st_mtime_ns))
-        self.assertEqual(srv.perfis.atividade_senado(first_path)['generatedAt'], 'recreated')
+        self.assertEqual(srv.profiles.senate_activity(first_path)['generatedAt'], 'recreated')
 
     def test_senate_projects_merge_only_for_senators_and_allow_missing_base_snapshot(self):
         snapshots = Path(self.temp.name) / 'snapshots'
@@ -157,21 +157,21 @@ class ProdServerTests(unittest.TestCase):
             }
         }), encoding='utf-8')
 
-        merged = srv.perfis.perfil('senado:10', profile_path)
+        merged = srv.profiles.profile('senado:10', profile_path)
         self.assertEqual(merged['contato'], {'email': 'x'})
         self.assertEqual(merged['role'], 'senador')
         self.assertEqual(merged['projetos'], project_data)
         self.assertEqual(merged['generatedAt'], 'base-date')
-        chamber = srv.perfis.perfil('camara:10', profile_path)
+        chamber = srv.profiles.profile('camara:10', profile_path)
         self.assertEqual(chamber['projetos'], {'status': 'camara'})
 
         profile_path.unlink()
-        minimal = srv.perfis.perfil('senado:11', profile_path)
+        minimal = srv.profiles.profile('senado:11', profile_path)
         self.assertEqual(minimal['id'], 'senado:11')
         self.assertEqual(minimal['role'], 'senador')
         self.assertEqual(minimal['projetos'], project_data)
         self.assertEqual(minimal['generatedAt'], 'projects-date')
-        self.assertIsNone(srv.perfis.perfil('senado:12', profile_path))
+        self.assertIsNone(srv.profiles.profile('senado:12', profile_path))
 
     def test_profile_csv_downloads_notes_and_unknown_or_removed_routes_are_404(self):
         with urllib.request.urlopen(self.base + '/api/c/gastos.csv?id=camara%3A1') as r:
@@ -199,13 +199,13 @@ class ProdServerTests(unittest.TestCase):
             'fonte': {'sourceUrl': 'https://dadosabertos.tse.jus.br/dataset/candidatos-2026'},
             'profiles': {'camara:1': {'status': 'encontrada', 'cargo': 'DEPUTADO FEDERAL', 'situacao': 'ELEITO POR QP'},
                          'camara:2': {'status': 'sem-correspondencia'}}}), encoding='utf-8')
-        merged = srv.perfis.perfil('camara:1', profile_path)
+        merged = srv.profiles.profile('camara:1', profile_path)
         self.assertEqual(merged['eleicao2026']['situacao'], 'ELEITO POR QP')
         self.assertEqual(merged['eleicao2026']['segundoTurno'], '2026-10-25')
         self.assertEqual(merged['eleicao2026']['fonte']['sourceUrl'], 'https://dadosabertos.tse.jus.br/dataset/candidatos-2026')
-        only_election = srv.perfis.perfil('camara:2', profile_path)
+        only_election = srv.profiles.profile('camara:2', profile_path)
         self.assertEqual((only_election['role'], only_election['eleicao2026']['status']), ('deputado', 'sem-correspondencia'))
-        self.assertIsNone(srv.perfis.perfil('camara:3', profile_path))
+        self.assertIsNone(srv.profiles.profile('camara:3', profile_path))
 
     def test_healthcheck_reports_missing_database(self):
         self.db.unlink()

@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from urllib.parse import parse_qs, urlparse
 
-from ingest import senado_activity
+from ingest import senate_activity
 
 
 def api_votes():
@@ -85,7 +85,7 @@ def api_votes():
 
 class SenateActivityTests(unittest.TestCase):
     def test_normalizes_senate_nominal_votes_and_preserves_source_labels(self):
-        rows = senado_activity.normalize_votes(api_votes())
+        rows = senate_activity.normalize_votes(api_votes())
         self.assertEqual(len(rows), 1)
         nominal = rows[0]
         self.assertEqual(nominal["id"], "senado:550469:1")
@@ -101,11 +101,11 @@ class SenateActivityTests(unittest.TestCase):
             ["senado:3830", "Davi Alcolumbre", "UNIÃO", "AP", "Presidente (art. 51 RISF)"],
         ])
         self.assertFalse(nominal["secreta"])
-        _items, counts = senado_activity._normalized_vote_payload(api_votes())
+        _items, counts = senate_activity._normalized_vote_payload(api_votes())
         self.assertEqual(counts["secret"], 1)
 
     def test_presence_section_is_explicitly_unavailable_without_zero_counts(self):
-        section = senado_activity._attendance_section(2026)
+        section = senate_activity._attendance_section(2026)
         self.assertEqual(section["status"], "unavailable")
         self.assertEqual(section["unit"], "sessoes")
         self.assertEqual(section["period"], "2026")
@@ -118,16 +118,16 @@ class SenateActivityTests(unittest.TestCase):
     def test_offline_build_uses_raw_cache_and_keeps_attendance_unknown(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
-            cache_path = senado_activity._cache_path(root, 2026)
+            cache_path = senate_activity._cache_path(root, 2026)
             cache = {
-                "sourceUrl": senado_activity.votes_url(2026),
+                "sourceUrl": senate_activity.votes_url(2026),
                 "fetchedAt": "2026-10-07T13:00:00+00:00",
                 "data": api_votes(),
             }
-            senado_activity._atomic_json(cache_path, cache)
+            senate_activity._atomic_json(cache_path, cache)
             output = root / "data" / "snapshots" / "senado-atividade.json"
 
-            snapshot, stats = senado_activity.build_snapshot(root=root, output=output)
+            snapshot, stats = senate_activity.build_snapshot(root=root, output=output)
 
             self.assertEqual(snapshot["year"], 2026)
             self.assertEqual(snapshot["presenca"]["status"], "unavailable")
@@ -136,7 +136,7 @@ class SenateActivityTests(unittest.TestCase):
             self.assertEqual(snapshot["votacoes"]["fetchedAt"], cache["fetchedAt"])
             self.assertEqual(len(snapshot["votacoes"]["items"]), 1)
             self.assertEqual(snapshot["votacoes"]["secretCount"], 1)
-            self.assertEqual(snapshot["votacoes"]["period"], senado_activity._source_period(
+            self.assertEqual(snapshot["votacoes"]["period"], senate_activity._source_period(
                 cache["sourceUrl"], 2026, cache["fetchedAt"],
             ))
             self.assertEqual(stats["votes"], 1)
@@ -152,7 +152,7 @@ class SenateActivityTests(unittest.TestCase):
                 seen.append(url)
                 return api_votes(), "2026-10-07T13:00:00+00:00"
 
-            snapshot, _ = senado_activity.build_snapshot(
+            snapshot, _ = senate_activity.build_snapshot(
                 root=root, collect=True, request=request,
             )
 
@@ -162,7 +162,7 @@ class SenateActivityTests(unittest.TestCase):
                 "dataInicio": ["2026-01-01"],
                 "dataFim": [min(date.today(), date(2026, 12, 31)).isoformat()],
             })
-            cache = json.loads(senado_activity._cache_path(root, 2026).read_text(encoding="utf-8"))
+            cache = json.loads(senate_activity._cache_path(root, 2026).read_text(encoding="utf-8"))
             self.assertEqual(cache["fetchedAt"], "2026-10-07T13:00:00+00:00")
             self.assertEqual(cache["data"], api_votes())
             self.assertEqual(snapshot["votacoes"]["status"], "imported")
@@ -172,17 +172,17 @@ class SenateActivityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             previous = {
-                "sourceUrl": senado_activity.votes_url(2026),
+                "sourceUrl": senate_activity.votes_url(2026),
                 "fetchedAt": "2026-09-01T10:00:00+00:00",
                 "data": api_votes(),
             }
-            cache_path = senado_activity._cache_path(root, 2026)
-            senado_activity._atomic_json(cache_path, previous)
+            cache_path = senate_activity._cache_path(root, 2026)
+            senate_activity._atomic_json(cache_path, previous)
 
             def fail(_url):
                 raise OSError("offline")
 
-            snapshot, _ = senado_activity.build_snapshot(
+            snapshot, _ = senate_activity.build_snapshot(
                 root=root, collect=True, refresh=True, request=fail,
             )
 
@@ -197,8 +197,8 @@ class SenateActivityTests(unittest.TestCase):
             root = Path(temp_dir)
             output = root / "data" / "snapshots" / "senado-atividade.json"
 
-            with self.assertRaises(senado_activity.SourceError):
-                senado_activity.build_snapshot(
+            with self.assertRaises(senate_activity.SourceError):
+                senate_activity.build_snapshot(
                     root=root,
                     output=output,
                     collect=True,
@@ -206,14 +206,14 @@ class SenateActivityTests(unittest.TestCase):
                 )
 
             self.assertFalse(output.exists())
-            self.assertFalse(senado_activity._cache_path(root, 2026).exists())
+            self.assertFalse(senate_activity._cache_path(root, 2026).exists())
 
     def test_offline_build_without_cache_does_not_write_snapshot(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
             output = root / "data" / "snapshots" / "senado-atividade.json"
-            with self.assertRaises(senado_activity.SourceError):
-                senado_activity.build_snapshot(root=root, output=output)
+            with self.assertRaises(senate_activity.SourceError):
+                senate_activity.build_snapshot(root=root, output=output)
             self.assertFalse(output.exists())
 
     def test_malformed_nominal_record_makes_the_section_partial(self):
@@ -224,14 +224,14 @@ class SenateActivityTests(unittest.TestCase):
             malformed["sequencialVotacao"] = 10
             malformed["votos"] = []
             payload = [api_votes()[0], malformed]
-            cache_path = senado_activity._cache_path(root, 2026)
-            senado_activity._atomic_json(cache_path, {
-                "sourceUrl": senado_activity.votes_url(2026),
+            cache_path = senate_activity._cache_path(root, 2026)
+            senate_activity._atomic_json(cache_path, {
+                "sourceUrl": senate_activity.votes_url(2026),
                 "fetchedAt": "2026-10-07T13:00:00+00:00",
                 "data": payload,
             })
 
-            snapshot, stats = senado_activity.build_snapshot(root=root)
+            snapshot, stats = senate_activity.build_snapshot(root=root)
 
             self.assertEqual(snapshot["votacoes"]["status"], "partial")
             self.assertEqual(len(snapshot["votacoes"]["items"]), 1)
@@ -258,12 +258,12 @@ class SenateActivityTests(unittest.TestCase):
             path.parent.mkdir(parents=True)
             path.write_text(json.dumps(attendance), encoding="utf-8")
 
-            self.assertEqual(senado_activity._attendance_from_snapshot(root, 2026), attendance["presenca"])
-            self.assertEqual(senado_activity._attendance_from_snapshot(root, 2025)["status"], "unavailable")
+            self.assertEqual(senate_activity._attendance_from_snapshot(root, 2026), attendance["presenca"])
+            self.assertEqual(senate_activity._attendance_from_snapshot(root, 2025)["status"], "unavailable")
 
     def test_collector_refuses_years_outside_authorized_scope(self):
         with self.assertRaisesRegex(ValueError, "2026"):
-            senado_activity.build_snapshot(year=2025)
+            senate_activity.build_snapshot(year=2025)
 
 
 if __name__ == "__main__":

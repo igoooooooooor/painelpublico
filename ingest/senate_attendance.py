@@ -8,7 +8,7 @@ positive marks in the PDF's ``Presença`` column only; it never turns an absent
 row, a missing vote mark, or an uncollected session into an absence.
 
 The optional PDF dependency is pdfplumber. It is needed only for collection
-and is listed in ``ingest/senado-requirements.txt``; the app and its tests do
+and is listed in ``ingest/senate-requirements.txt``; the app and its tests do
 not need it.
 """
 from __future__ import annotations
@@ -314,7 +314,7 @@ def _load_pdf_pages(payload: bytes) -> list[dict[str, Any]]:
         import pdfplumber
     except ImportError as error:
         raise SourceError(
-            "pdfplumber é necessário somente para --collect; instale ingest/senado-requirements.txt."
+            "pdfplumber é necessário somente para --collect; instale ingest/senate-requirements.txt."
         ) from error
     try:
         pages: list[dict[str, Any]] = []
@@ -377,7 +377,7 @@ def _require_pdf_parser() -> None:
         import pdfplumber  # noqa: F401
     except ImportError as error:
         raise SourceError(
-            "pdfplumber é necessário somente para --collect; instale ingest/senado-requirements.txt."
+            "pdfplumber é necessário somente para --collect; instale ingest/senate-requirements.txt."
         ) from error
 
 
@@ -456,7 +456,7 @@ def parse_attendance_pages(
         target_date = date.fromisoformat(session_date)
     except ValueError as error:
         raise SourceError("Data de sessão inválida para validar o diário.") from error
-    date_pt = target_date.strftime("%d/%m/%Y")
+    brazilian_date_text = target_date.strftime("%d/%m/%Y")
 
     rows: list[dict[str, Any]] = []
     footer_total: int | None = None
@@ -511,7 +511,7 @@ def parse_attendance_pages(
                     session_ordinal = identity[1]
             if NON_DELIBERATIVE_RE.search(text):
                 non_deliberative_seen = True
-            if date_pt in text:
+            if brazilian_date_text in text:
                 period_date_seen = True
 
         page_rows = 0
@@ -947,7 +947,7 @@ def _load_roster(root: Path) -> Any:
         raise SourceError("Lista legislativa local não está disponível para associar os nomes.") from error
 
 
-def _build_presenca_section(
+def _build_attendance_section(
     year: int,
     period_start: date,
     period_end: date,
@@ -1206,7 +1206,7 @@ def build_snapshot(
             diaries.append((entry, diary))
 
     roster_payload = roster if roster is not None else _load_roster(root)
-    section, stats = _build_presenca_section(
+    section, stats = _build_attendance_section(
         year, period_start, period_end, month_caches, diaries, roster_payload, errors
     )
     if section["sessionCount"] == 0:

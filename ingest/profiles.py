@@ -35,18 +35,18 @@ RAW_PROFILES = ROOT / "data" / "raw" / "profiles"
 DEFAULT_OUTPUT = ROOT / "data" / "snapshots" / "perfis.json"
 SENATE_XML = RAW_LEGISLATIVE / "senadores-atual.xml"
 
-CAMARA_API = "https://dadosabertos.camara.leg.br/api/v2"
-CAMARA_LIST_URL = f"{CAMARA_API}/deputados?itens=100&pagina=1"
-CAMARA_PROJECTS_PERIOD = "PL, PLP e PEC apresentados desde 2023-02-01"
-CAMARA_PROJECTS_PARAMS = {
+CHAMBER_API = "https://dadosabertos.camara.leg.br/api/v2"
+CHAMBER_LIST_URL = f"{CHAMBER_API}/deputados?itens=100&pagina=1"
+CHAMBER_PROJECTS_PERIOD = "PL, PLP e PEC apresentados desde 2023-02-01"
+CHAMBER_PROJECTS_PARAMS = {
     "siglaTipo": "PL,PLP,PEC",
     "dataApresentacaoInicio": "2023-02-01",
     "itens": 100,
     "ordem": "DESC",
     "ordenarPor": "id",
 }
-SENADO_ROSTER_URL = "https://legis.senado.leg.br/dadosabertos/senador/lista/atual"
-SENADO_PROFILE_PAGE = "https://www25.senado.leg.br/web/senadores/senador/-/perfil/{}"
+SENATE_ROSTER_URL = "https://legis.senado.leg.br/dadosabertos/senador/lista/atual"
+SENATE_PROFILE_PAGE = "https://www25.senado.leg.br/web/senadores/senador/-/perfil/{}"
 USER_AGENT = "QuantoCusta/1.0 (public-profile collector)"
 HTTP_TIMEOUT = 20
 HTTP_RETRIES = 1
@@ -129,10 +129,10 @@ def _profile_page(authority: dict[str, Any]) -> str:
     chamber, identifier = _chamber(str(authority["id"]))
     if chamber == "camara":
         return f"https://www.camara.leg.br/deputados/{identifier}?ano=2026"
-    return SENADO_PROFILE_PAGE.format(identifier)
+    return SENATE_PROFILE_PAGE.format(identifier)
 
 
-def _camara_cache_roster(root: Path = ROOT) -> tuple[dict[str, dict[str, Any]], str | None]:
+def _chamber_cache_roster(root: Path = ROOT) -> tuple[dict[str, dict[str, Any]], str | None]:
     """Read only public identity fields from the cached Câmara roster pages."""
     cache: dict[str, dict[str, Any]] = {}
     stamp = None
@@ -180,7 +180,7 @@ def _camara_cache_roster(root: Path = ROOT) -> tuple[dict[str, dict[str, Any]], 
     return cache, stamp
 
 
-def _senado_xml_profiles(
+def _senate_xml_profiles(
     sources: dict[str, dict[str, Any]], xml_path: Path = SENATE_XML
 ) -> dict[str, dict[str, Any]]:
     """Extract public profile/contact fields from the current official XML only."""
@@ -189,7 +189,7 @@ def _senado_xml_profiles(
     from ingest.legislative import senate_xml_authorities
 
     content = xml_path.read_bytes()
-    authorities, _ = senate_xml_authorities(content, "senado_senators_current", SENADO_ROSTER_URL)
+    authorities, _ = senate_xml_authorities(content, "senado_senators_current", SENATE_ROSTER_URL)
     root = ET.fromstring(content)
     items = root.findall("./Parlamentares/Parlamentar")
     by_id = {row["id"]: row for row in authorities}
@@ -221,7 +221,7 @@ def _senado_xml_profiles(
             "telefones": phones,
             "endereco": None,
             "redes": [],
-            "sourceUrl": SENADO_ROSTER_URL,
+            "sourceUrl": SENATE_ROSTER_URL,
             "fetchedAt": stamp,
             "status": "imported" if email or phones else "partial",
         }
@@ -230,7 +230,7 @@ def _senado_xml_profiles(
         mandate = {
             "participacao": participation,
             "exercicio": exercise,
-            "sourceUrl": SENADO_ROSTER_URL,
+            "sourceUrl": SENATE_ROSTER_URL,
             "fetchedAt": stamp,
         }
         photo = _official_url(ident.findtext("UrlFotoParlamentar"))
@@ -239,7 +239,7 @@ def _senado_xml_profiles(
             "contact": contact,
             "mandato": mandate,
             "photo": photo,
-            "sourceUrl": page_url or authority.get("sourceUrl") or SENADO_ROSTER_URL,
+            "sourceUrl": page_url or authority.get("sourceUrl") or SENATE_ROSTER_URL,
         }
     return out
 
@@ -265,7 +265,7 @@ def _empty_mandate(source_url: str | None = None, fetched_at: str | None = None)
     }
 
 
-def _empty_projects(source_url: str | None, period: str | None = CAMARA_PROJECTS_PERIOD) -> dict[str, Any]:
+def _empty_projects(source_url: str | None, period: str | None = CHAMBER_PROJECTS_PERIOD) -> dict[str, Any]:
     return {
         "status": "unavailable",
         "period": period,
@@ -285,21 +285,21 @@ def _clean_contact(value: Any) -> dict[str, Any] | None:
     if not isinstance(value, dict):
         return None
     numbers = value.get("telefones")
-    redes = value.get("redes")
-    clean_redes = []
-    if isinstance(redes, list):
-        for item in redes:
+    networks = value.get("redes")
+    clean_networks = []
+    if isinstance(networks, list):
+        for item in networks:
             if not isinstance(item, dict):
                 continue
             name = _text(item.get("nome"), 60)
             url = _official_url(item.get("url"), ("camara.leg.br", "senado.leg.br", "x.com", "twitter.com", "instagram.com", "facebook.com", "youtube.com", "tiktok.com"))
             if name and url:
-                clean_redes.append({"nome": name, "url": url})
+                clean_networks.append({"nome": name, "url": url})
     result = {
         "email": _text(value.get("email"), 254),
         "telefones": [_text(item, 80) for item in numbers if _text(item, 80)] if isinstance(numbers, list) else [],
         "endereco": _text(value.get("endereco"), 500),
-        "redes": clean_redes,
+        "redes": clean_networks,
         "sourceUrl": _official_url(value.get("sourceUrl")),
         "fetchedAt": _text(value.get("fetchedAt"), 40),
         "status": value.get("status") if value.get("status") in ("imported", "partial", "unavailable") else "unavailable",
@@ -354,7 +354,7 @@ def _clean_projects(value: Any) -> dict[str, Any] | None:
         total = None
     result = {
         "status": value.get("status") if value.get("status") in ("imported", "partial", "unavailable") else "unavailable",
-        "period": _text(value.get("period"), 200) or CAMARA_PROJECTS_PERIOD,
+        "period": _text(value.get("period"), 200) or CHAMBER_PROJECTS_PERIOD,
         "sourceUrl": _official_url(value.get("sourceUrl")),
         "fetchedAt": _text(value.get("fetchedAt"), 40),
         "total": total,
@@ -445,10 +445,10 @@ def _api_next_url(current_url: str, links: Any) -> str | None:
 
 def _project_list_url(authority_id: str) -> str:
     _, identifier = _chamber(authority_id)
-    return f"{CAMARA_API}/proposicoes?" + urlencode({"idDeputadoAutor": identifier, **CAMARA_PROJECTS_PARAMS})
+    return f"{CHAMBER_API}/proposicoes?" + urlencode({"idDeputadoAutor": identifier, **CHAMBER_PROJECTS_PARAMS})
 
 
-def fetch_camara_projects(authority_id: str, request_json=_request_json) -> dict[str, Any]:
+def fetch_chamber_projects(authority_id: str, request_json=_request_json) -> dict[str, Any]:
     """Read summary rows from all pages; never call a detail endpoint per project."""
     first_url = _project_list_url(authority_id)
     current_url = first_url
@@ -494,7 +494,7 @@ def fetch_camara_projects(authority_id: str, request_json=_request_json) -> dict
     if failure:
         return {
             "status": "partial" if items else "unavailable",
-            "period": CAMARA_PROJECTS_PERIOD,
+            "period": CHAMBER_PROJECTS_PERIOD,
             "sourceUrl": first_url,
             "fetchedAt": utc_now(),
             "total": None,
@@ -503,7 +503,7 @@ def fetch_camara_projects(authority_id: str, request_json=_request_json) -> dict
         }
     return {
         "status": "imported",
-        "period": CAMARA_PROJECTS_PERIOD,
+        "period": CHAMBER_PROJECTS_PERIOD,
         "sourceUrl": first_url,
         "fetchedAt": utc_now(),
         "total": len(items),
@@ -511,13 +511,13 @@ def fetch_camara_projects(authority_id: str, request_json=_request_json) -> dict
     }
 
 
-def parse_camara_detail(payload: dict[str, Any], authority_id: str, fetched_at: str | None = None) -> dict[str, Any]:
+def parse_chamber_detail(payload: dict[str, Any], authority_id: str, fetched_at: str | None = None) -> dict[str, Any]:
     """Whitelist contact/status fields from the Câmara detail response."""
     data = payload.get("dados") if isinstance(payload, dict) else None
     if not isinstance(data, dict):
         raise ValueError("Resposta da Câmara sem dados do parlamentar")
     _, identifier = _chamber(authority_id)
-    url = f"{CAMARA_API}/deputados/{identifier}"
+    url = f"{CHAMBER_API}/deputados/{identifier}"
     status = data.get("ultimoStatus") if isinstance(data.get("ultimoStatus"), dict) else {}
     office = status.get("gabinete") if isinstance(status.get("gabinete"), dict) else {}
     email = _text(office.get("email"), 254) or _text(data.get("email"), 254)
@@ -624,7 +624,7 @@ def _office_section(authority: dict[str, Any], raw_root: Path, collect: bool, re
 def build_profile(
     authority: dict[str, Any],
     sources: dict[str, dict[str, Any]],
-    camara_roster: dict[str, dict[str, Any]],
+    chamber_roster: dict[str, dict[str, Any]],
     senate_profiles: dict[str, dict[str, Any]],
     raw_root: Path = RAW_PROFILES,
     collect: bool = False,
@@ -646,9 +646,9 @@ def build_profile(
         "fetchedAt": roster_stamp,
     }
     if chamber == "camara":
-        source_contact = camara_roster.get(identifier, {})
-        contact_stamp = roster_stamp or camara_roster.get("fetchedAt")
-        contact_url = f"{CAMARA_API}/deputados/{identifier}"
+        source_contact = chamber_roster.get(identifier, {})
+        contact_stamp = roster_stamp or chamber_roster.get("fetchedAt")
+        contact_url = f"{CHAMBER_API}/deputados/{identifier}"
         contact = {
             "email": source_contact.get("email"), "telefones": [], "endereco": None, "redes": [],
             "sourceUrl": contact_url, "fetchedAt": contact_stamp,
@@ -661,8 +661,8 @@ def build_profile(
         photo = source_contact.get("photo")
     else:
         senate = senate_profiles.get(authority_id, {})
-        contact = senate.get("contact") or _empty_contact(SENADO_ROSTER_URL, roster_stamp)
-        mandate = senate.get("mandato") or _empty_mandate(SENADO_ROSTER_URL, roster_stamp)
+        contact = senate.get("contact") or _empty_contact(SENATE_ROSTER_URL, roster_stamp)
+        mandate = senate.get("mandato") or _empty_mandate(SENATE_ROSTER_URL, roster_stamp)
         projects = _empty_projects(official_profile_url, None)
         projects["detail"] = "Consulte a atividade legislativa na página oficial do Senado."
         photo = senate.get("photo")
@@ -684,10 +684,10 @@ def build_profile(
             refresh or not cache.get("projetos") or cache["projetos"].get("status") != "imported"
         )
         if needs_collect:
-            detail_url = f"{CAMARA_API}/deputados/{identifier}"
+            detail_url = f"{CHAMBER_API}/deputados/{identifier}"
             try:
                 data = _request_json(detail_url)
-                sections = parse_camara_detail(data, authority_id)
+                sections = parse_chamber_detail(data, authority_id)
                 contact = sections["contact"]
                 mandate = sections["mandato"]
                 photo = sections.get("photo") or photo
@@ -700,7 +700,7 @@ def build_profile(
                     mandate["stale"] = True
             if needs_projects:
                 try:
-                    refreshed_projects = fetch_camara_projects(authority_id)
+                    refreshed_projects = fetch_chamber_projects(authority_id)
                 except Exception as error:
                     refreshed_projects = _failure_section(
                         cache.get("projetos"), projects,
@@ -712,7 +712,7 @@ def build_profile(
         elif needs_projects:
             previous = cache.get("projetos")
             try:
-                refreshed_projects = fetch_camara_projects(authority_id)
+                refreshed_projects = fetch_chamber_projects(authority_id)
             except Exception as error:
                 refreshed_projects = _failure_section(
                     previous, projects, f"Falha ao atualizar projetos ({type(error).__name__}).", "projetos"
@@ -737,8 +737,8 @@ def build_snapshot(
         raise ValueError("Importação legislativa precisa ser um objeto JSON")
     roster = _current_roster(payload)
     sources = _source_map(payload)
-    camara_roster, _ = _camara_cache_roster(root)
-    senate_profiles = _senado_xml_profiles(
+    chamber_roster, _ = _chamber_cache_roster(root)
+    senate_profiles = _senate_xml_profiles(
         sources, root / "data" / "raw" / "legislative" / "senadores-atual.xml"
     )
     raw_root = root / "data" / "raw" / "profiles"
@@ -750,7 +750,7 @@ def build_snapshot(
         profiles.append(build_profile(
             authority,
             sources,
-            camara_roster,
+            chamber_roster,
             senate_profiles,
             raw_root=raw_root,
             collect=False,
@@ -762,7 +762,7 @@ def build_snapshot(
                     build_profile,
                     authority,
                     sources,
-                    camara_roster,
+                    chamber_roster,
                     senate_profiles,
                     raw_root,
                     True,
