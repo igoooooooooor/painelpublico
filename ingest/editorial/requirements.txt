@@ -1,0 +1,2 @@
+# Apenas para reconstruir a amostra editorial antiga; app e importadores atuais usam stdlib.
+pandas>=2.2,<3

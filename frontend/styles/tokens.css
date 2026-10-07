@@ -1,0 +1,28 @@
+/* Tokens visuais: cores, tipografia e medidas compartilhadas. */
+/* Layout: coluna de app (max 480px). Panorama geral em blocos curtos; números grandes; carrossel de placares */
+:root {
+  --bg: #F4F5F7; --surface: #FFFFFF; --ink: #111318; --ink-2: #3B3F48; --muted: #5B606B; --line: #E3E5EA; --chip: #EEF0F3;
+  --accent: #5B3DF5; --accent-2: #8E7BFF; --accent-soft: #EEEAFE; --no: #AEB3BD;
+  --warn: #B83D0A; --warn-soft: #FFF1E8;
+  --hero-bg: #111318; --hero-fg: #FFFFFF; --hero-muted: #B4B8C2; --hero-line: #2A2D35; --hero-chip: #22252D;
+  --cat1: #5B3DF5; --cat2: #111318; --cat3: #8E7BFF; --cat4: #5B606B; --cat5: #C9C0FF; --cat6: #D5D8DE;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --radius-card: 22px; --radius-control: 12px; --control-height: 44px;
+  --f-display: 'Newsreader', Georgia, serif;
+  --f-body: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --f-data: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0E0F13; --surface: #17191F; --ink: #ECEDF1; --ink-2: #C9CCD4; --muted: #A2A7B2; --line: #2A2D36; --chip: #22252D;
+  --accent: #A898FA; --accent-2: #7C66F7; --accent-soft: #262046; --no: #4E535E;
+  --warn: #FF9A6B; --warn-soft: #2B1A12;
+  --hero-bg: #ECEDF1; --hero-fg: #111318; --hero-muted: #4A4F5A; --hero-line: #CDD0D8; --hero-chip: #DADDE3;
+  --cat1: #A898FA; --cat2: #ECEDF1; --cat3: #6F57F2; --cat4: #A2A7B2; --cat5: #4B3F99; --cat6: #3A3E48;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0E0F13; --surface: #17191F; --ink: #ECEDF1; --ink-2: #C9CCD4; --muted: #A2A7B2; --line: #2A2D36; --chip: #22252D;
+  --accent: #A898FA; --accent-2: #7C66F7; --accent-soft: #262046; --no: #4E535E;
+  --warn: #FF9A6B; --warn-soft: #2B1A12;
+  --hero-bg: #ECEDF1; --hero-fg: #111318; --hero-muted: #4A4F5A; --hero-line: #CDD0D8; --hero-chip: #DADDE3;
+  --cat1: #A898FA; --cat2: #ECEDF1; --cat3: #6F57F2; --cat4: #A2A7B2; --cat5: #4B3F99; --cat6: #3A3E48;
+  color-scheme: dark; }

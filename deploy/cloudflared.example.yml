@@ -1,0 +1,10 @@
+# Copie para /etc/cloudflared/config.yml no servidor (ou ~/.cloudflared/config.yml no Mac)
+# e troque TUNNEL_ID e o domínio. O ID e o arquivo .json saem de: cloudflared tunnel create painel
+tunnel: TUNNEL_ID
+credentials-file: /etc/cloudflared/TUNNEL_ID.json
+ingress:
+  - hostname: seudominio.com.br
+    service: http://127.0.0.1:8000
+  - hostname: www.seudominio.com.br
+    service: http://127.0.0.1:8000
+  - service: http_status:404

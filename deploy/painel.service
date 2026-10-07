@@ -1,0 +1,24 @@
+# Serviço do Painel Público (systemd). Instalado por deploy/setup-server.sh em /etc/systemd/system/.
+[Unit]
+Description=Painel Público
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=painel
+WorkingDirectory=/opt/painel/app
+Environment=PAINEL_DB=/opt/painel/data/na-lupa.sqlite3
+# Escuta só localmente: o acesso público entra pelo Cloudflare Tunnel.
+ExecStart=/usr/bin/python3 -m backend.server --prod --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+# O código fica só leitura; a pasta do banco precisa de escrita para os arquivos -wal/-shm do SQLite.
+ReadOnlyPaths=/opt/painel/app
+ReadWritePaths=/opt/painel/data
+
+[Install]
+WantedBy=multi-user.target
