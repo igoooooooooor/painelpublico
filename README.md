@@ -2,6 +2,8 @@
 
 Protótipo para entender gastos, presença e votações de parlamentares e consultar recortes de remuneração pública. Alertas indicam registros para conferir, não conclusões de irregularidade.
 
+É um projeto pessoal, independente e apartidário, sem vínculo com partidos, políticos ou órgãos públicos. Ele apenas reúne e organiza informações que os próprios órgãos já publicam. Veja o [Aviso legal](AVISO-LEGAL.md).
+
 ## Rodar localmente
 
 Requer **Python 3.10+**. Para os testes de frontend, **Node.js 18+**. A aplicação e os importadores atuais não precisam de pacotes externos.
@@ -61,3 +63,7 @@ dist/           app gerado, ignorado no Git
 - [Próximas etapas](docs/roadmap.md): expansão planejada, separada da cobertura entregue.
 
 O servidor usa `127.0.0.1` por padrão e serve somente o app e a API. O código está em [igor05k/painelpublico](https://github.com/igor05k/painelpublico); publicar código no GitHub não publica o site nem a base. A instalação do servidor e do túnel está descrita em [Publicação](docs/deploy.md). `.env.example` e os arquivos `*.example.*` contêm apenas modelos de configuração.
+
+## Licença
+
+Código sob a [licença MIT](LICENSE). Os dados exibidos pertencem às fontes públicas indicadas em [Dados e SQLite](docs/data.md); veja também o [Aviso legal](AVISO-LEGAL.md).

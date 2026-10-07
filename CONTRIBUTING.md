@@ -23,6 +23,14 @@ O remoto é `https://github.com/igor05k/painelpublico.git`. Publicação de repo
 
 `make check` monta a interface sem snapshots privados e roda as verificações de sintaxe e testes locais. Os testes não fazem downloads nem dependem de `data/snapshots/editorial.json`.
 
+## Linguagem e neutralidade
+
+O projeto é apartidário e só usa informações públicas ([Aviso legal](AVISO-LEGAL.md)). Textos da interface descrevem números, não intenções:
+
+- Prefira termos descritivos como “incomum”, “acima do habitual” e “para conferir”. Evite “fora do normal”, “estranho”, “suspeito”, “abuso”, “farra” e termos que sugiram culpa ou crime.
+- Todo alerta deve ter regra fixa, documentada e igual para todas as pessoas, de qualquer partido, além de indicar a fonte oficial e lembrar que não indica irregularidade.
+- Não selecione, destaque ou ordene pessoas por partido ou posição política, exceto em comparações explícitas e simétricas entre partidos.
+
 ## Código e dados
 
 Python usa quatro espaços; JavaScript/CSS usam dois, conforme `.editorconfig`. Preserve o estilo do trecho editado e evite reformatação em massa. O build, a API e as coletas principais não precisam de dependências de terceiros. Pandas é opcional para `ingest/editorial/scrape_passagens.py` e `ingest/editorial/tse_totais.py`.
