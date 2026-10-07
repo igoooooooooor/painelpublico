@@ -540,6 +540,44 @@ class AccountsCollectorTests(unittest.TestCase):
         self.assertEqual(complete["municipalities"]["3550308"]["status"], "available")
         self.assertTrue(complete["coverage"]["nationalCollectionComplete"])
 
+    def test_collect_refetches_incomplete_city_and_ignores_incomplete_national_cache(self):
+        city = {"id": "3550308", "name": "São Paulo", "uf": "SP"}
+        self.where["city_catalog"].parent.mkdir(parents=True, exist_ok=True)
+        self.where["city_catalog"].write_text(json.dumps({"municipalities": [city]}), encoding="utf-8")
+        self.write_population({"3550308": 12000000})
+        accounts._cache_entes_payload(paginated_payload([{
+            "cod_ibge": 3550308, "uf": "SP", "esfera": "M", "ente": "São Paulo",
+        }]), self.where["entities"], "2026-10-07T12:00:00+00:00")
+
+        partial_source = accounts._source(accounts.SOURCE_DATASET_URL, 2025,
+                                          "2026-10-07T12:00:00+00:00", "cached")
+        partial = accounts._project_dca_items(full_dca(), "3550308", 2025,
+                                              partial_source, collection_complete=False)
+        accounts._atomic_json(accounts._cache_path(self.where["cache_dir"], "3550308"), partial)
+        self.where["national_items"].parent.mkdir(parents=True, exist_ok=True)
+        self.where["national_items"].write_text(
+            "".join(json.dumps(item, default=str) + "\n" for item in full_dca()), encoding="utf-8")
+        self.where["national_items_meta"].write_text(json.dumps({
+            "year": 2025, "complete": False, "status": "available", "fetchedAt": "2026-10-07T12:00:00+00:00",
+        }), encoding="utf-8")
+
+        offline = accounts.build_snapshot(self.root, 2025)
+        self.assertEqual(offline["municipalities"]["3550308"]["status"], "partial")
+        self.assertFalse(offline["coverage"]["nationalCollectionComplete"])
+
+        official_source = accounts._source(
+            accounts.DCA_URL.format(year=2025, municipality_id="3550308"), 2025,
+            "2026-10-07T12:30:00+00:00", "available",
+        )
+        complete = accounts._project_dca_items(full_dca(), "3550308", 2025,
+                                               official_source, collection_complete=True)
+        with patch.object(accounts, "_fetch_city", return_value=complete) as fetch_city:
+            collected = accounts.collect(self.root, 2025)
+
+        fetch_city.assert_called_once_with("3550308", 2025, True)
+        self.assertEqual(collected["municipalities"]["3550308"]["status"], "available")
+        self.assertTrue(collected["coverage"]["nationalCollectionComplete"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1014,6 +1014,7 @@ def collect(root: Path = ROOT, year: int = YEAR, refresh: bool = False) -> dict[
             pass
         verified_entities = _verified_ente_ids(where["entities"], catalog)
     national_items = _project_national_items(where["national_items"], year)
+    national_manifest = _national_items_manifest(where["national_items"], year)
     where["cache_dir"].mkdir(parents=True, exist_ok=True)
     cached_population_year, cached_population, _population_source = _population_data(where, year)
     if refresh or cached_population_year != year or not cached_population:
@@ -1029,12 +1030,14 @@ def collect(root: Path = ROOT, year: int = YEAR, refresh: bool = False) -> dict[
         municipality_id = str(city["id"])
         cache_path = _cache_path(where["cache_dir"], municipality_id)
         prior = None if refresh else _read_cache(cache_path, municipality_id, year)
-        if prior is not None and prior.get("status") in {"available", "partial", "not_filed"}:
+        if (prior is not None
+                and prior.get("status") in {"available", "partial", "not_filed"}
+                and prior.get("collectionComplete") is True
+                and prior.get("identityVerified") is True):
             if index % 25 == 0 or index == total:
                 print(f"siconfi: {index}/{total} municípios", flush=True)
             continue
-        if municipality_id in national_items:
-            national_manifest = _national_items_manifest(where["national_items"], year)
+        if municipality_id in national_items and national_manifest["complete"]:
             source = _source(SOURCE_DATASET_URL, year,
                              national_manifest.get("fetchedAt") or _mtime_iso(where["national_items"]),
                              "cached")
