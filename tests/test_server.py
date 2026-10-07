@@ -188,6 +188,25 @@ class ProdServerTests(unittest.TestCase):
                 self.assertEqual(ctx.exception.code, 404)
                 ctx.exception.close()
 
+    def test_profile_includes_2026_election_result_from_snapshot(self):
+        snapshots = Path(self.temp.name) / 'eleicoes'
+        snapshots.mkdir()
+        profile_path = snapshots / 'perfis.json'
+        profile_path.write_text(json.dumps({'generatedAt': 'base', 'profiles': {'camara:1': {'id': 'camara:1', 'role': 'deputado'}}}),
+                                encoding='utf-8')
+        (snapshots / 'eleicoes-2026.json').write_text(json.dumps({
+            'generatedAt': 'tse', 'segundoTurno': '2026-10-25', 'metodo': 'nome civil e nascimento',
+            'fonte': {'sourceUrl': 'https://dadosabertos.tse.jus.br/dataset/candidatos-2026'},
+            'profiles': {'camara:1': {'status': 'encontrada', 'cargo': 'DEPUTADO FEDERAL', 'situacao': 'ELEITO POR QP'},
+                         'camara:2': {'status': 'sem-correspondencia'}}}), encoding='utf-8')
+        merged = srv.perfis.perfil('camara:1', profile_path)
+        self.assertEqual(merged['eleicao2026']['situacao'], 'ELEITO POR QP')
+        self.assertEqual(merged['eleicao2026']['segundoTurno'], '2026-10-25')
+        self.assertEqual(merged['eleicao2026']['fonte']['sourceUrl'], 'https://dadosabertos.tse.jus.br/dataset/candidatos-2026')
+        only_election = srv.perfis.perfil('camara:2', profile_path)
+        self.assertEqual((only_election['role'], only_election['eleicao2026']['status']), ('deputado', 'sem-correspondencia'))
+        self.assertIsNone(srv.perfis.perfil('camara:3', profile_path))
+
     def test_healthcheck_reports_missing_database(self):
         self.db.unlink()
         with self.assertRaises(urllib.error.HTTPError) as ctx:

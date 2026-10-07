@@ -89,6 +89,17 @@ def _com_situacoes_projetos(result, identifier, profile_path):
     return {**result, 'projetos': {**projects, 'items': enriched}}
 
 
+def _eleicao(identifier, perfil_path):
+    """Resultado de 2026 desta ficha (eleicoes-2026.json), com fonte e método; None se ausente."""
+    data = _load(perfil_path.parent / 'eleicoes-2026.json')
+    profiles = data.get('profiles') if data is not None else None
+    item = profiles.get(identifier) if isinstance(profiles, dict) else None
+    if not isinstance(item, dict):
+        return None
+    return {**deepcopy(item), 'fonte': deepcopy(data.get('fonte')), 'metodo': data.get('metodo'),
+            'segundoTurno': data.get('segundoTurno'), 'generatedAt': data.get('generatedAt')}
+
+
 def perfil(identifier, path=None):
     """Perfil complementar de um parlamentar ou None se o arquivo ou o registro não existirem."""
     profile_path = Path(path) if path is not None else SNAPSHOTS_PATH / 'perfis.json'
@@ -99,16 +110,20 @@ def perfil(identifier, path=None):
         profile = None
 
     projects, projects_generated_at = _senado_projetos(identifier, profile_path)
+    eleicao = _eleicao(identifier, profile_path)
     if profile is None:
-        if projects is None:
+        if projects is None and eleicao is None:
             return None
-        result = {'id': identifier, 'role': 'senador', 'projetos': projects}
+        result = {'id': identifier, 'role': 'senador' if identifier.startswith('senado:') else 'deputado'}
+        if projects is not None:
+            result['projetos'] = projects
         generated_at = data.get('generatedAt') if data is not None else projects_generated_at
         if generated_at is not None:
             result['generatedAt'] = generated_at
-        return _com_situacoes_projetos(result, identifier, profile_path)
-
-    result = {**profile, 'generatedAt': data.get('generatedAt')}
-    if projects is not None:
-        result['projetos'] = projects
+    else:
+        result = {**profile, 'generatedAt': data.get('generatedAt')}
+        if projects is not None:
+            result['projetos'] = projects
+    if eleicao is not None:
+        result['eleicao2026'] = eleicao
     return _com_situacoes_projetos(result, identifier, profile_path)

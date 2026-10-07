@@ -157,10 +157,47 @@ function profileData(value) {
   const pessoa = { id, name: snapshot.name, party: snapshot.party, uf: snapshot.uf, ...supplied,
     sourceUrl: supplied.sourceUrl || snapshot.sourceUrl, fetchedAt: supplied.fetchedAt || snapshot.fetchedAt, role };
   return { id, pessoa, contato: snapshot.contato || null, projetos: snapshot.projetos || null,
-    gabinete: snapshot.gabinete || null, mandato: snapshot.mandato || null,
+    gabinete: snapshot.gabinete || null, mandato: snapshot.mandato || null, eleicao: snapshot.eleicao2026 || null,
     loading: PROFILE_LOAD.pending.has(id),
     presenca: profilePresence(id), presencaRegistrada: role === 'senador' ? profileRegisteredPresence(id) : null, votos: profileVotes(id),
     remuneracao: PROFILE_SALARY[role] ? { ...PROFILE_SALARY[role], individual: null } : null };
+}
+const PROFILE_ELECTION_CARGO = {
+  'DEPUTADO FEDERAL': 'deputado(a) federal', 'DEPUTADO ESTADUAL': 'deputado(a) estadual', 'DEPUTADO DISTRITAL': 'deputado(a) distrital',
+  SENADOR: 'senador(a)', GOVERNADOR: 'governador(a)', 'VICE-GOVERNADOR': 'vice-governador(a)', PRESIDENTE: 'presidente',
+  'VICE-PRESIDENTE': 'vice-presidente', '1º SUPLENTE': '1º(ª) suplente de senador(a)', '2º SUPLENTE': '2º(ª) suplente de senador(a)',
+};
+const profileDateBr = iso => typeof iso === 'string' && /^\d{4}-\d{2}-\d{2}/.test(iso) ? `${+iso.slice(8, 10)}/${+iso.slice(5, 7)}/${iso.slice(0, 4)}` : null;
+/* Eleição de 2026 em linguagem simples. Só afirma algo quando a ficha foi ligada a uma única candidatura do TSE. */
+function profileElection(p) {
+  const e = p?.eleicao;
+  if (!e || typeof e !== 'object') return null;
+  const base = { status: e.status, fonte: e.fonte || null, metodo: e.metodo || null, tom: 'neutro', curto: null };
+  if (e.status !== 'encontrada') {
+    return { ...base, frase: e.status === 'sem-correspondencia'
+      ? 'Não encontramos candidatura em 2026 com o nome civil e a data de nascimento desta pessoa nos dados do TSE.'
+      : 'Não foi possível ligar esta ficha aos dados do TSE com segurança.' };
+  }
+  const cargo = PROFILE_ELECTION_CARGO[e.cargo] || String(e.cargo || 'cargo não informado').toLowerCase();
+  const onde = e.uf && e.uf !== 'BR' ? ` por ${e.uf}` : '';
+  const role = p.pessoa?.role;
+  const mesmo = (role === 'deputado' && e.cargo === 'DEPUTADO FEDERAL') || (role === 'senador' && e.cargo === 'SENADOR');
+  const quando = profileDateBr(e.dataEleicao);
+  const s = String(e.situacao || '');
+  if (s.startsWith('ELEITO')) {
+    return { ...base, tom: 'ok', curto: mesmo ? 'Reeleito(a) em 2026' : `Eleito(a) ${cargo} em 2026`,
+      frase: `${mesmo ? 'Reeleito(a)' : 'Eleito(a)'} ${cargo}${onde}${quando ? ` na eleição de ${quando}` : ' em 2026'}.` };
+  }
+  if (s === '2º TURNO') {
+    const segundo = profileDateBr(e.segundoTurno);
+    return { ...base, tom: 'info', curto: `2º turno para ${cargo}`, frase: `Disputa o 2º turno para ${cargo}${onde}${segundo ? ` em ${segundo}` : ''}.` };
+  }
+  if (s === 'SUPLENTE' || s === 'NÃO ELEITO') {
+    const resultado = s === 'SUPLENTE' ? 'ficou como suplente' : 'não foi eleito(a)';
+    return { ...base, curto: mesmo ? 'Não reeleito(a) em 2026' : `Não eleito(a) para ${cargo}`,
+      frase: `${mesmo ? `Concorreu à reeleição para ${cargo}` : `Concorreu a ${cargo}`}${onde} em 2026 e ${resultado}.` };
+  }
+  return { ...base, curto: `Candidato(a) a ${cargo} em 2026`, frase: `Candidatura a ${cargo}${onde} em 2026. O arquivo do TSE não traz resultado para ela.` };
 }
 function profileSource(section, label = 'Conferir na fonte', dateLabel = 'Fotografia') {
   const url = profileSafeUrl(section?.sourceUrl);
@@ -325,8 +362,14 @@ function profileSectionsHTML(value, slots = {}) {
     <p><span class="big">${money(salary.amount)}</span> · subsídio bruto mensal de referência do cargo.</p>
     <p class="muted">Valor previsto desde ${esc(salary.since)}. Fonte conferida em ${esc(salary.checkedAt)}. Pagamento individual, descontos e outras verbas não foram importados nesta ficha.</p>
     ${profileSource({ sourceUrl: salary.sourceUrl, fetchedAt: salary.checkedAt, period: `${money(salary.amount)} mensais desde ${salary.since}` }, 'Fonte do subsídio', 'Fonte consultada')}</article>` : '<p class="muted">Sem remuneração importada.</p>';
+  const election = profileElection(p);
+  const electionSource = election ? `<article class="cid-source"><b>Eleição de 2026</b><p>${esc(election.frase)}</p>
+    ${profileSource({ sourceUrl: election.fonte?.sourceUrl, fetchedAt: election.fonte?.fetchedAt,
+      period: election.fonte?.geradoNoTse ? `Arquivo gerado pelo TSE em ${election.fonte.geradoNoTse}` : null }, 'Fonte do TSE', 'Consulta')}
+    ${election.metodo ? `<p class="muted">${esc(election.metodo)}</p>` : ''}</article>` : '';
   const sourcesContent = `${salarySource}
     ${mandateSource}
+    ${electionSource}
     ${p.loading ? loading() : `<div class="cid-source-list">
       <article class="cid-source"><b>Contato e gabinete</b>${c?.detail ? `<p class="muted">${esc(c.detail)}</p>` : ''}${profileSource(c, 'Fonte do contato')}</article>
       <article class="cid-source"><b>Projetos apresentados</b>${projects?.detail ? `<p class="muted">${esc(projects.detail)}</p>` : ''}${profileSource(projects, 'Fonte dos projetos')}</article>

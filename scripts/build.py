@@ -77,7 +77,7 @@ def build(output=None):
         "votosCompletos": votes,
         "arrecadacao": arrecadacao,
         "perfis": {"profiles": {}, "sobDemanda": any(
-            (SNAPSHOTS / name).exists() for name in ("perfis.json", "senado-projetos.json")
+            (SNAPSHOTS / name).exists() for name in ("perfis.json", "senado-projetos.json", "eleicoes-2026.json")
         )},
         "senado": {"sobDemanda": (SNAPSHOTS / "senado-atividade.json").exists()},
     }

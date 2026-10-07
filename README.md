@@ -40,6 +40,7 @@ python3 -m backend.server --port 8000
 | `make collect-profiles` | Coletar manualmente os complementos das fichas; depois rode `make build` |
 | `make collect-senate YEAR=2026` | Coletar presença registrada, votos nominais e autoria do Senado; depois rode `make build` |
 | `make collect-project-status` | Consultar a situação dos projetos já listados, com fontes e datas; atualização e modo offline em [Dados e SQLite](docs/data.md) |
+| `make collect-elections` | Ligar a lista atual às candidaturas de 2026 no TSE; depois rode `make build` |
 | `make prod` | Rodar como em produção (cache, só localhost) |
 | `make deploy` / `make deploy-db` | Publicar código / banco no servidor ([Publicação](docs/deploy.md)) |
 

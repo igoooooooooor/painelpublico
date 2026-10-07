@@ -96,6 +96,9 @@
 .vbar i:first-child { background: var(--accent); }
 .vbar i:nth-child(2) { background: var(--no); }
 .cid-stack { display: flex; flex-direction: column; gap: 10px; }
+.cid-eleicao { display: flex; width: fit-content; margin-top: 8px; font-size: 13px; font-weight: 600; }
+.cid-eleicao[data-tom="ok"] i { background: var(--accent); }
+.cid-eleicao[data-tom="info"] i { background: var(--accent-2); }
 
 /* avatar com foto oficial por cima das iniciais */
 .cid-avs { position: relative; display: inline-block; flex: none; border-radius: 50%; }

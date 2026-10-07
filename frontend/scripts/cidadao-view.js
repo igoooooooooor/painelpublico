@@ -378,7 +378,7 @@ function vPolitico() {
   if (cid.fichaErro) return back + `<section class="card"><p>Não deu para abrir esta ficha.</p><p class="muted">${esc(cid.fichaErro)}</p></section>`;
   const f = cid.ficha;
   if (!f) return back + skel('ficha-respostas');
-  const shared = profileData(f.pessoa || id), p = shared.pessoa;
+  const shared = profileData(f.pessoa || id), p = shared.pessoa, eleicao = profileElection(shared);
   const hasExpenseData = f.hasExpenseData === undefined ? f.total != null : Boolean(f.hasExpenseData);
   const alertas = f.alertas || [], camara = p.role === 'deputado';
   const num = String(p.id).split(':')[1];
@@ -394,7 +394,7 @@ function vPolitico() {
     ${cidFonte(p) ? `<a class="fchip" href="${esc(cidFonte(p))}" target="_blank" rel="noopener">Página oficial ↗</a>` : ''}
     ${hasExpenseData ? `<a class="fchip" href="${esc('/api/c/gastos.csv?id=' + encodeURIComponent(p.id))}" download>Baixar todas as notas (CSV)</a>` : ''}`;
   return `${back}
-    <div class="cid-profile-head"><div class="profile">${cidAvatar(p, 64)}<div><h1 class="n">${esc(cidNome(p.name))}</h1><span class="muted">${cidQuem(p)}</span></div></div>
+    <div class="cid-profile-head"><div class="profile">${cidAvatar(p, 64)}<div><h1 class="n">${esc(cidNome(p.name))}</h1><span class="muted">${cidQuem(p)}</span>${eleicao?.curto ? `<span class="pill cid-eleicao" data-tom="${esc(eleicao.tom)}"><i></i>${esc(eleicao.curto)}</span>` : ''}</div></div>
       <button type="button" class="fchip" data-cmp-start="${esc(shared.id)}">Comparar com outro(a) →</button></div>
     <span class="k cid-answer-label">Em 3 respostas</span>
     <div class="cid-answers">${cidCustoResposta(f, p, hasExpenseData)}${cidTrabalhoResposta(shared)}${cidAlertaResposta(alertas, hasExpenseData)}</div>

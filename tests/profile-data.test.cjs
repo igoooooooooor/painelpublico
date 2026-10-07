@@ -417,6 +417,42 @@ test('project filters expose empty results and persist per profile without repla
   assert.match(ctx.profileSectionsHTML('camara:2'), /data-project-filter="todos"[^>]*aria-pressed="true"/);
 });
 
+test('2026 election results are stated only for a single TSE match, in plain language', () => {
+  const fonte = { sourceUrl: 'https://dadosabertos.tse.jus.br/dataset/candidatos-2026', fetchedAt: '2026-10-07T20:00:00+00:00', geradoNoTse: '07/10/2026 16:30:39' };
+  const base = { fonte, metodo: 'Nome civil e data de nascimento, sem CPF.', segundoTurno: '2026-10-25' };
+  const found = (cargo, uf, situacao) => ({ ...base, status: 'encontrada', cargo, uf, situacao, dataEleicao: '2026-10-04' });
+  const ctx = load({ perfis: { profiles: {
+    'camara:1': { role: 'deputado', eleicao2026: found('DEPUTADO FEDERAL', 'SP', 'ELEITO POR QP') },
+    'camara:2': { role: 'deputado', eleicao2026: found('SENADOR', 'MG', 'NÃO ELEITO') },
+    'senado:3': { role: 'senador', eleicao2026: found('GOVERNADOR', 'AM', '2º TURNO') },
+    'camara:4': { role: 'deputado', eleicao2026: found('DEPUTADO FEDERAL', 'RJ', 'SUPLENTE') },
+    'camara:5': { role: 'deputado', eleicao2026: found('DEPUTADO FEDERAL', 'RJ', '#NULO') },
+    'camara:6': { role: 'deputado', eleicao2026: { ...base, status: 'sem-correspondencia' } },
+    'senado:7': { role: 'senador', eleicao2026: found('PRESIDENTE', 'BR', '2º TURNO') },
+    'senado:8': { role: 'senador', eleicao2026: found('1º SUPLENTE', 'PA', 'ELEITO') },
+  } } });
+  const e = id => ctx.profileElection(ctx.profileData(id));
+  assert.equal(e('camara:1').curto, 'Reeleito(a) em 2026');
+  assert.equal(e('camara:1').frase, 'Reeleito(a) deputado(a) federal por SP na eleição de 4/10/2026.');
+  assert.equal(e('camara:2').curto, 'Não eleito(a) para senador(a)');
+  assert.equal(e('camara:2').frase, 'Concorreu a senador(a) por MG em 2026 e não foi eleito(a).');
+  assert.equal(e('senado:3').curto, '2º turno para governador(a)');
+  assert.equal(e('senado:3').frase, 'Disputa o 2º turno para governador(a) por AM em 25/10/2026.');
+  assert.equal(e('camara:4').curto, 'Não reeleito(a) em 2026');
+  assert.equal(e('camara:4').frase, 'Concorreu à reeleição para deputado(a) federal por RJ em 2026 e ficou como suplente.');
+  assert.equal(e('camara:5').curto, 'Candidato(a) a deputado(a) federal em 2026');
+  assert.equal(e('camara:6').curto, null);
+  assert.match(e('camara:6').frase, /^Não encontramos candidatura em 2026/);
+  assert.equal(e('senado:7').frase, 'Disputa o 2º turno para presidente em 25/10/2026.');
+  assert.equal(e('senado:8').curto, 'Eleito(a) 1º(ª) suplente de senador(a) em 2026');
+  assert.equal(ctx.profileElection(ctx.profileData('camara:99')), null);
+  const html = ctx.profileSectionsHTML('camara:1');
+  assert.match(html, /<b>Eleição de 2026<\/b><p>Reeleito\(a\) deputado\(a\) federal por SP na eleição de 4\/10\/2026\.<\/p>/);
+  assert.match(html, /Arquivo gerado pelo TSE em 07\/10\/2026 16:30:39/);
+  assert.match(html, /href="https:\/\/dadosabertos\.tse\.jus\.br\/dataset\/candidatos-2026"/);
+  assert.doesNotMatch(ctx.profileSectionsHTML('camara:99'), /Eleição de 2026/);
+});
+
 test('external fields and URLs are safe in shared cards', () => {
   const ctx = load({ perfis: { profiles: { 'camara:1': {
     contato: { email: '<script>email</script>', redes: [{ nome: 'malicioso', url: 'javascript:alert(1)' }] },

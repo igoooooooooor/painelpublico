@@ -312,3 +312,29 @@ nos metadados. Esta fotografia e os caches são locais e não estão no Git.
 ### Comparar partidos
 
 `/api/c/partidos` agrupa os cadastros atuais de deputados e senadores pela sigla da lista oficial. Para cada cargo informa quantos registros integram a lista, quantos têm notas importadas, gasto somado, média por parlamentar com notas e alertas (`pico` e `fornecedor`), além dos três maiores gastos do partido. Quem não tem nota importada não entra na média; partido sem nenhuma nota fica com gasto e média nulos. A tela soma a isso a presença média e os votos por partido calculados dos snapshots da Câmara e os dados coletados do Senado, sempre em linhas separadas por casa. Votações secretas ficam fora da comparação nominal. A unidade usa somente votos Sim/Não; a concordância entre pessoas usa escolhas nominais registradas para ambas. Presença do Senado é contagem de registros positivos, sem percentual de assiduidade nem classificação de faltas. Cota usa a sigla da lista atual; presença usa a sigla do respectivo snapshot e votos usam a sigla publicada na votação. Esses recortes podem divergir após mudanças de partido.
+
+### Eleições de 2026 — TSE, consulta de 7/10/2026
+
+```sh
+make collect-elections            # baixa as candidaturas do TSE e completa nomes civis e nascimentos
+python3 ingest/eleicoes_2026.py   # reconstrói o snapshot sem rede, a partir do cache
+make build
+```
+
+`ingest/eleicoes_2026.py` liga cada nome da lista oficial atual (595 registros) a uma candidatura do
+[arquivo de candidaturas de 2026 do TSE](https://dadosabertos.tse.jus.br/dataset/candidatos-2026). Nome civil e data de
+nascimento vêm das APIs da Câmara (`/deputados/{id}`) e do Senado (`/senador/{codigo}`) e ficam só no cache local
+`data/raw/tse/identidades-2026.json`; CPF não é lido nem guardado. A ligação usa a primeira regra que der uma única
+candidatura: mesmo nome civil e nascimento; nomes com as mesmas palavras e nascimento (sobrenome a mais, iniciais abreviadas,
+palavras juntas); nome de urna igual ao parlamentar, mesma UF e nascimento (nome social, grafia diferente); ou mesmo nome civil
+e UF com ano de nascimento diferente em um ano (divergência entre fontes). Sem resposta única, a ficha não afirma nada.
+
+No arquivo gerado pelo TSE em 07/10/2026 16:30:39 (1º turno), 551 dos 595 registros foram ligados (540 pela primeira regra,
+6 pela segunda, 4 pela terceira e 1 pela quarta), sem ambiguidade. Os 44 restantes não têm candidatura correspondente no arquivo,
+como senadores eleitos em 2022, com mandato até 2031; a ficha diz que a candidatura não foi encontrada, sem concluir que a
+pessoa não concorreu. Dos 551, 347 aparecem como eleitos (por QP, por média ou majoritários), 125 como suplentes, 69 como não
+eleitos, 6 no 2º turno de 25/10/2026 e 4 sem resultado no arquivo (`#NULO`). A ficha mostra um selo curto no cabeçalho e a frase
+completa, com fonte, data e método, em "Fontes e datas". O 2º turno exige nova coleta depois de 25/10.
+
+O snapshot `data/snapshots/eleicoes-2026.json` guarda só cargo, UF, número, nome de urna, partido, turno e situação de cada
+candidatura ligada, além de fonte, método e cobertura. `/api/c/perfil/<id>` o anexa à ficha como `eleicao2026`.

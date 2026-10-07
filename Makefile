@@ -6,7 +6,7 @@ HOST ?= 127.0.0.1
 
 
 .PHONY: ci deploy-data remote-build
-.PHONY: help build dev prod test check db-init db-check db-backup import collect-legislative collect-profiles collect-senate collect-project-status deploy deploy-db deploy-status
+.PHONY: help build dev prod test check db-init db-check db-backup import collect-legislative collect-profiles collect-senate collect-project-status collect-elections deploy deploy-db deploy-status
 help:
 	@echo "make dev                Gera o app e inicia em localhost:8000"
 	@echo "make check              Build, sintaxe e testes (sem downloads)"
@@ -16,6 +16,7 @@ help:
 	@echo "make collect-profiles   Coleta manual de contatos, projetos e gabinete"
 	@echo "make collect-senate     Coleta manual de atividade e autoria do Senado"
 	@echo "make collect-project-status  Consulta a situação dos projetos já listados"
+	@echo "make collect-elections  Liga a lista atual às candidaturas de 2026 no TSE"
 	@echo "make prod               Roda como em produção (cache, só localhost)"
 	@echo "make deploy SERVER=...  Testa e publica o código no servidor"
 	@echo "make deploy-data SERVER=...  Envia banco e snapshots (alias: deploy-db)"
@@ -67,6 +68,9 @@ collect-senate:
 
 collect-project-status:
 	$(PYTHON) ingest/project_status.py --collect
+
+collect-elections:
+	$(PYTHON) ingest/eleicoes_2026.py --collect
 
 prod: build
 	$(PYTHON) -m backend.server --prod --host 127.0.0.1 --port $(PORT)

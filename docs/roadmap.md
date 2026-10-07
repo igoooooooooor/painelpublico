@@ -22,7 +22,7 @@ Antes de entrar no roadmap, cada item passa por duas perguntas:
 
 1. **Eleições de 2026 e troca de mandatos, antes de fevereiro de 2027.** O primeiro turno foi em 4/10 e o segundo é em 25/10. A nova legislatura começa em 1º/2/2027, com toda a Câmara e dois terços do Senado eleitos agora.
    - **Feito (7/10):** a lista oficial agora fica separada do cadastro (tabela `roster`). Quem sai deixa de aparecer como em exercício e fica marcado como fora da lista atual, sem perder notas nem alertas; uma coleta indisponível mantém a lista anterior.
-   - Importar do TSE quem foi eleito e reeleito em 2026, para mostrar na ficha e preparar a troca de legislatura.
+   - **Feito (7/10):** cada ficha mostra o resultado de 2026 no TSE (eleito, reeleito, suplente, não eleito, 2º turno) quando há uma única candidatura correspondente; 551 dos 595 registros foram ligados. **Falta:** nova coleta depois do 2º turno (25/10) e, com a lista da nova legislatura, a troca em 1º/2/2027.
    - O bloco eleitoral só volta à home com cobertura ampla.
 2. **Minha cidade, versão 1.** A pessoa digita a cidade e vê quem a representa e quanto custa. A base é nacional e igual para as 5.570 cidades:
    - **TSE:** prefeito(a), vice e vereadores eleitos em 2024; governador(a) e deputados(as) estaduais eleitos em 2026; bens declarados e financiamento de campanha; deputados(as) federais mais votados(as) na cidade.

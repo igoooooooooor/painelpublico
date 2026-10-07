@@ -407,6 +407,19 @@ test('three-answer alert highlights only the strongest alert while details retai
   assert.deepEqual(order.map(title => details.indexOf(title)), [...order.map(title => details.indexOf(title))].sort((a, b) => a - b));
 });
 
+test('profile header shows the 2026 election result only for a unique TSE match', () => {
+  const { api, state, context } = makeView();
+  context.DATA.perfis = { profiles: {
+    'camara:55': { role: 'deputado', eleicao2026: { status: 'encontrada', cargo: 'SENADOR', uf: 'SP', situacao: 'ELEITO', dataEleicao: '2026-10-04' } },
+    'camara:56': { role: 'deputado', eleicao2026: { status: 'sem-correspondencia' } },
+  } };
+  ficha(api, state, 'camara:55');
+  assert.match(api.vPolitico(), /<span class="pill cid-eleicao" data-tom="ok"><i><\/i>Eleito\(a\) senador\(a\) em 2026<\/span>/);
+  ficha(api, state, 'camara:56');
+  const withoutMatch = api.vPolitico();
+  assert.doesNotMatch(withoutMatch, /cid-eleicao/);
+});
+
 test('Senate profiles show source snapshot metadata safely and omit empty fields', () => {
   const { api, state } = makeView();
   state.pol = 'senado:current';
