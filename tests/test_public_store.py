@@ -11,7 +11,8 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from backend import cidadao, public_store as store
-from backend.database import backup_database, check_database, migrate
+from backend.config import SCHEMA_VERSION
+from backend.database import backup_database, check_database, ensure_schema, migrate
 
 
 class PublicStoreTests(unittest.TestCase):
@@ -133,6 +134,56 @@ class PublicStoreTests(unittest.TestCase):
         with closing(store.connect(self.db_path)) as db, db:
             self.assertEqual(db.execute('SELECT COUNT(*) FROM expenses').fetchone()[0], 35)
 
+    def test_complete_roster_replaces_membership_and_keeps_history(self):
+        self.payload['sources'].append({'id': 'camara_deputies_current', 'label': 'Lista atual', 'status': 'imported'})
+        for authority in self.payload['authorities'][:3]:
+            authority['sourceId'] = 'camara_deputies_current'
+        self.import_data()
+
+        def roster(db):
+            return {row[0] for row in db.execute("SELECT authorityId FROM roster WHERE sourceId='camara_deputies_current'")}
+        with closing(store.connect(self.db_path)) as db, db:
+            self.assertEqual(roster(db), {'p:0', 'p:1', 'p:2'})
+
+        # p:0 sai da lista nova e continua só no arquivo de despesas: deixa de ser atual, sem perder nada.
+        self.payload['authorities'][0]['sourceId'] = 'test'
+        self.import_data()
+        with closing(store.connect(self.db_path)) as db, db:
+            self.assertEqual(roster(db), {'p:1', 'p:2'})
+            self.assertEqual(db.execute("SELECT sourceId FROM authorities WHERE id='p:0'").fetchone()[0], 'test')
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM expenses WHERE authorityId='p:0'").fetchone()[0], 5)
+
+        # Uma coleta indisponível não esvazia nem altera a lista anterior.
+        self.payload['sources'][-1]['status'] = 'unavailable'
+        self.payload['authorities'][1]['sourceId'] = 'test'
+        self.import_data()
+        with closing(store.connect(self.db_path)) as db, db:
+            self.assertEqual(roster(db), {'p:1', 'p:2'})
+
+        # Quem volta à lista volta a ser atual.
+        self.payload['sources'][-1]['status'] = 'imported'
+        for authority in self.payload['authorities'][:3]:
+            authority['sourceId'] = 'camara_deputies_current'
+        self.import_data()
+        with closing(store.connect(self.db_path)) as db, db:
+            self.assertEqual(roster(db), {'p:0', 'p:1', 'p:2'})
+
+    def test_version_one_database_gains_roster_from_current_lists(self):
+        self.payload['sources'].append({'id': 'senado_senators_current', 'label': 'Lista atual', 'status': 'imported'})
+        self.payload['authorities'][0]['sourceId'] = 'senado_senators_current'
+        self.import_data()
+        with closing(sqlite3.connect(self.db_path)) as db:
+            db.execute('DROP TABLE roster')
+            db.execute('PRAGMA user_version = 1')
+            db.commit()
+        self.assertEqual(ensure_schema(self.db_path), SCHEMA_VERSION)
+        self.assertEqual(ensure_schema(self.db_path), SCHEMA_VERSION)
+        with closing(sqlite3.connect(self.db_path)) as db:
+            self.assertEqual(db.execute('SELECT sourceId,authorityId FROM roster').fetchall(), [('senado_senators_current', 'p:0')])
+            self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], SCHEMA_VERSION)
+        self.assertIsNone(ensure_schema(self.root / 'absent.sqlite3'))
+        self.assertFalse((self.root / 'absent.sqlite3').exists())
+
     def test_legacy_schema_migrates_once_and_preserves_data(self):
         db = sqlite3.connect(self.root / 'legacy.sqlite3')
         db.execute('''CREATE TABLE authorities (
@@ -141,9 +192,9 @@ class PublicStoreTests(unittest.TestCase):
         db.execute('''INSERT INTO authorities
             (id,name,institution) VALUES (?,?,?)''', ('old:1', 'José da Silva', 'Câmara'))
         db.commit()
-        self.assertEqual(migrate(db), 1)
-        self.assertEqual(migrate(db), 1)
-        self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], 1)
+        self.assertEqual(migrate(db), SCHEMA_VERSION)
+        self.assertEqual(migrate(db), SCHEMA_VERSION)
+        self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], SCHEMA_VERSION)
         row = db.execute('SELECT id,name,searchText,positionCount FROM authorities').fetchone()
         self.assertEqual(row, ('old:1', 'José da Silva', 'jose da silva camara', 1))
         db.close()

@@ -66,6 +66,24 @@ class CidadaoPoliticosTests(unittest.TestCase):
         source.write_text(json.dumps(self.payload), encoding='utf-8')
         store.import_documents([source], self.db_path)
 
+    def test_member_who_leaves_the_list_keeps_history_and_is_marked_outside(self):
+        with closing(store.connect(self.db_path)) as db, db:
+            self.assertIn('camara:paid', {p['id'] for p in cidadao.politicos(db, {'pageSize': 100})['itens']})
+            former = cidadao.politico(db, 'camara:former')['pessoa']
+            self.assertTrue(former['foraDaLista'])
+            self.assertFalse(former['current'])
+        # Nova lista oficial sem camara:paid: a pessoa continua só no arquivo de despesas.
+        self.payload['authorities'][2]['sourceId'] = 'camara_ceap'
+        self.import_data()
+        with closing(store.connect(self.db_path)) as db, db:
+            listed = cidadao.politicos(db, {'pageSize': 100})
+            self.assertNotIn('camara:paid', {p['id'] for p in listed['itens']})
+            self.assertEqual(listed['cobertura']['deputado']['count'], 2)
+            ficha = cidadao.politico(db, 'camara:paid')
+            self.assertTrue(ficha['pessoa']['foraDaLista'])
+            self.assertEqual(ficha['total'], 123.45)
+            self.assertEqual(cidadao.resumo(db)['parlamentares']['deputado'], {'total': 2, 'comReembolsos': 1})
+
     def test_roster_coverage_pagination_filters_and_excludes_expense_only_authorities(self):
         with closing(store.connect(self.db_path)) as db, db:
             first = cidadao.politicos(db, {'page': 1, 'pageSize': 2})

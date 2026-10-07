@@ -19,4 +19,6 @@ SNAPSHOTS_PATH = Path(_snapshots_setting).expanduser() if _snapshots_setting els
 if not SNAPSHOTS_PATH.is_absolute():
     SNAPSHOTS_PATH = ROOT / SNAPSHOTS_PATH
 SCHEMA_PATH = Path(__file__).resolve().parent / "schema.sql"
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+# Listas oficiais completas (quem está em exercício). Só uma coleta bem-sucedida troca quem está nelas.
+ROSTER_SOURCES = ("camara_deputies_current", "senado_senators_current")

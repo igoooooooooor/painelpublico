@@ -24,3 +24,7 @@ CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY,value TEXT);
 CREATE TABLE IF NOT EXISTS signals(id TEXT PRIMARY KEY,authorityId TEXT,sourceId TEXT,type TEXT,title TEXT,
  amountCents INTEGER,description TEXT,period TEXT);
 CREATE INDEX IF NOT EXISTS signals_authority ON signals(authorityId,type);
+-- Quem está em cada lista oficial na coleta completa mais recente; o cadastro e o histórico ficam em authorities.
+CREATE TABLE IF NOT EXISTS roster(sourceId TEXT NOT NULL REFERENCES sources(id),
+ authorityId TEXT NOT NULL REFERENCES authorities(id), PRIMARY KEY(sourceId,authorityId));
+CREATE INDEX IF NOT EXISTS roster_authority ON roster(authorityId);

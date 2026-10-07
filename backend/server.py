@@ -8,7 +8,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
-from . import cidadao, perfis, public_store as store
+from . import cidadao, database, perfis, public_store as store
 from .config import BUILD_PATH
 
 QUERY_SECONDS = 8      # consulta que passar disso é abortada (protege o servidor público)
@@ -173,6 +173,10 @@ if __name__ == '__main__':
     parser.add_argument('--db', type=store.Path, default=store.DB_PATH)
     parser.add_argument('--prod', action='store_true', help='Publicação: cache de respostas e cabeçalhos para o Cloudflare')
     args = parser.parse_args()
+    try:
+        database.ensure_schema(args.db)  # um banco antigo ganha as tabelas novas antes da primeira consulta
+    except (sqlite3.Error, OSError, RuntimeError) as error:
+        print(f'Aviso: não foi possível atualizar o esquema do banco: {error}', flush=True)
     server = ThreadingHTTPServer((args.host, args.port), Handler)
     server.daemon_threads = True
     server.db_path = args.db

@@ -10,7 +10,7 @@ import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .config import DB_PATH, ROOT, SCHEMA_PATH, SCHEMA_VERSION
+from .config import DB_PATH, ROOT, ROSTER_SOURCES, SCHEMA_PATH, SCHEMA_VERSION
 
 
 def fold(value):
@@ -68,12 +68,34 @@ def migrate(db):
                 "UPDATE authorities SET searchText=fold(name||' '||COALESCE(institution,''))"
             )
 
+        if version < 2:
+            # v2: o pertencimento às listas oficiais sai de authorities.sourceId para a tabela roster.
+            marks = ','.join('?' * len(ROSTER_SOURCES))
+            db.execute(f'INSERT OR IGNORE INTO roster(sourceId,authorityId) SELECT sourceId,id FROM authorities '
+                       f'WHERE sourceId IN ({marks})', ROSTER_SOURCES)
+
         db.execute(f'PRAGMA user_version = {SCHEMA_VERSION}')
         db.commit()
     except Exception:
         db.rollback()
         raise
     return SCHEMA_VERSION
+
+
+
+def ensure_schema(path):
+    """Atualiza o esquema de um banco existente antes de servi-lo; não cria banco novo."""
+    path = Path(path)
+    if not path.is_file():
+        return None
+    db = sqlite3.connect(path, timeout=30)
+    try:
+        if db.execute('PRAGMA user_version').fetchone()[0] == SCHEMA_VERSION:
+            return SCHEMA_VERSION
+        db.execute('PRAGMA foreign_keys=ON')
+        return migrate(db)
+    finally:
+        db.close()
 
 
 def _connect_read_only(path):
@@ -90,7 +112,7 @@ def check_database(path):
     if not path.is_file():
         return {'database': str(path), 'status': 'missing', 'ok': False}
 
-    expected_tables = ('sources', 'authorities', 'expenses', 'suppliers', 'signals')
+    expected_tables = ('sources', 'authorities', 'expenses', 'suppliers', 'signals', 'roster')
     db = _connect_read_only(path)
     try:
         quick_check = [row[0] for row in db.execute('PRAGMA quick_check')]

@@ -63,8 +63,15 @@ O esquema normalizado contém `sources(id,label,url,scope,period,status,detail,f
 `authority_totals`, `supplier_totals`, `signals` e `meta` guardam agregados, sinais e controle do retrato. Valores em
 `amountCents` são centavos. A natureza separa reembolso de remuneração; os dois não são somados como um custo único.
 
+`roster(sourceId,authorityId)` guarda quem está em cada lista oficial (deputados e senadores em exercício) na coleta completa
+mais recente; o cadastro e o histórico ficam em `authorities`. Só uma lista coletada por inteiro substitui a anterior: quem sai
+deixa de contar como em exercício e passa a aparecer como fora da lista atual, sem perder notas nem alertas. Uma coleta
+indisponível mantém a lista anterior. A versão 2 do esquema cria a tabela a partir dos cadastros atuais; `make db-init` e o
+próprio servidor, ao iniciar, aplicam a migração.
+
 Na fotografia de 6 de outubro de 2026 (importada em 7/10), o banco tem 671 cadastros — 513 deputados e 82 registros do Senado
-nas listas atuais, mais 64 registros que só aparecem nos arquivos de despesas, inclusive 12 contas institucionais de lideranças —,
+nas listas atuais, mais 76 registros que só aparecem nos arquivos de despesas (54 deputados, 10 do Senado e 12 contas
+institucionais de lideranças) —,
 127.778 notas de reembolso, 22.216 chaves de fornecedor e 3.572 sinais. Fornecedores são associados por CNPJ quando a fonte o publica; chaves alternativas
 são limitadas à fonte e não garantem conciliação de empresas com nomes iguais.
 
@@ -113,7 +120,7 @@ A consulta principal usa as listas oficiais importadas: 513 deputados e 82 regis
 
 A reconciliação de 7/10/2026 reprocessa essa mesma fotografia do XML (`Metadados/Versao`: `06/10/2026 19:19:34`), sem nova coleta nem mudança de cobertura. O adaptador usa `Mandato/UfParlamentar` quando a identificação não informa UF; assim recupera MA para esse registro. Importa `Mandato/DescricaoParticipacao` em `position` e descreve em `employmentStatus` o exercício com a data de início mais recente, independentemente da ordem do XML. A ficha do Senado mostra participação, intervalo e motivo de término quando informados, com link da fonte. Datas ausentes, inválidas ou conflitantes não geram uma situação inferida; intervalo sem término informado não confirma exercício na data de hoje. Os 82 IDs da lista e as despesas históricas são preservados. Não se deduplicam suplentes e titulares como se fossem a mesma pessoa.
 
-Há reembolsos associados a 509 dos deputados e 79 dos registros do Senado. Os demais devem aparecer como dados ausentes, não como zero. A lista, o Placar e as comparações abrem a mesma ficha parlamentar. Os antigos detalhes e PDF de dez deputados e a análise editorial de despesas foram removidos.
+Há reembolsos associados a 509 dos deputados e 79 dos registros do Senado. Os demais devem aparecer como dados ausentes, não como zero. Outros 54 deputados e 10 registros do Senado têm notas em 2026 mas não estão nas listas atuais, como suplentes que deixaram o exercício: as fichas e os alertas deles continuam acessíveis, com o rótulo "fora da lista atual", e não entram em contagens, médias nem listas. A lista, o Placar e as comparações abrem a mesma ficha parlamentar. Os antigos detalhes e PDF de dez deputados e a análise editorial de despesas foram removidos.
 
 `frontend/scripts/profile-data.js` concentra a leitura do snapshot complementar, presença e votos. Contatos e situação da Câmara vêm do detalhe oficial de cada deputado; verba e equipe de gabinete vêm da página oficial, com ano, meses publicados e data de atualização. Projetos da Câmara abrangem PL, PLP e PEC apresentados desde 1/2/2023: total só é confirmado quando todas as páginas da consulta são lidas. O resumo dessa API não fornece a situação atual; a coleta separada da Etapa 3, descrita abaixo, consulta os IDs já listados e preserva lacunas. Contatos e participação/exercício do Senado vêm do XML reconciliado. Autoria do Senado usa a API substituta `/dadosabertos/processo`, com o filtro `codigoParlamentarAutor` validado; a cobertura está detalhada abaixo. Gabinete do Senado ainda não tem fonte integrada.
 

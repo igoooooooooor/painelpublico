@@ -21,7 +21,7 @@ Antes de entrar no roadmap, cada item passa por duas perguntas:
 ## Agora, nesta ordem
 
 1. **Eleições de 2026 e troca de mandatos, antes de fevereiro de 2027.** O primeiro turno foi em 4/10 e o segundo é em 25/10. A nova legislatura começa em 1º/2/2027, com toda a Câmara e dois terços do Senado eleitos agora.
-   - Reconciliar entradas e saídas entre coletas. Hoje o importador pode manter como atual alguém que saiu da lista se nenhuma outra fonte atualizar o registro. Separar o pertencimento à lista da preservação do histórico, sem apagar despesas.
+   - **Feito (7/10):** a lista oficial agora fica separada do cadastro (tabela `roster`). Quem sai deixa de aparecer como em exercício e fica marcado como fora da lista atual, sem perder notas nem alertas; uma coleta indisponível mantém a lista anterior.
    - Importar do TSE quem foi eleito e reeleito em 2026, para mostrar na ficha e preparar a troca de legislatura.
    - O bloco eleitoral só volta à home com cobertura ampla.
 2. **Minha cidade, versão 1.** A pessoa digita a cidade e vê quem a representa e quanto custa. A base é nacional e igual para as 5.570 cidades:

@@ -8,7 +8,7 @@ import sqlite3
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
-from .config import DB_PATH, ROOT
+from .config import DB_PATH, ROOT, ROSTER_SOURCES
 from .database import fold, migrate
 
 
@@ -93,9 +93,11 @@ def import_documents(paths, db_path=DB_PATH):
                                'label=excluded.label,url=excluded.url,scope=excluded.scope,period=excluded.period,'
                                'status=excluded.status,detail=excluded.detail,fetchedAt=excluded.fetchedAt', values)
                     counts['sources'] += 1
+                listed = {}
                 for a in payload.get('authorities', []):
                     if not a.get('id') or not a.get('name') or a.get('sourceId') not in source_ids:
                         raise ValueError(f'Autoridade sem identidade/fonte: {a.get("id")}')
+                    listed.setdefault(a['sourceId'], []).append(a['id'])
                     columns = ('id', 'name', 'role', 'branch', 'sphere', 'institution', 'uf', 'party', 'sourceId', 'sourceUrl', 'position', 'employmentStatus')
                     values = [a.get(k) for k in columns]
                     values[9] = safe_url(a.get('sourceUrl'))
@@ -146,6 +148,13 @@ def import_documents(paths, db_path=DB_PATH):
                 # Only a successful snapshot replaces records, never an unavailable source.
                 for sid in replace_ids:
                     db.execute('DELETE FROM expenses WHERE sourceId=? AND id NOT IN (SELECT id FROM received_expenses)', (sid,))
+                # Só uma lista oficial completa troca quem está em exercício. Quem sai deixa de ser atual,
+                # mas o cadastro e as despesas ficam; uma coleta indisponível mantém a lista anterior.
+                for s in sources:
+                    if s['id'] in ROSTER_SOURCES and s.get('status') == 'imported' and listed.get(s['id']):
+                        db.execute('DELETE FROM roster WHERE sourceId=?', (s['id'],))
+                        db.executemany('INSERT OR IGNORE INTO roster(sourceId,authorityId) VALUES(?,?)',
+                                       [(s['id'], authority_id) for authority_id in listed[s['id']]])
             db.execute('''UPDATE expenses SET lastChanged=? WHERE supplierKey IN
                 (SELECT s.key FROM suppliers s JOIN original_suppliers o ON o.key=s.key
                  WHERE s.name IS NOT o.name OR s.cnpj IS NOT o.cnpj)''', (stamp,))

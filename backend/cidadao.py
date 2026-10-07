@@ -54,30 +54,34 @@ def rows(db, sql, args=()):
 def _pessoas(db, ids):
     """Nome, cargo, partido, UF e metadados da fotografia oficial.
 
-    Registros que só existem no arquivo de despesas (sem partido) herdam partido/UF
-    do cadastro atual de mesmo nome, quando existe.
+    `current` vem da lista oficial mais recente (tabela roster). Registros que só existem no arquivo de
+    despesas (sem partido) herdam partido/UF do membro atual de mesmo nome, quando existe; os demais
+    ficam marcados como fora da lista atual, sem perder o histórico.
     """
     ids = list(dict.fromkeys(i for i in ids if i))
     if not ids:
         return {}
     marks = ','.join('?' * len(ids))
     out = {r['id']: r for r in rows(db, f'SELECT id,name,role,party,uf,sourceId,sourceUrl,position,employmentStatus FROM authorities WHERE id IN ({marks})', ids)}
-    faltando = [r for r in out.values() if not r.get('party')]
+    listas = (CURRENT['deputado'], CURRENT['senador'])
+    membros = {r[0] for r in db.execute(f'SELECT authorityId FROM roster WHERE sourceId IN (?,?) AND authorityId IN ({marks})', (*listas, *ids))}
+    for r in out.values():
+        r['current'] = r['id'] in membros
+    faltando = [r for r in out.values() if not r['current']]
     if faltando:
         atuais = {}
-        for r in rows(db, f"SELECT name,role,party,uf FROM authorities WHERE role IN ('deputado','senador') AND party IS NOT NULL"):
+        for r in rows(db, '''SELECT a.name,a.role,a.party,a.uf FROM authorities a JOIN roster m ON m.authorityId=a.id
+                WHERE m.sourceId IN (?,?) AND a.party IS NOT NULL''', listas):
             atuais[(r['role'], store.fold(r['name']))] = r
         for r in faltando:
-            par = atuais.get((r['role'], store.fold(r['name'])))
+            par = None if r.get('party') else atuais.get((r['role'], store.fold(r['name'])))
             if par:
                 r['party'], r['uf'] = par['party'], par['uf']
                 r['name'] = par['name']
+                r['current'] = True
             else:
                 r['foraDaLista'] = True
-    for r in out.values():
-        r['current'] = r.get('sourceId') == CURRENT.get(r.get('role')) or bool(r.get('party'))
     return out
-
 
 def _serie(db, authority, source, year):
     rs = rows(db, '''SELECT month, SUM(amountCents) c FROM expenses INDEXED BY expense_authority WHERE authorityId=? AND sourceId=? AND year=? AND kind='reembolso'
@@ -206,7 +210,7 @@ def _medias(db):
     out = {}
     for role in ROLES:
         r = db.execute('''SELECT AVG(t.amountCents)/100.0, COUNT(*) FROM authority_totals t JOIN authorities a ON a.id=t.authorityId
-            WHERE t.kind='reembolso' AND a.role=? AND a.sourceId=?''', (role, CURRENT[role])).fetchone()
+            WHERE t.kind='reembolso' AND a.role=? AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?)''', (role, CURRENT[role])).fetchone()
         out[role] = {'media': r[0] or 0, 'n': r[1]}
     return out
 
@@ -218,7 +222,7 @@ def _cobertura_politicos(db):
             SUM(CASE WHEN t.authorityId IS NOT NULL THEN 1 ELSE 0 END) withExpenses
         FROM authorities a
         LEFT JOIN authority_totals t ON t.authorityId=a.id AND t.kind='reembolso'
-        WHERE (a.role=? AND a.sourceId=?) OR (a.role=? AND a.sourceId=?)
+        WHERE (a.role=? AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?)) OR (a.role=? AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?))
         GROUP BY a.role''',
         ('deputado', CURRENT['deputado'], 'senador', CURRENT['senador']))
     for row in counts:
@@ -240,7 +244,7 @@ def resumo(db):
             MIN(t.periodStart) inicio,MAX(t.periodEnd) fim
         FROM authorities a LEFT JOIN authority_totals t
             ON t.authorityId=a.id AND t.kind='reembolso'
-        WHERE (a.role=? AND a.sourceId=?) OR (a.role=? AND a.sourceId=?)
+        WHERE (a.role=? AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?)) OR (a.role=? AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?))
         GROUP BY a.role''',
         ('deputado', CURRENT['deputado'], 'senador', CURRENT['senador']))
     by_role = {role: {
@@ -263,7 +267,7 @@ def resumo(db):
 
     category_rows = rows(db, '''SELECT e.category,SUM(e.amountCents) cents
         FROM authorities a JOIN expenses e ON e.authorityId=a.id
-        WHERE a.role='deputado' AND a.sourceId=? AND e.kind='reembolso'
+        WHERE a.role='deputado' AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?) AND e.kind='reembolso'
         GROUP BY e.category''', (CURRENT['deputado'],))
     categories = {}
     for row in category_rows:
@@ -272,7 +276,7 @@ def resumo(db):
 
     top = rows(db, '''SELECT a.id,a.name nome,a.party partido,a.uf,t.amountCents/100.0 gasto
         FROM authorities a JOIN authority_totals t ON t.authorityId=a.id AND t.kind='reembolso'
-        WHERE a.role='deputado' AND a.sourceId=?
+        WHERE a.role='deputado' AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?)
         ORDER BY t.amountCents DESC,a.name,a.id''', (CURRENT['deputado'],))
     return {
         'parlamentares': parlamentares,
@@ -288,7 +292,7 @@ def resumo(db):
 
 def politicos(db, params):
     """Lista simples de deputados(as) e senadores(as) em exercício, com gasto de 2026 e nº de alertas."""
-    clauses, args = ["a.role IN ('deputado','senador')", "a.sourceId IN (?,?)"], [CURRENT['deputado'], CURRENT['senador']]
+    clauses, args = ["a.role IN ('deputado','senador')", "a.id IN (SELECT authorityId FROM roster WHERE sourceId IN (?,?))"], [CURRENT['deputado'], CURRENT['senador']]
     if params.get('cargo') in ROLES:
         clauses.append('a.role=?'); args.append(params['cargo'])
     if params.get('q'):
@@ -393,7 +397,7 @@ def partidos(db):
 
     Gasto e média só contam quem tem notas importadas; sem nenhuma nota, o gasto fica nulo (ausência não é zero).
     """
-    filtro = '((a.role=? AND a.sourceId=?) OR (a.role=? AND a.sourceId=?))'
+    filtro = '((a.role=? AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?)) OR (a.role=? AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?)))'
     args = ('deputado', CURRENT['deputado'], 'senador', CURRENT['senador'])
     linhas = rows(db, f'''SELECT a.party sigla, a.role,
             COUNT(*) membros,
