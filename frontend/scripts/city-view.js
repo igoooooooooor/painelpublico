@@ -456,6 +456,7 @@ function cityAccountsSection(data, isDf, isFernando) {
       ${Number.isInteger(comparison.reportingCount) && Number.isInteger(comparison.universeCount) ? `<span>${comparison.reportingCount.toLocaleString('pt-BR')} de ${comparison.universeCount.toLocaleString('pt-BR')} municípios têm valores disponíveis nesta faixa.</span>` : ''}
       <span>${comparison.method ? esc(comparison.method) : 'A mediana considera os demais municípios da faixa; este município não entra no cálculo e não há classificação por posição.'}</span>`
       : `<span>${esc(comparison.message || 'A mediana para municípios de faixa populacional semelhante está indisponível.')}</span>`}
+    ${comparison.source ? citySource(comparison.source, 'Fonte das declarações comparadas') : ''}
     ${comparison.populationSource ? citySource(comparison.populationSource, 'Fonte da população usada na faixa') : ''}
   </div>` : '';
   const hasPersonnel = metrics.some(metric => cityNormalize(metric.id).includes('personnel') || cityNormalize(metric.label).includes('pessoal'));

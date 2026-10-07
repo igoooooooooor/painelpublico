@@ -333,6 +333,7 @@ test('municipal account amounts preserve sourced zero and precision, with safe m
       declaration: { status: 'submitted', submittedAt: '2026-08-15' },
       comparison: {
         available: true, message: 'Comparação calculada com outras cidades.',
+        source: { label: 'DCA nacional', url: 'https://dados.example/national', period: 'exercício de 2025', fetchedAt: '2026-10-07' },
         band: { id: 'large', label: 'Faixa 4', minPopulation: 1000000, maxPopulation: 5000000 },
         populationYear: 2024, populationSource: { label: 'População IBGE', url: 'https://dados.example/population', period: '2024' },
         universeCount: 80, reportingCount: 65, method: 'Mediana dos demais municípios, sem ranking.',
@@ -366,6 +367,7 @@ test('municipal account amounts preserve sourced zero and precision, with safe m
   assert.match(html, /Faixa populacional: Faixa 4[\s\S]*população de 2024/);
   assert.match(html, /65 de 80 municípios têm valores disponíveis nesta faixa/);
   assert.match(html, /Mediana dos demais municípios, sem ranking/);
+  assert.match(html, /DCA nacional ↗[\s\S]*exercício de 2025[\s\S]*consulta em 07\/10\/2026/);
   assert.match(html, /SICONFI &lt;dados&gt; ↗[\s\S]*exercício de 2025[\s\S]*consulta em 30\/09\/2026/);
   assert.match(html, /População IBGE ↗/);
   assert.match(html, /não some esses indicadores como parcelas independentes/);

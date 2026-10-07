@@ -111,6 +111,7 @@ class AccountDetailTests(unittest.TestCase):
         self.assertEqual(comparison["band"]["id"], "5001_to_10000")
         self.assertEqual(comparison["populationYear"], 2025)
         self.assertEqual(comparison["populationSource"], POPULATION_SOURCE)
+        self.assertEqual(comparison["source"], SOURCE)
         self.assertEqual(comparison["universeCount"], 5)
         self.assertEqual(comparison["reportingCount"], 3)
         self.assertEqual(comparison["metrics"], [{

@@ -201,6 +201,7 @@ def _comparison(identifier, row, snapshot, source):
     return {
         "available": available,
         "message": message,
+        "source": deepcopy(source),
         "band": deepcopy(band),
         "populationYear": population_year,
         "populationSource": deepcopy(population_source),
