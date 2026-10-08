@@ -110,7 +110,7 @@ def existing_parts(database, profiles, year, months):
                 amount = cents(office.get('months', {}).get(str(month))) if office.get('period') == str(year) else None
                 parts['office'][period] = {
                     'status': 'available' if amount is not None else 'unavailable',
-                    'amountCents': amount, 'period': period,
+                    'amountCents': amount, 'period': period, 'sourceStatus': office.get('status'),
                     'sourceUrl': office.get('sourceUrl'), 'fetchedAt': office.get('fetchedAt'),
                     'sourceUpdatedAt': office.get('sourceUpdatedAt'), 'stale': bool(office.get('stale')),
                     'staffCount': None,
