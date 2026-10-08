@@ -32,11 +32,11 @@ test('long names wrap and the last allowed line ends with an ellipsis', () => {
   assert.ok(lines.every(line => line.length * 10 <= 120));
 });
 
-test('actions render image and pdf buttons and keep the current card', () => {
+test('actions render the image button and keep the current card', () => {
   const context = load();
   const html = context.shareActionsHTML({ title: 'Rui Falcão', fileName: 'Rui Falcão', rows: [] });
   assert.match(html, /data-share="image"/);
-  assert.match(html, /data-share="pdf"/);
+  assert.doesNotMatch(html, /pdf/i);
   assert.equal(vm.runInContext('SHARE_STATE.card', context).title, 'Rui Falcão');
   assert.equal(context.shareActionsHTML(null), '');
 });

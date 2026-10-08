@@ -280,7 +280,6 @@ test('profile offers sharing with the same three answers on the card', () => {
   });
   const html = api.profileView();
   assert.match(html, /data-share="image"/);
-  assert.match(html, /data-share="pdf"/);
   const card = vm.runInContext('SHARE_STATE.card', context);
   assert.deepEqual(Array.from(card.rows, row => row.label), ['Cota parlamentar em 2026', 'Presença no Plenário em 2026', 'Gastos incomuns na cota']);
   assert.equal(card.rows[2].values[0], '1 alerta');

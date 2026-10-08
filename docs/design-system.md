@@ -20,7 +20,7 @@ Os valores de cor e tipografia são definidos em `tokens.css`. O tema claro é o
 
 ## Compartilhar
 
-`.share-actions` (em `share-card.js`) oferece imagem e PDF na ficha, na comparação de políticos e na de partidos. Cada tela monta um cartão com os mesmos números que mostra (`profileShareCard`, `comparisonShareCard`, `partyShareCard`); o cartão é desenhado em canvas, 1080×1350, tema claro, sem fotos de outros domínios, com fontes, data e o aviso de independência no rodapé. No celular, abre o compartilhamento nativo; nos demais, baixa o arquivo. O PDF carrega o jsPDF do cdnjs apenas no clique.
+`.share-actions` (em `share-card.js`) oferece compartilhar imagem na ficha, na comparação de políticos e na de partidos. Cada tela monta um cartão com os mesmos números que mostra (`profileShareCard`, `comparisonShareCard`, `partyShareCard`); o cartão é desenhado em canvas, 1080×1350, tema claro, sem fotos de outros domínios, com fontes, data e o aviso de independência no rodapé. No celular, abre o compartilhamento nativo; nos demais, baixa o arquivo.
 
 ## Bordas, estados e acessibilidade
 

@@ -1,11 +1,10 @@
-/* Compartilhar ficha e comparações como imagem (PNG 4:5, bom para redes sociais) ou PDF.
+/* Compartilhar ficha e comparações como imagem (PNG 4:5, bom para redes sociais).
    Cada tela monta um cartão com os mesmos números que mostra; aqui só desenhamos e entregamos o arquivo.
    O cartão é desenhado em canvas, sem fotos de outros domínios (elas impediriam exportar a imagem). */
 const SHARE_STATE = { card: null, busy: false, message: '' };
 const SHARE_SIZE = { width: 1080, height: 1350, padding: 72 };
 const SHARE_COLORS = { bg: '#F4F5F7', surface: '#FFFFFF', ink: '#111318', ink2: '#3B3F48', muted: '#5B606B', line: '#E3E5EA', accent: '#5B3DF5' };
 const SHARE_FONTS = { display: "'Newsreader', Georgia, serif", body: "'Geist', system-ui, sans-serif", data: "'Geist Mono', ui-monospace, monospace" };
-const SHARE_PDF_LIBRARY = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
 const SHARE_DISCLAIMER = 'Projeto pessoal e apartidário com dados públicos oficiais. Alertas não indicam irregularidade.';
 
 /* card: { kicker, title, subtitle?, columns?: [nome, nome], rows: [{ label, values: [..], notes?: [..] }], footnote, fileName } */
@@ -15,7 +14,6 @@ function shareActionsHTML(card) {
   if (!card) return '';
   return `<div class="share-actions" role="group" aria-label="Compartilhar">
     <button type="button" class="fchip" data-share="image"${SHARE_STATE.busy ? ' disabled' : ''}>Compartilhar imagem</button>
-    <button type="button" class="fchip" data-share="pdf"${SHARE_STATE.busy ? ' disabled' : ''}>Baixar PDF</button>
     <span class="share-status muted" role="status">${esc(SHARE_STATE.message)}</span>
   </div>`;
 }
@@ -175,30 +173,6 @@ function shareCanvasBlob(canvas) {
   return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('imagem')), 'image/png'));
 }
 
-function shareLoadPdfLibrary() {
-  if (window.jspdf) return Promise.resolve(window.jspdf.jsPDF);
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = SHARE_PDF_LIBRARY;
-    script.onload = () => window.jspdf ? resolve(window.jspdf.jsPDF) : reject(new Error('pdf'));
-    script.onerror = () => reject(new Error('pdf'));
-    document.head.appendChild(script);
-  });
-}
-
-async function sharePdfBlob(canvas, card) {
-  const JsPdf = await shareLoadPdfLibrary();
-  const pdf = new JsPdf({ unit: 'mm', format: 'a4' });
-  const margin = 15, imageWidth = 210 - margin * 2, imageHeight = imageWidth * SHARE_SIZE.height / SHARE_SIZE.width;
-  // JPEG mantém o PDF leve (PNG embutido passa de 5 MB); o fundo do cartão é opaco.
-  pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, imageWidth, imageHeight);
-  pdf.setFontSize(9);
-  pdf.setTextColor(91, 96, 107);
-  pdf.textWithLink(`Consulte e confira as fontes em ${location.origin}`, margin, margin + imageHeight + 8, { url: location.origin });
-  pdf.setProperties({ title: `${card.title} · Painel Público` });
-  return pdf.output('blob');
-}
-
 function shareDownload(blob, name) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -218,18 +192,16 @@ function shareSetStatus(message, busy = SHARE_STATE.busy) {
   document.querySelectorAll('[data-share]').forEach(button => { button.disabled = busy; });
 }
 
-async function shareCurrentCard(format) {
+async function shareCurrentCard() {
   const card = SHARE_STATE.card;
   if (!card || SHARE_STATE.busy) return;
-  const isPdf = format === 'pdf';
-  shareSetStatus(isPdf ? 'Gerando o PDF…' : 'Gerando a imagem…', true);
+  shareSetStatus('Gerando a imagem…', true);
   try {
     await shareFontsReady();
-    const canvas = shareDrawCard(card, document.createElement('canvas'));
-    const blob = isPdf ? await sharePdfBlob(canvas, card) : await shareCanvasBlob(canvas);
-    const name = `painel-publico-${shareSlug(card.fileName || card.title)}.${isPdf ? 'pdf' : 'png'}`;
-    const file = typeof File === 'function' ? new File([blob], name, { type: blob.type || (isPdf ? 'application/pdf' : 'image/png') }) : null;
-    // No celular, abre a folha de compartilhamento (WhatsApp, Instagram...). No computador, baixa o arquivo.
+    const blob = await shareCanvasBlob(shareDrawCard(card, document.createElement('canvas')));
+    const name = `painel-publico-${shareSlug(card.fileName || card.title)}.png`;
+    const file = typeof File === 'function' ? new File([blob], name, { type: 'image/png' }) : null;
+    // No celular, abre a folha de compartilhamento (WhatsApp, Instagram...). No computador, baixa a imagem.
     if (file && navigator.canShare?.({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: card.title, text: `${card.title} · Painel Público ${location.origin}` });
@@ -240,13 +212,13 @@ async function shareCurrentCard(format) {
       }
     }
     shareDownload(blob, name);
-    shareSetStatus(isPdf ? 'PDF baixado.' : 'Imagem baixada.', false);
+    shareSetStatus('Imagem baixada.', false);
   } catch (error) {
-    shareSetStatus(isPdf ? 'Não deu para gerar o PDF agora. Tente de novo.' : 'Não deu para gerar a imagem agora. Tente de novo.', false);
+    shareSetStatus('Não deu para gerar a imagem agora. Tente de novo.', false);
   }
 }
 
 document.addEventListener('click', event => {
   const button = event.target.closest('[data-share]');
-  if (button) shareCurrentCard(button.dataset.share);
+  if (button) shareCurrentCard();
 });
