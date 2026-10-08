@@ -26,6 +26,9 @@ PEER_MIN_VALUES = 5
 SUPPLIER_MIN_SHARE = 0.5
 SUPPLIER_MIN_CENTS = 3_000_000
 CHAMBER_DAYS = 90
+# Fim do exercício: o saldo mensal não usado se acumula no ano e expira em 31/12 (Câmara: guia da cota;
+# Senado: APS 5/2014, art. 5º, §§ 5º e 6º). Os alertas desses meses continuam, com esse contexto no cartão.
+YEAR_END_MONTHS = (11, 12)
 
 # Motivos de mês não avaliado na regra de pico.
 NOT_EVALUATED = {
@@ -203,6 +206,7 @@ def evaluate(records, fetched_at_by_source, baseline='year'):
                     'ruleVersion': RULE_VERSION, 'year': year, 'months': marked, 'floorCents': floor,
                     'series': [{'month': m, 'valueCents': months.get(m)} for m in range(1, run[-1] + 1)],
                     'fetchedAt': fetched, 'partial': False,
+                    'yearEndMonths': [m for m in run if m in YEAR_END_MONTHS],
                     'criteria': {'multiple': PEAK_MULTIPLE, 'minDifferenceCents': PEAK_MIN_DIFFERENCE_CENTS,
                                  'minPriorMonths': PEAK_MIN_PRIOR_MONTHS}}})
             alert_records[signal_id] = [rec for m in run for rec in record_ids[(authority, source, year, m)]]
@@ -252,7 +256,9 @@ def describe(signal) -> str:
                            f'{money(m["referenceCents"])}' for m in detail['months'])
         return (f'{months}. Referência: mediana dos meses anteriores do mesmo ano, com ao menos 3 meses e sem lacunas. '
                 f'Critério: 1,75 vez a referência, diferença de R$ 10.000 e acima do piso dos colegas '
-                f'({money(detail["floorCents"])}). Só meses com prazo de apresentação encerrado na coleta. Regra {detail["ruleVersion"]}.')
+                f'({money(detail["floorCents"])}). Só meses com prazo de apresentação encerrado na coleta.'
+                f'{" Fim do exercício: o saldo não usado da cota se acumula no ano e expira em 31/12." if detail.get("yearEndMonths") else ""}'
+                f' Regra {detail["ruleVersion"]}.')
     return (f'{detail["supplierName"]}: {money(detail["supplierCents"])} de {money(detail["totalCents"])} '
             f'({detail["share"] * 100:.1f}%). Critério: pelo menos 50% e R$ 30.000 no ano.'
             f'{" Período parcial: o ano ainda pode receber notas." if detail["partial"] else ""} Regra {detail["ruleVersion"]}.')

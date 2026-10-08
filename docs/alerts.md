@@ -27,6 +27,9 @@ explicação de cada cartão e na simulação. Hoje só as notas detalhadas do a
     completa só porque o calendário avançou.
 - **Período parcial:** a concentração do ano corrente sai como "período parcial", com os meses observados
   e a data da coleta, no cartão e em qualquer ranking que use o valor.
+- **Fim do ano:** novembro e dezembro são avaliados como os outros meses. O alerta continua e o cartão
+  informa que o saldo não usado da cota se acumula no ano e expira em 31 de dezembro (campo
+  `yearEndMonths` no resultado gravado).
 
 O que fica gravado (`signals.detail`): versão da regra, meses marcados com valor, referência e múltiplo,
 piso, série usada, data da coleta e se é parcial. O cartão só lê esses campos; nada é recalculado.
@@ -109,10 +112,28 @@ Pendências antes de ampliar para o mandato:
    1,16× no Senado; em 2025, perto de 1,0× nas duas Casas. Na simulação (base anual, lista atual),
    dezembro tem 26% dos meses marcados como pico e novembro e dezembro juntos, 39%; se os meses
    avaliados fossem iguais, dezembro teria cerca de 11%. Parte dos picos de fim de ano reflete o uso do
-   saldo acumulado antes que ele expire, e a regra precisa tratar isso antes de ampliar para o mandato.
-   Hoje não afeta o site: em 2026 só abril a junho são avaliados.
+   saldo acumulado antes que ele expire.
+
+   **Decisão (8/10/2026): manter os alertas de novembro e dezembro, com contexto.** Gasto é gasto: usar o
+   saldo antes que expire também interessa ao cidadão, e omitir esses meses esconderia dinheiro público.
+   O cartão informa a regra do saldo anual, sem tratá-la como justificativa.
 2. **Mês no Senado:** há passagens com data de agosto lançadas em dezembro. Confirmar se o mês do CEAPS é
    o da despesa ou o do reembolso. Se for o do reembolso, o pico no Senado mede lotes de pagamento.
 3. **Documentos do Senado:** a base não traz link de documento do CEAPS.
 4. **Intermediários de passagem:** agências concentram passagens de várias companhias.
 5. **Totais baixos:** a concentração alcança quem gasta pouco no ano.
+
+## Decisões registradas
+
+| Data | Decisão | Motivo |
+|---|---|---|
+| 8/10/2026 | Regra única gravada (`cota-alertas-v2`); o cartão lê o resultado, sem recalcular | A explicação incluía meses que não passaram pela regra |
+| 8/10/2026 | Valor das despesas nos alertas conta cada lançamento uma vez, com estornos; mantém a ordenação por valor | Uma nota entrava no pico e na concentração (R$ 972.810,24 em dobro na lista atual) |
+| 8/10/2026 | Câmara: mês avaliado só 90 dias depois do fim do mês, contados até a coleta | Prazo de apresentação das notas |
+| 8/10/2026 | Senado: mês avaliado só depois de 30 de abril do ano seguinte; regra por Casa | APS 5/2014, art. 5º, § 3º |
+| 8/10/2026 | Concentração do ano corrente marcada como "período parcial" no cartão e nos rankings | O ano ainda pode receber notas |
+| 8/10/2026 | Cobertura por regra e período; "Nenhum alerta nos meses avaliados" ou "Dados insuficientes para avaliar" | Não anunciar checagem que não aconteceu |
+| 8/10/2026 | Títulos factuais, sem selo de intensidade e sem destaque de "melhor" para menos alertas | A regra mede variação, não conduta |
+| 8/10/2026 | Novembro e dezembro avaliados normalmente, com aviso do saldo anual que expira em 31/12 | Gasto é gasto; omitir os meses esconderia dinheiro público |
+| Em aberto | Base anual ou de 12 meses para ampliar ao mandato | Simulação feita; falta decidir |
+| Em aberto | Mês do CEAPS (despesa ou reembolso), documentos do Senado, intermediários de passagem, totais baixos | Pendências da triagem |

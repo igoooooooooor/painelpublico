@@ -123,9 +123,15 @@ function alertVisualization(a) {
   return '';
 }
 function alertExplanation(a) {
-  if (a.tipo === 'pico') return `Aparece quando o gasto de um mês passa de 1,75 vez a referência da própria pessoa, a diferença é de pelo menos R$ 10 mil e o mês também fica acima do gasto mensal típico dos(as) colegas${Number.isFinite(a.piso) ? ` (${formatCitizenAmount(a.piso)} neste ano)` : ''}. A referência é o valor do meio (a mediana) dos meses anteriores do mesmo ano, com pelo menos 3 meses sem lacuna. Só entram meses cujo prazo de apresentação das notas já tinha terminado na data da coleta: 90 dias na Câmara; no Senado, até o fim de abril do ano seguinte. Meses seguidos marcados contam como um alerta só. A mesma regra vale para todos(as).`;
+  if (a.tipo === 'pico') return `Aparece quando o gasto de um mês passa de 1,75 vez a referência da própria pessoa, a diferença é de pelo menos R$ 10 mil e o mês também fica acima do gasto mensal típico dos(as) colegas${Number.isFinite(a.piso) ? ` (${formatCitizenAmount(a.piso)} neste ano)` : ''}. A referência é o valor do meio (a mediana) dos meses anteriores do mesmo ano, com pelo menos 3 meses sem lacuna. Só entram meses cujo prazo de apresentação das notas já tinha terminado na data da coleta: 90 dias na Câmara; no Senado, até o fim de abril do ano seguinte. Meses seguidos marcados contam como um alerta só. Novembro e dezembro também são avaliados; o cartão avisa que o saldo não usado da cota se acumula no ano e expira em 31 de dezembro. A mesma regra vale para todos(as).`;
   if (a.tipo === 'fornecedor') return `Aparece quando metade ou mais do dinheiro da cota no ano foi para uma mesma empresa, somando pelo menos R$ 30 mil.${a.parcial ? ` Período parcial: o cálculo usa as notas disponíveis de ${esc(a.periodoObservado || 'o ano')}, e o ano ainda pode receber notas.` : ''} Um contrato recorrente pode explicar a concentração; vale conferir as notas.`;
   return `Aparece para toda nota de R$ 10 mil ou mais. É só um corte de valor.`;
+}
+/* Contexto, não atenuante: o alerta continua; o cartão só informa a regra do saldo anual. */
+function alertYearEndNote(a) {
+  const months = Array.isArray(a.fimDeAno) ? a.fimDeAno : [];
+  if (!months.length) return '';
+  return `<p class="citizen-context">Fim do ano: o saldo da cota não usado nos meses anteriores se acumula e expira em 31 de dezembro. ${months.length > 1 ? 'Estes meses podem' : `${MONTH_NAMES_LONG[months[0]][0].toUpperCase()}${MONTH_NAMES_LONG[months[0]].slice(1)} pode`} incluir gastos feitos com esse saldo antes de ele expirar.</p>`;
 }
 function alertCard(a, opts = {}) {
   const [cls, label] = alertKind(a), p = a.pessoa || {};
@@ -136,6 +142,7 @@ function alertCard(a, opts = {}) {
     ${alertVisualization(a)}
     <p class="citizen-statement">${esc(a.frase)}</p>
     ${a.contexto?.frase ? `<p class="citizen-context">${esc(a.contexto.frase)}</p>` : ''}
+    ${alertYearEndNote(a)}
     <details class="citizen-why"><summary>Por que apareceu aqui?</summary><p>${alertExplanation(a)}</p><p class="muted">A regra mostra variação de gasto ou concentração em fornecedor; não mede irregularidade. Confira as notas na fonte oficial.</p></details>
     <div class="citizen-actions">${opts.semPessoa ? '' : `<button type="button" class="fchip" data-politician="${esc(p.id)}">Ver a ficha</button>`}${citizenSourceUrl(p) ? `<a class="fchip" href="${esc(citizenSourceUrl(p))}" target="_blank" rel="noopener">Conferir na fonte ↗</a>` : ''}</div>
   </article>`;
@@ -382,7 +389,7 @@ function profileAlertAnswer(alerts, coverage) {
   return `<section class="card citizen-answer citizen-answer-alert" data-profile-answer="alerts">
     <h2 class="h">Algum alerta na cota?</h2>
     ${top ? `<span class="fchip citizen-alert-count">${alerts.length} ${alerts.length === 1 ? 'alerta' : 'alertas'}</span>
-      <h3 class="citizen-title">${esc(top.titulo)}</h3>${alertVisualization(top)}<p class="citizen-statement">${esc(top.frase)}</p>${top.contexto?.frase ? `<p class="citizen-context">${esc(top.contexto.frase)}</p>` : ''}
+      <h3 class="citizen-title">${esc(top.titulo)}</h3>${alertVisualization(top)}<p class="citizen-statement">${esc(top.frase)}</p>${top.contexto?.frase ? `<p class="citizen-context">${esc(top.contexto.frase)}</p>` : ''}${alertYearEndNote(top)}
       <button type="button" class="more" data-profile-open="alerts">${alerts.length > 1 ? `Ver os demais alertas (${alerts.length - 1})` : 'Ver alerta em detalhe'} →</button>`
     : state.evaluated ? `<p class="citizen-empty">Nenhum alerta nos meses avaliados</p>
       ${state.html}<p class="muted">As regras são as mesmas para todos(as). Isso não é uma auditoria completa das notas.</p>`

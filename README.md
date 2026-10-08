@@ -67,6 +67,7 @@ dist/           app gerado, ignorado no Git
 - [Arquitetura](docs/architecture.md): divisão de responsabilidades e fluxo dos dados.
 - [Design system](docs/design-system.md): componentes, temas e bordas neutras.
 - [Dados e SQLite](docs/data.md): fontes, limitações, importação e backups.
+- [Alertas da cota](docs/alerts.md): regras, prazos, cobertura, simulação e decisões registradas.
 - [Contribuição](CONTRIBUTING.md): branches curtas, commits por finalidade e verificações.
 - [Próximas etapas](docs/roadmap.md): expansão planejada, separada da cobertura entregue.
 

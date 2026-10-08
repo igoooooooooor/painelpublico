@@ -57,7 +57,7 @@ function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'
     state,
   };
   vm.createContext(context);
-  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileView, profileQuotaDifferenceNote, profileMandateStartNote, skel };', context);
+  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileView, profileQuotaDifferenceNote, profileMandateStartNote, alertCard, skel };', context);
   context.votesForPerson = id => context.profileVotes(id).filter(record => String(record.vote.data || '').startsWith('2026'));
   context.attendanceBar = presence => presence
     ? `<span class="pbar" data-presence-days="${presence.dias}"></span>` : '';
@@ -563,4 +563,14 @@ test('profile with notes but nothing evaluable says data are insufficient instea
   const answer = api.profileView().match(/<section[^>]*data-profile-answer="alerts"[\s\S]*?<\/section>/)?.[0] || '';
   assert.match(answer, /Dados insuficientes para avaliar/);
   assert.doesNotMatch(answer, /Nenhum alerta/);
+});
+
+test('year-end peak keeps the alert and adds the yearly balance context', () => {
+  const { api } = makeView();
+  const alert = { tipo: 'pico', mes: 12, periodo: '2025-12', valor: 40000, referencia: 4000, titulo: 'Mês acima da referência: dezembro',
+    frase: 'Em dezembro...', meses: [{ mes: 12 }], serie: [{ mes: 11, valor: 4000 }, { mes: 12, valor: 40000 }], fimDeAno: [12], pessoa: {} };
+  const html = api.alertCard(alert);
+  assert.match(html, /Mês acima da referência/);
+  assert.match(html, /expira em 31 de dezembro\. Dezembro pode incluir gastos feitos com esse saldo/);
+  assert.doesNotMatch(api.alertCard({ ...alert, fimDeAno: [] }), /expira em 31 de dezembro\. Dezembro/);
 });

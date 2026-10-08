@@ -162,6 +162,7 @@ def _alert(db, signal, people, totals_cache):
                      'serie': [{'mes': p['month'], 'valor': p['valueCents'] / 100 if p['valueCents'] is not None else None}
                                for p in detail['series']],
                      'contexto': _context(db, person, authority, source, year, totals_cache),
+                     'fimDeAno': detail.get('yearEndMonths') or [],
                      'titulo': title, 'frase': sentence, 'fonte': person.get('sourceUrl')})
     elif signal['type'] == 'fornecedor' and detail:
         year = detail['year']

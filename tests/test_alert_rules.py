@@ -41,6 +41,14 @@ class PeakTests(unittest.TestCase):
         self.assertEqual(peaks[0]['amountCents'], 8_000_000)
         self.assertEqual(peaks[0]['detail']['ruleVersion'], alert_rules.RULE_VERSION)
 
+    def test_year_end_months_stay_flagged_and_carry_the_context(self):
+        person = records('camara:1', 'camara_ceap', 2025, [4000] * 10 + [4000, 40000])
+        result = alert_rules.evaluate(person + peers('camara_ceap', year=2025, months=12), {'camara_ceap': '2026-10-06T00:00:00+00:00'})
+        peak = next(s for s in result['signals'] if s['type'] == 'pico')
+        self.assertEqual(peak['period'], '2025-12')
+        self.assertEqual(peak['detail']['yearEndMonths'], [12])
+        self.assertIn('expira em 31/12', alert_rules.describe(peak))
+
     def test_open_months_and_gaps_are_recorded_as_not_evaluated(self):
         person = records('camara:1', 'camara_ceap', 2026, [4000, None, 4000, 40000, 40000, 4000, 4000, 4000])
         result = alert_rules.evaluate(person + peers('camara_ceap', months=8), self.FETCHED)
