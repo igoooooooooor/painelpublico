@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function loadApp() {
+function loadApp({ pathname, history } = {}) {
   const app = { innerHTML: '' };
   const listeners = {};
   const document = {
@@ -16,7 +16,8 @@ function loadApp() {
   };
   const context = vm.createContext({
     document, window: { scrollY: 0, scrollTo() {} },
-    location: { protocol: 'http:' }, URL, AbortController,
+    location: { protocol: 'http:', ...(pathname ? { pathname } : {}) }, URL, AbortController,
+    ...(history ? { history } : {}),
     fetch: () => new Promise(() => {}),
     setTimeout: () => 1, clearTimeout() {},
     matchMedia: () => ({ matches: false, addEventListener() {} }),
@@ -60,4 +61,23 @@ test('vote buttons open the selected detail and back navigation restores the lis
   assert.equal(document.body.dataset.view, 'votes');
   vm.runInContext("navigateToView('votacoes')", context);
   assert.equal(document.body.dataset.view, 'votes');
+});
+
+test('deep links open the profile and navigation updates the address bar', () => {
+  const pushed = [];
+  const history = { pushState: (_, __, url) => { pushed.push(['push', url]); context.location.pathname = url; },
+    replaceState: (_, __, url) => { pushed.push(['replace', url]); context.location.pathname = url; } };
+  const { context, document } = loadApp({ pathname: '/deputado/73604-rui-falcao', history });
+  assert.equal(document.body.dataset.view, 'profile');
+  assert.equal(vm.runInContext('state.politicianId', context), 'camara:73604');
+  assert.deepEqual(pushed, [], 'o endereço com nome continua valendo para a mesma ficha');
+  vm.runInContext('navigateToView("alerts")', context);
+  assert.deepEqual(pushed.at(-1), ['push', '/alertas']);
+  vm.runInContext('openPolitician("senado:22")', context);
+  assert.deepEqual(pushed.at(-1), ['push', '/senador/22']);
+});
+
+test('section paths open their view', () => {
+  const { document } = loadApp({ pathname: '/partidos' });
+  assert.equal(document.body.dataset.view, 'parties');
 });

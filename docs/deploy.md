@@ -64,3 +64,10 @@ Configuração (uma vez):
 ## Peso da página
 
 O HTML contém os metadados curtos dos quatro cartões de votação e os complementos pequenos que existirem nos snapshots. O roster, totais e despesas ficam no SQLite e são consultados pela API; o banco completo não é embutido no HTML. Os perfis complementares (`perfis.json`) ficam no servidor e cada ficha busca o seu em `/api/c/perfil/<id>`.
+
+## Endereço público e buscadores
+
+Defina o domínio no serviço para que `sitemap.xml`, `robots.txt` e os endereços canônicos usem sempre o mesmo
+endereço: acrescente `Environment=PAINEL_SITE_URL=https://seudominio.com.br` em `deploy/dashboard.service` (ou num
+override local do systemd). Sem a variável, o servidor usa o `Host` que o Cloudflare Tunnel repassa.
+Depois do deploy, envie `https://seudominio.com.br/sitemap.xml` no Google Search Console e no Bing Webmaster Tools.

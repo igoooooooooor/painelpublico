@@ -103,3 +103,17 @@ A interface recebe centavos, meses usados, parcelas, períodos de exercício e
 fontes. Ela formata os valores; não decide elegibilidade, corrige sinais ou
 soma moradia. O complemento permanece separado uma vez e com o sinal original.
 Ranking, home e comparação não consomem o novo valor.
+
+## Endereços e buscadores
+
+Cada deputado(a) e senador(a) tem endereço próprio (`/deputado/<id>-<nome>`, `/senador/<id>-<nome>`), assim
+como as seções (`/alertas`, `/placar`, `/politicos`, `/partidos`, `/comparar`, `/presenca`, `/minha-cidade`).
+`backend/seo.py` entrega o mesmo `dist/index.html` com título, descrição, endereço canônico, Open Graph,
+dados estruturados (schema.org) e, nas fichas, um resumo em texto das três respostas dentro de `#app`; o app
+substitui esse resumo ao abrir. Endereço sem o nome redireciona (301) para o canônico. As páginas usam o cache
+do modo de produção, invalidado quando o banco muda. O servidor também responde `robots.txt` (a API fica fora do
+rastreamento), `sitemap.xml` (seções e fichas da lista atual) e `llms.txt`.
+
+O endereço público vem de `PAINEL_SITE_URL` (ex.: `https://seudominio.com.br`) ou, sem ela, do `Host` recebido
+pelo túnel. No app, `app.script.js` lê o endereço ao abrir, atualiza a barra ao navegar e trata o voltar do
+navegador; o título da aba acompanha a tela.

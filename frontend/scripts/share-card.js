@@ -204,7 +204,7 @@ async function shareCurrentCard() {
     // No celular, abre a folha de compartilhamento (WhatsApp, Instagram...). No computador, baixa a imagem.
     if (file && navigator.canShare?.({ files: [file] })) {
       try {
-        await navigator.share({ files: [file], title: card.title, text: `${card.title} · Painel Público ${location.origin}` });
+        await navigator.share({ files: [file], title: card.title, text: `${card.title} · Painel Público ${location.href}` });
         shareSetStatus('', false);
         return;
       } catch (error) {

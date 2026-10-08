@@ -102,17 +102,56 @@ function render() {
   const v = state.view;
   $app.innerHTML = `<div class="view">${views[v]()}</div>`;
   document.body.dataset.view = v;
+  syncTitle();
   const tab = ['profile', 'politicians', 'attendance', 'compare', 'parties'].includes(v) ? 'politicians' : v === 'vote' ? 'votes' : v;
   document.querySelectorAll('nav.tabs button').forEach(b => b.dataset.go === tab ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
+}
+/* Endereços próprios: /deputado/<id>, /senador/<id> e seções. O servidor entrega a mesma página com
+   resumo e metadados para buscadores; aqui o app lê o endereço ao abrir e o atualiza ao navegar. */
+const PATH_BY_VIEW = { home: '/', alerts: '/alertas', votes: '/placar', vote: '/placar', politicians: '/politicos',
+  parties: '/partidos', compare: '/comparar', attendance: '/presenca', city: '/minha-cidade' };
+const currentPath = () => (typeof location === 'undefined' || typeof location.pathname !== 'string' ? '/' : location.pathname.replace(/\/+$/, '') || '/');
+const TITLE_BY_VIEW = { alerts: 'Alertas', votes: 'Placar', vote: 'Placar', politicians: 'Políticos', parties: 'Comparar partidos',
+  compare: 'Comparar políticos', attendance: 'Presença', city: 'Minha cidade', profile: 'Ficha' };
+function syncTitle() {
+  const person = state.view === 'profile' ? citizenState.profile?.pessoa : null;
+  const page = person && person.id === state.politicianId ? person.name : TITLE_BY_VIEW[state.view];
+  document.title = page ? `${page} · Painel Público` : 'Painel Público: quanto custa e como trabalha cada parlamentar';
+}
+function viewPath() {
+  const [house, number] = String(state.politicianId || '').split(':');
+  if (state.view === 'profile' && /^\d+$/.test(number || '') && (house === 'camara' || house === 'senado')) {
+    return `/${house === 'camara' ? 'deputado' : 'senador'}/${number}`;
+  }
+  return PATH_BY_VIEW[state.view] || '/';
+}
+function applyLocation() {
+  const path = currentPath();
+  const profile = path.match(/^\/(deputado|senador)\/(\d+)(?:-|$)/);
+  if (profile) {
+    state.view = 'profile';
+    state.politicianId = `${profile[1] === 'deputado' ? 'camara' : 'senado'}:${profile[2]}`;
+    state.deputyId = profile[1] === 'deputado' ? profile[2] : null;
+    return;
+  }
+  const view = Object.keys(PATH_BY_VIEW).find(key => key !== 'vote' && PATH_BY_VIEW[key] === path);
+  if (view) state.view = view;
+}
+function syncLocation(mode = 'push') {
+  if (typeof history === 'undefined' || typeof history.pushState !== 'function') return;
+  const path = viewPath(), current = currentPath();
+  // Endereços com o nome (/deputado/123-nome) continuam valendo para a mesma ficha.
+  if (current === path || current.startsWith(path + '-')) return;
+  history[mode === 'replace' ? 'replaceState' : 'pushState'](null, '', path);
 }
 const navigationHistory = [];
 function navigateToView(view, keep) {
   view = normalizeView(view);
   if (view === 'profile' && state.deputyId) state.politicianId = String(state.deputyId).includes(':') ? state.deputyId : 'camara:' + state.deputyId;
   if (!keep) navigationHistory.push({ view: state.view, deputyId: state.deputyId, voteId: state.voteId, politicianId: state.politicianId, y: window.scrollY });
-  state.view = view; render(); window.scrollTo(0, 0);
+  state.view = view; render(); syncLocation(); window.scrollTo(0, 0);
 }
-function navigateBack() { const h = navigationHistory.pop() || { view: 'home', y: 0 }; Object.assign(state, { view: h.view, deputyId: h.deputyId, voteId: h.voteId, politicianId: h.politicianId }); render(); window.scrollTo(0, h.y || 0); }
+function navigateBack() { const h = navigationHistory.pop() || { view: 'home', y: 0 }; Object.assign(state, { view: h.view, deputyId: h.deputyId, voteId: h.voteId, politicianId: h.politicianId }); render(); syncLocation('replace'); window.scrollTo(0, h.y || 0); }
 const rerender = () => { const y = window.scrollY; render(); window.scrollTo(0, y); };
 
 document.addEventListener('click', e => {
@@ -165,5 +204,10 @@ function toggleTheme() {
   syncThemeToggles();
 }
 document.addEventListener('click', event => { if (event.target.closest('[data-theme-toggle]')) toggleTheme(); });
+applyLocation();
 render();
+syncLocation('replace');
 syncThemeToggles();
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  window.addEventListener('popstate', () => { applyLocation(); render(); window.scrollTo(0, 0); });
+}

@@ -8,7 +8,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
-from . import cities, citizen, database, profiles, public_store as store
+from . import cities, citizen, database, profiles, public_store as store, seo
 from .config import BUILD_PATH
 
 QUERY_SECONDS = 8      # consulta que passar disso é abortada (protege o servidor público)
@@ -63,6 +63,52 @@ class Handler(BaseHTTPRequestHandler):
         content = json.dumps(data, ensure_ascii=False, allow_nan=False).encode()
         self.send_body(content, 'application/json; charset=utf-8', status, cache)
 
+    def send_page(self, path, prod):
+        """Páginas do app com metadados e resumo para buscadores; cacheadas como a API."""
+        if not BUILD_PATH.is_file():
+            content = 'Aplicativo ainda não compilado. Execute python3 scripts/build.py.'.encode('utf-8')
+            self.send_body(content, 'text/plain; charset=utf-8', 503)
+            return
+        origin = seo.site_origin(self.headers)
+        database_ready = self.server.db_path.exists()
+        cache = getattr(self.server, 'cache', None)
+        key = None
+        if cache is not None and database_ready:
+            key = (self.server.db_path.stat().st_mtime_ns, 'page', path, origin, BUILD_PATH.stat().st_mtime_ns)
+            hit = cache.get(key)
+            if hit:
+                self.send_page_result(*hit, prod)
+                return
+        page_html = BUILD_PATH.read_text(encoding='utf-8')
+        if path in seo.SECTIONS:
+            result = (200, seo.section_page(page_html, path, origin), 'text/html; charset=utf-8', None)
+        elif not database_ready:
+            # Sem banco, a ficha ainda abre pelo app; só não há resumo nem sitemap.
+            result = (200 if path != '/sitemap.xml' else 503, page_html if path != '/sitemap.xml' else '', 'text/html; charset=utf-8', None)
+        else:
+            db = store.connect(self.server.db_path)
+            try:
+                if path == '/sitemap.xml':
+                    result = (200, seo.sitemap(db, origin), 'application/xml; charset=utf-8', None)
+                else:
+                    status, content, redirect = seo.profile_page(db, page_html, path, origin)
+                    result = (status, content or '', 'text/html; charset=utf-8', redirect)
+            finally:
+                db.close()
+        if key is not None:
+            cache.put(key, result)
+        self.send_page_result(*result, prod)
+
+    def send_page_result(self, status, content, content_type, redirect, prod):
+        if redirect:
+            self.send_response(301)
+            self.send_header('Location', redirect)
+            self.send_header('Content-Length', '0')
+            self.common_headers('public, max-age=3600' if prod else 'no-store')
+            self.end_headers()
+            return
+        self.send_body(content.encode('utf-8'), content_type, status, 'public, max-age=60' if prod else 'no-store')
+
     def do_HEAD(self):
         self.do_GET()
 
@@ -73,20 +119,13 @@ class Handler(BaseHTTPRequestHandler):
             ok = self.server.db_path.exists() and BUILD_PATH.is_file()
             self.send_json({'ok': ok}, 200 if ok else 503)
             return
-        if url.path in ('/', '/index.html'):
-            if not BUILD_PATH.is_file():
-                message = 'Aplicativo ainda não compilado. Execute python3 scripts/build.py.'
-                content = message.encode('utf-8')
-                self.send_response(503)
-                self.send_header('Content-Type', 'text/plain; charset=utf-8')
-                self.send_header('Content-Length', str(len(content)))
-                self.send_header('Cache-Control', 'no-store')
-                self.send_header('X-Content-Type-Options', 'nosniff')
-                self.end_headers()
-                self.wfile.write(content)
-                return
-            self.send_body(BUILD_PATH.read_bytes(), 'text/html; charset=utf-8',
-                           cache='public, max-age=60' if prod else 'no-store')
+        if url.path in ('/robots.txt', '/llms.txt'):
+            text = seo.robots(seo.site_origin(self.headers)) if url.path == '/robots.txt' else seo.llms(seo.site_origin(self.headers))
+            self.send_body(text.encode(), 'text/plain; charset=utf-8', cache='public, max-age=3600' if prod else 'no-store')
+            return
+        path = '/' if url.path == '/index.html' else url.path.rstrip('/') or '/'
+        if path in seo.SECTIONS or path == '/sitemap.xml' or seo.PROFILE_PATH.match(path):
+            self.send_page(path, prod)
             return
         if url.path == '/api/c/cities':
             query = parse_qs(url.query).get('q', [''])[-1]
