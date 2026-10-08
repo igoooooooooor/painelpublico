@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from backend import citizen, public_store as store
 from backend.quota_history import import_history
-from ingest.chamber_quota_history import build_year
+from ingest.quota_history import build_year
 
 
 def history_payload():
@@ -63,6 +63,21 @@ class QuotaHistoryTests(unittest.TestCase):
         self.assertFalse(any(row['authorityId'].startswith('senado') for row in result['months']))
         kinds = {(row['category'], row['kind']) for row in result['months']}
         self.assertIn(('COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA', 'complemento_moradia'), kinds)
+
+    def test_senate_aggregates_use_their_own_source_and_accept_text_dates(self):
+        payload = {'sources': [{'id': 'senado_ceaps', 'label': 'Senado: CEAPS', 'status': 'imported'}],
+                   'authorities': [{'id': 'senado:5', 'name': 'Sen', 'role': 'senador', 'sourceId': 'senado_ceaps'}],
+                   'expenses': [{'id': f's:{m}', 'authorityId': 'senado:5', 'sourceId': 'senado_ceaps', 'year': '2023',
+                                 'month': str(m), 'category': 'Passagens', 'amount': '10.5', 'kind': 'reembolso',
+                                 'supplier': {'key': 'x', 'name': 'Aérea', 'cnpj': None}} for m in (1, 2)]}
+        result = build_year(payload, 2023, 'senado')
+        self.assertEqual(result['source']['id'], 'senado_ceaps_2023')
+        self.assertEqual([(r['month'], r['amountCents']) for r in result['months']], [(2, 1050)])
+        path = self.root / 'senado-ceaps-2023.json'
+        path.write_text(json.dumps(result))
+        import_history([path], self.db_path)
+        with closing(store.connect(self.db_path)) as db, db:
+            self.assertEqual(citizen.politician(db, 'senado:5')['periodo'], {'inicio': '2023-02', 'fim': '2023-02', 'meses': 1})
 
     def test_profile_sums_detailed_notes_and_history_with_monthly_average(self):
         with closing(store.connect(self.db_path)) as db, db:

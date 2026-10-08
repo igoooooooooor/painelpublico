@@ -1,9 +1,9 @@
-"""Importa os agregados da cota da Câmara de anos anteriores do mandato (esquema v4).
+"""Importa os agregados da cota de anos anteriores do mandato, Câmara e Senado (esquema v4).
 
-Lê ``data/imports-history/camara-ceap-{ano}.json`` (gerado por
-``ingest/chamber_quota_history.py``). Cada arquivo substitui só as linhas da sua
-fonte (``camara_ceap_{ano}``), numa transação; as notas detalhadas de 2026 e os
-alertas não são tocados. Cadastros que já existem não são alterados.
+Lê ``data/imports-history/{camara-ceap,senado-ceaps}-{ano}.json`` (gerados por
+``ingest/quota_history.py``). Cada arquivo substitui só as linhas da sua
+fonte (``camara_ceap_{ano}`` ou ``senado_ceaps_{ano}``), numa transação; as notas
+detalhadas de 2026 e os alertas não são tocados. Cadastros que já existem não são alterados.
 """
 import json
 from datetime import datetime, timezone
@@ -21,8 +21,8 @@ AUTHORITY_COLUMNS = ('id', 'name', 'role', 'branch', 'sphere', 'institution', 'u
 def _validate(payload):
     source = payload.get('source') or {}
     year = payload.get('year')
-    if not str(source.get('id', '')).startswith('camara_ceap_') or source['id'] != f'camara_ceap_{year}':
-        raise ValueError('Arquivo de histórico sem fonte camara_ceap_<ano>')
+    if source.get('id') not in (f'camara_ceap_{year}', f'senado_ceaps_{year}'):
+        raise ValueError('Arquivo de histórico sem fonte camara_ceap_<ano> ou senado_ceaps_<ano>')
     if not source.get('label') or source.get('status') != 'imported':
         raise ValueError(f'Fonte {source.get("id")} sem nome ou incompleta')
     for row in payload.get('months', []):
@@ -87,9 +87,9 @@ def main(argv=None):
     parser.add_argument('files', nargs='*', type=Path)
     parser.add_argument('--db', type=Path, default=DB_PATH)
     args = parser.parse_args(argv)
-    paths = args.files or sorted(HISTORY_DIR.glob('camara-ceap-*.json'))
+    paths = args.files or sorted([*HISTORY_DIR.glob('camara-ceap-*.json'), *HISTORY_DIR.glob('senado-ceaps-*.json')])
     if not paths:
-        parser.error(f'Nenhum arquivo em {HISTORY_DIR}; rode ingest/chamber_quota_history.py antes.')
+        parser.error(f'Nenhum arquivo em {HISTORY_DIR}; rode ingest/quota_history.py antes.')
     print(json.dumps(import_history(paths, args.db), ensure_ascii=False))
     return 0
 

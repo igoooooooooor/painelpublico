@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Agrega a cota da Câmara dos anos anteriores do mandato para o SQLite.
+"""Agrega a cota da Câmara e do Senado dos anos anteriores do mandato para o SQLite.
 
 Lê ``data/raw/legislative/history/legislative-{ano}.json`` (saída de
-``ingest/legislative.py``) e grava ``data/imports-history/camara-ceap-{ano}.json``.
+``ingest/legislative.py``) e grava ``data/imports-history/{camara-ceap,senado-ceaps}-{ano}.json``.
 As notas brutas ficam só na base local; o banco recebe agregados por pessoa:
-mês e categoria, fornecedor e as maiores notas. Cada ano é uma fonte própria
-(``camara_ceap_{ano}``) e não substitui as notas detalhadas de 2026.
+mês e categoria, fornecedor e as maiores notas. Cada Casa e ano é uma fonte própria
+(``camara_ceap_{ano}``, ``senado_ceaps_{ano}``) e não substitui as notas detalhadas de 2026.
 
-Só a Câmara, só notas a partir de fev/2023 (legislatura 57). Importação:
-``python3 -m backend.quota_history``.
+Só notas a partir de fev/2023 (legislatura 57 da Câmara; mesmo recorte no Senado,
+para as duas Casas seguirem a mesma regra). Importação: ``python3 -m backend.quota_history``.
 """
 from __future__ import annotations
 
@@ -22,21 +22,25 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MANDATE_START = (2023, 2)
 YEARS = (2023, 2024, 2025)
-SOURCE_ID = "camara_ceap"
+# Casa → (fonte no arquivo anual, prefixo do arquivo agregado, nome padrão da fonte).
+HOUSES = {
+    "camara": ("camara_ceap", "camara-ceap", "Câmara dos Deputados: cota parlamentar (CEAP)"),
+    "senado": ("senado_ceaps", "senado-ceaps", "Senado Federal: cota parlamentar (CEAPS)"),
+}
 HOUSING_COMPLEMENT_CATEGORY = "COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA"
 HOUSING_COMPLEMENT_KIND = "complemento_moradia"
 LARGEST_PER_PERSON = 5
 
 
-def paths(root: Path = ROOT, year: int = YEARS[0]) -> dict[str, Path]:
+def paths(root: Path = ROOT, year: int = YEARS[0], house: str = "camara") -> dict[str, Path]:
     return {
         "history": root / "data" / "raw" / "legislative" / "history" / f"legislative-{year}.json",
-        "output": root / "data" / "imports-history" / f"camara-ceap-{year}.json",
+        "output": root / "data" / "imports-history" / f"{HOUSES[house][1]}-{year}.json",
     }
 
 
-def history_source_id(year: int) -> str:
-    return f"{SOURCE_ID}_{year}"
+def history_source_id(year: int, house: str = "camara") -> str:
+    return f"{HOUSES[house][0]}_{year}"
 
 
 def cents(value) -> int:
@@ -60,13 +64,14 @@ def supplier_identity(supplier):
     return key, supplier.get("name"), cnpj
 
 
-def build_year(history: dict, year: int) -> dict:
-    source = next((s for s in history.get("sources", []) if s.get("id") == SOURCE_ID), None)
+def build_year(history: dict, year: int, house: str = "camara") -> dict:
+    source_id, _, default_label = HOUSES[house]
+    source = next((s for s in history.get("sources", []) if s.get("id") == source_id), None)
     if not source or source.get("status") != "imported":
-        raise ValueError(f"Cota da Câmara de {year} não foi importada por completo; nada a agregar")
+        raise ValueError(f"Cota de {house} em {year} não foi importada por completo; nada a agregar")
     months, suppliers, largest, referenced = {}, {}, {}, set()
     for row in history.get("expenses", []):
-        if row.get("sourceId") != SOURCE_ID or int(row.get("year", 0)) != year:
+        if row.get("sourceId") != source_id or int(row.get("year", 0)) != year:
             continue
         month = int(row["month"])
         if (year, month) < MANDATE_START:
@@ -103,8 +108,8 @@ def build_year(history: dict, year: int) -> dict:
     return {
         "source": {
             **{key: source.get(key) for key in ("url", "scope", "status", "detail", "fetchedAt")},
-            "id": history_source_id(year),
-            "label": f"{source.get('label') or 'Câmara dos Deputados: cota parlamentar (CEAP)'} — {year}",
+            "id": history_source_id(year, house),
+            "label": f"{source.get('label') or default_label} — {year}",
             "period": f"{year}-02 a {year}-12" if year == MANDATE_START[0] else f"{year}-01 a {year}-12",
         },
         "year": year,
@@ -120,24 +125,30 @@ def build_year(history: dict, year: int) -> dict:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--years", default=",".join(map(str, YEARS)), help="anos separados por vírgula")
+    parser.add_argument("--houses", default="camara,senado", help="casas separadas por vírgula (camara, senado)")
     args = parser.parse_args(argv)
+    houses = [value.strip() for value in args.houses.split(",") if value.strip()]
+    if not houses or any(house not in HOUSES for house in houses):
+        parser.error("casas aceitas: camara, senado")
     years = [int(value) for value in args.years.split(",") if value.strip()]
     if any(year not in YEARS for year in years):
         parser.error("anos aceitos: " + ", ".join(map(str, YEARS)))
     for year in years:
-        where = paths(ROOT, year)
-        try:
-            history = json.loads(where["history"].read_text(encoding="utf-8"))
-            result = build_year(history, year)
-        except (OSError, ValueError) as error:
-            print(f"{year}: {error}", file=sys.stderr)
-            return 1
-        where["output"].parent.mkdir(parents=True, exist_ok=True)
-        temporary = where["output"].with_suffix(".json.tmp")
-        temporary.write_text(json.dumps(result, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
-        temporary.replace(where["output"])
-        print(f"{where['output']}: {len(result['months'])} linhas mês/categoria, "
-              f"{len(result['suppliers'])} pessoa/fornecedor, {len(result['authorities'])} cadastros")
+        history = None
+        for house in houses:
+            where = paths(ROOT, year, house)
+            try:
+                history = history or json.loads(where["history"].read_text(encoding="utf-8"))
+                result = build_year(history, year, house)
+            except (OSError, ValueError) as error:
+                print(f"{year}/{house}: {error}", file=sys.stderr)
+                return 1
+            where["output"].parent.mkdir(parents=True, exist_ok=True)
+            temporary = where["output"].with_suffix(".json.tmp")
+            temporary.write_text(json.dumps(result, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+            temporary.replace(where["output"])
+            print(f"{where['output']}: {len(result['months'])} linhas mês/categoria, "
+                  f"{len(result['suppliers'])} pessoa/fornecedor, {len(result['authorities'])} cadastros")
     return 0
 
 

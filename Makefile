@@ -113,7 +113,7 @@ collect-mandate-history:
 	$(PYTHON) ingest/chamber_payroll.py --collect --year 2025 --months 1-12 --output data/snapshots/chamber-payroll-2025.json
 	@for year in 2023 2024 2025; do $(PYTHON) ingest/chamber_service.py --year $$year --months 1-12 || exit 1; done
 	$(PYTHON) -m ingest.mandate_cost_composition
-	$(PYTHON) ingest/chamber_quota_history.py
+	$(PYTHON) ingest/quota_history.py
 	$(PYTHON) -m backend.quota_history
 
 prod: build

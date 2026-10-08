@@ -57,7 +57,7 @@ function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'
     state,
   };
   vm.createContext(context);
-  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileView, profileQuotaDifferenceNote, skel };', context);
+  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileView, profileQuotaDifferenceNote, profileMandateStartNote, skel };', context);
   context.votesForPerson = id => context.profileVotes(id).filter(record => String(record.vote.data || '').startsWith('2026'));
   context.attendanceBar = presence => presence
     ? `<span class="pbar" data-presence-days="${presence.dias}"></span>` : '';
@@ -534,4 +534,12 @@ test('deputy profile explains why the quota in the mandate cost differs from the
   assert.match(note, /todos os 41 meses com notas/);
   assert.equal(api.profileQuotaDifferenceNote(profile, null), '');
   assert.equal(api.profileQuotaDifferenceNote({ ...profile, mediaMensal: 31144.93 }, cost), '');
+});
+
+test('senators whose mandate began before 2023 are told the quota counts from February 2023', () => {
+  const { api } = makeView();
+  assert.match(api.profileMandateStartNote({ exercicio: 'Exercício sem término informado desde 01/02/2019' }),
+    /O mandato começou em fevereiro de 2019; antes de fev\/2023 a cota não entra aqui/);
+  assert.equal(api.profileMandateStartNote({ exercicio: 'Exercício sem término informado desde 01/02/2023' }), '');
+  assert.equal(api.profileMandateStartNote(null), '');
 });

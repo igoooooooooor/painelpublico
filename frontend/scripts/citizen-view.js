@@ -218,7 +218,7 @@ function loadPoliticians(more) {
   citizenGet(qs).then(d => { if (p.key !== key) return; p.items = p.items.concat(d.itens); p.total = d.total; p.averageSpend = d.medias; p.coverage = d.cobertura; p.loading = false; if (['politicians'].includes(state.view)) renderPoliticianList(); })
     .catch(e => { if (p.key !== key) return; p.loading = false; p.error = citizenErrorMessage(e); if (['politicians'].includes(state.view)) renderPoliticianList(); });
 }
-/* "fev/2023–set/2026" a partir de "AAAA-MM"; a cota da Câmara cobre o mandato e a do Senado, 2026. */
+/* "fev/2023–set/2026" a partir de "AAAA-MM"; a cota das duas Casas conta desde fev/2023. */
 function citizenQuotaPeriod(start, end) {
   const label = value => typeof value === 'string' && /^\d{4}-\d{2}$/.test(value)
     ? `${['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][Number(value.slice(5)) - 1]}/${value.slice(0, 4)}` : null;
@@ -284,7 +284,7 @@ function politiciansView() {
     <div class="citizen-actions"><button type="button" class="fchip" data-cmp-start="">Comparar dois(duas) lado a lado →</button><button type="button" class="fchip" data-go="parties">Comparar partidos →</button><button type="button" class="fchip" data-go="attendance">Presença dos deputados →</button></div>
     <div id="citizen-politician-list" class="citizen-stack" aria-live="polite">${politicianListHTML()}</div>
     <div id="citizen-politician-notes">${politicianCoverageNotesHTML(p.coverage)}</div>
-    <span class="src">Valor: média mensal da cota pelas notas publicadas, nos meses com notas. Deputados(as): mandato atual, desde fev/2023. Senadores(as): 2026. Valores da época, sem correção pela inflação. Não é salário. A barra roxa mais forte indica gasto acima da média.</span>`;
+    <span class="src">Valor: média mensal da cota pelas notas publicadas, nos meses com notas. Deputados(as) e senadores(as): desde fev/2023, início da legislatura atual. Valores da época, sem correção pela inflação. Não é salário. A barra roxa mais forte indica gasto acima da média.</span>`;
 }
 
 /* ---------- Ficha leve (qualquer deputado ou senador) ---------- */
@@ -381,7 +381,14 @@ function profileVoteDetails(shared) {
     ${presence?.motivos?.length ? `<p class="note">Justificativas de presença: ${presence.motivos.map(([reason, count]) => `${esc(reason.toLowerCase())} (${count})`).join(', ')}.</p>` : ''}
     ${senate ? '' : '<button type="button" class="more" data-go="attendance">Ver a presença de todos(as)</button>'}`;
 }
-function profileExpenseDetails(f, hasExpenseData, cost = null) {
+/* Senadores eleitos em 2018 começaram o mandato antes do recorte comum de fev/2023. */
+function profileMandateStartNote(mandate) {
+  const match = /desde (\d{2})\/(\d{2})\/(\d{4})/.exec(mandate?.exercicio || '');
+  if (!match || `${match[3]}-${match[2]}` >= '2023-02') return '';
+  const month = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'][Number(match[2]) - 1];
+  return ` O mandato começou em ${month} de ${match[3]}; antes de fev/2023 a cota não entra aqui, para seguir a mesma regra da Câmara.`;
+}
+function profileExpenseDetails(f, hasExpenseData, cost = null, mandate = null) {
   if (!hasExpenseData) return '<p class="muted">Não há lançamentos observados para calcular total, média, série mensal ou alertas.</p>';
   const maxMonth = Math.max(1, ...f.meses.map(month => month.valor));
   const categoryTotal = f.categorias.reduce((sum, category) => sum + category.valor, 0) || 1;
@@ -393,7 +400,7 @@ function profileExpenseDetails(f, hasExpenseData, cost = null) {
   const yearChart = year => `<p class="k">${year}</p><div class="citizen-months">${f.meses.filter(month => month.year === year).map(month => `<div><small>${Math.round(month.valor / 1e3)}k</small><b class="mt"><i style="height:${month.valor > 0 ? Math.max(2, month.valor / maxMonth * 100) : 0}%" class="${isPeak(month) ? 'hot' : ''}"></i></b><span>${SHORT_MONTHS[month.month]}</span></div>`).join('')}</div>`;
   return `<section class="citizen-detail-part citizen-expense-original"><h3 class="k">Cota parlamentar · ${esc(periodLabel || 'total')}</h3>
     <p><b>Total da cota${periodLabel ? ` de ${esc(periodLabel)}` : ''}:</b> ${brl(f.total, 2)}, somando todas as notas publicadas até agora.${Number.isFinite(f.mediaMensal) ? ` Média de ${brl(f.mediaMensal, 2)} por mês nos ${period.meses} meses com notas.` : ''}</p>
-    <p class="muted">${f.pessoa?.role === 'deputado' ? 'Mandato atual, desde fev/2023.' : 'Ano de 2026.'} Valores da época, sem correção pela inflação.</p>
+    <p class="muted">${f.pessoa?.role === 'deputado' ? 'Mandato atual, desde fev/2023.' : `Desde fev/2023, início da legislatura atual.${profileMandateStartNote(mandate)}`} Valores da época, sem correção pela inflação.</p>
     ${profileQuotaDifferenceNote(f, cost)}
     ${complement && Number.isFinite(complement.valor) ? `<p class="muted">À parte: complemento do auxílio-moradia lançado na cota, ${brl(complement.valor, 2)} em ${complement.notas} ${complement.notas === 1 ? 'nota' : 'notas'}. A Câmara publica esse valor como negativo; ele não reduz o total acima.</p>` : ''}
   </section>
@@ -474,7 +481,7 @@ function profileView() {
     <div class="citizen-answers">${costAnswer}${profileWorkAnswer(shared)}${profileAlertAnswer(alerts, hasExpenseData)}</div>
     <h2 class="h">Ver mais</h2>
     ${profileSectionsHTML(person, {
-      expenses: (person.role === 'deputado' ? profileCostDetails(shared.cost) : '') + profileExpenseDetails(f, hasExpenseData, person.role === 'deputado' ? shared.cost : null),
+      expenses: (person.role === 'deputado' ? profileCostDetails(shared.cost) : '') + profileExpenseDetails(f, hasExpenseData, person.role === 'deputado' ? shared.cost : null, shared.mandate),
       alerts: alerts.length ? alerts.map(alert => alertCard(alert, { semPessoa: true })).join('') : (hasExpenseData ? `<p class="muted">Nenhum gasto incomum nas notas da cota de 2026. Regras checadas, iguais para todos(as):</p>${ALERT_RULES_HTML}<button type="button" class="more" data-go="alerts">Como funcionam os alertas →</button>` : '<p class="muted">Sem dados de cota para checar alertas.</p>'),
       votes: profileVoteDetails(shared), sources: sourcesHtml,
     })}`;

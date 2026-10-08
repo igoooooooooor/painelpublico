@@ -533,7 +533,10 @@ contra 31 MB e ~180 MB sem compactar.
 ### Cota e presença da Câmara no mandato inteiro (desde 8/10/2026)
 
 A cota e a presença da Câmara nas telas (lista, ficha, comparação, home, partidos
-e presença) cobrem o mandato, desde fev/2023. O Senado continua em 2026.
+e presença) cobrem o mandato, desde fev/2023. A cota do Senado segue o mesmo recorte
+(desde 8/10, fontes `senado_ceaps_{ano}`); o resto do Senado continua em 2026. Para quem
+tem mandato iniciado antes (senadores eleitos em 2018), a ficha avisa que a cota conta a
+partir de fev/2023.
 
 - **Cota no SQLite (esquema v4):** as notas de 2026 seguem uma a uma em
   `expenses`. De fev/2023 a dez/2025, o banco recebe só agregados por pessoa,
@@ -543,7 +546,7 @@ e presença) cobrem o mandato, desde fev/2023. O Senado continua em 2026.
   substitui a fonte `camara_ceap` de 2026. O banco local foi de 84 MB para 109 MB;
   com as notas brutas seria ~250 MB.
   ```sh
-  python3 ingest/chamber_quota_history.py   # data/raw/legislative/history → data/imports-history
+  python3 ingest/quota_history.py   # data/raw/legislative/history → data/imports-history
   make db-backup && python3 -m backend.quota_history
   ```
   `data/imports-history/` fica fora de `data/imports/` de propósito: `make import`
@@ -551,7 +554,7 @@ e presença) cobrem o mandato, desde fev/2023. O Senado continua em 2026.
 - **Média mensal:** lista, comparação, partidos, home e o cartão de cota usam o gasto
   médio por mês, `total ÷ meses com notas` (`authority_totals.monthCount`). Mês sem
   nota é ausência de dado, não gasto zero, então licenças e trocas de suplente não
-  diluem a média. Assim deputados (mandato) e senadores (2026) ficam comparáveis.
+  diluem a média. Assim deputados e senadores ficam comparáveis, os dois desde fev/2023.
   A ficha mostra também o total e o período.
 - **Notas do mês:** na ficha da Câmara, a fonte da cota de um mês de 2026 abre a lista
   das notas daquele mês (`/api/c/notas?id=camara:<id>&mes=AAAA-MM`), com link para
@@ -560,8 +563,8 @@ e presença) cobrem o mandato, desde fev/2023. O Senado continua em 2026.
   serve de fonte: o gráfico dela inclui passagens aéreas, que ficam fora do arquivo
   aberto. Para 2023–2025 o servidor só tem agregados; a lista fica para depois.
 - **O que segue em 2026:** alertas (calculados só sobre as notas detalhadas), o CSV da
-  ficha (a tela avisa que traz só 2026), fornecedores globais (`supplier_totals`) e
-  tudo do Senado.
+  ficha (a tela avisa que traz só 2026), fornecedores globais (`supplier_totals`) e,
+  no Senado, presença, votações, atividade e projetos.
 - **Presença:** `presenca.json` agora soma o mandato (fev/2023 até o mês corrente),
   com `inicio` e `fim` por deputado, e vem de `ingest/chamber_mandate_history.py`
   (que reconsulta o ano corrente a cada `--collect`). Conferência em 8/10: a parte de
