@@ -381,7 +381,7 @@ function profileVoteDetails(shared) {
     ${presence?.motivos?.length ? `<p class="note">Justificativas de presença: ${presence.motivos.map(([reason, count]) => `${esc(reason.toLowerCase())} (${count})`).join(', ')}.</p>` : ''}
     ${senate ? '' : '<button type="button" class="more" data-go="attendance">Ver a presença de todos(as)</button>'}`;
 }
-function profileExpenseDetails(f, hasExpenseData) {
+function profileExpenseDetails(f, hasExpenseData, cost = null) {
   if (!hasExpenseData) return '<p class="muted">Não há lançamentos observados para calcular total, média, série mensal ou alertas.</p>';
   const maxMonth = Math.max(1, ...f.meses.map(month => month.valor));
   const categoryTotal = f.categorias.reduce((sum, category) => sum + category.valor, 0) || 1;
@@ -394,6 +394,7 @@ function profileExpenseDetails(f, hasExpenseData) {
   return `<section class="citizen-detail-part citizen-expense-original"><h3 class="k">Cota parlamentar · ${esc(periodLabel || 'total')}</h3>
     <p><b>Total da cota${periodLabel ? ` de ${esc(periodLabel)}` : ''}:</b> ${brl(f.total, 2)}, somando todas as notas publicadas até agora.${Number.isFinite(f.mediaMensal) ? ` Média de ${brl(f.mediaMensal, 2)} por mês nos ${period.meses} meses com notas.` : ''}</p>
     <p class="muted">${f.pessoa?.role === 'deputado' ? 'Mandato atual, desde fev/2023.' : 'Ano de 2026.'} Valores da época, sem correção pela inflação.</p>
+    ${profileQuotaDifferenceNote(f, cost)}
     ${complement && Number.isFinite(complement.valor) ? `<p class="muted">À parte: complemento do auxílio-moradia lançado na cota, ${brl(complement.valor, 2)} em ${complement.notas} ${complement.notas === 1 ? 'nota' : 'notas'}. A Câmara publica esse valor como negativo; ele não reduz o total acima.</p>` : ''}
   </section>
   <section class="citizen-detail-part"><h3 class="k">Mês a mês</h3>
@@ -409,6 +410,12 @@ function profileExpenseDetails(f, hasExpenseData) {
   <section class="citizen-detail-part"><h3 class="k">Maiores notas${periodLabel ? ` · ${esc(periodLabel)}` : ''}</h3>
     ${f.maiores.map(m => `<${m.documentUrl ? `a href="${esc(m.documentUrl)}" target="_blank" rel="noopener"` : 'div'} class="item"><span class="mono muted" style="width:52px">${SHORT_MONTHS[m.month]}/${String(m.year).slice(2)}</span><span class="g"><span>${esc(citizenName(m.fornecedor || 'Fornecedor não informado'))}</span><span class="muted">${esc(m.categoria)}${m.documentUrl ? ' · ver nota ↗' : ''}</span></span><span class="mono" style="font-weight:700">${brl(m.valor)}</span></${m.documentUrl ? 'a' : 'div'}>`).join('')}
   </section>`;
+}
+/* A cota do custo do mandato usa só os meses com as quatro partes; esta média usa todos os meses com notas. */
+function profileQuotaDifferenceNote(f, cost) {
+  const quota = cost?.parts?.quota?.usedMonthsAverageCents, used = Array.isArray(cost?.usedMonths) ? cost.usedMonths.length : 0;
+  if (!Number.isFinite(f.mediaMensal) || !Number.isSafeInteger(quota) || !used || Math.round(f.mediaMensal * 100) === quota) return '';
+  return `<p class="muted">No custo do mandato acima, a cota aparece como ${brl(quota / 100, 2)} por mês porque usa só os ${used} ${used === 1 ? 'mês' : 'meses'} com salário, auxílios, cota e gabinete publicados juntos. Aqui entram todos os ${f.periodo?.meses} meses com notas da cota; por isso os valores são diferentes.</p>`;
 }
 /* Cartão para compartilhar: as mesmas três respostas da ficha, em números curtos. */
 function profileShareCard(f, shared, alerts, hasExpenseData) {
@@ -467,7 +474,7 @@ function profileView() {
     <div class="citizen-answers">${costAnswer}${profileWorkAnswer(shared)}${profileAlertAnswer(alerts, hasExpenseData)}</div>
     <h2 class="h">Ver mais</h2>
     ${profileSectionsHTML(person, {
-      expenses: (person.role === 'deputado' ? profileCostDetails(shared.cost) : '') + profileExpenseDetails(f, hasExpenseData),
+      expenses: (person.role === 'deputado' ? profileCostDetails(shared.cost) : '') + profileExpenseDetails(f, hasExpenseData, person.role === 'deputado' ? shared.cost : null),
       alerts: alerts.length ? alerts.map(alert => alertCard(alert, { semPessoa: true })).join('') : (hasExpenseData ? `<p class="muted">Nenhum gasto incomum nas notas da cota de 2026. Regras checadas, iguais para todos(as):</p>${ALERT_RULES_HTML}<button type="button" class="more" data-go="alerts">Como funcionam os alertas →</button>` : '<p class="muted">Sem dados de cota para checar alertas.</p>'),
       votes: profileVoteDetails(shared), sources: sourcesHtml,
     })}`;

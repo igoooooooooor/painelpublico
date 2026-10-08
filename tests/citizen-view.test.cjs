@@ -57,7 +57,7 @@ function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'
     state,
   };
   vm.createContext(context);
-  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileView, skel };', context);
+  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileView, profileQuotaDifferenceNote, skel };', context);
   context.votesForPerson = id => context.profileVotes(id).filter(record => String(record.vote.data || '').startsWith('2026'));
   context.attendanceBar = presence => presence
     ? `<span class="pbar" data-presence-days="${presence.dias}"></span>` : '';
@@ -523,4 +523,15 @@ test('a stale roster response cannot overwrite newer coverage counts', async () 
   stale.resolve(payload(3, 1));
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(elements['citizen-politician-summary'].innerHTML, summary);
+});
+
+test('deputy profile explains why the quota in the mandate cost differs from the quota average', () => {
+  const { api } = makeView();
+  const profile = { pessoa: { id: 'camara:1', role: 'deputado' }, mediaMensal: 30243.22, periodo: { inicio: '2023-02', fim: '2026-09', meses: 41 } };
+  const cost = { usedMonths: Array.from({ length: 39 }, (_, i) => `p${i}`), parts: { quota: { usedMonthsAverageCents: 3114493 } } };
+  const note = api.profileQuotaDifferenceNote(profile, cost);
+  assert.match(note, /31\.144,93 por mês porque usa só os 39 meses/);
+  assert.match(note, /todos os 41 meses com notas/);
+  assert.equal(api.profileQuotaDifferenceNote(profile, null), '');
+  assert.equal(api.profileQuotaDifferenceNote({ ...profile, mediaMensal: 31144.93 }, cost), '');
 });
