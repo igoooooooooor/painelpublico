@@ -9,7 +9,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
 from . import cities, citizen, database, profiles, public_store as store, seo
-from .config import BUILD_PATH
+from .config import BUILD_PATH, ROOT
+
+FAVICON_PATH = ROOT / 'frontend' / 'static' / 'favicon.svg'
 
 QUERY_SECONDS = 8      # consulta que passar disso é abortada (protege o servidor público)
 CACHE_ENTRIES = 3000   # respostas JSON guardadas em memória no modo --prod
@@ -118,6 +120,10 @@ class Handler(BaseHTTPRequestHandler):
         if url.path == '/healthz':
             ok = self.server.db_path.exists() and BUILD_PATH.is_file()
             self.send_json({'ok': ok}, 200 if ok else 503)
+            return
+        if url.path in ('/favicon.svg', '/favicon.ico'):
+            # Um ícone só, em SVG; /favicon.ico (pedido automático de navegadores e robôs) recebe o mesmo arquivo.
+            self.send_body(FAVICON_PATH.read_bytes(), 'image/svg+xml', cache='public, max-age=86400' if prod else 'no-store')
             return
         if url.path in ('/robots.txt', '/llms.txt'):
             text = seo.robots(seo.site_origin(self.headers)) if url.path == '/robots.txt' else seo.llms(seo.site_origin(self.headers))

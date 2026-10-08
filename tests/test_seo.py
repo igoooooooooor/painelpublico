@@ -97,6 +97,12 @@ class SeoPagesTests(unittest.TestCase):
         _, llms = self.get('/llms.txt')
         self.assertIn('/deputado/<id>-<nome>', llms)
 
+    def test_favicon_is_served_for_both_names(self):
+        for path in ('/favicon.svg', '/favicon.ico'):
+            response, body = self.get(path)
+            self.assertEqual(response.headers['Content-Type'], 'image/svg+xml')
+            self.assertIn('<svg', body)
+
     def test_pages_are_cached_like_the_api(self):
         self.get('/deputado/1-ana-avila')
         self.get('/deputado/1-ana-avila')
