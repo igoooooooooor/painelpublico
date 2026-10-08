@@ -152,6 +152,7 @@ function syncThemeToggles() {
   document.querySelectorAll('[data-theme-toggle]').forEach(button => {
     button.setAttribute('aria-pressed', String(currentTheme() === 'light'));
     button.setAttribute('aria-label', `Mudar para ${themeLabel().toLowerCase()}`);
+    button.title = `Mudar para ${themeLabel().toLowerCase()}`;
     const label = button.querySelector('span');
     if (label) label.textContent = themeLabel();
   });
