@@ -105,6 +105,40 @@ def _election_result(identifier, profile_path):
             'segundoTurno': data.get('segundoTurno'), 'generatedAt': data.get('generatedAt')}
 
 
+_MONTH_LISTS = ('exclusionReasons', 'sourceGaps')
+_MONTH_FLAGS = ('eligible', 'housingDiscrepancy')
+_MONTH_OPTIONAL = ('daysInOffice', 'knownSumCents', 'christmasBonusCents', 'payrollInventory', 'complementSignedCents',
+                   'functionalPropertyDays', 'housingAllowanceForCheckCents')
+
+
+def expand_mandate_cost(record, urls):
+    """Reconstrói links e campos dos meses a partir do snapshot compacto (esquema 4)."""
+    url = lambda index: urls[index] if isinstance(index, int) and 0 <= index < len(urls) else None
+    for period, month in record.get('months', {}).items():
+        month.setdefault('period', period)
+        for key in _MONTH_LISTS:
+            month.setdefault(key, [])
+        for key in _MONTH_FLAGS:
+            month.setdefault(key, False)
+        if month.get('exercise') != 'outside_mandate':
+            for key in _MONTH_OPTIONAL:
+                month.setdefault(key, None)
+        else:
+            month.setdefault('daysInOffice', None)
+        exercise = month.get('exerciseSource')
+        month['exerciseSource'] = {'url': url(exercise)} if url(exercise) else None
+        if isinstance(month.get('sources'), dict):
+            month['sources'] = {part: {'url': url(index), 'period': period if url(index) else None}
+                                for part, index in month['sources'].items()}
+        else:
+            month.setdefault('valuesCents', {})
+    for collection in (*record.get('parts', {}).values(), record.get('christmasBonus') or {}):
+        if isinstance(collection, dict) and isinstance(collection.get('sources'), list):
+            collection['sources'] = [{'url': url(item[0]), 'period': item[1]}
+                                     for item in collection['sources'] if isinstance(item, list) and len(item) == 2]
+    return record
+
+
 def _mandate_cost(identifier, profile_path):
     """Only the approved Câmara composition over the current mandate (Feb/2023–Jul/2026), per profile."""
     if not re.fullmatch(r'camara:\d+', identifier):
@@ -116,7 +150,8 @@ def _mandate_cost(identifier, profile_path):
             or result.get('house') != 'camara' or result.get('periodStart') != '2023-02'
             or result.get('periodEnd') != '2026-07'):
         return None
-    return deepcopy(result)
+    urls = snapshot.get('urls')
+    return expand_mandate_cost(deepcopy(result), urls if isinstance(urls, list) else [])
 
 
 def profile(identifier, path=None):

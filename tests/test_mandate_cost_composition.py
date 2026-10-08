@@ -164,6 +164,34 @@ class MandatePeriodTests(unittest.TestCase):
         self.assertTrue(month['completeSnapshot'])
 
 
+class CompactSnapshotTests(unittest.TestCase):
+    def test_compact_snapshot_expands_back_to_the_full_record(self):
+        import copy
+        from backend.profiles import expand_mandate_cost
+        from ingest.mandate_cost_composition import compact
+        components = {key: 0 for key in GROSS_COMPONENTS}
+        components.update(fixed_remuneration=10000, allowances=2000)
+        url = 'https://example.gov/p'
+        parts = {'payroll': {'2026-06': {'period': '2026-06', 'status': 'complete', 'detailStatus': 'complete',
+                                         'sourceUrl': url, 'sheets': [{'period': '2026-06', 'componentsCents': components}]}},
+                 'quota': {'2026-06': {'period': '2026-06', 'status': 'available', 'amountCents': 3000, 'sourceUrl': url,
+                                       'housingComplementRows': 0, 'completeSnapshot': True}},
+                 'office': {'2026-06': {'period': '2026-06', 'status': 'available', 'sourceStatus': 'imported',
+                                        'amountCents': 20000, 'sourceUrl': url}}, 'housing': {}}
+        exercise = {'url': 'https://example.gov/e', 'fetchedAt': 'x'}
+        service = {'months': {'2026-06': {'period': '2026-06', 'status': 'in_office', 'daysInOffice': 30, 'source': exercise},
+                              '2026-07': {'period': '2026-07', 'status': 'outside_mandate', 'source': exercise}}}
+        person = compose_person({'id': 'camara:1', 'house': 'camara', 'parts': parts}, service)
+        full = copy.deepcopy(person)
+        urls = compact({'camara:1': person})
+        self.assertEqual(urls.count(url), 1)
+        self.assertNotIn('valuesCents', person['months']['2026-07'])
+        restored = expand_mandate_cost(person, urls)
+        self.assertEqual(restored['months']['2026-06'], full['months']['2026-06'])
+        self.assertEqual(restored['parts'], full['parts'])
+        self.assertEqual(restored['months']['2026-07']['exerciseSource'], full['months']['2026-07']['exerciseSource'])
+
+
 class MandateSnapshotApiTests(unittest.TestCase):
     def test_profile_loads_only_approved_person_and_house(self):
         import json

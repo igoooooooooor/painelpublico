@@ -240,6 +240,43 @@ def history_parts(root, identifiers):
     return parts, service
 
 
+OUTSIDE_KEYS = ('period', 'exercise', 'daysInOffice', 'exerciseSource', 'eligible', 'exclusionReasons')
+
+
+def compact(people):
+    """Guarda cada link uma vez numa tabela comum; os meses apontam para ela.
+
+    Meses fora do mandato ficam só com exercício e fonte, que é o que a ficha mostra.
+    O backend reconstrói o formato completo (``backend.profiles.expand_mandate_cost``).
+    """
+    urls, index = [], {}
+
+    def ref(source):
+        url = (source or {}).get('url')
+        if url is None:
+            return None
+        if url not in index:
+            index[url] = len(urls)
+            urls.append(url)
+        return index[url]
+
+    for person in people.values():
+        if person is None:
+            continue
+        for period, month in list(person['months'].items()):
+            if month['exercise'] == 'outside_mandate':
+                month = person['months'][period] = {key: month[key] for key in OUTSIDE_KEYS}
+            month['exerciseSource'] = ref(month['exerciseSource'])
+            if 'sources' in month:
+                month['sources'] = {part: ref(value) for part, value in month['sources'].items()}
+            # Campos vazios saem do arquivo; o backend os devolve com o valor padrão.
+            person['months'][period] = {key: value for key, value in month.items()
+                                        if value is not None and value != [] and value is not False}
+        for collection in (*person['parts'].values(), person['christmasBonus']):
+            collection['sources'] = [[ref(item), item.get('period')] for item in collection['sources']]
+    return urls
+
+
 def build(root=ROOT):
     audit = build_audit(root, 2026)
     path = root / 'data/snapshots/chamber-service.json'
@@ -261,10 +298,12 @@ def build(root=ROOT):
         current = service.get('profiles', {}).get(identifier, {})
         months = {**old_service[identifier], **current.get('months', {})}
         people[identifier] = compose_person(person, {**current, 'months': months})
-    return {'schemaVersion': 3, 'generatedAt': datetime.now(timezone.utc).isoformat(),
-            'periods': list(PERIODS), 'profiles': people,
+    coverage = {'profiles': len(people), 'withPrincipal': sum(p['monthlyAverageCents'] is not None for p in people.values())}
+    urls = compact(people)
+    return {'schemaVersion': 4, 'generatedAt': datetime.now(timezone.utc).isoformat(),
+            'periods': list(PERIODS), 'urls': urls, 'profiles': people,
             'quotaVerification': {key: quota_check.get(key) for key in ('completeSnapshot', 'sourceArchiveSha256', 'sourceFetchedAt')},
-            'coverage': {'profiles': len(people), 'withPrincipal': sum(p['monthlyAverageCents'] is not None for p in people.values())}}
+            'coverage': coverage}
 
 
 def main():

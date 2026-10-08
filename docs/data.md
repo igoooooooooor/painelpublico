@@ -521,8 +521,14 @@ Resultado em 8/10/2026: **510/513 deputados com média** (antes 508), 376 com os
 meses e mediana de 42 meses usados. Dez/2024 entra com o gabinete vazio para 474.
 Os 3 sem média não têm mês com as quatro partes. O leitor da folha passou a
 reconhecer a "Folha de gratificação natalina" de dezembro (13º, fora da média);
-antes ela bloqueava o mês. `mandate-cost.json` tem ~31 MB no disco (cada mês guarda
-só link e mês por parte); a ficha recebe ~4 KB comprimidos por pessoa.
+antes ela bloqueava o mês.
+
+`mandate-cost.json` (esquema 4) é compacto: cada link aparece uma vez em `urls` e
+os meses guardam o índice; campos vazios e as partes de meses fora do mandato não
+são gravados. `backend.profiles.expand_mandate_cost` devolve o formato completo
+antes de responder, então a API e a ficha não mudam (conferido: zero diferenças
+contra o formato anterior). ~15,5 MB no disco e ~105 MB de memória ao carregar,
+contra 31 MB e ~180 MB sem compactar.
 
 ## Minha cidade — Fase 1: IBGE e TSE
 
