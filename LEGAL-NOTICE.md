@@ -32,7 +32,11 @@ Se você encontrar um erro, ou se uma informação sobre você estiver incorreta
 
 ## Visitantes
 
-O site não tem cadastro, anúncios nem ferramentas de análise de visitantes. O site também não guarda informações no seu navegador. O servidor, a rede de entrega e o serviço de fontes tipográficas (Google Fonts) podem registrar dados técnicos de acesso, como endereço IP, para funcionamento e segurança.
+O site não tem cadastro nem anúncios.
+
+- **Estatísticas de acesso:** usamos o Cloudflare Web Analytics para contar visitas, páginas vistas, país e tipo de aparelho de forma agregada. Ele não usa cookies, não identifica visitantes e não acompanha ninguém entre sites.
+- **No seu navegador:** o site guarda apenas a escolha de tema (claro ou escuro). Nada é enviado ao servidor.
+- **Registros técnicos:** o servidor, a rede de entrega (Cloudflare) e o serviço de fontes tipográficas (Google Fonts) podem registrar dados técnicos de acesso, como endereço IP, para funcionamento e segurança.
 
 ## Licença
 
