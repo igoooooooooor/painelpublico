@@ -96,8 +96,21 @@ hipóteses sobre pessoas. Trinta casos iniciam a revisão; não demonstram a pre
 
 Pendências antes de ampliar para o mandato:
 
-1. **Fim de ano:** confirmar nas normas se o saldo não usado da cota se acumula no exercício. Se sim, os
-   picos de novembro e dezembro podem ser estruturais.
+1. **Fim de ano: confirmado (8/10/2026).** Nas duas Casas, o saldo mensal não usado se acumula ao longo
+   do ano e se perde em 31 de dezembro:
+   - Câmara: "O saldo mensal não utilizado em um mês acumula-se ao longo do exercício financeiro, vedada
+     a acumulação de um exercício financeiro para o seguinte"
+     ([guia da Câmara](https://www2.camara.leg.br/comunicacao/assessoria-de-imprensa/guia-para-jornalistas/cota-parlamentar)).
+   - Senado: o valor mensal "poderá ser remanejado para os meses subsequentes, dentro do mesmo exercício",
+     e "em nenhuma hipótese haverá acumulação da CEAPS de um exercício financeiro para o seguinte"
+     ([APS 5/2014, art. 5º, §§ 5º e 6º](https://adm.senado.gov.br/normas/ui/pub/normaConsultada?idNorma=203003)).
+
+   Nos dados, dezembro somou 1,38× e 1,34× a média de março a novembro na Câmara (2023 e 2024) e 1,41× e
+   1,16× no Senado; em 2025, perto de 1,0× nas duas Casas. Na simulação (base anual, lista atual),
+   dezembro tem 26% dos meses marcados como pico e novembro e dezembro juntos, 39%; se os meses
+   avaliados fossem iguais, dezembro teria cerca de 11%. Parte dos picos de fim de ano reflete o uso do
+   saldo acumulado antes que ele expire, e a regra precisa tratar isso antes de ampliar para o mandato.
+   Hoje não afeta o site: em 2026 só abril a junho são avaliados.
 2. **Mês no Senado:** há passagens com data de agosto lançadas em dezembro. Confirmar se o mês do CEAPS é
    o da despesa ou o do reembolso. Se for o do reembolso, o pico no Senado mede lotes de pagamento.
 3. **Documentos do Senado:** a base não traz link de documento do CEAPS.
