@@ -1,0 +1,192 @@
+/* Custo do mandato na Câmara (jan–jul/2026), a partir da página individual de remuneração,
+   da cota e da verba do gabinete. Valores continuam em centavos. */
+const PROFILE_COST_PERIODS = new Set(Array.from({ length: 7 }, (_, index) => `2026-${String(index + 1).padStart(2, '0')}`));
+const PROFILE_COST_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul'];
+const PROFILE_COST_LONG = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho'];
+const PROFILE_COST_MONTHS = Object.fromEntries([...PROFILE_COST_PERIODS].map((period, index) => [period, `${PROFILE_COST_SHORT[index]}/2026`]));
+const PROFILE_COST_PARTS = [
+  ['remuneration', 'Salário bruto', 'Página de remuneração'],
+  ['allowances', 'Auxílios', 'Página de remuneração'],
+  ['quota', 'Cota parlamentar', 'Notas da cota'],
+  ['office', 'Verba do gabinete', 'Verba do gabinete'],
+];
+
+function profileCostInteger(value) {
+  return Number.isSafeInteger(value) && !Object.is(value, -0);
+}
+
+function profileCostMoney(cents) {
+  if (!profileCostInteger(cents)) return null;
+  return (cents / 100).toLocaleString('pt-BR', {
+    style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 2,
+  });
+}
+
+function profileCostPeriods(values) {
+  return Array.isArray(values) ? [...new Set(values.filter(period => PROFILE_COST_PERIODS.has(period)))].sort() : [];
+}
+
+const profileCostIndex = period => Number(period.slice(5)) - 1;
+
+/* "jan–jul/2026, 7 meses" quando os meses são seguidos; senão lista os meses. */
+function profileCostMonthList(values, { count = true } = {}) {
+  const periods = profileCostPeriods(values);
+  if (!periods.length) return 'nenhum mês';
+  const indexes = periods.map(profileCostIndex);
+  const consecutive = indexes.every((value, index) => !index || value === indexes[index - 1] + 1);
+  const label = periods.length === 1 ? `${PROFILE_COST_SHORT[indexes[0]]}/2026`
+    : consecutive ? `${PROFILE_COST_SHORT[indexes[0]]}–${PROFILE_COST_SHORT[indexes.at(-1)]}/2026`
+      : `${indexes.map(index => PROFILE_COST_SHORT[index]).join(', ')}/2026`;
+  return count ? `${label}, ${periods.length} ${periods.length === 1 ? 'mês' : 'meses'}` : label;
+}
+
+function profileCostSafeSource(source) {
+  if (!source || typeof source !== 'object' || !PROFILE_COST_PERIODS.has(source.period)
+      || typeof profileSafeUrl !== 'function') return null;
+  const url = profileSafeUrl(source.url);
+  return url ? { url, period: source.period } : null;
+}
+
+/* Um link por parte: o mês mais recente com fonte. Os demais meses ficam nos detalhes. */
+function profileCostLatestSource(sources) {
+  const links = (Array.isArray(sources) ? sources : []).map(profileCostSafeSource).filter(Boolean);
+  return links.sort((left, right) => left.period.localeCompare(right.period)).at(-1) || null;
+}
+
+function profileCostAllOutside(cost) {
+  const months = cost?.months && typeof cost.months === 'object' ? cost.months : {};
+  return [...PROFILE_COST_PERIODS].every(period => months[period]?.exercise === 'outside_mandate');
+}
+
+function profileCostPartRow([key, label, sourceLabel], part, value, scale, detail) {
+  const money = profileCostMoney(value);
+  const source = profileCostLatestSource(part.sources);
+  const width = money !== null && scale > 0 && value > 0 ? Math.max(1, value / scale * 100).toFixed(1) : 0;
+  return `<div class="citizen-cost-part" data-cost-part="${key}">
+    <div class="citizen-cost-part-label"><span>${label}</span><b class="mono">${money === null ? 'Sem dado' : `${esc(money)}<small>/mês</small>`}</b></div>
+    ${money !== null ? `<span class="citizen-cost-bar" aria-hidden="true"><i style="width:${width}%"></i></span>` : ''}
+    <small>${detail ? `${esc(detail)} · ` : ''}${source
+      ? `<a href="${esc(source.url)}" target="_blank" rel="noopener" aria-label="${esc(sourceLabel)}, ${esc(PROFILE_COST_MONTHS[source.period])}">${esc(sourceLabel)} ↗</a>`
+      : 'fonte indisponível'}</small>
+  </div>`;
+}
+
+function profileCostChristmasLine(cost) {
+  const months = profileCostPeriods(cost?.christmasBonus?.months);
+  const value = months.length ? profileCostMoney(cost.christmasBonus.amountCents) : null;
+  if (value === null) return '';
+  const when = months.length === 1 ? `em ${PROFILE_COST_LONG[profileCostIndex(months[0])]}` : `em ${profileCostMonthList(months, { count: false })}`;
+  return `<p class="citizen-cost-extra">13º adiantado ${esc(when)}: <b class="mono">${esc(value)}</b> <span>(fora da média)</span></p>`;
+}
+
+function profileCostAnswer(cost) {
+  const used = profileCostPeriods(cost?.usedMonths);
+  const amount = profileCostMoney(cost?.monthlyAverageCents);
+  const hasPrincipal = used.length > 0 && amount !== null;
+  const parts = cost?.parts && typeof cost.parts === 'object' ? cost.parts : {};
+  const partOf = key => (parts[key] && typeof parts[key] === 'object' ? parts[key] : {});
+  let principal;
+  let rows = '';
+  if (hasPrincipal) {
+    const values = PROFILE_COST_PARTS.map(([key]) => partOf(key).usedMonthsAverageCents);
+    const scale = Math.max(0, ...values.filter(profileCostInteger));
+    rows = PROFILE_COST_PARTS.map((entry, index) => profileCostPartRow(entry, partOf(entry[0]), values[index], scale)).join('');
+    principal = `<div class="citizen-cost-main"><span>Custa em média</span><b class="mono">${esc(amount)}</b><span>por mês</span></div>
+      <p class="citizen-cost-period">${esc(profileCostMonthList(used))} em exercício</p>`;
+  } else if (profileCostAllOutside(cost)) {
+    principal = '<p class="citizen-cost-unavailable">Não estava no mandato entre janeiro e julho de 2026.</p>';
+  } else {
+    const values = PROFILE_COST_PARTS.map(([key]) => partOf(key).averageCents);
+    const scale = Math.max(0, ...values.filter(profileCostInteger));
+    rows = PROFILE_COST_PARTS.map((entry, index) => {
+      const months = profileCostPeriods(partOf(entry[0]).months);
+      return profileCostPartRow(entry, partOf(entry[0]), values[index], scale, months.length ? `média de ${profileCostMonthList(months)}` : '');
+    }).join('');
+    principal = `<p class="citizen-cost-unavailable">Sem média mensal para jan–jul/2026.</p>
+      <p class="citizen-cost-period">Em nenhum mês do mandato as quatro partes abaixo foram publicadas juntas. Veja cada parte com seus próprios meses.</p>`;
+  }
+  return `<section class="card hero citizen-answer citizen-cost-answer" data-profile-answer="expenses">
+    <h2 class="h">Quanto custa?</h2>
+    <span class="k">Câmara · 2026</span>
+    ${principal}
+    ${rows ? `<div class="citizen-cost-parts">${rows}</div>` : ''}
+    ${profileCostChristmasLine(cost)}
+    ${rows ? '<p class="citizen-cost-note">Fora da conta: encargos do gabinete e apartamento funcional. Detalhes e fontes de cada mês em “Ver mais”.</p>' : ''}
+  </section>`;
+}
+
+function profileCostExclusionLabel(reason) {
+  const labels = {
+    outside_mandate: 'Fora do mandato neste mês.',
+    exercise_unknown: 'Não foi possível confirmar o exercício do mandato neste mês.',
+    payroll_unavailable: 'A página individual de remuneração deste mês não foi lida por completo.',
+    missing_parts: 'Faltou pelo menos uma das quatro partes neste mês.',
+    quota_snapshot_unverified: 'As notas da cota deste mês não foram conferidas contra o arquivo oficial.',
+    office_incomplete: 'Os dados da verba do gabinete deste mês estão incompletos.',
+  };
+  return labels[reason] || null;
+}
+
+function profileCostDaysInMonth(period) {
+  return new Date(Number(period.slice(0, 4)), Number(period.slice(5)), 0).getDate();
+}
+
+function profileCostMonthlyParts(month) {
+  const values = month.valuesCents && typeof month.valuesCents === 'object' ? month.valuesCents : {};
+  const sources = month.sources && typeof month.sources === 'object' ? month.sources : {};
+  const rows = PROFILE_COST_PARTS.map(([key, label]) => {
+    const value = profileCostMoney(values[key]);
+    if (value === null) return `<li><span>${label}</span><b>Sem dado</b></li>`;
+    const source = profileCostSafeSource(sources[key]);
+    const sourceLink = source
+      ? `<a href="${esc(source.url)}" target="_blank" rel="noopener" aria-label="Fonte de ${esc(label)} em ${esc(PROFILE_COST_MONTHS[source.period])}">Fonte ↗</a>`
+      : '<span class="muted">Sem link</span>';
+    return `<li><span>${label}</span><b class="mono">${esc(value)}</b>${sourceLink}</li>`;
+  }).join('');
+  return `<ul class="citizen-cost-month-parts">${rows}</ul>`;
+}
+
+function profileCostDetails(cost) {
+  if (!cost || typeof cost !== 'object') return '';
+  const months = cost.months && typeof cost.months === 'object' ? cost.months : {};
+  const used = new Set(profileCostPeriods(cost.usedMonths));
+  const rows = [...PROFILE_COST_PERIODS].map(period => {
+    const month = months[period];
+    if (!month || typeof month !== 'object') return '';
+    const inOffice = month.exercise === 'in_office';
+    const days = Number.isInteger(month.daysInOffice) ? month.daysInOffice : null;
+    const status = inOffice
+      ? (days !== null && days < profileCostDaysInMonth(period) ? `Em exercício por ${days} ${days === 1 ? 'dia' : 'dias'}` : 'Em exercício')
+      : month.exercise === 'outside_mandate' ? 'Fora do mandato' : 'Exercício não confirmado';
+    const exerciseSource = month.exerciseSource && typeof profileSafeUrl === 'function' ? profileSafeUrl(month.exerciseSource.url) : null;
+    const reasons = (Array.isArray(month.exclusionReasons) ? month.exclusionReasons : [])
+      .filter(reason => reason !== 'outside_mandate').map(profileCostExclusionLabel).filter(Boolean);
+    const christmas = inOffice ? profileCostMoney(month.christmasBonusCents) : null;
+    const housingSource = profileCostSafeSource(month.sources?.housing);
+    const housing = inOffice && typeof month.housingDiscrepancy === 'boolean' && profileCostInteger(month.housingAllowanceForCheckCents) && housingSource
+      ? `<p class="muted">Conferência com o portal de moradia: ${month.housingDiscrepancy ? 'valores diferentes' : 'valores iguais'}; o portal não entra na soma. <a href="${esc(housingSource.url)}" target="_blank" rel="noopener">Conferir ↗</a></p>` : '';
+    const property = inOffice && Number.isInteger(month.functionalPropertyDays) && month.functionalPropertyDays > 0
+      ? `<p class="muted">Apartamento funcional: ${month.functionalPropertyDays} ${month.functionalPropertyDays === 1 ? 'dia' : 'dias'} (sem valor estimado).</p>` : '';
+    return `<div class="citizen-cost-month" data-cost-month="${period}">
+      <b>${esc(PROFILE_COST_MONTHS[period])}</b>
+      <span>${esc(status)}${used.has(period) ? ' · <span class="citizen-cost-used">entra na média</span>' : ''}${exerciseSource ? ` · <a href="${esc(exerciseSource)}" target="_blank" rel="noopener">Conferir ↗</a>` : ''}</span>
+      ${inOffice ? profileCostMonthlyParts(month) : ''}
+      ${christmas !== null ? `<p class="muted">13º adiantado: ${esc(christmas)} (fora da média).</p>` : ''}
+      ${reasons.map(label => `<p class="muted">${esc(label)}</p>`).join('')}
+      ${property}${housing}
+    </div>`;
+  }).filter(Boolean).join('');
+  const complementMonths = profileCostPeriods(cost.complement?.months);
+  const complementValue = complementMonths.length ? profileCostMoney(cost.complement?.signedAmountCents) : null;
+  const complement = complementValue !== null
+    ? `<p><b>Complemento do auxílio-moradia lançado na cota:</b> ${esc(complementValue)} em ${esc(profileCostMonthList(complementMonths))}. A Câmara publica esse valor com sinal negativo; ele aparece aqui como publicado e fica fora da média acima.</p>` : '';
+  const inventoryMonths = profileCostPeriods(cost.payrollInventoryPartialMonths);
+  const inventory = inventoryMonths.length
+    ? `<p class="muted citizen-cost-footnote">Nota: em ${esc(profileCostMonthList(inventoryMonths, { count: false }))}, o inventário mensal da Câmara lista folhas complementares sem identificar a qual deputado(a) pertencem. A média usa o que a página individual de remuneração publica para esta pessoa.</p>` : '';
+  return `<section class="citizen-detail-part citizen-cost-details"><h3 class="k">Custo do mandato mês a mês · jan–jul/2026</h3>
+    <p class="muted">Como calculamos: em cada mês em exercício, somamos a remuneração bruta de todas as tabelas da página individual (normal, complementares), os auxílios dessa mesma página, a cota parlamentar sem o complemento de moradia e a verba do gabinete. A média usa só os meses com as quatro partes publicadas; meses parciais não são estimados para o mês inteiro. O 13º fica à parte. Diárias e vantagens indenizatórias não entram. Valores arredondados para baixo ao centavo.</p>
+    ${complement}
+    ${rows ? `<div class="citizen-cost-months">${rows}</div>` : '<p class="muted">Sem detalhes mensais disponíveis.</p>'}
+    ${inventory}
+  </section>`;
+}

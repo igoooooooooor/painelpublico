@@ -16,6 +16,10 @@ const profileSource = fs.readFileSync(
   path.join(__dirname, '..', 'frontend', 'scripts', 'profile-data.js'),
   'utf8',
 );
+const profileCostSource = fs.readFileSync(
+  path.join(__dirname, '..', 'frontend', 'scripts', 'profile-cost.js'),
+  'utf8',
+);
 
 function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'); }, schedule = setTimeout } = {}) {
   const events = {};
@@ -49,7 +53,7 @@ function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'
     state,
   };
   vm.createContext(context);
-  vm.runInContext(profileSource + '\n' + source + '\nthis.__api = { citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileView, skel };', context);
+  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + source + '\nthis.__api = { citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileView, skel };', context);
   context.votesForPerson = id => context.profileVotes(id).filter(record => String(record.vote.data || '').startsWith('2026'));
   context.attendanceBar = presence => presence
     ? `<span class="pbar" data-presence-days="${presence.dias}"></span>` : '';

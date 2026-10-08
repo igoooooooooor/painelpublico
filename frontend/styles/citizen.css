@@ -289,6 +289,38 @@ b.warn { color: var(--warn); }
 .citizen-answer-alert .citizen-ref span { background: var(--warn-soft); }
 .citizen-answer-alert .more { margin-top: auto; }
 .citizen-answer .citizen-alert-count { align-self: flex-start; color: var(--warn); background: var(--surface); cursor: default; min-height: 30px; font-size: 12px; }
+.citizen-cost-answer { min-width: 0; }
+.citizen-cost-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 7px; min-width: 0; }
+.citizen-cost-main span { font-size: 14px; color: var(--hero-muted); }
+.citizen-cost-main b { font-family: var(--f-data); font-size: clamp(30px, 9vw, 40px); font-weight: 700; letter-spacing: -.04em; line-height: 1.05; overflow-wrap: anywhere; }
+.citizen-cost-period, .citizen-cost-note { margin: 0; font-size: 13px; line-height: 1.4; color: var(--hero-muted); }
+.citizen-cost-period { font-weight: 600; color: var(--hero-fg); }
+.citizen-cost-unavailable { margin: 0; font-family: var(--f-display); font-size: 19px; line-height: 1.25; color: var(--hero-fg); }
+.citizen-cost-parts { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.citizen-cost-part { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.citizen-cost-part-label { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; min-width: 0; font-size: 13px; }
+.citizen-cost-part-label span { min-width: 0; overflow-wrap: anywhere; }
+.citizen-cost-part-label b { font-size: 14px; white-space: nowrap; }
+.citizen-cost-part-label b small { font-size: 11px; font-weight: 500; color: var(--hero-muted); }
+.citizen-cost-bar { display: block; height: 6px; border-radius: 3px; background: var(--hero-chip); overflow: hidden; }
+.citizen-cost-bar i { display: block; height: 100%; border-radius: 3px; background: var(--accent-2); }
+.citizen-cost-part small { font-size: 11px; line-height: 1.35; color: var(--hero-muted); overflow-wrap: anywhere; }
+.citizen-cost-part a { color: var(--hero-fg); text-underline-offset: 2px; }
+.citizen-cost-extra { margin: 0; padding-top: 10px; border-top: 1px solid var(--hero-line); font-size: 13px; color: var(--hero-fg); }
+.citizen-cost-extra span { color: var(--hero-muted); }
+.citizen-cost-details { min-width: 0; }
+.citizen-cost-months { display: grid; gap: 8px; }
+.citizen-cost-month { display: grid; grid-template-columns: minmax(72px, auto) minmax(0, 1fr); gap: 3px 10px; align-items: baseline; padding: 10px 0; border-top: 1px solid var(--line); }
+.citizen-cost-month > *:nth-child(n + 3) { grid-column: 1 / -1; }
+.citizen-cost-used { color: var(--ok, var(--accent)); font-size: 12px; font-weight: 700; }
+.citizen-cost-month a { color: var(--ink-2); }
+.citizen-expense-original { padding: 12px; border-radius: var(--radius-control); background: var(--chip); }
+.citizen-expense-original .muted { font-size: 12px; }
+.citizen-cost-month-parts { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; grid-column: 1 / -1; }
+.citizen-cost-month-parts li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: baseline; font-size: 13px; }
+.citizen-cost-month-parts li span { min-width: 0; overflow-wrap: anywhere; }
+.citizen-cost-month p { margin: 0; }
+.citizen-cost-footnote { margin-top: 8px; font-size: 12px; }
 .citizen-details { display: grid; gap: var(--space-3); min-width: 0; align-items: start; }
 .citizen-detail { padding: 0; gap: 0; min-width: 0; }
 .citizen-detail > h2, .citizen-detail > h3 { margin: 0; font-size: inherit; }

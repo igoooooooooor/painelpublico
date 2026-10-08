@@ -290,10 +290,13 @@ function profileExpenseAnswer(profileRecord, person, hasExpenseData) {
   const averageSpend = profileRecord.media || 0, difference = averageSpend ? profileRecord.total / averageSpend - 1 : 0;
   const totalLabel = profileRecord.total === 0 ? '0' : Math.round(profileRecord.total / 1e3).toLocaleString('pt-BR') + ' mil';
   const verdict = Math.abs(difference) < 0.1 ? 'Parecido com a média' : `${Math.round(Math.abs(difference) * 100)}% ${difference > 0 ? 'acima' : 'abaixo'} da média`;
+  const salaryNote = person.role === 'senador'
+    ? `<p class="citizen-salary">Salário efetivamente pago não disponível nesta base de forma individual. Subsídio bruto de referência do cargo: ${brl(PROFILE_SALARY[person.role].amount)}/mês.</p>`
+    : `<p class="citizen-salary">Salário à parte: ${brl(PROFILE_SALARY[person.role].amount)}/mês</p>`;
   return `<section class="card hero citizen-answer" data-profile-answer="expenses">
     <h2 class="h">Quanto custa?</h2><span class="k">Cota parlamentar · 2026</span>
     <div class="huge">${hasExpenseData ? `<small>R$</small>${totalLabel}` : 'Sem dados'}</div>
-    <p class="citizen-salary">Salário à parte: ${brl(PROFILE_SALARY[person.role].amount)}/mês</p>
+    ${salaryNote}
     ${hasExpenseData ? (averageSpend ? `<div class="citizen-vs">
       <div><span>${esc(citizenName(person.name).split(' ')[0])}</span><b class="mono">${profileRecord.total === 0 ? 'R$ 0' : formatCitizenAmount(profileRecord.total)}</b></div><div class="citizen-vsbar"><i style="width:${Math.min(100, profileRecord.total / Math.max(profileRecord.total, averageSpend) * 100)}%"></i></div>
       <div><span>Média dos(as) ${ROLE_LABELS_PLURAL[person.role] || 'colegas'}</span><b class="mono">${formatCitizenAmount(averageSpend)}</b></div><div class="citizen-vsbar avg"><i style="width:${Math.min(100, averageSpend / Math.max(profileRecord.total, averageSpend) * 100)}%"></i></div>
@@ -359,11 +362,20 @@ function profileVoteDetails(shared) {
     ${presence?.motivos?.length ? `<p class="note">Justificativas de presença: ${presence.motivos.map(([reason, count]) => `${esc(reason.toLowerCase())} (${count})`).join(', ')}.</p>` : ''}
     ${senate ? '' : '<button type="button" class="more" data-go="attendance">Ver a presença de todos(as)</button>'}`;
 }
-function profileExpenseDetails(f, hasExpenseData) {
+function profileExpenseDetails(f, hasExpenseData, cost = null) {
   if (!hasExpenseData) return '<p class="muted">Não há lançamentos observados para calcular total, média, série mensal ou alertas.</p>';
   const maxMonth = Math.max(1, ...f.meses.map(month => month.valor));
   const categoryTotal = f.categorias.reduce((sum, category) => sum + category.valor, 0) || 1;
-  return `<section class="citizen-detail-part"><h3 class="k">Mês a mês</h3>
+  const monthNames = ['', 'jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+  const observedMonths = f.meses.filter(month => Number.isInteger(month.month) && month.month >= 1 && month.month <= 12)
+    .map(month => monthNames[month.month]);
+  const complement = cost?.complement?.signedAmountCents;
+  return `<section class="citizen-detail-part citizen-expense-original"><h3 class="k">Cota parlamentar · total de 2026</h3>
+    <p><b>Total da cota em 2026:</b> ${brl(f.total, 2)}, somando todas as notas publicadas até agora.</p>
+    ${observedMonths.length ? `<p class="muted">Meses com notas: ${esc([...new Set(observedMonths)].join(', '))}.</p>` : ''}
+    ${Number.isSafeInteger(complement) && complement !== 0 ? '<p class="muted">Esse total conta as notas do complemento de moradia como a Câmara publica, com sinal negativo. No custo mensal acima, essas notas ficam de fora e aparecem separadas no custo mês a mês.</p>' : ''}
+  </section>
+  <section class="citizen-detail-part"><h3 class="k">Mês a mês</h3>
     <div class="citizen-months">${f.meses.map(month => `<div><small>${Math.round(month.valor / 1e3)}k</small><b class="mt"><i style="height:${month.valor > 0 ? Math.max(2, month.valor / maxMonth * 100) : 0}%" class="${f.alertas.some(alert => alert.tipo === 'pico' && alert.mes === month.month) ? 'hot' : ''}"></i></b><span>${SHORT_MONTHS[month.month]}</span></div>`).join('')}</div>
     <p class="muted">Os últimos meses ainda podem crescer: as notas são publicadas com atraso.</p>
   </section>
@@ -386,6 +398,9 @@ function profileView() {
   if (!f) return back + skel('ficha-respostas');
   const shared = profileData(f.pessoa || id), person = shared.person, election = profileElection(shared);
   const hasExpenseData = f.hasExpenseData === undefined ? f.total != null : Boolean(f.hasExpenseData);
+  // Sem composição do custo (ficha fora do recorte), a ficha mantém o cartão da cota.
+  const costAnswer = person.role === 'deputado' && shared.cost
+    ? profileCostAnswer(shared.cost) : profileExpenseAnswer(f, person, hasExpenseData);
   const alerts = f.alertas || [], isChamberPerson = person.role === 'deputado';
   const personNumber = String(person.id).split(':')[1];
   const presenceUrl = isChamberPerson && /^\d+$/.test(personNumber || '') ? `https://www.camara.leg.br/deputados/${personNumber}/presenca-plenario/2026` : null;
@@ -403,10 +418,10 @@ function profileView() {
     <div class="citizen-profile-head"><div class="profile">${citizenAvatar(person, 64)}<div><h1 class="n">${esc(citizenName(person.name))}</h1><span class="muted">${citizenRoleDescription(person)}</span>${election?.summary ? `<span class="pill citizen-election" data-tone="${esc(election.tone)}"><i></i>${esc(election.summary)}</span>` : ''}</div></div>
       <button type="button" class="fchip" data-cmp-start="${esc(shared.id)}">Comparar com outro(a) →</button></div>
     <span class="k citizen-answer-label">Em 3 respostas</span>
-    <div class="citizen-answers">${profileExpenseAnswer(f, person, hasExpenseData)}${profileWorkAnswer(shared)}${profileAlertAnswer(alerts, hasExpenseData)}</div>
+    <div class="citizen-answers">${costAnswer}${profileWorkAnswer(shared)}${profileAlertAnswer(alerts, hasExpenseData)}</div>
     <h2 class="h">Ver mais</h2>
     ${profileSectionsHTML(person, {
-      expenses: profileExpenseDetails(f, hasExpenseData),
+      expenses: (person.role === 'deputado' ? profileCostDetails(shared.cost) : '') + profileExpenseDetails(f, hasExpenseData, shared.cost),
       alerts: alerts.length ? alerts.map(alert => alertCard(alert, { semPessoa: true })).join('') : `<p class="muted">${hasExpenseData ? 'Nenhum gasto incomum pelas regras do painel: nenhum mês muito acima do habitual e nenhum fornecedor com metade do dinheiro.' : 'Sem dados de cota para checar alertas.'}</p>`,
       votes: profileVoteDetails(shared), sources: sourcesHtml,
     })}`;
