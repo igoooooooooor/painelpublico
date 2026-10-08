@@ -20,6 +20,10 @@ const profileCostSource = fs.readFileSync(
   path.join(__dirname, '..', 'frontend', 'scripts', 'profile-cost.js'),
   'utf8',
 );
+const shareSource = fs.readFileSync(
+  path.join(__dirname, '..', 'frontend', 'scripts', 'share-card.js'),
+  'utf8',
+);
 
 function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'); }, schedule = setTimeout } = {}) {
   const events = {};
@@ -53,7 +57,7 @@ function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'
     state,
   };
   vm.createContext(context);
-  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + source + '\nthis.__api = { citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileView, skel };', context);
+  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileView, skel };', context);
   context.votesForPerson = id => context.profileVotes(id).filter(record => String(record.vote.data || '').startsWith('2026'));
   context.attendanceBar = presence => presence
     ? `<span class="pbar" data-presence-days="${presence.dias}"></span>` : '';
@@ -266,6 +270,21 @@ test('profile without alerts explains which rules were checked and keeps neutral
   assert.match(answer, /Mesmo fornecedor:<\/b> metade ou mais/);
   assert.doesNotMatch(html, /regras do painel|fora do normal|estranho/);
   assert.match(html, /Fale com ele\(a\)/);
+});
+
+test('profile offers sharing with the same three answers on the card', () => {
+  const { api, state, context } = makeView();
+  setProfileFixture(api, state, 'camara:57', {
+    total: 80000, hasExpenseData: true, meses: [], categorias: [], fornecedores: [], maiores: [],
+    alertas: [{ nivel: 'medio', tipo: 'valor', titulo: 'A', frase: 'B' }], snapshotAt: '2026-10-07T12:00:00Z',
+  });
+  const html = api.profileView();
+  assert.match(html, /data-share="image"/);
+  assert.match(html, /data-share="pdf"/);
+  const card = vm.runInContext('SHARE_STATE.card', context);
+  assert.deepEqual(Array.from(card.rows, row => row.label), ['Cota parlamentar em 2026', 'Presença no Plenário em 2026', 'Gastos incomuns na cota']);
+  assert.equal(card.rows[2].values[0], '1 alerta');
+  assert.match(card.footnote, /Retrato de 2026-10-07/);
 });
 
 test('profile distinguishes missing cota from an observed zero and treats a difference under ten percent as similar', () => {

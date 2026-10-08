@@ -70,6 +70,26 @@ function partyVoteChip(record) {
   return `<span class="vchip ${className}">${esc(record.majority.toLowerCase())}</span><small class="party-score mono">${record.yesCount}–${record.noCount}</small>`;
 }
 
+/* Cartão para compartilhar a comparação de partidos, com as mesmas métricas da tabela. */
+function partyShareCard(a, b) {
+  const money = value => Number.isFinite(value) ? formatCitizenAmount(value) : 'Sem dados';
+  const percentText = value => Number.isFinite(value) ? `${Math.round(value * 100)}%` : 'Sem dados';
+  const perTen = party => { const alerts = (party.deputado?.alertas || 0) + (party.senador?.alertas || 0); const members = (party.deputado?.comDados || 0) + (party.senador?.comDados || 0);
+    return members ? (alerts / members * 10).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : 'Sem dados'; };
+  return {
+    kicker: 'Comparação de partidos', title: `${a.sigla} × ${b.sigla}`, columns: [a.sigla, b.sigla],
+    rows: [
+      { label: 'Registros na lista (deputados(as) + senadores(as))', values: [String(a.membros), String(b.membros)] },
+      { label: 'Gasto médio de cota por deputado(a) em 2026', values: [money(a.deputado?.media), money(b.deputado?.media)] },
+      { label: 'Alertas a cada 10 parlamentares', values: [perTen(a), perTen(b)] },
+      { label: 'Presença média no Plenário · Câmara', values: [percentText(partyAttendance(a.sigla)?.media), percentText(partyAttendance(b.sigla)?.media)] },
+      { label: 'Unidade nas votações · Câmara', values: [percentText(partyVoteAlignment(partyVotes(a.sigla))), percentText(partyVoteAlignment(partyVotes(b.sigla)))] },
+    ],
+    fileName: `${a.sigla}-x-${b.sigla}`,
+    footnote: 'Fontes: notas da cota, presença e votações publicadas pela Câmara e pelo Senado. Legenda pelo cadastro atual.',
+  };
+}
+
 function partyComparisonTable(a, b) {
   if (typeof profileSenateEnsure === 'function') profileSenateEnsure();
   const va = partyVotes(a.sigla), vb = partyVotes(b.sigla), sa = partyVotes(a.sigla, 'senado'), sb = partyVotes(b.sigla, 'senado');
@@ -139,7 +159,7 @@ function partiesView() {
     <div class="chips" role="group" aria-label="Partidos">${partyState.data.itens.map(p => `<button type="button" class="fchip" data-party="${esc(p.sigla)}" aria-pressed="${partyState.selected.includes(p.sigla)}">${esc(p.sigla)} <b>${p.membros}</b></button>`).join('')}</div>
     <span class="muted">O número ao lado conta registros incluídos na lista (deputados(as) + senadores(as)); o Senado tem 81 cadeiras e a lista pode incluir suplentes em transição. Toque para trocar; o mais antigo da comparação sai.</span>
   </section>
-  ${a && b ? partyComparisonTable(a, b) : '<p class="note">Escolha dois partidos para comparar.</p>'}
+  ${a && b ? shareActionsHTML(partyShareCard(a, b)) + partyComparisonTable(a, b) : '<p class="note">Escolha dois partidos para comparar.</p>'}
   <span class="src">Destaque em roxo: menor gasto médio, menos alertas ou mais presença na Câmara. Registros de presença do Senado são contagens informativas, sem ranking, e não contam sessões sem linha publicada. Partidos maiores tendem a ter mais variação interna; compare a média, não o total. Gastos pelas notas da cota (sem passagens aéreas da Câmara); presença e votos são mostrados separadamente por casa e pelos recortes das respectivas fontes.</span>`;
 }
 

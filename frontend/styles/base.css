@@ -128,6 +128,11 @@ nav.tabs .in { width: 100%; max-width: 480px; display: grid; grid-template-colum
 nav.tabs button { display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 52px; justify-content: center; background: none; border: 0; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; }
 nav.tabs button[aria-current="page"] { color: var(--accent); }
 /* Rodapé fixo do template: independência, fontes e links do projeto. O recuo inferior deixa espaço para a navegação. */
+/* Compartilhar: imagem e PDF, logo abaixo do cabeçalho da ficha ou acima da comparação. */
+.share-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); min-width: 0; }
+.share-actions .fchip[disabled] { opacity: .55; cursor: progress; }
+.share-status { flex-basis: 100%; min-height: 0; font-size: 12px; }
+.share-status:empty { display: none; }
 .site-foot { max-width: 480px; margin: 0 auto; padding: 0 var(--space-4) 110px; }
 .site-foot .in { border-top: 1px solid var(--line); padding-top: 18px; display: flex; flex-direction: column; gap: var(--space-2); font-size: 12px; line-height: 1.5; color: var(--muted); }
 .site-foot p { margin: 0; }

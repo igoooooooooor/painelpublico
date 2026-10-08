@@ -397,6 +397,28 @@ function profileExpenseDetails(f, hasExpenseData) {
     ${f.maiores.map(m => `<${m.documentUrl ? `a href="${esc(m.documentUrl)}" target="_blank" rel="noopener"` : 'div'} class="item"><span class="mono muted" style="width:52px">${SHORT_MONTHS[m.month]}/${String(m.year).slice(2)}</span><span class="g"><span>${esc(citizenName(m.fornecedor || 'Fornecedor não informado'))}</span><span class="muted">${esc(m.categoria)}${m.documentUrl ? ' · ver nota ↗' : ''}</span></span><span class="mono" style="font-weight:700">${brl(m.valor)}</span></${m.documentUrl ? 'a' : 'div'}>`).join('')}
   </section>`;
 }
+/* Cartão para compartilhar: as mesmas três respostas da ficha, em números curtos. */
+function profileShareCard(f, shared, alerts, hasExpenseData) {
+  const person = shared.person, senate = person.role === 'senador', cost = shared.cost;
+  const average = person.role === 'deputado' && cost ? profileCostMoney(cost.monthlyAverageCents) : null;
+  const costRow = average !== null
+    ? { label: 'Custa em média por mês', values: [average], notes: [`${profileCostMonthList(cost.usedMonths)} · salário, auxílios, cota e gabinete`] }
+    : { label: 'Cota parlamentar em 2026', values: [hasExpenseData ? formatCitizenAmount(f.total) : 'Sem dados'], notes: [hasExpenseData ? 'reembolsos publicados até agora' : 'ausência de dado não é zero'] };
+  const presence = shared.presence, registered = senate ? shared.registeredPresence : null;
+  const workRow = presence
+    ? { label: 'Presença no Plenário em 2026', values: [`${Math.round(presence.presente / presence.dias * 100)}%`], notes: [`${presence.presente} de ${presence.dias} ${senate ? 'sessões' : 'dias'}`] }
+    : registered
+      ? { label: 'Presença registrada no Senado em 2026', values: [`${registered.presente} sessões`], notes: ['faltas e justificativas não apuradas'] }
+      : { label: 'Presença no Plenário em 2026', values: ['Sem registro'], notes: ['ausência de dado não é zero'] };
+  const alertRow = { label: 'Gastos incomuns na cota', values: [!hasExpenseData ? 'Sem dados' : alerts.length ? `${alerts.length} ${alerts.length === 1 ? 'alerta' : 'alertas'}` : 'Nenhum'],
+    notes: ['pelas mesmas 2 regras para todos(as)'] };
+  return {
+    kicker: `Ficha · ${senate ? 'Senado' : 'Câmara'}`, title: citizenName(person.name),
+    subtitle: [ROLE_LABELS[person.role], person.party, person.uf].filter(Boolean).join(' · '),
+    rows: [costRow, workRow, alertRow], fileName: citizenName(person.name),
+    footnote: `Fontes: ${senate ? 'Senado Federal' : 'Câmara dos Deputados'} (notas da cota${average !== null ? ', remuneração, gabinete' : ''} e presença). Retrato de ${f.snapshotAt ? f.snapshotAt.slice(0, 10) : 'data não informada'}.`,
+  };
+}
 function profileView() {
   const id = state.politicianId;
   loadProfile(id);
@@ -425,6 +447,7 @@ function profileView() {
   return `${back}
     <div class="citizen-profile-head"><div class="profile">${citizenAvatar(person, 64)}<div><h1 class="n">${esc(citizenName(person.name))}</h1><span class="muted">${citizenRoleDescription(person)}</span>${election?.summary ? `<span class="pill citizen-election" data-tone="${esc(election.tone)}"><i></i>${esc(election.summary)}</span>` : ''}</div></div>
       <button type="button" class="fchip" data-cmp-start="${esc(shared.id)}">Comparar com outro(a) →</button></div>
+    ${shareActionsHTML(profileShareCard(f, shared, alerts, hasExpenseData))}
     <span class="k citizen-answer-label">Em 3 respostas</span>
     <div class="citizen-answers">${costAnswer}${profileWorkAnswer(shared)}${profileAlertAnswer(alerts, hasExpenseData)}</div>
     <h2 class="h">Ver mais</h2>

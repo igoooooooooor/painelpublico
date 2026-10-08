@@ -234,12 +234,41 @@ function comparisonView() {
       <label class="search" for="comparison-q"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="comparison-q" type="search" placeholder="Nome, partido ou estado" value="${esc(extrasState.comparisonQuery)}" autocomplete="off"></label>
       <div id="comparison-res" class="citizen-list">${comparisonPickerList()}</div></section>` : '';
   let content = '';
-  if (extrasState.comparisonIds.length === 2 && readyProfiles.length === 2) content = comparisonTable(readyProfiles);
+  if (extrasState.comparisonIds.length === 2 && readyProfiles.length === 2) content = shareActionsHTML(comparisonShareCard(readyProfiles)) + comparisonTable(readyProfiles);
   else if (extrasState.comparisonIds.length === 2) content = extrasState.comparisonError ? `<section class="card wide"><p>Não deu para abrir as fichas.</p><p class="muted">${esc(extrasState.comparisonError)}</p></section>` : skel('cmp');
   return `<button type="button" class="back" data-back>‹ Voltar</button>
   ${pageHead('Lado a lado', 'Comparar', 'Gastos, alertas, presença e votos de dois(duas) políticos(as) na mesma tela.')}
   ${extrasState.comparisonIds.length ? `<div class="cmp-slots">${extrasState.comparisonIds.map(id => { const f = citizenState.cache.get('/api/c/politico/' + encodeURIComponent(id)); const p = f?.pessoa || { id, name: '…' }; return `<div class="cmp-slot">${citizenAvatar(p, 40)}<span><b>${esc(citizenName(p.name))}</b><small>${esc([p.party, p.uf].filter(Boolean).join(' · '))}</small></span><button type="button" class="cmp-x" data-cmp-del="${esc(id)}" aria-label="Tirar ${esc(citizenName(p.name))} da comparação">×</button></div>`; }).join('')}</div>` : ''}
   ${pickerSection}${content}`;
+}
+/* Cartão para compartilhar a comparação: só linhas comparáveis, com "Sem dados" quando faltar. */
+function comparisonShareCard([a, b]) {
+  const name = f => citizenName(f.pessoa.name);
+  const money = value => value == null ? 'Sem dados' : formatCitizenAmount(value);
+  const vsAverage = f => f.total != null && f.media ? `${f.total >= f.media ? '+' : ''}${Math.round((f.total / f.media - 1) * 100)}%` : 'Sem dados';
+  const chamber = f => String(f.pessoa.id).split(':')[0];
+  const presence = f => {
+    if (chamber(f) === 'senado') { const record = senateRegisteredPresence(f.pessoa.id); return record ? `${record.presente} sessões` : 'Sem dados'; }
+    const p = attendanceForPerson(f.pessoa.id);
+    return p ? `${Math.round(p.presente / p.dias * 100)}%` : 'Sem dados';
+  };
+  const rows = [];
+  const costs = [a, b].map(f => comparisonProfile(f).cost);
+  if (costs.every(cost => cost && Number.isSafeInteger(cost.monthlyAverageCents)) && typeof profileCostMoney === 'function') {
+    rows.push({ label: 'Custo médio do mandato por mês · jan–jul/2026', values: costs.map(cost => profileCostMoney(cost.monthlyAverageCents)),
+      notes: costs.map(cost => profileCostMonthList(cost.usedMonths)) });
+  }
+  rows.push({ label: 'Cota gasta em 2026', values: [money(a.total), money(b.total)] });
+  rows.push({ label: 'Cota comparada à média do cargo', values: [vsAverage(a), vsAverage(b)] });
+  rows.push({ label: 'Alertas de gastos incomuns', values: [a, b].map(f => f.total == null ? 'Sem dados' : String(f.alertas.length)) });
+  rows.push({ label: chamber(a) === chamber(b) && chamber(a) === 'senado' ? 'Presença registrada no Senado' : chamber(a) === chamber(b) ? 'Presença no Plenário · Câmara' : 'Presença (casas com métodos diferentes)',
+    values: [presence(a), presence(b)] });
+  return {
+    kicker: 'Comparação lado a lado', title: `${name(a).split(' ')[0]} × ${name(b).split(' ')[0]}`,
+    columns: [a, b].map(f => `${name(f)}${f.pessoa.party ? ` · ${f.pessoa.party}` : ''}`), rows,
+    fileName: `${name(a)}-x-${name(b)}`,
+    footnote: 'Fontes: notas da cota, remuneração e presença publicadas pela Câmara e pelo Senado. Casas diferentes não são ranqueadas.',
+  };
 }
 function comparisonProfile(f) {
   return typeof profileData === 'function' ? profileData(f.pessoa || f.pessoa?.id) || {} : {};
