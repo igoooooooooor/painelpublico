@@ -117,8 +117,20 @@ Pendências antes de ampliar para o mandato:
    **Decisão (8/10/2026): manter os alertas de novembro e dezembro, com contexto.** Gasto é gasto: usar o
    saldo antes que expire também interessa ao cidadão, e omitir esses meses esconderia dinheiro público.
    O cartão informa a regra do saldo anual, sem tratá-la como justificativa.
-2. **Mês no Senado:** há passagens com data de agosto lançadas em dezembro. Confirmar se o mês do CEAPS é
-   o da despesa ou o do reembolso. Se for o do reembolso, o pico no Senado mede lotes de pagamento.
+2. **Mês no Senado: é o mês da despesa (verificado em 8/10/2026).** A documentação da API
+   (`/adm-dadosabertos/v3/api-docs`, `DespesaCeapsDto`) não define o campo `mes`, mas três evidências
+   apontam para o mês em que a despesa acontece, não para o do reembolso:
+   - o mês coincide com o mês da data do documento em 86–89% das notas (2024–2026), como na Câmara (85%);
+   - em cerca de 8% das notas a data do documento é **posterior** ao mês (27% em divulgação, faturada
+     depois do serviço). Isso seria impossível se o mês fosse o do reembolso, que só acontece depois do
+     documento;
+   - no portal de transparência, o detalhe do mês mostra que as passagens com data de agosto lançadas
+     em dezembro (caso da triagem) são de voos feitos em dezembro: a data é a da compra, o mês é o do
+     voo ([exemplo](https://www6g.senado.leg.br/transparencia/sen/5525/ceaps/8/detalhe/?mesAno=12/2024)).
+
+   A regra de pico vale para o Senado como está. O portal traz, por senador, tipo e mês, a lista das
+   notas com fornecedor, descrição, data e número do documento, mas não a imagem da nota; a pendência 3
+   continua. Essas páginas mostram nomes de servidores nas passagens e não devem ser copiadas.
 3. **Documentos do Senado:** a base não traz link de documento do CEAPS.
 4. **Intermediários de passagem:** agências concentram passagens de várias companhias.
 5. **Totais baixos:** a concentração alcança quem gasta pouco no ano.
@@ -136,4 +148,5 @@ Pendências antes de ampliar para o mandato:
 | 8/10/2026 | Títulos factuais, sem selo de intensidade e sem destaque de "melhor" para menos alertas | A regra mede variação, não conduta |
 | 8/10/2026 | Novembro e dezembro avaliados normalmente, com aviso do saldo anual que expira em 31/12 | Gasto é gasto; omitir os meses esconderia dinheiro público |
 | Em aberto | Base anual ou de 12 meses para ampliar ao mandato | Simulação feita; falta decidir |
-| Em aberto | Mês do CEAPS (despesa ou reembolso), documentos do Senado, intermediários de passagem, totais baixos | Pendências da triagem |
+| 8/10/2026 | Mês do CEAPS tratado como mês da despesa; regra de pico sem mudança para o Senado | Datas posteriores ao mês e detalhe do portal (pendência 2) |
+| Em aberto | Documentos do Senado, intermediários de passagem, totais baixos | Pendências da triagem |
