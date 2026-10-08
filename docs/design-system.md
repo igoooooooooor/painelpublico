@@ -8,7 +8,7 @@ A interface usa CSS próprio, sem dependência de framework. O template contém 
 - **Tipografia:** `--f-display` é usada em títulos, `--f-body` no texto e `--f-data` em números e dados tabulares.
 - **Medidas:** `--space-1` a `--space-4` cobrem espaçamentos recorrentes. `--radius-card`, `--radius-control` e `--control-height` padronizam cartões, campos e alvos de toque.
 
-Os valores de cor e tipografia são definidos em `tokens.css`. O tema claro é o padrão; o tema escuro responde à preferência do sistema e a `data-theme="dark"`, enquanto `data-theme="light"` mantém o tema claro.
+Os valores de cor e tipografia são definidos em `tokens.css`. O tema escuro é o padrão (`data-theme="dark"` no template). O botão de tema (no topo da home, no rodapé e na navegação do computador) alterna para `data-theme="light"` e guarda a escolha em `localStorage` (`painel-theme`), só neste navegador; um script no `<head>` aplica a escolha antes de pintar a página.
 
 ## Classes comuns
 

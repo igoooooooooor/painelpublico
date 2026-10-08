@@ -141,4 +141,28 @@ document.addEventListener('click', e => {
   if (t.dataset.deputy) return openPolitician(t.dataset.deputy);
   if (t.dataset.go) { navigationHistory.length = 0; navigateToView(t.dataset.go, true); }
 });
+/* Alterna tema claro/escuro; o padrão é escuro e a escolha fica salva neste navegador. */
+const THEME_ICON = '<svg class="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="theme-moon" d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/><g class="theme-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></svg>';
+const currentTheme = () => document.documentElement?.dataset?.theme === 'light' ? 'light' : 'dark';
+const themeLabel = () => currentTheme() === 'light' ? 'Tema escuro' : 'Tema claro';
+function themeToggleHTML(extraClass = 'theme-toggle-top') {
+  return `<button type="button" class="theme-toggle ${extraClass}" data-theme-toggle aria-pressed="${currentTheme() === 'light'}" aria-label="Mudar para ${themeLabel().toLowerCase()}">${THEME_ICON}<span>${themeLabel()}</span></button>`;
+}
+function syncThemeToggles() {
+  document.querySelectorAll('[data-theme-toggle]').forEach(button => {
+    button.setAttribute('aria-pressed', String(currentTheme() === 'light'));
+    button.setAttribute('aria-label', `Mudar para ${themeLabel().toLowerCase()}`);
+    const label = button.querySelector('span');
+    if (label) label.textContent = themeLabel();
+  });
+}
+function toggleTheme() {
+  const next = currentTheme() === 'light' ? 'dark' : 'light';
+  if (!document.documentElement) return;
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem('painel-theme', next); } catch (error) { /* Sem armazenamento, vale só nesta visita. */ }
+  syncThemeToggles();
+}
+document.addEventListener('click', event => { if (event.target.closest('[data-theme-toggle]')) toggleTheme(); });
 render();
+syncThemeToggles();

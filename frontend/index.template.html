@@ -1,9 +1,11 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Painel Público</title>
+<script>/* Tema escuro por padrão; a escolha do visitante fica só neste navegador. */
+try { if (localStorage.getItem('painel-theme') === 'light') document.documentElement.dataset.theme = 'light'; } catch (error) {}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap">
@@ -17,6 +19,7 @@
   <p><b>Projeto pessoal e independente.</b> Sem vínculo com partidos, políticos, governos ou órgãos públicos. Não é um site oficial.</p>
   <p>Reúne e organiza informações públicas divulgadas pela Câmara, pelo Senado e por outros órgãos oficiais. Os alertas seguem regras fixas, iguais para todos(as), e não indicam irregularidade. Confira sempre na fonte.</p>
   <p class="site-foot-links"><a href="https://github.com/igor05k/painelpublico" target="_blank" rel="noopener">Código no GitHub ↗</a><a href="https://github.com/igor05k/painelpublico/blob/main/LEGAL-NOTICE.md" target="_blank" rel="noopener">Aviso legal ↗</a><a href="https://github.com/igor05k/painelpublico/issues" target="_blank" rel="noopener">Informar um erro ↗</a></p>
+  <button type="button" class="theme-toggle theme-toggle-foot" data-theme-toggle aria-pressed="false"><svg class="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="theme-moon" d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/><g class="theme-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></svg><span>Tema claro</span></button>
 </div></footer>
 <nav class="tabs" aria-label="Navegação principal"><div class="in">
   <button type="button" class="nav-brand" data-go="home" aria-label="Painel Público, início"><svg width="28" height="28" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="8" fill="var(--accent)"/><rect x="6" y="13" width="3.2" height="7" rx="1.2" fill="#fff"/><rect x="11.4" y="9" width="3.2" height="11" rx="1.2" fill="#fff"/><rect x="16.8" y="5.5" width="3.2" height="14.5" rx="1.2" fill="#fff" opacity=".7"/></svg>Painel Público</button>
@@ -25,6 +28,7 @@
   <button type="button" data-go="votes"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M12 5v14"/></svg>Placar</button>
   <button type="button" data-go="politicians"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.4 3.4-5.5 6.5-5.5s5.7 2.1 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14.5c2.3 0 4 1.6 4.5 4"/></svg>Políticos</button>
   <button type="button" data-go="city"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5M9 20v-6h6v6"/><path d="M3 20h18"/></svg>Minha cidade</button>
+  <button type="button" class="theme-toggle nav-theme" data-theme-toggle aria-pressed="false"><svg class="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="theme-moon" d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/><g class="theme-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></svg><span>Tema claro</span></button>
 </div></nav>
 <script>
 {{SCRIPTS}}

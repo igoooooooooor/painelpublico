@@ -128,6 +128,15 @@ nav.tabs .in { width: 100%; max-width: 480px; display: grid; grid-template-colum
 nav.tabs button { display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 52px; justify-content: center; background: none; border: 0; color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer; }
 nav.tabs button[aria-current="page"] { color: var(--accent); }
 /* Rodapé fixo do template: independência, fontes e links do projeto. O recuo inferior deixa espaço para a navegação. */
+/* Tema: botão no topo da home, no rodapé e na navegação do computador. */
+.theme-toggle { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.theme-toggle .theme-sun { display: none; }
+:root[data-theme="light"] .theme-toggle .theme-sun { display: inline; }
+:root[data-theme="light"] .theme-toggle .theme-moon { display: none; }
+.theme-toggle-top span { display: none; }
+.theme-toggle-top { padding: 0; width: 36px; justify-content: center; flex: none; }
+.theme-toggle-foot { align-self: flex-start; }
+nav.tabs .nav-theme { display: none; }
 /* Compartilhar: imagem e PDF, logo abaixo do cabeçalho da ficha ou acima da comparação. */
 .share-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); min-width: 0; }
 .share-actions .fchip[disabled] { opacity: .55; cursor: progress; }

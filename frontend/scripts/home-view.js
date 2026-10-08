@@ -89,7 +89,7 @@ function homeTopCard(data) {
 function homeView() {
   homeLoad();
   const data = home.data;
-  return `<div class="top">${brandMark()}<span class="pill"><i></i>${DATA.ultimaVotacao ? 'Placar selecionado · ' + formatShortDate(DATA.ultimaVotacao) : 'Base disponível'}</span></div>
+  return `<div class="top">${brandMark()}<span class="pill"><i></i>${DATA.ultimaVotacao ? 'Placar selecionado · ' + formatShortDate(DATA.ultimaVotacao) : 'Base disponível'}</span>${themeToggleHTML()}</div>
     ${homeCostCard(data)}${taxCard(data?.reembolsos.deputado.total)}${homeAlertCard()}
     ${homePresenceCard()}${homeCategoriesCard(data)}
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px"><h2 class="h">Placar da Câmara</h2><button class="more" data-go="votes">Ver tudo</button></div>

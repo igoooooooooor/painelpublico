@@ -121,6 +121,7 @@
 .brand { font-size: 22px; white-space: nowrap; }
 .top { gap: 10px; }
 .top .pill { white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.top .pill { margin-left: auto; }
 .citizen-bar b { white-space: nowrap; }
 
 /* contador de impostos */
@@ -192,6 +193,8 @@ b.warn { color: var(--warn); }
   .site-foot { max-width: 1200px; padding: 0 32px 40px; }
   .view > .top .brand { display: none; }
   .view > .top { justify-content: flex-end; }
+  .view > .top .theme-toggle-top { display: none; }
+  nav.tabs button.nav-theme { display: inline-flex; flex-direction: row; min-height: 36px; margin-left: 8px; padding: 0 12px; border: 1px solid var(--line); border-radius: 18px; color: var(--ink-2); font-size: 13px; }
 
   .view { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 20px; align-items: start; }
   .view > .back { justify-self: start; }
