@@ -160,6 +160,15 @@ test('amendments lead with reserved and paid values, top authors and a Pix subse
   assert.doesNotMatch(html, /javascript:/);
 });
 
+test('spending card explains a missing per-resident value instead of repeating the declaration status', () => {
+  const { context } = makeView();
+  const html = showCity(context, SP, { accounts: { year: 2025, status: 'available', message: 'Declaração municipal disponível nesta base.',
+    metrics: [{ id: 'total-expense', amountCents: 100000 }] } });
+  const spend = html.match(/<section[^>]*data-city-answer="spend"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(spend, /Não foi possível calcular o gasto por morador/);
+  assert.doesNotMatch(spend, /Declaração municipal disponível/);
+});
+
 test('federal votes and 2026 results use plain labels, link profiles and keep current members separate', () => {
   const { context } = makeView();
   const html = showCity(context, SP, {
@@ -178,7 +187,7 @@ test('federal votes and 2026 results use plain labels, link profiles and keep cu
   assert.match(html, /Em quem São Paulo votou para deputado\(a\) federal/);
   assert.match(html, /Deputado Mais Votado[\s\S]*12\.000/);
   assert.doesNotMatch(html, /Sem Votos/);
-  assert.match(html, /Governadora Exemplo <small class="city-tag">2º turno em 25\/10<\/small>/);
+  assert.match(html, /<b>Governadora Exemplo<\/b><small class="muted">XYZ · <span class="city-tag">2º turno em 25\/10<\/span><\/small>/);
   assert.match(html, /Os mandatos começam em 2027/);
   assert.match(html, /data-deputy="senado:20"/);
   assert.match(html, /Quem representa SP no Congresso hoje/);
