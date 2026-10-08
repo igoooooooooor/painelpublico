@@ -538,13 +538,16 @@ e presença) cobrem o mandato, desde fev/2023. A cota do Senado segue o mesmo re
 tem mandato iniciado antes (senadores eleitos em 2018), a ficha avisa que a cota conta a
 partir de fev/2023.
 
-- **Cota no SQLite (esquema v4):** as notas de 2026 seguem uma a uma em
-  `expenses`. De fev/2023 a dez/2025, o banco recebe só agregados por pessoa,
-  como decidido no roadmap: `quota_history_months` (mês, categoria e natureza),
-  `quota_history_suppliers` (fornecedor) e `quota_history_largest` (5 maiores notas
-  por pessoa e ano). Cada ano é uma fonte própria (`camara_ceap_2023` etc.) e não
-  substitui a fonte `camara_ceap` de 2026. O banco local foi de 84 MB para 109 MB;
-  com as notas brutas seria ~250 MB.
+- **Cota no SQLite (esquema v5):** as notas de 2026 seguem uma a uma em
+  `expenses`. De fev/2023 a dez/2025 (Câmara e Senado), o banco guarda as notas em
+  formato enxuto em `quota_history_notes` (pessoa, mês, data, categoria, valor,
+  fornecedor e link da nota; sem número do documento e demais colunas). A visão
+  `quota_history` devolve as mesmas colunas de `expenses`. Cada Casa e ano é uma
+  fonte própria (`camara_ceap_2023`, `senado_ceaps_2023` etc.) e não substitui as
+  fontes de 2026. São 574.455 notas, 59 MB; o banco local foi de 84 MB para 142 MB.
+  A v4 guardava só totais por mês, fornecedor e maiores notas; a v5 os substitui
+  pelas notas (decisão de 8/10: aceitar o peso para ter lista de notas e CSV do
+  mandato), e os 837 totais por pessoa ficaram idênticos.
   ```sh
   python3 ingest/quota_history.py   # data/raw/legislative/history → data/imports-history
   make db-backup && python3 -m backend.quota_history
@@ -556,15 +559,16 @@ partir de fev/2023.
   nota é ausência de dado, não gasto zero, então licenças e trocas de suplente não
   diluem a média. Assim deputados e senadores ficam comparáveis, os dois desde fev/2023.
   A ficha mostra também o total e o período.
-- **Notas do mês:** na ficha da Câmara, a fonte da cota de um mês de 2026 abre a lista
+- **Notas do mês:** na ficha da Câmara, a fonte da cota de cada mês do mandato abre a lista
   das notas daquele mês (`/api/c/notas?id=camara:<id>&mes=AAAA-MM`), com link para
   cada nota original, o total e como achar o mesmo total no arquivo anual (filtrar
   `ideCadastro` e `numMes` e somar `vlrLiquido`). A página do deputado na Câmara não
   serve de fonte: o gráfico dela inclui passagens aéreas, que ficam fora do arquivo
-  aberto. Para 2023–2025 o servidor só tem agregados; a lista fica para depois.
-- **O que segue em 2026:** alertas (calculados só sobre as notas detalhadas), o CSV da
-  ficha (a tela avisa que traz só 2026), fornecedores globais (`supplier_totals`) e,
-  no Senado, presença, votações, atividade e projetos.
+  aberto. O CSV da ficha traz todas as notas desde fev/2023; nas de 2023–2025 a
+  coluna Documento fica vazia.
+- **O que segue em 2026:** alertas (calculados só sobre as notas detalhadas),
+  fornecedores globais (`supplier_totals`) e, no Senado, presença, votações,
+  atividade e projetos.
 - **Presença:** `presenca.json` agora soma o mandato (fev/2023 até o mês corrente),
   com `inicio` e `fim` por deputado, e vem de `ingest/chamber_mandate_history.py`
   (que reconsulta o ano corrente a cada `--collect`). Conferência em 8/10: a parte de

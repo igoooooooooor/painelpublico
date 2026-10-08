@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Agrega a cota da Câmara e do Senado dos anos anteriores do mandato para o SQLite.
+"""Prepara a cota da Câmara e do Senado dos anos anteriores do mandato para o SQLite.
 
 Lê ``data/raw/legislative/history/legislative-{ano}.json`` (saída de
 ``ingest/legislative.py``) e grava ``data/imports-history/{camara-ceap,senado-ceaps}-{ano}.json``.
-As notas brutas ficam só na base local; o banco recebe agregados por pessoa:
-mês e categoria, fornecedor e as maiores notas. Cada Casa e ano é uma fonte própria
+O banco recebe as notas em formato enxuto (pessoa, mês, data, categoria, valor,
+fornecedor e link da nota), sem as demais colunas do arquivo. Cada Casa e ano é uma fonte própria
 (``camara_ceap_{ano}``, ``senado_ceaps_{ano}``) e não substitui as notas detalhadas de 2026.
 
 Só notas a partir de fev/2023 (legislatura 57 da Câmara; mesmo recorte no Senado,
@@ -29,7 +29,6 @@ HOUSES = {
 }
 HOUSING_COMPLEMENT_CATEGORY = "COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA"
 HOUSING_COMPLEMENT_KIND = "complemento_moradia"
-LARGEST_PER_PERSON = 5
 
 
 def paths(root: Path = ROOT, year: int = YEARS[0], house: str = "camara") -> dict[str, Path]:
@@ -68,35 +67,28 @@ def build_year(history: dict, year: int, house: str = "camara") -> dict:
     source_id, _, default_label = HOUSES[house]
     source = next((s for s in history.get("sources", []) if s.get("id") == source_id), None)
     if not source or source.get("status") != "imported":
-        raise ValueError(f"Cota de {house} em {year} não foi importada por completo; nada a agregar")
-    months, suppliers, largest, referenced = {}, {}, {}, set()
+        raise ValueError(f"Cota de {house} em {year} não foi importada por completo; nada a preparar")
+    notes, referenced = [], set()
     for row in history.get("expenses", []):
         if row.get("sourceId") != source_id or int(row.get("year", 0)) != year:
             continue
         month = int(row["month"])
         if (year, month) < MANDATE_START:
             continue
-        authority = row["authorityId"]
-        referenced.add(authority)
-        amount = cents(row["amount"])
+        referenced.add(row["authorityId"])
         category = row.get("category") or "Não informada"
-        # Mesma regra do esquema v3: o complemento de moradia fica fora da cota.
-        kind = HOUSING_COMPLEMENT_KIND if category == HOUSING_COMPLEMENT_CATEGORY else "reembolso"
-        bucket = months.setdefault((authority, month, category, kind), [0, 0])
-        bucket[0] += amount
-        bucket[1] += 1
-        if kind != "reembolso":
-            continue
         key, name, cnpj = supplier_identity(row.get("supplier"))
-        if key and name:
-            entry = suppliers.setdefault((authority, key), {"name": name, "cnpj": cnpj, "amountCents": 0, "count": 0})
-            entry["amountCents"] += amount
-            entry["count"] += 1
-        notes = largest.setdefault(authority, [])
-        notes.append({"date": row.get("date"), "month": month, "category": category, "amountCents": amount,
-                      "documentUrl": row.get("documentUrl"), "supplierName": name})
-        notes.sort(key=lambda note: -note["amountCents"])
-        del notes[LARGEST_PER_PERSON:]
+        url = row.get("documentUrl")
+        notes.append({
+            "recordId": str(row.get("id") or ""), "authorityId": row["authorityId"], "month": month,
+            "date": row.get("date") or None, "category": category, "amountCents": cents(row["amount"]),
+            # Mesma regra do esquema v3: o complemento de moradia fica fora da cota.
+            "kind": HOUSING_COMPLEMENT_KIND if category == HOUSING_COMPLEMENT_CATEGORY else "reembolso",
+            "supplier": {"key": key, "name": name, "cnpj": cnpj} if key and name else None,
+            "documentUrl": url if isinstance(url, str) and url.startswith("http") else None,
+        })
+    # Ordem estável dentro do mês: a numeração das notas não muda entre coletas.
+    notes.sort(key=lambda note: (note["authorityId"], note["month"], note["recordId"]))
     authorities = [
         {key: a.get(key) for key in ("id", "name", "role", "branch", "sphere", "institution", "uf", "party",
                                      "sourceUrl", "position", "employmentStatus")}
@@ -113,12 +105,9 @@ def build_year(history: dict, year: int, house: str = "camara") -> dict:
             "period": f"{year}-02 a {year}-12" if year == MANDATE_START[0] else f"{year}-01 a {year}-12",
         },
         "year": year,
+        "house": house,
         "authorities": authorities,
-        "months": [{"authorityId": a, "month": m, "category": c, "kind": k, "amountCents": v[0], "count": v[1]}
-                   for (a, m, c, k), v in sorted(months.items())],
-        "suppliers": [{"authorityId": a, "supplierKey": key, **value} for (a, key), value in sorted(suppliers.items())],
-        "largest": [{"authorityId": a, "rank": index + 1, **note}
-                    for a, notes in sorted(largest.items()) for index, note in enumerate(notes)],
+        "notes": notes,
     }
 
 
@@ -147,8 +136,7 @@ def main(argv: list[str] | None = None) -> int:
             temporary = where["output"].with_suffix(".json.tmp")
             temporary.write_text(json.dumps(result, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
             temporary.replace(where["output"])
-            print(f"{where['output']}: {len(result['months'])} linhas mês/categoria, "
-                  f"{len(result['suppliers'])} pessoa/fornecedor, {len(result['authorities'])} cadastros")
+            print(f"{where['output']}: {len(result['notes'])} notas, {len(result['authorities'])} cadastros")
     return 0
 
 

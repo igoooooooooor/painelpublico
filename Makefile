@@ -101,7 +101,7 @@ audit-mandate-cost:
 	$(PYTHON) ingest/mandate_cost_audit.py --year $(or $(YEAR),2026)
 
 # Mandato desde fev/2023: coleta por ano, recompõe a média da ficha, gera presenca.json e importa no SQLite
-# só os agregados da cota de 2023–2025 (faça make db-backup antes).
+# as notas enxutas da cota de 2023–2025, Câmara e Senado (faça make db-backup antes).
 collect-mandate-history:
 	@for year in 2023 2024 2025; do $(PYTHON) ingest/legislative.py --year $$year --output data/raw/legislative/history/legislative-$$year.json || exit 1; done
 	$(PYTHON) ingest/chamber_housing.py --collect --year 2023 --months 2,3,4,5,6,7,8,9,10,11,12

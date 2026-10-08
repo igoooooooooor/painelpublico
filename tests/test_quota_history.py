@@ -56,12 +56,12 @@ class QuotaHistoryTests(unittest.TestCase):
         path.write_text(json.dumps(self.current))
         store.import_documents([path], self.db_path)
 
-    def test_aggregates_start_in_february_2023_and_leave_out_the_senate(self):
+    def test_notes_start_in_february_2023_and_leave_out_the_other_house(self):
         result = build_year(history_payload(), 2023)
-        self.assertEqual(result['source']['id'], 'camara_ceap_2023')
-        self.assertEqual({row['month'] for row in result['months']}, {2, 3})
-        self.assertFalse(any(row['authorityId'].startswith('senado') for row in result['months']))
-        kinds = {(row['category'], row['kind']) for row in result['months']}
+        self.assertEqual((result['source']['id'], result['house']), ('camara_ceap_2023', 'camara'))
+        self.assertEqual({row['month'] for row in result['notes']}, {2, 3})
+        self.assertFalse(any(row['authorityId'].startswith('senado') for row in result['notes']))
+        kinds = {(row['category'], row['kind']) for row in result['notes']}
         self.assertIn(('COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA', 'complemento_moradia'), kinds)
 
     def test_senate_aggregates_use_their_own_source_and_accept_text_dates(self):
@@ -72,7 +72,7 @@ class QuotaHistoryTests(unittest.TestCase):
                                  'supplier': {'key': 'x', 'name': 'Aérea', 'cnpj': None}} for m in (1, 2)]}
         result = build_year(payload, 2023, 'senado')
         self.assertEqual(result['source']['id'], 'senado_ceaps_2023')
-        self.assertEqual([(r['month'], r['amountCents']) for r in result['months']], [(2, 1050)])
+        self.assertEqual([(r['month'], r['amountCents']) for r in result['notes']], [(2, 1050)])
         path = self.root / 'senado-ceaps-2023.json'
         path.write_text(json.dumps(result))
         import_history([path], self.db_path)
@@ -101,14 +101,33 @@ class QuotaHistoryTests(unittest.TestCase):
             # Alertas continuam calculados só sobre as notas detalhadas.
             self.assertEqual(db.execute("SELECT COUNT(*) FROM signals WHERE period LIKE '2023%'").fetchone()[0], 0)
 
-    def test_month_notes_sum_to_the_month_and_only_exist_for_detailed_years(self):
+    def test_month_notes_cover_current_and_previous_years_with_complement_apart(self):
         with closing(store.connect(self.db_path)) as db, db:
             notes = citizen.month_notes(db, 'camara:1', '2026-01')
             self.assertEqual((notes['total'], len(notes['notas'])), (200.0, 1))
             self.assertEqual(notes['notas'][0]['fornecedor'], 'Gráfica')
-            self.assertIsNone(citizen.month_notes(db, 'camara:1', '2023-03'))  # só agregados
+            previous = citizen.month_notes(db, 'camara:1', '2023-03')
+            self.assertEqual((previous['total'], previous['complemento']), (300.0, {'valor': -50.0, 'notas': 1}))
+            self.assertEqual(previous['notas'][0]['documentUrl'], 'https://example.gov.br/n.pdf')
+            self.assertEqual(previous['fonte']['label'], 'Câmara: CEAP — 2023')
+            self.assertIsNone(citizen.month_notes(db, 'camara:1', '2023-01'))  # antes do mandato
             self.assertIsNone(citizen.month_notes(db, 'camara:1', '2026-13'))
             self.assertIsNone(citizen.month_notes(db, 'camara:404', '2026-01'))
+
+    def test_csv_lists_notes_of_every_year_with_their_source(self):
+        with closing(store.connect(self.db_path)) as db, db:
+            _, lines = citizen.expenses_csv(db, 'camara:1')
+            text = ''.join(lines)
+        self.assertEqual([line.split(';')[1] for line in text.strip().splitlines()[1:]], ['2023-02', '2023-03', '2023-03', '2026-01'])
+        self.assertIn('Câmara: CEAP — 2023', text)
+
+    def test_camara_document_links_are_stored_without_the_common_prefix(self):
+        from backend.quota_history import _document_path
+        url = 'https://www.camara.leg.br/cota-parlamentar/documentos/publ/1/2023/9.pdf'
+        self.assertEqual(_document_path(url), 'documentos/publ/1/2023/9.pdf')
+        with closing(store.connect(self.db_path)) as db, db:
+            db.execute("UPDATE quota_history_notes SET documentPath=? WHERE authorityId='camara:1'", (_document_path(url),))
+            self.assertEqual(db.execute("SELECT DISTINCT documentUrl FROM quota_history WHERE authorityId='camara:1'").fetchone()[0], url)
 
     def test_list_orders_by_monthly_average(self):
         with closing(store.connect(self.db_path)) as db, db:
@@ -118,3 +137,23 @@ class QuotaHistoryTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class MigrationTests(unittest.TestCase):
+    def test_v4_aggregate_tables_are_dropped_and_totals_rebuilt(self):
+        import sqlite3
+        from backend.config import SCHEMA_VERSION
+        from backend.database import migrate
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'v4.sqlite3'
+            with closing(sqlite3.connect(path)) as db:
+                migrate(db)
+                db.execute('CREATE TABLE quota_history_months(authorityId TEXT, amountCents INTEGER)')
+                db.execute('CREATE TABLE quota_history_largest(authorityId TEXT)')
+                db.execute('PRAGMA user_version = 4')
+                db.commit()
+                self.assertEqual(migrate(db), SCHEMA_VERSION)
+                tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master")}
+        self.assertNotIn('quota_history_months', tables)
+        self.assertNotIn('quota_history_largest', tables)
+        self.assertTrue({'quota_history_notes', 'quota_categories', 'quota_history'} <= tables)

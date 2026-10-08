@@ -28,15 +28,20 @@ CREATE INDEX IF NOT EXISTS signals_authority ON signals(authorityId,type);
 CREATE TABLE IF NOT EXISTS roster(sourceId TEXT NOT NULL REFERENCES sources(id),
  authorityId TEXT NOT NULL REFERENCES authorities(id), PRIMARY KEY(sourceId,authorityId));
 CREATE INDEX IF NOT EXISTS roster_authority ON roster(authorityId);
--- v4: cota da Câmara de anos anteriores do mandato, só em agregados por pessoa (notas brutas ficam na base local).
-CREATE TABLE IF NOT EXISTS quota_history_months(authorityId TEXT NOT NULL REFERENCES authorities(id),
- sourceId TEXT NOT NULL REFERENCES sources(id), year INTEGER NOT NULL, month INTEGER NOT NULL, category TEXT NOT NULL,
- kind TEXT NOT NULL, amountCents INTEGER NOT NULL, count INTEGER NOT NULL,
- PRIMARY KEY(authorityId,sourceId,month,category,kind)) WITHOUT ROWID;
-CREATE TABLE IF NOT EXISTS quota_history_suppliers(authorityId TEXT NOT NULL REFERENCES authorities(id),
- sourceId TEXT NOT NULL REFERENCES sources(id), supplierKey TEXT NOT NULL REFERENCES suppliers(key),
- amountCents INTEGER NOT NULL, count INTEGER NOT NULL, PRIMARY KEY(authorityId,sourceId,supplierKey)) WITHOUT ROWID;
-CREATE TABLE IF NOT EXISTS quota_history_largest(authorityId TEXT NOT NULL REFERENCES authorities(id),
- sourceId TEXT NOT NULL REFERENCES sources(id), rank INTEGER NOT NULL, date TEXT, year INTEGER NOT NULL,
- month INTEGER NOT NULL, category TEXT, amountCents INTEGER NOT NULL, documentUrl TEXT, supplierName TEXT,
- PRIMARY KEY(authorityId,sourceId,rank)) WITHOUT ROWID;
+-- v5: notas da cota de anos anteriores do mandato (Câmara e Senado, desde fev/2023), em formato enxuto.
+-- A fonte é derivada da Casa e do ano (camara_ceap_<ano>, senado_ceaps_<ano>); a visão quota_history
+-- remonta as colunas das notas detalhadas para as consultas tratarem os dois períodos do mesmo jeito.
+CREATE TABLE IF NOT EXISTS quota_categories(id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE);
+CREATE TABLE IF NOT EXISTS quota_history_notes(authorityId TEXT NOT NULL REFERENCES authorities(id),
+ year INTEGER NOT NULL, month INTEGER NOT NULL, seq INTEGER NOT NULL, date TEXT,
+ categoryId INTEGER NOT NULL REFERENCES quota_categories(id), amountCents INTEGER NOT NULL,
+ complement INTEGER NOT NULL DEFAULT 0, supplierKey TEXT REFERENCES suppliers(key), documentPath TEXT,
+ PRIMARY KEY(authorityId,year,month,seq)) WITHOUT ROWID;
+CREATE VIEW IF NOT EXISTS quota_history AS SELECT n.authorityId,
+ CASE WHEN n.authorityId LIKE 'senado:%' THEN 'senado_ceaps_' ELSE 'camara_ceap_' END || n.year sourceId,
+ n.year,n.month,n.seq,n.date,c.name category,
+ CASE n.complement WHEN 1 THEN 'complemento_moradia' ELSE 'reembolso' END kind,
+ n.amountCents,n.supplierKey,
+ CASE WHEN n.documentPath IS NULL OR n.documentPath LIKE 'http%' THEN n.documentPath
+  ELSE 'https://www.camara.leg.br/cota-parlamentar/' || n.documentPath END documentUrl
+ FROM quota_history_notes n JOIN quota_categories c ON c.id=n.categoryId;

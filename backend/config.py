@@ -19,7 +19,7 @@ SNAPSHOTS_PATH = Path(_snapshots_setting).expanduser() if _snapshots_setting els
 if not SNAPSHOTS_PATH.is_absolute():
     SNAPSHOTS_PATH = ROOT / SNAPSHOTS_PATH
 SCHEMA_PATH = Path(__file__).resolve().parent / "schema.sql"
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 # Complemento do auxílio-moradia lançado na CEAP da Câmara: publicado com líquido negativo, fica
 # à parte da cota (natureza própria) para não reduzir total, média, lista ou alertas. O sinal é preservado.
 HOUSING_COMPLEMENT_CATEGORY = "COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA"

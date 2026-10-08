@@ -237,7 +237,7 @@ test('profiles with observed expenses still receive shared sections and separate
   assert.match(profile, /Cota é reembolso/);
   assert.match(profile, /subsídio bruto mensal de referência do cargo/);
   assert.doesNotMatch(profile, /Não é o salário, que é de/);
-  assert.match(profile, /<a class="fchip" href="\/api\/c\/gastos\.csv\?id=camara%3A55" download>Baixar as notas de 2026 \(CSV\)<\/a>/);
+  assert.match(profile, /<a class="fchip" href="\/api\/c\/gastos\.csv\?id=camara%3A55" download>Baixar todas as notas \(CSV\)<\/a>/);
 });
 
 test('profile starts with three ordered answers and keeps the complementary details', () => {

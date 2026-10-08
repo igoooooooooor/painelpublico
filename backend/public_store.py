@@ -159,7 +159,7 @@ def import_documents(paths, db_path=DB_PATH):
                 (SELECT s.key FROM suppliers s JOIN original_suppliers o ON o.key=s.key
                  WHERE s.name IS NOT o.name OR s.cnpj IS NOT o.cnpj)''', (stamp,))
             db.execute('''DELETE FROM suppliers WHERE key NOT IN (SELECT supplierKey FROM expenses WHERE supplierKey IS NOT NULL)
-                AND key NOT IN (SELECT supplierKey FROM quota_history_suppliers)''')
+                AND key NOT IN (SELECT supplierKey FROM quota_history_notes WHERE supplierKey IS NOT NULL)''')
             rebuild_aggregates(db)
             db.execute("INSERT OR REPLACE INTO meta VALUES('snapshotAt',?)", (stamp,))
         return counts
@@ -183,12 +183,12 @@ def rebuild_aggregates(db):
 
 def _rebuild_aggregates(db):
     db.execute('DELETE FROM authority_totals')
-    # Notas detalhadas (ano corrente) mais os agregados mensais dos anos anteriores do mandato.
+    # Notas detalhadas do ano corrente mais as notas enxutas dos anos anteriores do mandato.
     db.execute("""INSERT INTO authority_totals(authorityId,kind,amountCents,count,periodStart,periodEnd,monthCount)
         SELECT authorityId,kind,SUM(cents),SUM(n),MIN(period),MAX(period),COUNT(DISTINCT period) FROM (
         SELECT authorityId,kind,amountCents cents,1 n,printf('%04d-%02d',year,month) period FROM expenses
         UNION ALL
-        SELECT authorityId,kind,amountCents,count,printf('%04d-%02d',year,month) FROM quota_history_months
+        SELECT authorityId,kind,amountCents,1,printf('%04d-%02d',year,month) FROM quota_history
         ) GROUP BY authorityId,kind""")
     db.execute('DELETE FROM supplier_totals')
     db.execute('''INSERT INTO supplier_totals SELECT supplierKey,SUM(amountCents),COUNT(*),COUNT(DISTINCT authorityId)

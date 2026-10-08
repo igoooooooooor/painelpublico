@@ -69,11 +69,9 @@ function profileCostAllOutside(cost) {
   return present.length > 0 && present.every(period => months[period].exercise === 'outside_mandate');
 }
 
-/* Ano com notas detalhadas no banco: a fonte da cota abre a lista de notas do mês, não o arquivo anual. */
-const PROFILE_COST_NOTES_YEAR = '2026';
-
+/* A fonte da cota de cada mês do mandato abre a lista de notas daquele mês, não o arquivo anual. */
 function profileCostNotesToggle(personId, period, label) {
-  if (!/^camara:\d+$/.test(personId || '') || !String(period).startsWith(PROFILE_COST_NOTES_YEAR)) return '';
+  if (!/^camara:\d+$/.test(personId || '') || !PROFILE_COST_PERIODS.has(period)) return '';
   return `<details class="citizen-cost-notes" data-cost-notes="${esc(period)}" data-cost-person="${esc(personId)}">
     <summary>${esc(label)}</summary><div class="citizen-cost-notes-body" aria-live="polite"></div></details>`;
 }

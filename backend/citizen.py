@@ -21,9 +21,9 @@ CURRENT = {'deputado': 'camara_deputies_current', 'senador': 'senado_senators_cu
 MONTH_COUNT = 't.monthCount'
 # Média mensal da cota: compara deputados (mandato desde fev/2023) e senadores (2026) no mesmo critério.
 MONTHLY = f't.amountCents*1.0/{MONTH_COUNT}'
-# Notas detalhadas (ano corrente) mais os agregados mensais dos anos anteriores do mandato.
+# Notas detalhadas (ano corrente) mais as notas enxutas dos anos anteriores do mandato (visão quota_history).
 QUOTA_MONTHS = '''(SELECT authorityId,year,month,category,kind,amountCents,1 count FROM expenses
-    UNION ALL SELECT authorityId,year,month,category,kind,amountCents,count FROM quota_history_months)'''
+    UNION ALL SELECT authorityId,year,month,category,kind,amountCents,1 FROM quota_history)'''
 MONTHS = ['', 'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto',
          'setembro', 'outubro', 'novembro', 'dezembro']
 
@@ -335,9 +335,9 @@ def politician(db, identifier):
     if identifier not in people:
         return None
     person = people[identifier]
-    # Notas detalhadas do ano corrente mais os agregados dos anos anteriores do mandato.
+    # Notas detalhadas do ano corrente mais as notas dos anos anteriores do mandato.
     person_months = '''(SELECT year,month,category,kind,amountCents,1 count FROM expenses INDEXED BY expense_authority WHERE authorityId=:id
-        UNION ALL SELECT year,month,category,kind,amountCents,count FROM quota_history_months WHERE authorityId=:id)'''
+        UNION ALL SELECT year,month,category,kind,amountCents,1 FROM quota_history WHERE authorityId=:id)'''
     monthly_totals = rows(db, f"SELECT year,month,SUM(amountCents)/100.0 valor FROM {person_months} WHERE kind='reembolso' GROUP BY year,month ORDER BY year,month", {'id': identifier})
     categories = {}
     for r in rows(db, f"SELECT category,SUM(amountCents)/100.0 v FROM {person_months} WHERE kind='reembolso' GROUP BY category", {'id': identifier}):
@@ -347,12 +347,13 @@ def politician(db, identifier):
     total = sum(categories.values()) if has_expense_data else None
     suppliers = rows(db, '''SELECT s.name,s.cnpj,SUM(x.cents)/100.0 valor,SUM(x.n) notas FROM (
             SELECT supplierKey,amountCents cents,1 n FROM expenses INDEXED BY expense_authority WHERE authorityId=:id AND kind='reembolso'
-            UNION ALL SELECT supplierKey,amountCents,count FROM quota_history_suppliers WHERE authorityId=:id) x
+            UNION ALL SELECT supplierKey,amountCents,1 FROM quota_history WHERE authorityId=:id AND kind='reembolso') x
         JOIN suppliers s ON s.key=x.supplierKey GROUP BY x.supplierKey ORDER BY valor DESC,s.name LIMIT 5''', {'id': identifier})
     largest_expenses = rows(db, '''SELECT * FROM (
             SELECT e.date,e.year,e.month,e.category,e.amountCents/100.0 valor,e.documentUrl,s.name fornecedor FROM expenses e INDEXED BY expense_authority
             LEFT JOIN suppliers s ON s.key=e.supplierKey WHERE e.authorityId=:id AND e.kind='reembolso'
-            UNION ALL SELECT date,year,month,category,amountCents/100.0,documentUrl,supplierName FROM quota_history_largest WHERE authorityId=:id)
+            UNION ALL SELECT h.date,h.year,h.month,h.category,h.amountCents/100.0,h.documentUrl,s.name FROM quota_history h
+            LEFT JOIN suppliers s ON s.key=h.supplierKey WHERE h.authorityId=:id AND h.kind='reembolso')
         ORDER BY valor DESC LIMIT 5''', {'id': identifier})
     for m in largest_expenses:
         m['categoria'] = category_name(m.pop('category'))
@@ -378,10 +379,10 @@ def politician(db, identifier):
 
 
 def month_notes(db, identifier, period):
-    """Notas da cota de um mês com notas detalhadas (ano corrente), para conferir o valor da ficha.
+    """Notas da cota de um mês, para conferir o valor da ficha (ano corrente e anos anteriores do mandato).
 
     A soma das notas de reembolso é o valor da cota do mês; o complemento de moradia vem à parte.
-    Meses só com agregados (anos anteriores) devolvem None.
+    Mês sem nota devolve None.
     """
     match = re.fullmatch(r'(\d{4})-(\d{2})', period or '')
     person = db.execute("SELECT id,name FROM authorities WHERE id=? AND role IN ('deputado','senador')", (identifier,)).fetchone()
@@ -389,10 +390,13 @@ def month_notes(db, identifier, period):
         return None
     year, month = int(match[1]), int(match[2])
     notes = rows(db, '''SELECT e.date data,e.category,e.amountCents,e.kind,e.documentUrl,s.name fornecedor,s.cnpj,
-            e.sourceId,src.label fonte,src.url fonteUrl,src.fetchedAt coletadoEm
-        FROM expenses e INDEXED BY expense_authority LEFT JOIN suppliers s ON s.key=e.supplierKey
-        LEFT JOIN sources src ON src.id=e.sourceId
-        WHERE e.authorityId=? AND e.year=? AND e.month=? ORDER BY e.amountCents DESC,e.date,e.id''', (identifier, year, month))
+            src.label fonte,src.url fonteUrl,src.fetchedAt coletadoEm
+        FROM (SELECT date,category,amountCents,kind,documentUrl,supplierKey,sourceId,id FROM expenses INDEXED BY expense_authority
+                WHERE authorityId=:id AND year=:year AND month=:month
+              UNION ALL SELECT date,category,amountCents,kind,documentUrl,supplierKey,sourceId,seq FROM quota_history
+                WHERE authorityId=:id AND year=:year AND month=:month) e
+        LEFT JOIN suppliers s ON s.key=e.supplierKey LEFT JOIN sources src ON src.id=e.sourceId
+        ORDER BY e.amountCents DESC,e.date,e.id''', {'id': identifier, 'year': year, 'month': month})
     if not notes:
         return None
     reimbursements = [n for n in notes if n['kind'] == 'reembolso']
@@ -440,10 +444,15 @@ def expenses_csv(db, identifier):
             buffer.seek(0); buffer.truncate(0)
             return text
         yield '\ufeff' + line(CSV_COLUMNS)
+        # Notas do ano corrente e dos anos anteriores do mandato; estas não guardam o número do documento.
         for e in db.execute('''SELECT e.year,e.month,e.date,e.category,e.amountCents,s.name,s.cnpj,e.documentId,e.documentUrl,
-                src.label,src.url,src.fetchedAt FROM expenses e INDEXED BY expense_authority JOIN sources src ON src.id=e.sourceId
-                LEFT JOIN suppliers s ON s.key=e.supplierKey WHERE e.authorityId=? AND e.kind IN ('reembolso',?)
-                ORDER BY e.year,e.month,e.date,e.id''', (identifier, HOUSING_COMPLEMENT_KIND)):
+                src.label,src.url,src.fetchedAt FROM (
+                    SELECT year,month,date,category,amountCents,supplierKey,documentId,documentUrl,sourceId,kind,id
+                    FROM expenses INDEXED BY expense_authority WHERE authorityId=:id
+                    UNION ALL SELECT year,month,date,category,amountCents,supplierKey,NULL,documentUrl,sourceId,kind,seq
+                    FROM quota_history WHERE authorityId=:id) e
+                JOIN sources src ON src.id=e.sourceId LEFT JOIN suppliers s ON s.key=e.supplierKey
+                WHERE e.kind IN ('reembolso',:kind) ORDER BY e.year,e.month,e.date,e.id''', {'id': identifier, 'kind': HOUSING_COMPLEMENT_KIND}):
             year, month, date, category, cents, supplier, cnpj, document, document_url, source, source_url, fetched = tuple(e)
             amount_text = f'{"-" if cents < 0 else ""}{abs(cents) // 100},{abs(cents) % 100:02d}'
             yield line([_csv_safe_text(name), f'{year:04d}-{month:02d}', date or '', _csv_safe_text(category), amount_text,

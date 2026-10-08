@@ -107,12 +107,13 @@ test('a confirmed source gap is shown empty, never as zero', () => {
   assert.match(details, /data-cost-year="2026" open/);
 });
 
-test('quota source of a 2026 month opens the month notes instead of the annual file', () => {
+test('quota source of a mandate month opens the month notes instead of the annual file', () => {
   const { profileCostDetails, profileCostNotesHTML } = load();
   const details = profileCostDetails(costFixture());
   assert.match(details, /data-cost-notes="2026-03" data-cost-person="camara:1"/);
   assert.match(details, /Ver as notas da cota deste mês/);
-  assert.doesNotMatch(profileCostNotesToggleSafe(load(), 'camara:1', '2025-03'), /details/);
+  assert.match(profileCostNotesToggleSafe(load(), 'camara:1', '2025-03'), /data-cost-notes="2025-03"/);
+  assert.doesNotMatch(profileCostNotesToggleSafe(load(), 'camara:1', '2023-01'), /details/);
   const html = profileCostNotesHTML({ periodo: '2026-03', total: 77262.6, complemento: null,
     fonte: { url: 'https://www.camara.leg.br/cotas/Ano-2026.csv.zip' },
     notas: [{ data: '2026-03-20', fornecedor: 'Táxi Aéreo', categoria: 'Fretamento de avião', valor: 67750,
