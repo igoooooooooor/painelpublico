@@ -250,7 +250,7 @@ function politicianListHTML() {
   const p = citizenState.politicians;
   if (p.error) return `<section class="card"><p>Não deu para carregar a lista agora.</p><p class="muted">${esc(p.error)}</p><button type="button" class="more" data-politician-retry>Tentar de novo</button></section>`;
   if (!p.items.length && p.loading) return skel('lista', 8);
-  if (!p.items.length) return `<section class="card"><p>Ninguém encontrado com “${esc(p.query)}”.</p><p class="muted">Tente só o sobrenome, a sigla do partido (PT, PL…) ou do estado (SP, MG…).</p></section>`;
+  if (!p.items.length) return `<section class="card"><p>Ninguém encontrado com “${esc(p.query)}”.</p><p class="muted">A busca mostra só deputados(as) federais e senadores(as) com mandato em curso. Eleitos(as) em 2026 aparecem a partir da posse, em 1º de fevereiro de 2027; vereadores(as), prefeitos(as) e governadores(as) não fazem parte da busca.</p><p class="muted">Tente só o sobrenome, a sigla do partido (PT, PL…) ou do estado (SP, MG…).</p></section>`;
   const observedSpending = p.items.filter(person => person.gasto != null).map(person => person.gasto);
   const max = Math.max(1, ...observedSpending, ...Object.values(p.averageSpend || {}).map(item => (item.media || 0) * 1.5));
   return `<span class="muted" role="status">${p.total} ${p.total === 1 ? 'pessoa' : 'pessoas'} · valor gasto da cota em 2026</span><section class="card citizen-list">${p.items.map(x => politicianRow(x, max)).join('')}</section>

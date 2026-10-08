@@ -198,6 +198,7 @@ test('the full public roster request runs with an empty query and an empty resul
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(calls, ['/api/c/politicos?pageSize=25&page=1&ordem=nome']);
   assert.match(elements['citizen-politician-list'].innerHTML, /Ninguém encontrado/);
+  assert.match(elements['citizen-politician-list'].innerHTML, /mandato em curso/);
 });
 
 test('politicians view has no editorial sample block', () => {
