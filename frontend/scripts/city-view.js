@@ -305,8 +305,8 @@ function cityGovernAnswer(data, isDf, isFernando) {
   if (isDf || isFernando) {
     const governor = (Array.isArray(data.stateElected) ? data.stateElected : []).find(person => cityOfficeKey(person.office) === 'governor' && cityIsElected(person));
     return `${open}<span class="k">${isDf ? 'Distrito Federal' : 'Distrito estadual de Pernambuco'}</span>
-      <p class="city-answer-lead">${isDf ? 'Brasília não tem prefeitura nem vereadores. Quem governa é o governo do Distrito Federal, com a Câmara Legislativa.'
-        : 'Fernando de Noronha é administrado pelo governo de Pernambuco e não elege prefeito nem vereadores.'}</p>
+      <p class="city-answer-lead">${isDf ? 'Brasília não tem prefeitura nem vereadores(as). Quem governa é o governo do Distrito Federal, com a Câmara Legislativa.'
+        : 'Fernando de Noronha é administrado pelo governo de Pernambuco e não elege prefeito(a) nem vereadores(as).'}</p>
       ${isDf && governor ? `<p class="city-answer-note">Eleito(a) em 2026 para governar a partir de 2027: <b>${esc(cityPersonName(governor))}</b>${governor.party ? ` (${esc(governor.party)})` : ''}.</p>` : ''}
     </section>`;
   }

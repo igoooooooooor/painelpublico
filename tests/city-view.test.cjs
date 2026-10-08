@@ -75,7 +75,7 @@ test('Brasília and Fernando de Noronha explain who governs instead of showing a
   assert.doesNotMatch(df, /data-profile-section="accounts"/);
   assert.doesNotMatch(df, /Ausência de dado não significa gasto zero/);
   const noronha = showCity(context, { id: '2605459', name: 'Fernando de Noronha', uf: 'PE' }, { accounts: { status: 'not_applicable' } });
-  assert.match(noronha, /administrado pelo governo de Pernambuco e não elege prefeito nem vereadores/);
+  assert.match(noronha, /administrado pelo governo de Pernambuco e não elege prefeito\(a\) nem vereadores\(as\)/);
   assert.doesNotMatch(noronha, /data-profile-section="votes"/);
 });
 

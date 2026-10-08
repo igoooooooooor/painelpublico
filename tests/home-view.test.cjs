@@ -44,8 +44,8 @@ test('home attendance considers every valid record, including a person beyond th
 
 test('home cost and coverage use API denominators without inventing a combined monthly cost', () => {
   const ctx = load(), data = summary(), html = ctx.homeCostCard(data) + ctx.homeCoverageCard(data);
-  assert.match(html, /509 deputados com reembolsos observados, dos 513/);
-  assert.match(html, /513 deputados e 82 registros do Senado/);
+  assert.match(html, /509 deputados\(as\) com reembolsos observados, dos 513/);
+  assert.match(html, /513 deputados\(as\) e 82 registros do Senado/);
   assert.match(html, /não são somados ao subsídio/);
   assert.match(html, /jan\/2026 a out\/2026/);
   assert.doesNotMatch(html, /dos 10|se elegeram|por mês, em média/);
@@ -62,7 +62,7 @@ test('home category answer and ranking reflect complete API results, not named s
   assert.doesNotMatch(html, /Divulgação levou|NaN/);
   const ranking = ctx.homeTopCard(data);
   assert.match(ranking, /data-politician="camara:100"/);
-  assert.match(ranking, /entre 13 deputados com dados/);
+  assert.match(ranking, /entre 13 deputados\(as\) com dados/);
   assert.equal((ranking.match(/data-politician=/g) || []).length, 5);
 });
 

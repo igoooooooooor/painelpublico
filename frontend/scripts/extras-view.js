@@ -360,7 +360,7 @@ function comparisonTable([a, b]) {
   const isSenateLoading = voteChamber === 'senado' && senateLoading();
   const voteLabel = voteChamber === 'senado' ? 'Como votaram · Senado' : 'Como votaram';
   const voteSummary = voteChamber === 'senado'
-    ? (comparableVotes.length ? `${firstName(personA)} e ${firstName(personB)} registraram o mesmo voto em ${matchingVoteCount} de ${comparableVotes.length} votações nominais comparáveis no Senado.` : 'Sem votos nominais comparáveis para estes senadores neste recorte.')
+    ? (comparableVotes.length ? `${firstName(personA)} e ${firstName(personB)} registraram o mesmo voto em ${matchingVoteCount} de ${comparableVotes.length} votações nominais comparáveis no Senado.` : 'Sem votos nominais comparáveis para estes(as) senadores(as) neste recorte.')
     : `${firstName(personA)} e ${firstName(personB)} registraram o mesmo voto em ${matchingVoteCount} de ${comparableVotes.length} votações comparáveis.`;
   const voteRows = votes.slice(0, extrasState.comparisonVoteLimit || 20).map(record => {
     const voteAClass = record.voteA === 'Sim' ? 'yes' : record.voteA === 'Não' ? 'no' : '';

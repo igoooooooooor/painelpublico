@@ -106,9 +106,9 @@ def detail(identifier, db_path):
             row['profileId'] = links[row['id']]
     municipal_message = '' if municipal else 'Não há resultado municipal de 2024 confirmado nesta base. Ausência não significa que não houve eleição.'
     if identifier == '5300108':
-        municipal_message = 'Brasília não elege prefeito nem vereadores. No Distrito Federal, consulte governador e deputados distritais.'
+        municipal_message = 'Brasília não elege prefeito(a) nem vereadores(as). No Distrito Federal, consulte governador(a) e deputados(as) distritais.'
     elif identifier == '2605459':
-        municipal_message = 'Fernando de Noronha é um distrito estadual e não elege prefeito nem vereadores.'
+        municipal_message = 'Fernando de Noronha é um distrito estadual e não elege prefeito(a) nem vereadores(as).'
     sources = dict(data.get('sources', {}))
     sources['currentFederal'] = {}
     for chamber, label in (('camara', 'Lista atual da Câmara'), ('senado', 'Lista atual do Senado')):

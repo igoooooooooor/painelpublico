@@ -383,7 +383,7 @@ function profileSectionsHTML(value, slots = {}) {
     ['votes', 'Como votou', slot('votes'), { desktopOpen: true }],
     ['projects', projectTitle, projectContent, {}],
     ['staff', 'Equipe e verba de gabinete', officeContent, {}],
-    ['contact', 'Fale com ele', contactContent, {}],
+    ['contact', 'Fale com ele(a)', contactContent, {}],
     ...(profile.person.role === 'senador' ? [['mandate', 'Mandato', senateMandateContent, {}]] : []),
     ['sources', 'Fontes e datas', sourcesContent, {}],
   ];
