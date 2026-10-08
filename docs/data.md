@@ -339,6 +339,30 @@ completa, com fonte, data e método, em "Fontes e datas". O 2º turno exige nova
 O snapshot `data/snapshots/eleicoes-2026.json` guarda só cargo, UF, número, nome de urna, partido, turno e situação de cada
 candidatura ligada, além de fonte, método e cobertura. `/api/c/perfil/<id>` o anexa à ficha como `eleicao2026`.
 
+## Quanto custa um mandato — Fase 1, levantamento em 7/10/2026
+
+O [levantamento de fontes](mandate-cost-sources.md) registra URLs oficiais,
+formatos, granularidade, histórico confirmado, atualização, termos, privacidade
+e recomendação para a v1. É documentação para aprovação; não há novo coletor,
+migração, soma financeira nem alteração da ficha nesta fase.
+
+A leitura local confirmou cota para **509/513 deputados e 79/82 registros do
+Senado**, gabinete com valor e meses para **512/513 deputados e 0/82 senadores**.
+No gabinete da Câmara, **503** têm janeiro–julho de 2026; **9** têm somente parte
+desse intervalo e **1** não tem valor mensal. A atualização da página em outubro
+não transforma esses dados em despesas até outubro. A referência salarial se
+aplica aos dois cargos (513 e 82 registros), mas não comprova pagamento individual.
+Auxílios, ocupação de imóvel e folha individual têm **0 pessoas integradas como
+componentes próprios em ambas as Casas**; isso não significa gasto zero.
+
+A Câmara tem amostra oficial de folha por deputado/mês e consulta de moradia.
+O Senado publica folha mensal e relatório atual de moradia, mas a atribuição
+reproduzível de pagamentos e equipe por pessoa/competência exige validação.
+O relatório atual de moradia informa opção/ocupação, não uma série de pagamentos.
+A v1 proposta preserva essas diferenças: subsídio de referência fora do total
+pago, imóveis sem valor imputado, benefícios sem duplicar folha/cota e comparação
+somente com mesmas partes e períodos. Detalhes e condições estão no levantamento.
+
 ## Minha cidade — Fase 1: IBGE e TSE
 
 ```sh
