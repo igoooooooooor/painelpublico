@@ -405,6 +405,53 @@ fase; comparações futuras exigem mesma Casa, partes e competências. O auxíli
 já observado na folha não será somado novamente como moradia. Complementos
 com sinais diferentes permanecem separados até conciliação contábil comprovada.
 
+## Quanto custa um mandato — Fase 3: composição mensal da Câmara
+
+As [verificações A–C](mandate-cost-preflight.md) documentam o efeito das linhas
+negativas de complemento, o exercício efetivo e a fonte única dos auxílios.
+O [relatório da cota](mandate-quota-audit.md) detalha a reconciliação com o ZIP.
+A [auditoria de privacidade](mandate-privacy-audit.md) registra a ocorrência
+remanescente no log do Codex e o comando utilizado; não se declara ausência
+absoluta de registros em todos os logs.
+
+```sh
+python3 ingest/chamber_service.py --collect --year 2026 --months 1-9
+python3 ingest/chamber_service.py --year 2026 --months 1-9  # offline
+python3 ingest/chamber_quota_audit.py                      # offline, banco somente leitura
+python3 -m ingest.mandate_cost_composition                 # offline
+make build
+```
+
+`chamber-service.json` projeta os períodos oficiais de exercício para cada mês,
+com fonte e dias. Os 513 históricos foram validados. Gilmar Machado entrou em
+exercício em 15/09/2026; janeiro–julho fica fora do mandato. Afastamentos e retornos
+não são substituídos pela duração nominal da legislatura.
+
+`mandate-cost.json` serve apenas a ficha da Câmara, via `mandateCost` em
+`/api/c/perfil/<id>`. O principal é a média mensal dos meses de janeiro–julho em
+exercício com as quatro partes no mesmo mês: remuneração bruta de todas as tabelas
+da página individual (sem o 13º), auxílios da folha, cota sem a categoria de
+complemento de moradia e gabinete. O 13º aparece à parte. Os valores permanecem
+em centavos inteiros, inclusive negativos publicados. A consulta de moradia nunca
+fornece dinheiro para a soma; divergências são apenas registradas. Não se soma
+referência salarial a pagamento.
+
+A página individual de remuneração é o registro da pessoa; o inventário anônimo
+de folhas suplementares é só nota de rodapé ([regra revisada](mandate-cost-preflight.md)).
+A cota exige igualdade da fotografia importada com o arquivo oficial, e o gabinete
+exige seção importada completa. Parte ausente ou exercício desconhecido tira o mês
+da média; mês sem nota de cota não vira zero. Sem mês elegível, não há número
+principal. Não há nova média geral, comparação entre Casas, ranking ou ordenação.
+
+Nesta fotografia, 508/513 deputados têm média mensal; 452 com os sete meses. Os
+5 sem principal estão listados nas verificações.
+
+O cálculo anterior da cota, os dados SQLite, a home e as comparações existentes
+não foram corrigidos por esta etapa. A proposta de correção das linhas negativas
+é separada. O Senado continua com cota e referência do cargo, sem novo total;
+a consulta individual existe oficialmente, mas o piloto não validou pagamentos
+individuais nesta base.
+
 ## Minha cidade — Fase 1: IBGE e TSE
 
 ```sh

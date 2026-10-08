@@ -105,6 +105,20 @@ def _election_result(identifier, profile_path):
             'segundoTurno': data.get('segundoTurno'), 'generatedAt': data.get('generatedAt')}
 
 
+def _mandate_cost(identifier, profile_path):
+    """Only the approved Câmara Jan–Jul/2026 composition, served per profile."""
+    if not re.fullmatch(r'camara:\d+', identifier):
+        return None
+    snapshot = _load(profile_path.parent / 'mandate-cost.json')
+    records = snapshot.get('profiles') if snapshot else None
+    result = records.get(identifier) if isinstance(records, dict) else None
+    if (not isinstance(result, dict) or result.get('id') != identifier
+            or result.get('house') != 'camara' or result.get('periodStart') != '2026-01'
+            or result.get('periodEnd') != '2026-07'):
+        return None
+    return deepcopy(result)
+
+
 def profile(identifier, path=None):
     """Perfil complementar de um parlamentar ou None se o arquivo ou o registro não existirem."""
     profile_path = Path(path) if path is not None else SNAPSHOTS_PATH / 'perfis.json'
@@ -116,8 +130,9 @@ def profile(identifier, path=None):
 
     projects, projects_generated_at = _senate_projects(identifier, profile_path)
     election_result = _election_result(identifier, profile_path)
+    mandate_cost = _mandate_cost(identifier, profile_path)
     if profile is None:
-        if projects is None and election_result is None:
+        if projects is None and election_result is None and mandate_cost is None:
             return None
         result = {'id': identifier, 'role': 'senador' if identifier.startswith('senado:') else 'deputado'}
         if projects is not None:
@@ -131,4 +146,6 @@ def profile(identifier, path=None):
             result['projetos'] = projects
     if election_result is not None:
         result['eleicao2026'] = election_result
+    if mandate_cost is not None:
+        result['mandateCost'] = mandate_cost
     return _attach_project_statuses(result, identifier, profile_path)

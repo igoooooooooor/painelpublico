@@ -88,3 +88,18 @@ hashes e fontes por indicador. A instalação opcional completa caches ausentes 
 retém evidências de divergências antes de ocultar valores conflitantes. O estágio
 não escreve o snapshot: `ingest/accounts.py` continua responsável pela publicação
 local e pela verificação de cobertura nacional.
+
+## Custo médio mensal do mandato
+
+Os coletores de folha, moradia e exercício mantêm caches minimizados e snapshots
+locais. `ingest/chamber_quota_audit.py` reconcilia o arquivo CEAP com os registros
+importados, sem alterar o banco. `ingest/mandate_cost_composition.py` gera a
+composição aprovada de janeiro–julho/2026 e os motivos de exclusão de meses.
+`backend/profiles.py` carrega `mandate-cost.json` pelo cache de mtime e anexa
+somente o registro da pessoa solicitada, exclusivamente para a Câmara e o período
+aprovado. Visitantes não iniciam coleta nem cálculo sobre o arquivo CEAP.
+
+A interface recebe centavos, meses usados, parcelas, períodos de exercício e
+fontes. Ela formata os valores; não decide elegibilidade, corrige sinais ou
+soma moradia. O complemento permanece separado uma vez e com o sinal original.
+Ranking, home e comparação não consomem o novo valor.
