@@ -102,19 +102,24 @@ def _context(db, person, authority, source, year, cache, total=None):
     """Escala do ano: um alerta de quem gasta pouco não pode parecer igual ao de quem gasta muito."""
     if '__averages' not in cache:
         cache['__averages'] = _averages(db)
+    # A média do cargo é mensal (meses com notas); compara com a média mensal da pessoa no mesmo ano.
     average = (cache['__averages'].get(person.get('role')) or {}).get('media')
+    series = _monthly_series(db, authority, source, int(year))
     if total is None:
-        total = sum(_monthly_series(db, authority, source, int(year)).values())
-    if not average or not total:
+        total = sum(series.values())
+    months = len(series)
+    if not average or not total or not months:
         return None
-    difference = total / average - 1
+    monthly = total / months
+    difference = monthly / average - 1
     group_label = ROLE_LABELS.get(person.get('role'), 'parlamentares')
     if abs(difference) < 0.1:
-        comparison = f'parecido com a média dos(as) {group_label}'
+        comparison = f'parecido com a média mensal dos(as) {group_label}'
     else:
-        comparison = f'{round(abs(difference) * 100)}% {"mais" if difference > 0 else "menos"} que a média dos(as) {group_label} ({store_money(average)})'
-    return {'total': total, 'media': average, 'diferenca': difference,
-            'frase': f'No ano, gastou {store_money(total)} na cota, {comparison}.'}
+        comparison = (f'{round(abs(difference) * 100)}% {"mais" if difference > 0 else "menos"} que a média mensal '
+                      f'dos(as) {group_label} ({store_money(average)})')
+    return {'total': total, 'mediaMensal': monthly, 'meses': months, 'media': average, 'diferenca': difference,
+            'frase': f'No ano, gastou {store_money(total)} na cota, {store_money(monthly)} por mês em média, {comparison}.'}
 
 
 def _alert(db, signal, people, totals_cache):

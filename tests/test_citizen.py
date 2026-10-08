@@ -266,6 +266,7 @@ class PeakRuleTests(unittest.TestCase):
         self.assertEqual(alert['seguidos'], [5])
         self.assertIn('Depois continuou alta: maio', alert['frase'])
         self.assertIn('No ano, gastou', alert['contexto']['frase'])
+        self.assertIn('por mês em média', alert['contexto']['frase'])  # mensal contra mensal
         self.assertGreater(alert['contexto']['diferenca'], 0)
         self.assertEqual(ranking[0]['id'], 'camara:30')
         self.assertEqual(ranking[0]['valorAlertas'], 100000)
