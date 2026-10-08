@@ -7,10 +7,12 @@ e /api/c/gastos.csv?id=<id>.
 """
 import csv
 import io
+import json
 import re
 from statistics import median
 
 from . import public_store as store
+from .alert_rules import NOT_EVALUATED as NOT_EVALUATED_TEXT
 from .config import HOUSING_COMPLEMENT_KIND
 
 ROLES = ('deputado', 'senador')
@@ -122,67 +124,89 @@ def _context(db, person, authority, source, year, cache, total=None):
             'frase': f'No ano, gastou {store_money(total)} na cota, {store_money(monthly)} por mês em média, {comparison}.'}
 
 
+def _alert_period_label(detail):
+    """'jan–set/2026' com os meses observados, para dizer de onde saiu um cálculo parcial."""
+    first, last = (detail.get('monthsObserved') or [None, None])
+    year = detail.get('year')
+    if not first or not last:
+        return str(year)
+    short = [m[:3] for m in MONTHS]
+    return f'{short[first]}/{year}' if first == last else f'{short[first]}–{short[last]}/{year}'
+
+
 def _alert(db, signal, people, totals_cache):
-    """Um sinal do radar em linguagem simples. Mantém o texto técnico original em `criterio`."""
+    """Um sinal do radar em linguagem simples, lido do resultado gravado pela regra (sem recalcular).
+
+    Mantém o texto técnico original em `criterio`. Nenhum campo classifica gravidade.
+    """
     person = people.get(signal['authorityId'], {'name': signal.get('authorityName')})
+    detail = json.loads(signal['detail']) if signal.get('detail') else {}
     base = {'id': signal['id'], 'tipo': signal['type'], 'valor': signal['amountCents'] / 100, 'periodo': signal['period'],
-            'pessoa': {k: person.get(k) for k in ('id', 'name', 'role', 'party', 'uf', 'foraDaLista')}, 'criterio': signal['description']}
-    if signal['type'] == 'pico':
-        # O id do parlamentar pode ter mais de um ':' (contas de liderança: camara:group:N); lê das colunas.
-        authority, source = signal['authorityId'], signal['sourceId']
-        year, month = (int(x) for x in signal['period'].split('-'))
-        series = _monthly_series(db, authority, source, year)
-        prior_month_values = [series.get(m, 0) for m in range(1, month)]
-        reference_value = median(prior_month_values) if prior_month_values else 0
-        multiple = base['valor'] / reference_value if reference_value else None
-        # Meses seguidos acima do habitual formam um único alerta (mudança de patamar).
-        consecutive_months = []
-        m = month + 1
-        while reference_value and series.get(m) is not None and series[m] >= reference_value * 1.75 and m < max(series):
-            consecutive_months.append(m); m += 1
-        title = (f'Gastos mais altos a partir de {MONTHS[month]}' if consecutive_months
-                  else f'Gasto de {MONTHS[month]} foi {multiple:.1f}× o habitual'.replace('.', ',') if multiple else 'Gasto acima do habitual')
-        sentence = f'Em {MONTHS[month]}, a cota custou {store_money(base["valor"])}. Nos meses anteriores, o habitual era {store_money(reference_value)} por mês.'
-        if consecutive_months:
-            sentence += ' Depois continuou alta: ' + ', '.join(f'{MONTHS[x]} {store_money(series[x])}' for x in consecutive_months) + '.'
-        base.update({'referencia': reference_value, 'vezes': multiple, 'mes': month, 'seguidos': consecutive_months,
+            'pessoa': {k: person.get(k) for k in ('id', 'name', 'role', 'party', 'uf', 'foraDaLista')}, 'criterio': signal['description'],
+            'regra': detail.get('ruleVersion'), 'parcial': bool(detail.get('partial')), 'coletadoEm': detail.get('fetchedAt')}
+    authority, source = signal['authorityId'], signal['sourceId']
+    if signal['type'] == 'pico' and detail:
+        marked = detail['months']
+        first = marked[0]
+        year = detail['year']
+        title = (f'Mês acima da referência: {MONTHS[first["month"]]}' if len(marked) == 1
+                 else f'Meses acima da referência: {MONTHS[first["month"]]} a {MONTHS[marked[-1]["month"]]}')
+        sentence = ' '.join(
+            f'Em {MONTHS[m["month"]]}, a cota somou {store_money(m["valueCents"] / 100)}; a referência dos meses anteriores '
+            f'era {store_money(m["referenceCents"] / 100)} ({f"{m['multiple']:.1f}".replace(".", ",")} vezes).'
+            for m in marked)
+        base.update({'referencia': first['referenceCents'] / 100, 'vezes': first['multiple'], 'mes': first['month'],
+                     'meses': [{'mes': m['month'], 'valor': m['valueCents'] / 100, 'referencia': m['referenceCents'] / 100,
+                                'vezes': m['multiple']} for m in marked],
+                     'piso': detail['floorCents'] / 100 if detail.get('floorCents') is not None else None,
+                     'serie': [{'mes': p['month'], 'valor': p['valueCents'] / 100 if p['valueCents'] is not None else None}
+                               for p in detail['series']],
                      'contexto': _context(db, person, authority, source, year, totals_cache),
-                     'serie': [{'mes': m, 'valor': series.get(m)} for m in range(1, max(series) + 1)] if series else [],
-                     'nivel': 'alto' if multiple and multiple >= 3 else 'medio',
-                     'titulo': title,
-                     'frase': sentence,
-                     'fonte': person.get('sourceUrl')})
-    elif signal['type'] == 'fornecedor':
-        authority, source, year = signal['authorityId'], signal['sourceId'], signal['period']
-        prefix = f'fornecedor:{authority}:{source}:{year}'
-        key = signal['id'][len(prefix) + 1:]
-        supplier_rows = rows(db, 'SELECT name,cnpj FROM suppliers WHERE key=?', (key,))
-        tk = (authority, source, year, key)
-        if tk not in totals_cache:
-            # Uma consulta só, pelo índice do parlamentar (o índice de fornecedor é lento para isso).
-            r = db.execute('''SELECT SUM(amountCents), SUM(CASE WHEN supplierKey=? THEN 1 ELSE 0 END) FROM expenses INDEXED BY expense_authority
-                WHERE authorityId=? AND sourceId=? AND year=? AND kind=\'reembolso\'''', (key, authority, source, int(year))).fetchone()
-            c = rows(db, '''SELECT category FROM expenses INDEXED BY expense_authority WHERE authorityId=? AND supplierKey=?
-                GROUP BY category ORDER BY SUM(amountCents) DESC LIMIT 1''', (authority, key))
-            totals_cache[tk] = ((r[0] or 0) / 100, r[1] or 0, c)
-        total, invoice_count, category_rows = totals_cache[tk]
-        share = base['valor'] / total if total else None
-        supplier_name = (supplier_rows[0]['name'] if supplier_rows else 'um único fornecedor').strip()
-        base.update({'fornecedor': supplier_name, 'cnpj': supplier_rows[0]['cnpj'] if supplier_rows else None, 'total': total, 'parte': share,
-                     'notas': invoice_count, 'categoria': category_name(category_rows[0]['category']) if category_rows else None,
-                     'nivel': 'alto' if share and share >= 0.8 else 'medio',
-                     'titulo': f'{round(share * 100)}% do dinheiro foi para uma empresa só' if share else 'Dinheiro concentrado em uma empresa',
-                     'frase': f'Das notas da cota em {year}, que somam {store_money(total)}, {store_money(base["valor"])} foram para {supplier_name} ({invoice_count} notas).',
-                     'fornecedorKey': key, 'contexto': _context(db, person, authority, source, year, totals_cache, total)})
-    else:  # nota
+                     'titulo': title, 'frase': sentence, 'fonte': person.get('sourceUrl')})
+    elif signal['type'] == 'fornecedor' and detail:
+        year = detail['year']
+        supplier_rows = rows(db, 'SELECT name,cnpj FROM suppliers WHERE key=?', (detail['supplierKey'],))
+        category = rows(db, '''SELECT category FROM expenses INDEXED BY expense_authority WHERE authorityId=? AND supplierKey=? AND year=?
+            GROUP BY category ORDER BY SUM(amountCents) DESC LIMIT 1''', (authority, detail['supplierKey'], year))
+        supplier_name = (supplier_rows[0]['name'] if supplier_rows else detail.get('supplierName') or 'um único fornecedor').strip()
+        period = _alert_period_label(detail)
+        partial = ' Período parcial: o ano ainda pode receber notas.' if detail.get('partial') else ''
+        base.update({'fornecedor': supplier_name, 'cnpj': supplier_rows[0]['cnpj'] if supplier_rows else None,
+                     'total': detail['totalCents'] / 100, 'parte': detail['share'], 'notas': detail['records'],
+                     'categoria': category_name(category[0]['category']) if category else None,
+                     'periodoObservado': period,
+                     'titulo': 'Concentração em fornecedor' + (' (período parcial)' if detail.get('partial') else ''),
+                     'frase': (f'Nas notas disponíveis de {period}, que somam {store_money(detail["totalCents"] / 100)}, '
+                               f'{store_money(detail["supplierCents"] / 100)} ({round(detail["share"] * 100)}%) foram para '
+                               f'{supplier_name} ({detail["records"]} notas).{partial}'),
+                     'fornecedorKey': detail['supplierKey'],
+                     'contexto': _context(db, person, authority, source, year, totals_cache, detail['totalCents'] / 100)})
+    elif signal['type'] == 'nota':
         e = rows(db, '''SELECT e.date,e.category,e.documentUrl,s.name supplier FROM expenses e LEFT JOIN suppliers s ON s.key=e.supplierKey
             WHERE e.id=?''', (signal['id'][len('nota:'):],))
         e = e[0] if e else {}
         base.update({'fornecedor': (e.get('supplier') or '').strip() or None, 'categoria': category_name(e.get('category')),
                      'data': e.get('date'), 'documento': store.safe_url(e.get('documentUrl')) if e.get('documentUrl') else None,
-                     'nivel': 'info', 'titulo': f'Nota de {store_money(base["valor"])}',
+                     'titulo': f'Nota de {store_money(base["valor"])}',
                      'frase': f'Uma única nota de {category_name(e.get("category")).lower()}' + (f', paga a {e.get("supplier").strip()}.' if e.get('supplier') else '.')})
     return base
+
+
+def alert_coverage(db, identifier):
+    """O que as regras puderam avaliar para a pessoa, por regra e ano (só notas detalhadas)."""
+    out = []
+    for r in rows(db, 'SELECT sourceId,year,rule,detail FROM alert_coverage WHERE authorityId=? ORDER BY year,rule', (identifier,)):
+        detail = json.loads(r['detail'])
+        if r['rule'] == 'pico':
+            out.append({'regra': 'pico', 'ano': r['year'], 'avaliados': detail['evaluated'], 'marcados': detail['flagged'],
+                        'naoAvaliados': [{'motivo': key, 'texto': NOT_EVALUATED_TEXT.get(key, key), 'meses': months}
+                                         for key, months in detail['notEvaluated'].items()],
+                        'coletadoEm': detail.get('fetchedAt'), 'regraVersao': detail.get('ruleVersion')})
+        else:
+            out.append({'regra': 'fornecedor', 'ano': r['year'], 'avaliado': detail['evaluated'], 'parcial': detail['partial'],
+                        'periodo': _alert_period_label({**detail, 'year': r['year']}), 'coletadoEm': detail.get('fetchedAt'),
+                        'regraVersao': detail.get('ruleVersion')})
+    return out
 
 
 def store_money(v):
@@ -327,8 +351,9 @@ def politicians(db, params):
         CASE WHEN t.authorityId IS NULL THEN NULL ELSE {MONTHLY}/100.0 END gastoMensal,t.periodStart inicio,t.periodEnd fim,
         (t.authorityId IS NOT NULL) hasExpenseData,COALESCE(t.count,0) expenseCount,
         (SELECT COUNT(*) FROM signals s WHERE s.authorityId=a.id AND s.type IN ('pico','fornecedor')) alertas,
-        (SELECT COALESCE(SUM(s.amountCents),0)/100.0 FROM signals s WHERE s.authorityId=a.id AND s.type IN ('pico','fornecedor')) valorAlertas
+        COALESCE(v.amountCents,0)/100.0 valorAlertas,COALESCE(v.partial,0) valorAlertasParcial
         FROM authorities a LEFT JOIN authority_totals t ON t.authorityId=a.id AND t.kind='reembolso'
+        LEFT JOIN alert_totals v ON v.authorityId=a.id
         WHERE {where} ORDER BY {sort_order},a.id LIMIT ? OFFSET ?''', [*args, size, offset])
     return {'itens': items, 'total': total, 'page': page, 'pageSize': size,
             'cobertura': _politician_coverage(db), 'medias': _averages(db), 'snapshotAt': _snapshot(db)}
@@ -378,6 +403,7 @@ def politician(db, identifier):
             'expenseCount': expense_count, 'meses': monthly_totals,
             'categorias': [{'nome': k, 'valor': v} for k, v in sorted(categories.items(), key=lambda kv: -kv[1])],
             'fornecedores': suppliers, 'maiores': largest_expenses, 'alertas': [_alert(db, signal, people, cache) for signal in signals],
+            'coberturaAlertas': alert_coverage(db, identifier),
             'media': averages.get(person.get('role'), {}).get('media'), 'snapshotAt': _snapshot(db),
             'complementoMoradia': {'valor': complement[0] / 100, 'notas': complement[1],
                                    'meses': sorted(set(complement[2].split(',')))} if complement[1] else None}

@@ -81,6 +81,11 @@ def migrate(db):
             dropped = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)).fetchone() or dropped
             db.execute(f'DROP TABLE IF EXISTS {table}')
 
+        # v6: o resultado de cada alerta fica gravado; refaz os sinais com a regra em backend/alert_rules.py.
+        if 'detail' not in {row[1] for row in db.execute('PRAGMA table_info(signals)')}:
+            db.execute('ALTER TABLE signals ADD COLUMN detail TEXT')
+            dropped = True
+
         # v4: meses com notas por pessoa, denominador da média mensal da cota.
         if 'monthCount' not in {row[1] for row in db.execute('PRAGMA table_info(authority_totals)')}:
             db.execute('ALTER TABLE authority_totals ADD COLUMN monthCount INTEGER')

@@ -197,69 +197,35 @@ def _rebuild_aggregates(db):
 
 
 def rebuild_signals(db):
-    """Triagem exploratória em reembolsos; não classifica remuneração como fraude."""
-    from statistics import median
-    db.execute('DELETE FROM signals')
-    def add(identifier, authority, source, kind, title, cents, text, period):
-        db.execute('INSERT INTO signals VALUES(?,?,?,?,?,?,?,?)', (identifier, authority, source, kind, title, cents, text, period))
-    def currency(cents):
-        return ('R$ ' + f'{cents / 100:,.2f}').replace(',', 'X').replace('.', ',').replace('X', '.')
+    """Triagem exploratória em reembolsos; não classifica remuneração como fraude.
+
+    Picos e concentração vêm de backend/alert_rules.py, que grava o resultado de cada alerta,
+    a cobertura por regra e período e o valor das despesas nos alertas sem dupla contagem.
+    Só as notas detalhadas (ano corrente) são avaliadas.
+    """
+    from . import alert_rules
+    for table in ('signals', 'alert_coverage', 'alert_totals'):
+        db.execute(f'DELETE FROM {table}')
+    def add(identifier, authority, source, kind, title, cents, text, period, detail=None):
+        db.execute('INSERT INTO signals VALUES(?,?,?,?,?,?,?,?,?)',
+                   (identifier, authority, source, kind, title, cents, text, period,
+                    json.dumps(detail, ensure_ascii=False) if detail is not None else None))
     for e in db.execute("SELECT id,authorityId,sourceId,amountCents,year,month FROM expenses WHERE kind='reembolso' AND amountCents>=1000000"):
         add('nota:' + e['id'], e['authorityId'], e['sourceId'], 'nota', 'Lançamento de valor alto', e['amountCents'],
             'Registro de pelo menos R$ 10.000 no arquivo importado. É um corte para conferência, não uma avaliação de preço ou legalidade. Créditos e estornos devem ser verificados no contexto do documento.', f'{e["year"]}-{e["month"]:02d}')
-    # A fornecedor is identified by a stable identifier, not a coinciding name.
-    groups = rows(db, '''SELECT e.authorityId,e.sourceId,e.supplierKey,e.year,SUM(e.amountCents) cents,s.name
-        FROM expenses e JOIN suppliers s ON s.key=e.supplierKey WHERE e.kind='reembolso'
-        GROUP BY e.authorityId,e.sourceId,e.supplierKey,e.year HAVING cents>=3000000''')
-    totals = {(r['authorityId'], r['sourceId'], r['year']): r['cents'] for r in rows(db,
-        "SELECT authorityId,sourceId,year,SUM(amountCents) cents FROM expenses WHERE kind='reembolso' GROUP BY authorityId,sourceId,year")}
-    for e in groups:
-        total = totals.get((e['authorityId'], e['sourceId'], e['year']), 0)
-        if total <= 0 or e['cents'] / total < .5:
-            continue
-        description = f'{e["name"]}: {currency(e["cents"])} de {currency(total)} em reembolsos líquidos importados ({e["cents"] / total * 100:.1f}%). Critério: pelo menos 50% e R$ 30.000. Contratos recorrentes podem explicar a concentração; confira documentos e serviço.'
-        add(f'fornecedor:{e["authorityId"]}:{e["sourceId"]}:{e["year"]}:{e["supplierKey"]}', e['authorityId'], e['sourceId'], 'fornecedor', 'Concentração em fornecedor', e['cents'], description, str(e['year']))
-    series = {}
-    last_month = {}
-    for r in rows(db, "SELECT authorityId,sourceId,year,month,SUM(amountCents) cents FROM expenses WHERE kind='reembolso' GROUP BY authorityId,sourceId,year,month"):
-        key = (r['authorityId'], r['sourceId'], r['year'])
-        series.setdefault(key, {})[r['month']] = r['cents']
-        skey = (r['sourceId'], r['year'])
-        last_month[skey] = max(last_month.get(skey, 0), r['month'])
-    # Piso pelos colegas: o "normal" de cada um é só dele, então quem gasta muito pouco disparava alerta
-    # com um mês comum. Um pico só conta se o mês também passar do gasto mensal típico (mediana) dos
-    # parlamentares da mesma fonte e ano, considerando apenas meses fechados.
-    peer_months = {}
-    for (authority, source, year), months in series.items():
-        for month, value in months.items():
-            if month < last_month[(source, year)] and value > 0:
-                peer_months.setdefault((source, year), []).append(value)
-    peer_floor = {k: median(v) for k, v in peer_months.items() if len(v) >= 5}
-    for (authority, source, year), months in series.items():
-        floor = peer_floor.get((source, year), 0)
-        flagged = {}
-        for month, value in months.items():
-            # Latest observed month is omitted to reduce partial-period effects.
-            if month < 4 or month >= last_month[(source, year)]:
-                continue
-            before = [months.get(m) for m in range(1, month)]
-            if any(v is None or v < 0 for v in before):
-                continue
-            base = median(before)
-            if base <= 0 or value < base * 1.75 or value - base < 1000000 or value < floor:
-                continue
-            flagged[month] = (value, base)
-        # Meses seguidos acima do normal são uma mudança de patamar: viram um alerta só, no primeiro mês.
-        for month in sorted(flagged):
-            if month - 1 in flagged:
-                continue
-            value, base = flagged[month]
-            run = [month]
-            while run[-1] + 1 in flagged:
-                run.append(run[-1] + 1)
-            consecutive_months = f' Continuou acima do habitual em {len(run) - 1} mês(es) seguido(s); conta como um único alerta.' if len(run) > 1 else ''
-            add(f'pico:{authority}:{source}:{year}:{month}', authority, source, 'pico', 'Pico no reembolso mensal', value,
-                f'{currency(value)}: {value / base:.2f} vezes a mediana de {currency(base)} entre janeiro e o mês anterior. Critério: 1,75 vez, diferença de R$ 10.000 e acima do gasto mensal típico dos parlamentares da mesma fonte ({currency(floor)}), com ao menos 3 meses anteriores sem lacunas.{consecutive_months} O último mês da fonte é excluído; meses anteriores ainda podem receber ajustes.', f'{year}-{month:02d}')
+    records = rows(db, '''SELECT e.id,e.authorityId,e.sourceId,e.year,e.month,e.supplierKey,s.name supplierName,e.amountCents
+        FROM expenses e LEFT JOIN suppliers s ON s.key=e.supplierKey WHERE e.kind='reembolso' ''')
+    fetched = {r['id']: r['fetchedAt'] for r in rows(db, 'SELECT id,fetchedAt FROM sources')}
+    result = alert_rules.evaluate(records, fetched)
+    for signal in result['signals']:
+        add(signal['id'], signal['authorityId'], signal['sourceId'], signal['type'], signal['title'],
+            signal['amountCents'], alert_rules.describe(signal), signal['period'], signal['detail'])
+    db.executemany('INSERT INTO alert_coverage VALUES(?,?,?,?,?)', [
+        (c['authorityId'], c['sourceId'], c['year'], c['rule'], json.dumps(c['detail'], ensure_ascii=False))
+        for c in result['coverage']])
+    db.executemany('INSERT INTO alert_totals VALUES(?,?,?,?)', [
+        (authority, t['amountCents'], t['records'], int(t['partial'])) for authority, t in result['totals'].items()])
+    db.execute("INSERT OR REPLACE INTO meta VALUES('alertRuleVersion',?)", (alert_rules.RULE_VERSION,))
 
 
 def page_args(params):

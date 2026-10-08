@@ -566,7 +566,7 @@ partir de fev/2023.
   serve de fonte: o gráfico dela inclui passagens aéreas, que ficam fora do arquivo
   aberto. O CSV da ficha traz todas as notas desde fev/2023; nas de 2023–2025 a
   coluna Documento fica vazia.
-- **O que segue em 2026:** alertas (calculados só sobre as notas detalhadas),
+- **O que segue em 2026:** alertas (regra, cobertura e prazos em [Alertas](alerts.md)),
   fornecedores globais (`supplier_totals`) e, no Senado, presença, votações,
   atividade e projetos.
 - **Presença:** `presenca.json` agora soma o mandato (fev/2023 até o mês corrente),

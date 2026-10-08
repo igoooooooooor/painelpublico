@@ -139,9 +139,15 @@ def profile_facts(db, identifier):
         facts['lines'].append(('Trabalha', f'Presença no Plenário no mandato ({period_label(presence.get("inicio"), presence.get("fim"))}): {round(presence["presente"] / presence["dias"] * 100)}% '
                                f'({presence["presente"]} de {presence["dias"]} dias com sessão deliberativa).'))
     alerts = record.get('alertas') or []
-    if record.get('hasExpenseData'):
-        facts['lines'].append(('Gastos incomuns', f'{len(alerts)} {"alerta" if len(alerts) == 1 else "alertas"} pelas regras do painel, iguais para todos(as). Alertas não indicam irregularidade.'
-                               if alerts else 'Nenhum gasto incomum nas notas da cota de 2026 pelas regras do painel.'))
+    coverage = record.get('coberturaAlertas') or []
+    evaluated = any((c.get('regra') == 'pico' and c.get('avaliados')) or (c.get('regra') == 'fornecedor' and c.get('avaliado'))
+                    for c in coverage)
+    if alerts:
+        facts['lines'].append(('Alertas na cota', f'{len(alerts)} {"alerta" if len(alerts) == 1 else "alertas"} pelas regras do painel, iguais para todos(as). Alertas não indicam irregularidade.'))
+    elif evaluated:
+        facts['lines'].append(('Alertas na cota', 'Nenhum alerta nos meses de 2026 avaliados pelas regras do painel.'))
+    elif record.get('hasExpenseData'):
+        facts['lines'].append(('Alertas na cota', 'Dados insuficientes para avaliar os alertas de 2026.'))
     facts['sourceUrl'] = (f'https://www.camara.leg.br/deputados/{number}' if house == 'camara'
                           else f'https://www25.senado.leg.br/web/senadores/senador/-/perfil/{number}')
     return facts

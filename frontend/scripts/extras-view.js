@@ -243,6 +243,11 @@ function comparisonView() {
   ${extrasState.comparisonIds.length ? `<div class="cmp-slots">${extrasState.comparisonIds.map(id => { const f = citizenState.cache.get('/api/c/politico/' + encodeURIComponent(id)); const p = f?.pessoa || { id, name: '…' }; return `<div class="cmp-slot">${citizenAvatar(p, 40)}<span><b>${esc(citizenName(p.name))}</b><small>${esc([p.party, p.uf].filter(Boolean).join(' · '))}</small></span><button type="button" class="cmp-x" data-cmp-del="${esc(id)}" aria-label="Tirar ${esc(citizenName(p.name))} da comparação">×</button></div>`; }).join('')}</div>` : ''}
   ${pickerSection}${content}`;
 }
+/* Número de alertas só quando alguma regra pôde avaliar a pessoa; senão, "sem avaliação" (não é zero). */
+function alertCountOrNull(profile) {
+  const evaluated = typeof alertCoverageState === 'function' ? alertCoverageState(profile.coberturaAlertas).evaluated : profile.total != null;
+  return evaluated || profile.alertas?.length ? (profile.alertas || []).length : null;
+}
 /* Cartão para compartilhar a comparação: só linhas comparáveis, com "Sem dados" quando faltar. */
 function comparisonShareCard([a, b]) {
   const name = f => citizenName(f.pessoa.name);
@@ -263,7 +268,7 @@ function comparisonShareCard([a, b]) {
   }
   rows.push({ label: 'Cota parlamentar por mês', values: [money(a.mediaMensal), money(b.mediaMensal)], notes: [quotaNote(a), quotaNote(b)] });
   rows.push({ label: 'Cota comparada à média do cargo', values: [vsAverage(a), vsAverage(b)] });
-  rows.push({ label: 'Alertas de gastos incomuns', values: [a, b].map(f => f.total == null ? 'Sem dados' : String(f.alertas.length)) });
+  rows.push({ label: 'Alertas na cota (2026)', values: [a, b].map(f => alertCountOrNull(f) == null ? 'Sem avaliação' : String(f.alertas.length)) });
   rows.push({ label: chamber(a) === chamber(b) && chamber(a) === 'senado' ? 'Presença registrada no Senado' : chamber(a) === chamber(b) ? 'Presença no Plenário · Câmara' : 'Presença (casas com métodos diferentes)',
     values: [presence(a), presence(b)] });
   return {
@@ -376,8 +381,9 @@ function comparisonTable([a, b]) {
   const personA = a.pessoa, personB = b.pessoa, maxMonthly = Math.max(a.mediaMensal || 0, b.mediaMensal || 0, 1);
   const profileA = comparisonProfile(a), profileB = comparisonProfile(b);
   const firstName = person => esc(citizenName(person.name).split(' ')[0]);
+  // higherIsWorse null: só informa, sem marcar "melhor" (ex.: alertas, que não medem conduta).
   const sideHtml = (valueA, valueB, format, higherIsWorse = true) => {
-    const winner = valueA == null || valueB == null || valueA === valueB || valueA < 0 || valueB < 0 ? '' : (valueA > valueB) === higherIsWorse ? 'b' : 'a';
+    const winner = higherIsWorse === null || valueA == null || valueB == null || valueA === valueB || valueA < 0 || valueB < 0 ? '' : (valueA > valueB) === higherIsWorse ? 'b' : 'a';
     return `<div class="cmp-v ${winner === 'a' ? 'best' : ''}">${valueA == null ? 'Sem dados' : format(valueA)}</div><div class="cmp-v ${winner === 'b' ? 'best' : ''}">${valueB == null ? 'Sem dados' : format(valueB)}</div>`;
   };
   const vsAverage = profile => profile.mediaMensal != null && profile.media ? Math.round((profile.mediaMensal / profile.media - 1) * 100) : null;
@@ -409,7 +415,7 @@ function comparisonTable([a, b]) {
     <div class="cmp-row cmp-bars"><span class="cmp-l"></span><div><i style="width:${a.mediaMensal == null ? 0 : a.mediaMensal / maxMonthly * 100}%"></i></div><div><i style="width:${b.mediaMensal == null ? 0 : b.mediaMensal / maxMonthly * 100}%"></i></div></div>
     <div class="cmp-row"><span class="cmp-l"></span><div class="cmp-v muted cmp-source">${esc(quotaPeriod(a))}</div><div class="cmp-v muted cmp-source">${esc(quotaPeriod(b))}</div></div>
     <div class="cmp-row"><span class="cmp-l">Comparado à média do cargo</span>${sideHtml(vsAverage(a), vsAverage(b), value => `<b>${value > 0 ? '+' : ''}${value}%</b>`)}</div>
-    <div class="cmp-row"><span class="cmp-l">Alertas</span>${sideHtml(a.total == null ? null : a.alertas.length, b.total == null ? null : b.alertas.length, value => `<b>${value}</b>`)}</div>
+    <div class="cmp-row"><span class="cmp-l">Alertas na cota (2026)</span>${sideHtml(alertCountOrNull(a), alertCountOrNull(b), value => `<b>${value}</b>`, null)}</div>
     ${comparisonAttendanceRows(a, b, pA, pB)}
     ${comparisonInfoRow('Participação e exercício', comparisonParticipation(profileA), comparisonParticipation(profileB))}
     ${comparisonInfoRow('Contato institucional', esc(comparisonContact(profileA)), esc(comparisonContact(profileB)))}

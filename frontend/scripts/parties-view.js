@@ -122,7 +122,7 @@ function partyComparisonTable(a, b) {
     <div class="cmp-row"><span class="cmp-l">Registros na lista disponível</span><div class="cmp-v party-stack">${recordSummary(a)}</div><div class="cmp-v party-stack">${recordSummary(b)}</div></div>
     ${comparisonRow('Cota por mês, média por deputado(a) · desde fev/2023', a.deputado?.media, b.deputado?.media, value => `<b class="mono">${formatCitizenAmount(value)}</b>`, 'lower')}
     ${comparisonRow('Cota por mês, média por senador(a) · desde fev/2023', a.senador?.media, b.senador?.media, value => `<b class="mono">${formatCitizenAmount(value)}</b>`, 'lower')}
-    ${comparisonRow('Alertas a cada 10 parlamentares', alertsPerTenMembers(a), alertsPerTenMembers(b), value => `<b>${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</b>`, 'lower')}
+    ${comparisonRow('Alertas a cada 10 parlamentares', alertsPerTenMembers(a), alertsPerTenMembers(b), value => `<b>${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</b>`, null)}
     ${comparisonRow('Presença média dos(as) deputados(as) no Plenário · Câmara', pa?.media, pb?.media, formatPercent, 'higher')}
     ${registeredAttendanceRow(psa, psb, isSenateLoading, senatePresenceSource)}
     ${comparisonRow('Unidade nas votações · Câmara', partyVoteAlignment(va), partyVoteAlignment(vb), formatPercent, null)}

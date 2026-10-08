@@ -21,7 +21,8 @@ class PublicStoreTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.db_path = self.root / 'test.sqlite3'
         self.payload = {
-            'sources': [{'id': 'test', 'label': 'Fonte oficial de teste', 'status': 'imported', 'url': 'https://example.gov.br', 'period': '2026', 'scope': 'fixture'}],
+            'sources': [{'id': 'test', 'label': 'Fonte oficial de teste', 'status': 'imported', 'url': 'https://example.gov.br', 'period': '2026', 'scope': 'fixture',
+                         'fetchedAt': '2026-09-01T12:00:00+00:00'}],
             'authorities': [{'id': f'p:{i}', 'name': f'José {i}', 'role': 'deputado', 'sphere': 'federal', 'branch': 'legislativo',
                              'institution': 'Câmara', 'uf': 'SP', 'sourceId': 'test'} for i in range(7)],
             'expenses': []}
@@ -98,6 +99,14 @@ class PublicStoreTests(unittest.TestCase):
         with closing(store.connect(self.db_path)) as db, db:
             peaks = [row[0] for row in db.execute("SELECT period FROM signals WHERE authorityId='p:0' AND type='pico'")]
             self.assertEqual(peaks, ['2026-04'])
+        # Coleta antes de 90 dias depois de abril: o mês ainda não pode ser avaliado.
+        self.payload['sources'][0]['fetchedAt'] = '2026-07-15T12:00:00+00:00'
+        self.import_data()
+        with closing(store.connect(self.db_path)) as db, db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM signals WHERE type='pico'").fetchone()[0], 0)
+            coverage = json.loads(db.execute("SELECT detail FROM alert_coverage WHERE authorityId='p:0' AND rule='pico'").fetchone()[0])
+            self.assertEqual(coverage['notEvaluated']['prazo_aberto'], [4, 5])
+            self.assertEqual(coverage['evaluated'], [])
 
     def test_salary_not_added_to_reimbursements_and_missing_not_zero(self):
         salary = {**self.payload['expenses'][0], 'id': 'pay', 'kind': 'remuneracao', 'amount': 0, 'supplier': None}

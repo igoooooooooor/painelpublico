@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS authority_totals(authorityId TEXT,kind TEXT,amountCen
 CREATE TABLE IF NOT EXISTS supplier_totals(supplierKey TEXT PRIMARY KEY,amountCents INTEGER,count INTEGER,authorityCount INTEGER);
 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY,value TEXT);
 CREATE TABLE IF NOT EXISTS signals(id TEXT PRIMARY KEY,authorityId TEXT,sourceId TEXT,type TEXT,title TEXT,
- amountCents INTEGER,description TEXT,period TEXT);
+ amountCents INTEGER,description TEXT,period TEXT,detail TEXT);
 CREATE INDEX IF NOT EXISTS signals_authority ON signals(authorityId,type);
 -- Quem está em cada lista oficial na coleta completa mais recente; o cadastro e o histórico ficam em authorities.
 CREATE TABLE IF NOT EXISTS roster(sourceId TEXT NOT NULL REFERENCES sources(id),
@@ -45,3 +45,9 @@ CREATE VIEW IF NOT EXISTS quota_history AS SELECT n.authorityId,
  CASE WHEN n.documentPath IS NULL OR n.documentPath LIKE 'http%' THEN n.documentPath
   ELSE 'https://www.camara.leg.br/cota-parlamentar/' || n.documentPath END documentUrl
  FROM quota_history_notes n JOIN quota_categories c ON c.id=n.categoryId;
+-- v6: alertas com o resultado gravado (signals.detail), cobertura por regra e período e o valor das
+-- despesas nos alertas por pessoa, contando cada lançamento uma vez só (backend/alert_rules.py).
+CREATE TABLE IF NOT EXISTS alert_coverage(authorityId TEXT NOT NULL, sourceId TEXT NOT NULL, year INTEGER NOT NULL,
+ rule TEXT NOT NULL, detail TEXT NOT NULL, PRIMARY KEY(authorityId,sourceId,year,rule)) WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS alert_totals(authorityId TEXT PRIMARY KEY, amountCents INTEGER NOT NULL,
+ records INTEGER NOT NULL, partial INTEGER NOT NULL DEFAULT 0);

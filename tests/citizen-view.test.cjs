@@ -148,7 +148,8 @@ test('the roster and profile distinguish missing reimbursements from an observed
   assert.match(profile, /Equipe e verba de gabinete/);
   assert.match(profile, /Projetos apresentados/);
   assert.doesNotMatch(profile, /Detalhes da amostra editorial|data-editorial-profile|data-pdf/);
-  assert.doesNotMatch(profile, /citizen-months|Nenhum alerta|R\$.*0 mil/);
+  assert.doesNotMatch(profile, /citizen-months|Nenhum alerta|R\$\s?0 mil/);
+  assert.match(profile, /Dados insuficientes para avaliar/);
 });
 
 test('home alert loading failures show a retry card instead of a sample fallback', async () => {
@@ -252,7 +253,7 @@ test('profile starts with three ordered answers and keeps the complementary deta
   assert.deepEqual(answers, ['expenses', 'work', 'alerts']);
   assert.match(html, /Em 3 respostas/);
   assert.ok(html.indexOf('Quanto custa?') < html.indexOf('Trabalha?'));
-  assert.ok(html.indexOf('Trabalha?') < html.indexOf('Algum gasto incomum?'));
+  assert.ok(html.indexOf('Trabalha?') < html.indexOf('Algum alerta na cota?'));
   assert.match(html, /class="citizen-details/);
   const detailKeys = [...html.matchAll(/data-profile-section="([^"]+)"/g)].map(match => match[1]);
   assert.deepEqual(detailKeys, ['expenses', 'alerts', 'votes', 'projects', 'staff', 'contact', 'sources']);
@@ -263,12 +264,21 @@ test('profile without alerts explains which rules were checked and keeps neutral
   const { api, state } = makeView();
   setProfileFixture(api, state, 'camara:56', {
     total: 80000, mediaMensal: 80000, periodo: { inicio: '2026-01', fim: '2026-01', meses: 1 }, hasExpenseData: true, meses: [], categorias: [], fornecedores: [], maiores: [], alertas: [],
+    coberturaAlertas: [
+      { regra: 'fornecedor', ano: 2026, avaliado: true, parcial: true, periodo: 'jan–set/2026' },
+      { regra: 'pico', ano: 2026, avaliados: [4, 5, 6], marcados: [], naoAvaliados: [
+        { motivo: 'sem_base', texto: 'menos de 3 meses anteriores com notas no mesmo ano', meses: [1, 2, 3] },
+        { motivo: 'prazo_aberto', texto: 'prazo de apresentação das notas ainda aberto na data da coleta', meses: [7, 8, 9] }] },
+    ],
   });
   const html = api.profileView();
   const answer = html.slice(html.indexOf('data-profile-answer="alerts"'));
-  assert.match(answer, /Nenhum gasto incomum nas notas da cota de 2026/);
-  assert.match(answer, /Mês acima do habitual:<\/b> um mês com gasto 1,75 vez/);
-  assert.match(answer, /Mesmo fornecedor:<\/b> metade ou mais/);
+  assert.match(answer, /Nenhum alerta nos meses avaliados/);
+  assert.match(answer, /avaliados abr–jun\/2026/);
+  assert.match(answer, /jul–set\/2026: prazo de apresentação das notas ainda aberto/);
+  assert.match(answer, /período parcial/);
+  assert.match(html, /Mês acima da referência:<\/b> um mês com gasto 1,75 vez/);
+  assert.match(html, /Concentração em fornecedor:<\/b> metade ou mais/);
   assert.doesNotMatch(html, /regras do painel|fora do normal|estranho/);
   assert.match(html, /Fale com ele\(a\)/);
 });
@@ -422,7 +432,7 @@ test('Senate registered attendance is a positive count without an inferred atten
   assert.match(api.profileView(), /Presença do Senado sem registro importado/);
 });
 
-test('three-answer alert highlights only the strongest alert while details retain every alert in source order', () => {
+test('three-answer alert shows the first alert in API order, without a severity ranking, and details keep every alert', () => {
   const { api, state } = makeView();
   setProfileFixture(api, state, 'camara:55', {
     total: 120000, mediaMensal: 120000, periodo: { inicio: '2026-01', fim: '2026-01', meses: 1 }, media: 100000, hasExpenseData: true,
@@ -436,8 +446,8 @@ test('three-answer alert highlights only the strongest alert while details retai
   const html = api.profileView();
   const answer = html.match(/<section[^>]*data-profile-answer="alerts"[\s\S]*?<\/section>/)?.[0] || '';
   assert.match(answer, /4 alertas/);
-  assert.match(answer, /Primeiro alerta alto/);
-  assert.doesNotMatch(answer, /Primeiro alerta informativo|Alerta médio|Segundo alerta alto/);
+  assert.match(answer, /Primeiro alerta informativo/);
+  assert.doesNotMatch(answer, /Primeiro alerta alto|Alerta médio|Segundo alerta alto/);
   const details = html.slice(html.indexOf('data-profile-section="alerts"'));
   const order = ['Primeiro alerta informativo', 'Primeiro alerta alto', 'Alerta médio', 'Segundo alerta alto'];
   assert.ok(order.every(title => details.includes(title)));
@@ -542,4 +552,15 @@ test('senators whose mandate began before 2023 are told the quota counts from Fe
     /O mandato começou em fevereiro de 2019; antes de fev\/2023 a cota não entra aqui/);
   assert.equal(api.profileMandateStartNote({ exercicio: 'Exercício sem término informado desde 01/02/2023' }), '');
   assert.equal(api.profileMandateStartNote(null), '');
+});
+
+test('profile with notes but nothing evaluable says data are insufficient instead of "no alert"', () => {
+  const { api, state } = makeView();
+  setProfileFixture(api, state, 'camara:58', {
+    total: 80000, mediaMensal: 80000, periodo: { inicio: '2024-01', fim: '2024-03', meses: 3 }, hasExpenseData: true,
+    meses: [], categorias: [], fornecedores: [], maiores: [], alertas: [], coberturaAlertas: [],
+  });
+  const answer = api.profileView().match(/<section[^>]*data-profile-answer="alerts"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(answer, /Dados insuficientes para avaliar/);
+  assert.doesNotMatch(answer, /Nenhum alerta/);
 });

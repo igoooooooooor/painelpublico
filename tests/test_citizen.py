@@ -247,7 +247,8 @@ class PeakRuleTests(unittest.TestCase):
                                  'month': month, 'date': f'2026-{month:02d}-10', 'category': 'Escritório', 'kind': 'reembolso',
                                  'amount': amount, 'supplier': {'key': f'k{ident}:{month}', 'name': f'Empresa {ident} {month}'}})
         source = Path(self.temp.name) / 'in.json'
-        source.write_text(json.dumps({'sources': [{'id': signal, 'label': signal, 'status': 'imported'} for signal in ('camara_deputies_current', 'camara_ceap')],
+        source.write_text(json.dumps({'sources': [{'id': signal, 'label': signal, 'status': 'imported', 'fetchedAt': '2026-10-06T00:00:00+00:00'}
+                                                  for signal in ('camara_deputies_current', 'camara_ceap')],
                                       'authorities': authorities, 'expenses': expenses}), encoding='utf-8')
         store.import_documents([source], self.db_path)
 
@@ -262,14 +263,16 @@ class PeakRuleTests(unittest.TestCase):
             people = {'camara:30': {'id': 'camara:30', 'name': 'Pessoa 30', 'role': 'deputado'}}
             alert = citizen._alert(db, peaks[0], people, {})
             ranking = citizen.politicians(db, {'ordem': 'alertas', 'pageSize': 3})['itens']
-        self.assertEqual(alert['titulo'], 'Gastos mais altos a partir de abril')
-        self.assertEqual(alert['seguidos'], [5])
-        self.assertIn('Depois continuou alta: maio', alert['frase'])
+        self.assertEqual(alert['titulo'], 'Meses acima da referência: abril a maio')
+        self.assertEqual([m['mes'] for m in alert['meses']], [4, 5])  # só os meses marcados pela regra
+        self.assertIn('Em maio, a cota somou R$ 100.000', alert['frase'])
+        self.assertNotIn('junho', alert['frase'])
+        self.assertNotIn('nivel', alert)
         self.assertIn('No ano, gastou', alert['contexto']['frase'])
         self.assertIn('por mês em média', alert['contexto']['frase'])  # mensal contra mensal
         self.assertGreater(alert['contexto']['diferenca'], 0)
         self.assertEqual(ranking[0]['id'], 'camara:30')
-        self.assertEqual(ranking[0]['valorAlertas'], 100000)
+        self.assertEqual(ranking[0]['valorAlertas'], 200000)  # abril e maio, cada nota uma vez
 
     def test_radar_reads_ids_with_extra_colons_and_lists_only_politicians(self):
         with closing(store.connect(self.db_path)) as db, db:

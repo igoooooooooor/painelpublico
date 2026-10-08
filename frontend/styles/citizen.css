@@ -10,13 +10,16 @@
 
 /* cartão de alerta */
 .citizen-alert { gap: 10px; position: relative; overflow: hidden; }
-.citizen-alert[data-level="high"] { border-color: var(--line); }
+.citizen-alert { border-color: var(--line); }
 .citizen-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .citizen-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .02em; }
 .citizen-chip i { width: 8px; height: 8px; border-radius: 4px; background: currentColor; }
 .citizen-chip.high { background: var(--warn-soft); color: var(--warn); }
 .citizen-chip.medium { background: color-mix(in srgb, #E8A21A 18%, var(--surface)); color: #9A6400; }
 .citizen-chip.info { background: var(--chip); color: var(--ink-2); }
+/* Tipos de alerta: a cor identifica a regra, sem escala de gravidade. */
+.citizen-chip.type-peak { background: var(--chip); color: var(--accent); }
+.citizen-chip.type-supplier { background: var(--chip); color: var(--ink-2); }
 :root[data-theme="dark"] .citizen-chip.medium { color: #F2C14E; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .citizen-chip.medium { color: #F2C14E; } }
 .citizen-who { display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 0; text-align: left; color: inherit; cursor: pointer; min-height: var(--control-height); }
@@ -35,7 +38,7 @@
 .citizen-spark { position: relative; display: flex; align-items: flex-end; gap: 4px; height: 96px; padding-top: 12px; }
 .citizen-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 100%; min-width: 0; }
 .citizen-col i { width: 100%; max-width: 24px; border-radius: 4px 4px 2px 2px; background: color-mix(in srgb, var(--ink) 22%, var(--surface)); }
-.citizen-col.hot i { background: var(--warn); }
+.citizen-col.hot i { background: var(--accent); }
 .citizen-col.after i { background: color-mix(in srgb, var(--ink) 10%, var(--surface)); }
 .citizen-col span { font-family: var(--f-data); font-size: 10px; color: var(--muted); }
 .citizen-ref { position: absolute; left: 0; right: 0; border-top: 1.5px dashed var(--muted); pointer-events: none; }
@@ -44,7 +47,7 @@
 /* visual: concentração em uma empresa */
 .citizen-share { display: flex; flex-direction: column; gap: 6px; }
 .citizen-sharebar { height: 16px; border-radius: 8px; background: var(--chip); overflow: hidden; }
-.citizen-sharebar i { display: block; height: 100%; background: var(--warn); border-radius: 8px 0 0 8px; }
+.citizen-sharebar i { display: block; height: 100%; background: var(--accent); border-radius: 8px 0 0 8px; }
 .citizen-sharelbl { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--ink-2); }
 .citizen-sharelbl span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -71,7 +74,7 @@
 .citizen-months { display: flex; align-items: flex-end; gap: 4px; height: 130px; }
 .citizen-months > div { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px; height: 100%; min-width: 0; }
 .citizen-months i { width: 100%; max-width: 26px; border-radius: 4px 4px 2px 2px; background: var(--accent); }
-.citizen-months i.hot { background: var(--warn); }
+.citizen-months i.hot { background: var(--accent-2); }
 .citizen-months small { font-family: var(--f-data); font-size: 9.5px; color: var(--muted); }
 .citizen-months span { font-family: var(--f-data); font-size: 10px; color: var(--muted); }
 .citizen-bar { display: flex; flex-direction: column; gap: 5px; padding-block: 10px; border-top: 1px solid var(--line); }
@@ -299,7 +302,7 @@ b.warn { color: var(--warn); }
 .citizen-answer-alert .citizen-ref span { background: var(--warn-soft); }
 .citizen-answer-alert .more { margin-top: auto; }
 .citizen-alert-rules { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.4; color: var(--ink-2); }
-.citizen-answer .citizen-alert-count { align-self: flex-start; color: var(--warn); background: var(--surface); cursor: default; min-height: 30px; font-size: 12px; }
+.citizen-answer .citizen-alert-count { align-self: flex-start; color: var(--ink-2); background: var(--surface); cursor: default; min-height: 30px; font-size: 12px; }
 .citizen-cost-answer { min-width: 0; }
 .citizen-cost-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 7px; min-width: 0; }
 .citizen-cost-main span { font-size: 14px; color: var(--hero-muted); }
