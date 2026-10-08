@@ -631,8 +631,18 @@ A mediana considera os demais municípios brasileiros da mesma faixa, excluindo 
 cidade consultada, Brasília, Fernando de Noronha e observações sem valor válido.
 Cada indicador informa seu próprio tamanho de amostra; no mínimo três pares são
 necessários. Valores declarados iguais a zero entram no cálculo. Não há ranking,
-percentil, pontuação nem juízo de eficiência. Os valores comparados são totais
-anuais, não valores por habitante. A mediana não é uma meta de gasto.
+percentil, pontuação nem juízo de eficiência. A mediana não é uma meta de gasto.
+
+A tela compara **valores por habitante**: cada valor do exercício dividido pela
+população do mesmo ano (IBGE 2025), arredondado ao centavo, contra a mediana dos
+valores por habitante dos pares (`perCapitaCents`, `perCapitaMedianCents`,
+`perCapitaSampleSize`). As faixas são largas (por exemplo, “mais de 500 mil”
+vai até São Paulo), então comparar totais fazia o tamanho da cidade decidir o
+resultado. Exemplo: Guarulhos tem gasto total acima da mediana da faixa, mas
+gasta R$ 5.164 por morador, cerca de 16% abaixo do típico (R$ 6.176). As
+medianas de totais continuam na API. Sem população válida, não há valor por
+habitante nem comparação. Na tela, diferenças menores que 10% aparecem como
+“parecido com o típico”.
 
 As comparações só são liberadas após a confirmação de cobertura nacional completa.
 A seção indica também a fonte e a data da base nacional usada nas medianas.

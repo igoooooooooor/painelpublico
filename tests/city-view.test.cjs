@@ -25,218 +25,166 @@ function makeView(fetchImpl = async () => ({ ok: true, async json() { return {};
   return { context, elements, listeners };
 }
 
-test('city view explains missing data blocks and the Brasília and Fernando de Noronha exceptions', () => {
-  const { context } = makeView();
+const baseDetail = (municipality, extra = {}) => ({
+  municipality, sources: {}, municipalElected: [], stateElected: [], topFederalVotes: [], currentFederal: [], messages: {}, ...extra,
+});
+function showCity(context, municipality, extra = {}) {
   const city = context.cityApi.state;
-  city.selectedId = '5300108';
-  city.selectedCity = { id: '5300108', name: 'Brasília', uf: 'DF' };
-  city.detail = {
-    municipality: { id: '5300108', name: 'Brasília', uf: 'DF', population: null, populationYear: null },
-    sources: {},
-    municipalElected: [], stateElected: [], topFederalVotes: [], currentFederal: [],
-    messages: {
-      municipalElection: 'A eleição municipal não se aplica ao DF.',
-      generalElection: 'Resultado eleitoral não disponível.',
-      votes: 'Apuração ainda não disponível.',
-      currentFederal: 'Lista parlamentar indisponível.',
-    },
-  };
+  city.selectedId = municipality.id;
+  city.selectedCity = municipality;
+  city.detail = baseDetail(municipality, extra);
+  return context.cityApi.view();
+}
+const SP = { id: '3550308', name: 'São Paulo', uf: 'SP', population: 1351284, populationYear: 2026 };
 
-  const html = context.cityApi.view();
-  assert.match(html, /não tem municípios, prefeitura ou Câmara de Vereadores/);
-  assert.match(html, /não há eleição municipal de 2024/);
-  assert.match(html, /Brasília representa o Distrito Federal/);
-  assert.match(html, /Os mandatos correspondentes começam em 2027/);
-  assert.match(html, /População[\s\S]*Sem registro[\s\S]*habitantes não informados/);
-  assert.match(html, /Resultado eleitoral não disponível\./);
-  assert.match(html, /Apuração ainda não disponível\./);
-  assert.match(html, /Lista parlamentar indisponível\./);
-
-  city.selectedId = null;
-  city.selectedCity = null;
-  const picker = context.cityApi.view();
-  assert.match(picker, /Fernando de Noronha é um distrito estadual de Pernambuco e não elege prefeito nem vereadores/);
-  assert.match(picker, /emendas parlamentares/);
-  assert.match(picker, /contas municipais/);
-  assert.doesNotMatch(picker, /consulte Recife/);
-
-  city.selectedId = '2605459';
-  city.selectedCity = { id: '2605459', name: 'Fernando de Noronha', uf: 'PE' };
-  city.detail = {
-    municipality: { id: '2605459', name: 'Fernando de Noronha', uf: 'PE' },
-    municipalElected: [], stateElected: [], topFederalVotes: [], currentFederal: [], messages: {}, sources: {},
-  };
-  const fernando = context.cityApi.view();
-  assert.match(fernando, /Sobre Fernando de Noronha/);
-  assert.match(fernando, /não elege prefeito nem vereadores/);
-  assert.match(fernando, /Resultados municipais não se aplicam/);
-  assert.doesNotMatch(fernando, /consulte Recife/);
+test('city page answers three questions first and keeps the rest in collapsed sections', () => {
+  const { context } = makeView();
+  const html = showCity(context, SP, {
+    municipalElected: [
+      { id: 'tse:1', ballotName: 'LUCAS DA SILVA', office: 'PREFEITO', party: 'ABC', result: 'ELEITO' },
+      { id: 'tse:2', ballotName: 'VICE EXEMPLO', office: 'VICE-PREFEITO', party: 'DEF', result: 'ELEITO' },
+      { id: 'tse:3', ballotName: 'ANA VEREADORA', office: 'VEREADOR', party: 'ABC', result: 'ELEITO POR QP' },
+      { id: 'tse:4', ballotName: 'BIA VEREADORA', office: 'VEREADOR', party: 'ABC', result: 'ELEITO POR MÉDIA' },
+      { id: 'tse:5', ballotName: 'CAIO VEREADOR', office: 'VEREADOR', party: 'XYZ', result: 'ELEITO POR QP' },
+    ],
+  });
+  const answers = [...html.matchAll(/data-city-answer="([^"]+)"/g)].map(match => match[1]);
+  assert.deepEqual(answers, ['govern', 'spend', 'amendments']);
+  assert.match(html, /São Paulo em 3 respostas/);
+  assert.match(html, /1,35 milhão de habitantes/);
+  assert.match(html, /Lucas da Silva/);
+  assert.doesNotMatch(html, /LUCAS DA SILVA/);
+  assert.match(html, /Vice: <b>Vice Exemplo<\/b> \(DEF\)/);
+  assert.match(html, /data-profile-open="council"><span>Câmara Municipal: 3 vereadores\(as\)/);
+  assert.match(html, /<b>ABC<\/b> 2/);
+  assert.doesNotMatch(html, /ELEITO POR QP|ELEITO POR MÉDIA/);
+  assert.doesNotMatch(html, /intraorçamentária|DCA|FINBRA/);
+  assert.match(html, /data-profile-section="council"/);
+  assert.match(html, /data-profile-section="sources"/);
 });
 
-test('election rows keep office labels, hide null vote counts, and keep current federal sources separate', () => {
+test('Brasília and Fernando de Noronha explain who governs instead of showing a missing mayor', () => {
   const { context } = makeView();
-  const city = context.cityApi.state;
-  city.selectedId = '3550308';
-  city.selectedCity = { id: '3550308', name: 'São Paulo', uf: 'SP' };
-  city.detail = {
-    municipality: { id: '3550308', name: 'São Paulo', uf: 'SP', population: 1000000, populationYear: 2025 },
-    sources: {
-      generalElection: { label: 'TSE <oficial>', url: 'javascript:alert(1)' },
-      currentFederal: {
-        camara: { label: 'Câmara dos Deputados', url: 'https://camara.example/roster', period: 'setembro de 2026' },
-        senado: { label: 'Senado Federal', url: 'https://senado.example/roster', period: 'outubro de 2026' },
-      },
-    },
-    municipalElected: [{ id: 'tse:1', ballotName: 'Prefeita <img src=x onerror=alert(1)>', office: 'PREFEITO', party: 'ABC', result: 'ELEITO' }],
-    stateElected: [
-      { id: 'tse:2', name: 'Governadora Exemplo', office: 'GOVERNADOR', party: 'XYZ', result: 'ELEITO', votes: null },
-      { id: 'tse:3', name: 'Deputada Estadual Exemplo', office: 'DEPUTADO ESTADUAL', party: 'ABC', result: 'ELEITO' },
-      { id: 'tse:4', name: 'Deputado Federal Exemplo', office: 'DEPUTADO FEDERAL', party: 'XYZ', result: 'ELEITO' },
-      { id: 'tse:5', name: 'Senadora Exemplo', office: 'SENADOR', party: 'DEF', result: 'ELEITO' },
-    ],
-    topFederalVotes: [{ id: 'tse:4', name: 'Deputado Federal Exemplo', office: 'DEPUTADO FEDERAL', party: 'XYZ', votes: 12000 }],
-    currentFederal: [
-      { id: 'camara:10', name: 'Deputada da Câmara', office: 'Deputado(a) federal', party: 'ABC', uf: 'SP' },
-      { id: 'senado:20', name: 'Senador do Senado', office: 'Senador(a)', party: 'DEF', uf: 'SP' },
-    ],
-    messages: {},
-  };
+  const df = showCity(context, { id: '5300108', name: 'Brasília', uf: 'DF', population: null },
+    { stateElected: [{ id: 'tse:9', ballotName: 'GOVERNADORA EXEMPLO', office: 'GOVERNADOR', party: 'XYZ', result: 'ELEITO' }],
+      accounts: { status: 'not_applicable' } });
+  assert.match(df, /Brasília não tem prefeitura nem vereadores/);
+  assert.match(df, /Eleito\(a\) em 2026 para governar a partir de 2027: <b>Governadora Exemplo<\/b>/);
+  assert.match(df, /não é município/);
+  assert.match(df, /População não informada/);
+  assert.doesNotMatch(df, /data-profile-section="accounts"/);
+  assert.doesNotMatch(df, /Ausência de dado não significa gasto zero/);
+  const noronha = showCity(context, { id: '2605459', name: 'Fernando de Noronha', uf: 'PE' }, { accounts: { status: 'not_applicable' } });
+  assert.match(noronha, /administrado pelo governo de Pernambuco e não elege prefeito nem vereadores/);
+  assert.doesNotMatch(noronha, /data-profile-section="votes"/);
+});
 
-  const html = context.cityApi.view();
-  assert.match(html, /Prefeita &lt;img src=x onerror=alert\(1\)&gt;/);
+test('missing municipal results, accounts and amendments are explained, never shown as zero', () => {
+  const { context } = makeView();
+  const html = showCity(context, SP, { messages: { municipalElection: 'Resultado municipal não confirmado.' } });
+  assert.match(html, /Resultado municipal não confirmado\./);
+  assert.match(html, /Ausência de dado não significa que não houve eleição/);
+  assert.match(html, /Ausência de dado não significa gasto zero/);
+  assert.match(html, /Os dados de emendas não estão disponíveis agora/);
+  assert.doesNotMatch(html, /R\$ 0\b|R\$ 0,00/);
+  const noRecords = showCity(context, SP, { amendments: { year: 2026, status: 'no_records', recordCount: 0, totals: { committedCents: 0 } } });
+  assert.match(noRecords, /Nenhuma emenda de 2026 indica São Paulo como destino/);
+  assert.match(noRecords, /não significa que a cidade não recebeu recursos/);
+  assert.doesNotMatch(noRecords, /data-profile-section="amendments"/);
+  const notFiled = showCity(context, SP, { accounts: { status: 'not_filed', year: 2025, message: 'A prefeitura não entregou ao Tesouro.' } });
+  assert.match(notFiled, /A prefeitura não entregou ao Tesouro\./);
+  assert.doesNotMatch(notFiled, /R\$ 0/);
+});
+
+test('spending is compared per resident with the typical city of the same size, never by totals', () => {
+  const { context } = makeView();
+  const comparisonMetric = (id, perCapitaMedianCents, perCapitaSampleSize = 40) => ({ id, medianCents: 999999999999, sampleSize: 40, perCapitaMedianCents, perCapitaSampleSize });
+  const html = showCity(context, SP, { accounts: {
+    year: 2025, status: 'available', population: { value: 1349100, year: 2025 },
+    source: { label: 'Tesouro <dados>', url: 'https://dados.example/contas', period: 'exercício de 2025', fetchedAt: '2026-10-08' },
+    metrics: [
+      { id: 'total-expense', label: 'Despesa', amountCents: 696657561510, perCapitaCents: 516387 },
+      { id: 'health', label: 'Saúde', amountCents: 160557376086, perCapitaCents: 119011 },
+      { id: 'education', label: 'Educação', amountCents: 173393246295, perCapitaCents: 128525 },
+      { id: 'revenue', label: 'Receita <img src=x>', amountCents: 0, perCapitaCents: 0 },
+    ],
+    comparison: { available: true, band: { minPopulation: 500001, maxPopulation: null }, reportingCount: 46,
+      metrics: [comparisonMetric('total-expense', 617605), comparisonMetric('health', 144396), comparisonMetric('education', 124102, 2)] },
+  } });
+  const spend = html.match(/<section[^>]*data-city-answer="spend"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(spend, /<small>R\$<\/small>5\.164/);
+  assert.match(spend, /dividido pelos 1\.349\.100 moradores/);
+  assert.match(spend, /16% abaixo do típico/);
+  assert.match(spend, /cidades com mais de 500 mil habitantes/);
+  assert.match(spend, /Saúde<\/span><b class="mono">R\$ 1\.190[\s\S]*Típico: R\$ 1\.444/);
+  assert.doesNotMatch(spend, /Típico: R\$ 1\.241/);
+  assert.doesNotMatch(spend, /9\.999/);
+  const accounts = html.match(/<section[^>]*data-profile-section="accounts"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(accounts, /title="R\$ 6\.966\.575\.615,10">R\$ 7,0 bilhões/);
+  assert.match(accounts, /Menos de 3 cidades para comparar/);
+  assert.match(accounts, /title="R\$ 0,00"/);
+  assert.match(accounts, /Receita/);
+  assert.doesNotMatch(accounts, /<img src=x/);
+  assert.match(accounts, /mediana[\s\S]*46 cidades com mais de 500 mil habitantes/);
+  assert.match(accounts, /não é o limite da Lei de Responsabilidade Fiscal/);
+  assert.match(accounts, /Tesouro &lt;dados&gt; ↗/);
+});
+
+test('amendments lead with reserved and paid values, top authors and a Pix subset that is not added again', () => {
+  const { context } = makeView();
+  const html = showCity(context, SP, { amendments: {
+    year: 2026, status: 'available', recordCount: 3,
+    source: { label: 'Portal', url: 'https://dados.example/emendas', fetchedAt: '2026-10-07' },
+    totals: { committedCents: 1198543640, paidCents: 50426200, restosPaidCents: null },
+    specialTransfers: { identified: true, recordCount: 1, totals: { committedCents: 30000 } },
+    authors: [
+      { id: 'a', name: 'AUTORA <img src=x onerror=alert(1)>', committedCents: 100000000, paidCents: 0, profileId: 'camara:9' },
+      { id: 'b', name: 'BANCADA SP', committedCents: 998543640, paidCents: 50426200 },
+      { id: 'c', name: null, committedCents: 100000000, paidCents: null, profileId: 'javascript:alert(1)' },
+      { id: 'd', name: 'QUARTO NOME', committedCents: 1, paidCents: 0 },
+    ],
+  } });
+  const answer = html.match(/<section[^>]*data-city-answer="amendments"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(answer, /<small>R\$<\/small>12,0<small class="city-unit">mi<\/small>/);
+  assert.match(answer, /em 3 emendas/);
+  assert.match(answer, /R\$ 504 mil<\/b> já foram pagos \(4%\)/);
+  assert.ok(answer.indexOf('Bancada Sp') < answer.indexOf('Autora'));
+  assert.equal((answer.match(/data-deputy=/g) || []).length, 1);
+  assert.match(answer, /Ver as 4 autorias/);
+  assert.doesNotMatch(answer, /Quarto Nome/);
+  const detail = html.match(/<section[^>]*data-profile-section="amendments"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(detail, /Restos a pagar pagos<\/span><b class="mono">Não informado/);
+  assert.match(detail, /1 é transferência especial[\s\S]*já estão incluídos acima/);
+  assert.match(detail, /Autoria não identificada/);
   assert.doesNotMatch(html, /<img src=x/);
+  assert.doesNotMatch(html, /javascript:/);
+});
+
+test('federal votes and 2026 results use plain labels, link profiles and keep current members separate', () => {
+  const { context } = makeView();
+  const html = showCity(context, SP, {
+    sources: { generalElection: { label: 'TSE <oficial>', url: 'javascript:alert(1)' } },
+    stateElected: [
+      { id: 'tse:2', ballotName: 'GOVERNADORA EXEMPLO', office: 'GOVERNADOR', party: 'XYZ', result: '2º TURNO' },
+      { id: 'tse:3', ballotName: 'DEPUTADA ESTADUAL', office: 'DEPUTADO ESTADUAL', party: 'ABC', result: 'ELEITO POR QP' },
+      { id: 'tse:5', ballotName: 'SENADORA EXEMPLO', office: 'SENADOR', party: 'DEF', result: 'ELEITO', profileId: 'senado:20' },
+    ],
+    topFederalVotes: [
+      { id: 'tse:4', ballotName: 'DEPUTADO MAIS VOTADO', party: 'XYZ', votes: 12000, profileId: 'camara:10' },
+      { id: 'tse:6', ballotName: 'SEM VOTOS', party: 'XYZ', votes: null },
+    ],
+    currentFederal: [{ id: 'camara:10', name: 'DEPUTADA DA CÂMARA', party: 'ABC', uf: 'SP' }],
+  });
+  assert.match(html, /Em quem São Paulo votou para deputado\(a\) federal/);
+  assert.match(html, /Deputado Mais Votado[\s\S]*12\.000/);
+  assert.doesNotMatch(html, /Sem Votos/);
+  assert.match(html, /Governadora Exemplo <small class="city-tag">2º turno em 25\/10<\/small>/);
+  assert.match(html, /Os mandatos começam em 2027/);
+  assert.match(html, /data-deputy="senado:20"/);
+  assert.match(html, /Quem representa SP no Congresso hoje/);
+  assert.match(html, /Não necessariamente mora nesta cidade/);
   assert.match(html, /TSE &lt;oficial&gt;/);
   assert.doesNotMatch(html, /href="javascript:/);
-  assert.match(html, /Prefeito\(a\) · ABC · ELEITO/);
-  assert.match(html, /Governador\(a\) · XYZ · ELEITO/);
-  assert.match(html, /Deputado\(a\) estadual · ABC · ELEITO/);
-  assert.match(html, /Congresso Nacional: deputados\(as\) federais e senadores\(as\) eleitos\(as\)/);
-  assert.doesNotMatch(html, /<b class="city-votes[^>]*>0 votos/);
-  const voteBlock = html.match(/<section class="card city-data-section" aria-labelledby="city-federal-votes-title">[\s\S]*?<\/section>/)?.[0] || '';
-  assert.match(voteBlock, /Deputados\(as\) federais/);
-  assert.doesNotMatch(voteBlock, /senadores/);
-  assert.match(html, /Câmara dos Deputados[\s\S]*Câmara dos Deputados ↗/);
-  assert.match(html, /Senado Federal[\s\S]*Senado Federal ↗/);
-  assert.match(html, /data-deputy="camara:10"/);
-  assert.match(html, /data-deputy="senado:20"/);
-  assert.match(html, /Lista parlamentar atual/);
-  assert.doesNotMatch(html, /Mandatos em exercício/);
-  assert.match(html, /<details class="city-collapsible city-roster"><summary>Câmara dos Deputados · 1/);
-  assert.match(html, /<details class="city-collapsible city-roster"><summary>Senado Federal · 1/);
-});
-
-test('amendments with no snapshot or no matched records never display missing amounts as zero', () => {
-  const { context } = makeView();
-  const city = context.cityApi.state;
-  city.selectedId = '3550308';
-  city.selectedCity = { id: '3550308', name: 'São Paulo', uf: 'SP' };
-  city.detail = {
-    municipality: { id: '3550308', name: 'São Paulo', uf: 'SP' },
-    sources: {}, municipalElected: [], stateElected: [], topFederalVotes: [], currentFederal: [], messages: {},
-  };
-  let html = context.cityApi.view();
-  assert.match(html, /Emendas parlamentares/);
-  assert.match(html, /não estão disponíveis neste recorte/);
-  assert.match(html, /Registros sem município identificado ficam fora deste recorte/);
-  assert.doesNotMatch(html, /R\$ 0,00/);
-  assert.doesNotMatch(html, /0 registros/);
-
-  city.detail.amendments = {
-    year: 2023, status: 'no_records', message: 'Nenhuma emenda com localidade identificada em 2023.',
-    source: { label: 'Consulta de emendas', url: 'https://dados.example/emendas', fetchedAt: '2026-10-06' },
-    totals: { committedCents: 0, paidCents: 0, restosPaidCents: 0 }, recordCount: 0,
-    specialTransfers: { identified: true, totals: { committedCents: 0, paidCents: 0, restosPaidCents: 0 }, recordCount: 0 },
-    authors: [], records: [], coverage: {},
-  };
-  html = context.cityApi.view();
-  assert.match(html, /Emendas parlamentares · 2023/);
-  assert.match(html, /Nenhuma emenda com localidade identificada em 2023\./);
-  assert.match(html, /Consulta de emendas ↗/);
-  assert.match(html, /06\/10\/2026/);
-  assert.doesNotMatch(html, /R\$ 0,00/);
-  assert.doesNotMatch(html, /0 registros/);
-  assert.doesNotMatch(html, /Transferências especiais/);
-
-  city.detail.amendments = {
-    year: 2024, status: 'available', recordCount: 1,
-    totals: { committedCents: 50000, paidCents: 30000, restosPaidCents: null },
-  };
-  html = context.cityApi.view();
-  const amendments = html.match(/<section class="card city-data-section city-amendments-section"[\s\S]*?<\/section>/)?.[0] || '';
-  assert.match(amendments, /Restos a pagar pagos[\s\S]*<b class="mono">Não informado<\/b>/);
-});
-
-test('available amendments separate financial states, keep Pix as a subset, and show all published authors', () => {
-  const { context } = makeView();
-  const city = context.cityApi.state;
-  city.selectedId = '3550308';
-  city.selectedCity = { id: '3550308', name: 'São Paulo', uf: 'SP' };
-  city.detail = {
-    municipality: { id: '3550308', name: 'São Paulo', uf: 'SP' },
-    sources: {}, municipalElected: [], stateElected: [], topFederalVotes: [], currentFederal: [], messages: {},
-    amendments: {
-      year: 2022, status: 'partial', message: 'Cobertura parcial informada pela fonte.',
-      source: { label: 'Dados do Congresso', url: 'https://dados.example/amendments', period: 'propostas de 2022', fetchedAt: '2026-10-07' },
-      totals: { committedCents: 123450, paidCents: 0, restosPaidCents: 32100 }, recordCount: 3,
-      specialTransfers: { identified: true, totals: { committedCents: 30000, paidCents: 10000, restosPaidCents: null }, recordCount: 1 },
-      authors: [
-        { id: 'author-z', name: 'Zeta Comissão', types: ['Comissão'], profileId: 'camara:90', committedCents: 50000, paidCents: 20000, restosPaidCents: null, recordCount: 1 },
-        { id: 'author-b', name: 'Bancada SP', types: ['Bancada'], committedCents: 0, paidCents: null, restosPaidCents: null, recordCount: 1 },
-        { id: 'author-a', name: 'Autora <img src=x onerror=alert(1)>', types: ['Individual'], committedCents: 20000, paidCents: 10000, restosPaidCents: null, recordCount: 1 },
-        { id: 'author-unknown', name: null, types: [], committedCents: null, paidCents: null, restosPaidCents: null, recordCount: 0 },
-      ],
-      records: [
-        { id: '1', authorName: 'Bancada SP', type: 'Bancada', specialTransfer: false, committedCents: 30000, paidCents: 10000, restosPaidCents: 2000, sourceUrl: 'https://dados.example/records/1' },
-        { id: '2', authorName: 'Comissão <Norte>', type: 'Comissão', specialTransfer: true, committedCents: 30000, paidCents: 10000, restosPaidCents: null, sourceUrl: 'javascript:alert(1)' },
-      ],
-      coverage: {},
-    },
-  };
-
-  const html = context.cityApi.view();
-  assert.match(html, /Eleições, representantes, emendas e contas públicas/);
-  assert.match(html, /Ano da proposta/);
-  assert.match(html, /Emendas parlamentares · 2022/);
-  assert.match(html, /O ano indicado é o da proposta[\s\S]*Pagamentos podem ocorrer em outros anos/);
-  assert.match(html, /Empenhado \(compromisso\)/);
-  assert.match(html, /R\$ 1\.234,50/);
-  assert.match(html, /Pago[\s\S]*R\$ 0,00/);
-  assert.match(html, /Restos a pagar pagos[\s\S]*R\$ 321,00/);
-  assert.match(html, /não significa que já foi pago/);
-  assert.match(html, /Transferências especiais \(“Pix”\)/);
-  assert.match(html, /subconjunto das emendas[\s\S]*Não some estes valores novamente/);
-  assert.match(html, /Dados do Congresso ↗[\s\S]*consulta em 07\/10\/2026/);
-  assert.match(html, /registros sem município identificado ficam fora deste recorte/i);
-  assert.doesNotMatch(html, /Total geral|Soma total/);
-
-  const authors = html.match(/<ol class="city-amendment-authors">[\s\S]*?<\/ol>/)?.[0] || '';
-  assert.match(authors, /Autora &lt;img src=x onerror=alert\(1\)&gt;/);
-  assert.match(authors, /Autoria não identificada/);
-  assert.match(authors, /Bancada SP[\s\S]*Bancada/);
-  assert.match(authors, /Zeta Comissão[\s\S]*Comissão/);
-  assert.ok(authors.indexOf('Autoria não identificada') < authors.indexOf('Bancada SP'));
-  assert.ok(authors.indexOf('Bancada SP') < authors.indexOf('Zeta Comissão'));
-  assert.equal((authors.match(/data-deputy=/g) || []).length, 1);
-  assert.match(html, /Comissão &lt;Norte&gt;/);
-  assert.match(html, /ID 2/);
-  assert.match(html, /ID da emenda<\/span><b>2<\/b>/);
-  assert.doesNotMatch(html, /<img src=x/);
-  assert.doesNotMatch(html, /href="javascript:/);
-});
-
-test('transferência especial subset is omitted when the source does not identify it', () => {
-  const { context } = makeView();
-  const city = context.cityApi.state;
-  city.selectedId = '3550308';
-  city.selectedCity = { id: '3550308', name: 'São Paulo', uf: 'SP' };
-  city.detail = {
-    municipality: { id: '3550308', name: 'São Paulo', uf: 'SP' },
-    sources: {}, municipalElected: [], stateElected: [], topFederalVotes: [], currentFederal: [], messages: {},
-    amendments: { year: 2021, status: 'available', recordCount: 1, totals: { committedCents: 100 }, specialTransfers: { identified: false } },
-  };
-  const html = context.cityApi.view();
-  assert.match(html, /R\$ 1,00/);
-  assert.doesNotMatch(html, /Transferências especiais|“Pix”/);
 });
 
 test('stale city search responses cannot replace newer data and unavailable catalog is not reported as no match', async () => {
@@ -279,103 +227,6 @@ test('Escape closes the autocomplete options while preserving the query', () => 
   assert.equal(input['aria-expanded'], 'false');
   assert.match(elements['city-results'].innerHTML, /Sugestões ocultas/);
   assert.doesNotMatch(elements['city-results'].innerHTML, /role="option"/);
-});
-
-test('municipal accounts distinguish declarations that are unavailable, missing, and not applicable', () => {
-  const { context } = makeView();
-  const city = context.cityApi.state;
-  const show = (municipality, accounts) => {
-    city.selectedId = municipality.id;
-    city.selectedCity = municipality;
-    city.detail = { municipality, sources: {}, municipalElected: [], stateElected: [], topFederalVotes: [], currentFederal: [], messages: {}, accounts };
-    return context.cityApi.view();
-  };
-
-  let html = show({ id: '3550308', name: 'São Paulo', uf: 'SP' }, {
-    status: 'not_filed', year: 2025, message: 'O município não entregou a declaração ao Tesouro.',
-  });
-  assert.match(html, /Contas do município · 2025/);
-  assert.match(html, /Não entregou ao Tesouro/);
-  assert.match(html, /não entregou a declaração ao Tesouro/);
-  assert.doesNotMatch(html, /R\$ 0,00/);
-  assert.doesNotMatch(html, /Consulta indisponível/);
-
-  html = show({ id: '3550308', name: 'São Paulo', uf: 'SP' }, {
-    status: 'unavailable', year: 2025, message: 'Consulta SICONFI indisponível neste momento.',
-  });
-  assert.match(html, /Consulta indisponível/);
-  assert.match(html, /Consulta SICONFI indisponível neste momento/);
-  assert.doesNotMatch(html, /Não entregou ao Tesouro/);
-
-  html = show({ id: '5300108', name: 'Brasília', uf: 'DF' }, {
-    status: 'not_applicable', message: 'Contas municipais não se aplicam ao Distrito Federal.',
-  });
-  assert.match(html, /Não se aplica/);
-  assert.match(html, /não se aplicam ao Distrito Federal/);
-  assert.doesNotMatch(html, /Não entregou ao Tesouro/);
-
-  html = show({ id: '2605459', name: 'Fernando de Noronha', uf: 'PE' }, {
-    status: 'not_applicable', message: 'Declaração municipal não se aplica a este distrito estadual.',
-  });
-  assert.match(html, /Declaração municipal não se aplica a este distrito estadual/);
-});
-
-test('municipal account amounts preserve sourced zero and precision, with safe medians and explicit comparison years', () => {
-  const { context } = makeView();
-  const city = context.cityApi.state;
-  city.selectedId = '3550308';
-  city.selectedCity = { id: '3550308', name: 'São Paulo', uf: 'SP' };
-  city.detail = {
-    municipality: city.selectedCity, sources: {}, municipalElected: [], stateElected: [], topFederalVotes: [], currentFederal: [], messages: {},
-    accounts: {
-      year: 2025, status: 'partial', message: 'Alguns indicadores não estão disponíveis.',
-      source: { label: 'SICONFI <dados>', url: 'https://dados.example/accounts', period: 'exercício de 2025', fetchedAt: '2026-09-30' },
-      declaration: { status: 'submitted', submittedAt: '2026-08-15' },
-      comparison: {
-        available: true, message: 'Comparação calculada com outras cidades.',
-        source: { label: 'DCA nacional', url: 'https://dados.example/national', period: 'exercício de 2025', fetchedAt: '2026-10-07' },
-        band: { id: 'large', label: 'Faixa 4', minPopulation: 1000000, maxPopulation: 5000000 },
-        populationYear: 2024, populationSource: { label: 'População IBGE', url: 'https://dados.example/population', period: '2024' },
-        universeCount: 80, reportingCount: 65, method: 'Mediana dos demais municípios, sem ranking.',
-        metrics: [
-          { id: 'revenue', medianCents: 987654, sampleSize: 5 },
-          { id: 'health', medianCents: 12000, sampleSize: 2 },
-          { id: 'personnel', medianCents: 300000, sampleSize: 10 },
-        ],
-      },
-      metrics: [
-        { id: 'revenue', label: 'Receita realizada', amountCents: 0, classification: 'revenue', stage: 'realized' },
-        { id: 'total-expense', label: 'Despesa total', amountCents: 123456789012, classification: 'total', stage: 'committed' },
-        { id: 'health', label: 'Saúde', amountCents: null, classification: 'function', stage: 'paid' },
-        { id: 'personnel', label: 'Pessoal <img src=x onerror=alert(1)>', amountCents: 123450, classification: 'nature', stage: 'Empenhado <img src=x>', source: { label: 'Fonte do indicador', url: 'javascript:alert(1)' } },
-      ],
-    },
-  };
-
-  const html = context.cityApi.view();
-  assert.match(html, /Contas do município · 2025/);
-  assert.match(html, /Entrega registrada em 15\/08\/2026/);
-  assert.match(html, /Receita realizada/);
-  assert.match(html, /Receita · Realizada/);
-  assert.match(html, /Despesa total · Empenhada/);
-  assert.match(html, /Despesa por função · Paga/);
-  assert.match(html, /R\$ 0,00/);
-  assert.match(html, /R\$ 1\.234\.567\.890,12/);
-  assert.match(html, /Saúde[\s\S]*Não informado/);
-  assert.match(html, /Saúde[\s\S]*Menos de 3 municípios com valor válido/);
-  assert.match(html, /R\$ 9\.876,54[\s\S]*n = 5 municípios com valor válido/);
-  assert.match(html, /Faixa populacional: Faixa 4[\s\S]*população de 2024/);
-  assert.match(html, /65 de 80 municípios têm valores disponíveis nesta faixa/);
-  assert.match(html, /Mediana dos demais municípios, sem ranking/);
-  assert.match(html, /DCA nacional ↗[\s\S]*exercício de 2025[\s\S]*consulta em 07\/10\/2026/);
-  assert.match(html, /SICONFI &lt;dados&gt; ↗[\s\S]*exercício de 2025[\s\S]*consulta em 30\/09\/2026/);
-  assert.match(html, /População IBGE ↗/);
-  assert.match(html, /não some esses indicadores como parcelas independentes/);
-  assert.match(html, /não é o limite de despesa com pessoal da LRF/);
-  assert.match(html, /Pessoal &lt;img src=x onerror=alert\(1\)&gt;/);
-  assert.doesNotMatch(html, /<img src=x/);
-  assert.doesNotMatch(html, /href="javascript:/);
-  assert.doesNotMatch(html, /R\$ 120,00/);
 });
 
 test('search source refreshes with each response and keyboard focus scrolls only the suggestion panel', async () => {

@@ -1,4 +1,4 @@
-/* Minha cidade: consulta os dados municipais e estaduais publicados pela API. */
+/* Minha cidade: quem governa, quanto a prefeitura gasta por morador e quanto chegou de emendas, em linguagem simples. */
 const cityViewState = {
   query: '', items: [], searchStatus: 'idle', searchError: null, searchSource: null, searchSequence: 0,
   searchTimer: null, activeIndex: -1, suggestionsOpen: false,
@@ -53,7 +53,7 @@ function citySearchResultsMarkup() {
       </div>`;
     }).join('')}</div>`;
   }
-  return '<p class="city-search-message muted">Digite ao menos 2 letras para buscar.</p>';
+  return '<p class="city-search-message muted">Comece a digitar o nome da cidade.</p>';
 }
 
 function cityUpdateSearchResults() {
@@ -63,7 +63,7 @@ function cityUpdateSearchResults() {
   const source = document.getElementById('city-search-source');
   if (source) source.innerHTML = cityViewState.searchSource
     ? citySource(cityViewState.searchSource, 'Lista de municípios')
-    : '<span class="src">A fonte da lista aparece junto aos resultados da busca.</span>';
+    : '';
   const input = document.getElementById('city-search');
   if (input) {
     const hasSuggestions = cityViewState.searchStatus === 'ready' && cityViewState.items.length > 0 && cityViewState.suggestionsOpen;
@@ -211,293 +211,332 @@ function cityOfficeLabel(person, options = {}) {
   return labels[key] || person.office || 'Cargo não informado';
 }
 
-function cityPersonRow(person, options = {}) {
-  const name = person.ballotName || person.name || 'Nome não informado';
-  const identity = [cityOfficeLabel(person, options), person.party, person.uf, person.result].filter(Boolean).map(esc).join(' · ');
-  const profileId = String(person.profileId || '');
-  const profile = /^(?:camara|senado):\d+$/.test(profileId)
-    ? `<button type="button" class="city-profile-link" data-deputy="${esc(profileId)}">Ver ficha parlamentar</button>` : '';
-  const hasVotes = person.votes !== null && person.votes !== undefined && String(person.votes).trim() !== '' && Number.isFinite(Number(person.votes));
-  const votes = hasVotes ? `<b class="city-votes mono">${Number(person.votes).toLocaleString('pt-BR')} votos</b>` : '';
-  return `<li class="city-person"><span class="city-person-main"><b>${esc(name)}</b><span class="muted">${identity || esc(cityOfficeLabel(person, options))}</span></span>${votes}${profile}</li>`;
+/* ---------- Apresentação: nomes, números e frases curtas ---------- */
+const CITY_NAME_PARTICLES = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
+function cityTitleCase(value) {
+  return String(value || '').toLocaleLowerCase('pt-BR').split(/\s+/).filter(Boolean)
+    .map((word, index) => index > 0 && CITY_NAME_PARTICLES.has(word) ? word : word.charAt(0).toLocaleUpperCase('pt-BR') + word.slice(1))
+    .join(' ');
+}
+const cityPersonName = person => cityTitleCase(person?.ballotName || person?.name) || 'Nome não informado';
+const cityInitials = name => String(name || '').split(' ').filter(word => word && !CITY_NAME_PARTICLES.has(word.toLowerCase()))
+  .slice(0, 2).map(word => word.charAt(0)).join('').toUpperCase();
+const cityIsElected = person => /^ELEIT/i.test(String(person?.result || ''));
+const cityNumber = (value, digits = 0) => Number(value).toLocaleString('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+const cityProfileButton = (profileId, label = 'Ver ficha') => /^(?:camara|senado):\d+$/.test(String(profileId || ''))
+  ? `<button type="button" class="city-profile-link" data-deputy="${esc(profileId)}">${esc(label)} →</button>` : '';
+
+function cityCompactMoney(cents, long = false) {
+  if (!cityHasCents(cents)) return null;
+  const value = Number(cents) / 100, size = Math.abs(value);
+  if (size >= 1e9) return `R$ ${cityNumber(value / 1e9, 1)} ${long ? (size >= 2e9 ? 'bilhões' : 'bilhão') : 'bi'}`;
+  if (size >= 1e6) return `R$ ${cityNumber(value / 1e6, 1)} ${long ? (size >= 2e6 ? 'milhões' : 'milhão') : 'mi'}`;
+  if (size >= 1e4) return `R$ ${cityNumber(value / 1e3)} mil`;
+  return `R$ ${cityNumber(value)}`;
+}
+function cityHugeMoney(cents) {
+  const value = Number(cents) / 100, size = Math.abs(value);
+  const [amount, unit] = size >= 1e9 ? [cityNumber(value / 1e9, 1), 'bi'] : size >= 1e6 ? [cityNumber(value / 1e6, 1), 'mi']
+    : size >= 1e4 ? [cityNumber(value / 1e3), 'mil'] : [cityNumber(value), ''];
+  return `<small>R$</small>${amount}${unit ? `<small class="city-unit">${unit}</small>` : ''}`;
+}
+const cityExactCompact = cents => cityHasCents(cents)
+  ? `<span title="${esc(cityMoneyFromCents(cents))}">${esc(cityCompactMoney(cents, true))}</span>` : 'Não informado';
+const cityPerResident = cents => cityHasCents(cents) ? `R$ ${cityNumber(Number(cents) / 100)}` : null;
+function cityPopulationText(value) {
+  if (!cityHasCents(value) || Number(value) <= 0) return null;
+  const count = Number(value);
+  if (count >= 1e6) return `${cityNumber(count / 1e6, count >= 1e7 ? 1 : 2).replace(/,?0+$/, '')} ${count >= 2e6 ? 'milhões' : 'milhão'} de habitantes`;
+  return `${cityNumber(count)} ${count === 1 ? 'habitante' : 'habitantes'}`;
+}
+function cityVerdict(value, typical) {
+  if (!cityHasCents(value) || !cityHasCents(typical) || Number(typical) <= 0) return null;
+  const difference = Number(value) / Number(typical) - 1;
+  return Math.abs(difference) < 0.1 ? 'Parecido com o típico' : `${Math.round(Math.abs(difference) * 100)}% ${difference > 0 ? 'acima' : 'abaixo'} do típico`;
+}
+function cityBandText(band) {
+  const short = count => count >= 1e6 ? `${cityNumber(count / 1e6)} ${count >= 2e6 ? 'milhões' : 'milhão'}` : count >= 1000 ? `${cityNumber(count / 1000)} mil` : cityNumber(count);
+  const min = Number(band?.minPopulation), max = band?.maxPopulation === null || band?.maxPopulation === undefined ? null : Number(band.maxPopulation);
+  if (!band || !Number.isFinite(min)) return 'cidades do mesmo porte';
+  if (max === null) return `cidades com mais de ${short(min - 1)} habitantes`;
+  if (min <= 1) return `cidades com até ${short(max)} habitantes`;
+  return `cidades de ${short(min - 1)} a ${short(max)} habitantes`;
+}
+function cityResultText(person, secondRound) {
+  const result = String(person?.result || '');
+  if (/^ELEIT/i.test(result)) return '';
+  if (/2º TURNO/i.test(result)) return `2º turno${secondRound ? ` em ${secondRound}` : ''}`;
+  return result ? cityTitleCase(result) : '';
+}
+function cityAccordion(cityId, key, title, content) {
+  if (typeof profileAccordionHTML === 'function') return profileAccordionHTML(`city:${cityId}`, key, title, content);
+  return `<section class="card citizen-detail" data-profile-section="${esc(key)}"><h3 class="citizen-detail-heading">${esc(title)}</h3><div class="citizen-detail-body">${content}</div></section>`;
+}
+const cityAccountsUsable = accounts => ['available', 'partial', 'stale'].includes(accounts?.status);
+const cityAccountMetric = (accounts, id) => (Array.isArray(accounts?.metrics) ? accounts.metrics : []).find(item => item && item.id === id) || null;
+const cityAccountTypical = (accounts, id) => (Array.isArray(accounts?.comparison?.metrics) ? accounts.comparison.metrics : []).find(item => item && item.id === id) || null;
+const cityTypicalPerResident = (accounts, id) => {
+  const typical = cityAccountTypical(accounts, id);
+  return accounts?.comparison?.available && Number(typical?.perCapitaSampleSize) >= 3 && cityHasCents(typical?.perCapitaMedianCents)
+    ? Number(typical.perCapitaMedianCents) : null;
+};
+const CITY_ACCOUNT_LABELS = { revenue: 'Receita', 'total-expense': 'Gasto total', personnel: 'Pessoal', health: 'Saúde', education: 'Educação' };
+
+function cityAccountsMessage(accounts, isDf, isFernando) {
+  if (isDf) return 'O Distrito Federal não é município, então não presta contas como prefeitura.';
+  if (isFernando) return 'Fernando de Noronha é um distrito estadual e não tem contas de prefeitura.';
+  if (accounts?.status === 'not_filed') return accounts.message || 'A prefeitura não entregou as contas do ano ao Tesouro Nacional.';
+  return accounts?.message || 'As contas desta prefeitura não estão disponíveis nesta base.';
 }
 
-function cityGroupedPeople(people, keys, options = {}) {
-  const groups = Object.fromEntries(keys.map(key => [key, []]));
-  for (const person of people) (groups[cityOfficeKey(person.office)] || groups.other || []).push(person);
-  return groups;
+function cityCouncilSeats(council) {
+  const seats = new Map();
+  for (const person of council) seats.set(person.party || 'Sem partido', (seats.get(person.party || 'Sem partido') || 0) + 1);
+  return [...seats].sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0], 'pt-BR'));
 }
 
-function cityMunicipalSection(data, isDf, isFernando) {
+/* ---------- As 3 respostas ---------- */
+function cityGovernAnswer(data, isDf, isFernando) {
   const people = Array.isArray(data.municipalElected) ? data.municipalElected : [];
-  const message = data.messages?.municipalElection;
-  if (isDf || isFernando) return `<section class="card city-data-section" aria-labelledby="city-municipal-title"><div class="city-section-heading"><div><span class="k">Eleição municipal · 2024</span><h2 class="h" id="city-municipal-title">Prefeitura e Câmara</h2></div></div>
-    ${isDf ? cityUnavailable('Brasília representa o Distrito Federal. O DF não tem municípios, prefeitura ou Câmara de Vereadores; não há eleição municipal de 2024.', 'A eleição municipal não se aplica ao Distrito Federal.') : cityUnavailable('Fernando de Noronha consta em cadastros estatísticos, mas é um distrito estadual de Pernambuco e não elege prefeito nem vereadores. Resultados municipais não se aplicam.', 'A eleição municipal não se aplica a este distrito.')}
-    ${citySource(data.sources?.municipalElection, 'Resultados eleitorais municipais')}</section>`;
-  if (!people.length) return `<section class="card city-data-section" aria-labelledby="city-municipal-title"><div class="city-section-heading"><div><span class="k">Eleição municipal · 2024</span><h2 class="h" id="city-municipal-title">Prefeitura e Câmara</h2></div></div>
-    ${cityUnavailable(message, 'Os resultados municipais de 2024 não estão disponíveis para este município.')}${citySource(data.sources?.municipalElection, 'Resultados eleitorais municipais')}</section>`;
-  const groups = cityGroupedPeople(people, ['mayor', 'vice', 'councillor', 'other']);
-  const elected = [...groups.mayor, ...groups.vice];
-  const councilors = groups.councillor;
-  const other = groups.other;
-  return `<section class="card city-data-section" aria-labelledby="city-municipal-title"><div class="city-section-heading"><div><span class="k">Eleição municipal · 2024</span><h2 class="h" id="city-municipal-title">Prefeitura e Câmara</h2></div><span class="pill">${people.length} eleitos(as)</span></div>
-    ${elected.length ? `<ul class="city-people-list">${elected.map(person => cityPersonRow(person, { municipal: true })).join('')}</ul>` : cityUnavailable(message, 'Os resultados de prefeito(a) e vice-prefeito(a) não estão disponíveis neste recorte.')}
-    ${councilors.length ? `<details class="city-collapsible"><summary>Vereadores(as) eleitos(as) · ${councilors.length}</summary><ul class="city-people-list">${councilors.map(person => cityPersonRow(person, { municipal: true })).join('')}</ul></details>` : cityUnavailable(message, 'Não há vereadores(as) eleitos(as) disponíveis neste recorte.')}
-    ${other.length ? `<details class="city-collapsible"><summary>Outros resultados · ${other.length}</summary><ul class="city-people-list">${other.map(person => cityPersonRow(person, { municipal: true })).join('')}</ul></details>` : ''}
-    ${citySource(data.sources?.municipalElection, 'Resultados eleitorais municipais')}</section>`;
-}
-
-function cityGeneralElectionSection(data, isDf) {
-  const people = Array.isArray(data.stateElected) ? data.stateElected : [];
-  const message = data.messages?.generalElection;
-  const title = isDf ? 'Governo e Câmara Legislativa' : 'Governo e Assembleia';
-  if (!people.length) return `<section class="card city-data-section" aria-labelledby="city-general-title"><div class="city-section-heading"><div><span class="k">Eleição geral · 2026</span><h2 class="h" id="city-general-title">${title}</h2></div></div>
-    <p class="muted">Resultado da eleição de 2026. Os mandatos correspondentes começam em 2027.</p>${cityUnavailable(message, 'Os resultados de 2026 ainda não estão disponíveis para este estado ou o Distrito Federal.')}${citySource(data.sources?.generalElection, 'Resultados eleitorais gerais')}</section>`;
-  const groups = cityGroupedPeople(people, ['governor', 'vice', 'stateDeputy', 'districtDeputy', 'federalDeputy', 'senator', 'other']);
-  const executive = [...groups.governor, ...groups.vice];
-  const legislature = [...groups.stateDeputy, ...groups.districtDeputy];
-  const federal = [...groups.federalDeputy, ...groups.senator];
-  const other = groups.other;
-  return `<section class="card city-data-section" aria-labelledby="city-general-title"><div class="city-section-heading"><div><span class="k">Eleição geral · 2026</span><h2 class="h" id="city-general-title">${title}</h2></div><span class="pill">${people.length} eleitos(as)</span></div>
-    <p class="note">Resultados da eleição de 2026. Os mandatos começam em 2027; estas pessoas não são apresentadas como ocupantes atuais.</p>
-    ${executive.length ? `<ul class="city-people-list">${executive.map(person => cityPersonRow(person, { isDf })).join('')}</ul>` : cityUnavailable(message, 'Os resultados para governador(a) e vice-governador(a) não estão disponíveis neste recorte.')}
-    ${legislature.length ? `<details class="city-collapsible"><summary>${isDf ? 'Deputados(as) distritais' : 'Deputados(as) estaduais'} eleitos(as) · ${legislature.length}</summary><ul class="city-people-list">${legislature.map(person => cityPersonRow(person, { isDf })).join('')}</ul></details>` : cityUnavailable(message, 'Os resultados legislativos de 2026 não estão disponíveis neste recorte.')}
-    ${federal.length ? `<details class="city-collapsible"><summary>Congresso Nacional: deputados(as) federais e senadores(as) eleitos(as) · ${federal.length}</summary><ul class="city-people-list">${federal.map(person => cityPersonRow(person, { isDf })).join('')}</ul></details>` : cityUnavailable(message, 'Os resultados para deputados(as) federais e senadores(as) não estão disponíveis neste recorte.')}
-    ${other.length ? `<details class="city-collapsible"><summary>Cargos sem classificação neste recorte · ${other.length}</summary><ul class="city-people-list">${other.map(person => cityPersonRow(person, { isDf })).join('')}</ul></details>` : ''}
-    ${citySource(data.sources?.generalElection, 'Resultados eleitorais gerais')}</section>`;
-}
-
-function cityFederalVotesSection(data) {
-  const people = Array.isArray(data.topFederalVotes) ? data.topFederalVotes : [];
-  return `<section class="card city-data-section" aria-labelledby="city-federal-votes-title"><div class="city-section-heading"><div><span class="k">Votos na cidade · 2026</span><h2 class="h" id="city-federal-votes-title">Deputados(as) federais</h2></div></div>
-    <p class="muted">Este destaque inclui somente candidatos(as) eleitos(as) a deputado(a) federal com votos registrados nesta cidade. Quem não se elegeu não aparece aqui.</p>
-    ${people.length ? `<ol class="city-people-list city-ranked-list">${people.map(person => cityPersonRow(person)).join('')}</ol>` : cityUnavailable(data.messages?.votes, 'Os votos de candidatos(as) eleitos(as) não estão disponíveis para esta cidade.')}
-    ${citySource(data.sources?.votes, 'Apuração de votos')}</section>`;
-}
-
-function cityCurrentFederalSection(data) {
-  const people = Array.isArray(data.currentFederal) ? data.currentFederal : [];
-  const sources = data.sources?.currentFederal || {};
-  const chamber = people.filter(person => String(person.id || '').startsWith('camara:'));
-  const senate = people.filter(person => String(person.id || '').startsWith('senado:'));
-  const row = person => `<li class="city-person"><span class="city-person-main"><b>${esc(person.name || 'Nome não informado')}</b><span class="muted">${[person.office, person.party, person.uf].filter(Boolean).map(esc).join(' · ')}</span></span>${/^(?:camara|senado):\d+$/.test(String(person.id || '')) ? `<button type="button" class="city-profile-link" data-deputy="${esc(person.id)}">Ver ficha parlamentar</button>` : citySafeUrl(person.sourceUrl) ? `<a class="city-profile-link" href="${esc(citySafeUrl(person.sourceUrl))}" target="_blank" rel="noopener">Fonte oficial ↗</a>` : ''}</li>`;
-  const sourceFor = (chamberKey, roster, label) => sources[chamberKey] || (roster[0] ? { label, url: roster[0].sourceUrl, period: roster[0].sourcePeriod, fetchedAt: roster[0].fetchedAt } : null);
-  const rosterGroup = (title, roster, source, fallback) => roster.length
-    ? `<details class="city-collapsible city-roster"><summary>${esc(title)} · ${roster.length}</summary><ul class="city-people-list">${roster.map(row).join('')}</ul></details>${citySource(source, title)}`
-    : `<h3 class="city-subheading">${esc(title)}</h3>${cityUnavailable(data.messages?.currentFederal, fallback)}${citySource(source, title)}`;
-  return `<section class="card city-data-section" aria-labelledby="city-current-federal-title"><div class="city-section-heading"><div><span class="k">Representação federal por UF</span><h2 class="h" id="city-current-federal-title">Lista parlamentar atual · ${esc(data.municipality.uf)}</h2></div></div>
-    <p class="muted">Lista atual segundo os registros parlamentares consultados, separada dos resultados eleitorais de 2026. Os períodos e atualizações podem variar entre as fontes; as pessoas listadas não necessariamente moram neste município.</p>
-    ${rosterGroup('Câmara dos Deputados', chamber, sourceFor('camara', chamber, 'Lista atual da Câmara'), 'A lista da Câmara dos Deputados não está disponível neste recorte.')}
-    ${rosterGroup('Senado Federal', senate, sourceFor('senado', senate, 'Lista atual do Senado'), 'A lista do Senado Federal não está disponível neste recorte.')}
+  const mayor = people.find(person => cityOfficeKey(person.office) === 'mayor');
+  const vice = people.find(person => cityOfficeKey(person.office) === 'vice');
+  const council = people.filter(person => cityOfficeKey(person.office) === 'councillor');
+  const open = '<section class="card hero citizen-answer city-answer" data-city-answer="govern"><h2 class="h">Quem governa?</h2>';
+  if (isDf || isFernando) {
+    const governor = (Array.isArray(data.stateElected) ? data.stateElected : []).find(person => cityOfficeKey(person.office) === 'governor' && cityIsElected(person));
+    return `${open}<span class="k">${isDf ? 'Distrito Federal' : 'Distrito estadual de Pernambuco'}</span>
+      <p class="city-answer-lead">${isDf ? 'Brasília não tem prefeitura nem vereadores. Quem governa é o governo do Distrito Federal, com a Câmara Legislativa.'
+        : 'Fernando de Noronha é administrado pelo governo de Pernambuco e não elege prefeito nem vereadores.'}</p>
+      ${isDf && governor ? `<p class="city-answer-note">Eleito(a) em 2026 para governar a partir de 2027: <b>${esc(cityPersonName(governor))}</b>${governor.party ? ` (${esc(governor.party)})` : ''}.</p>` : ''}
+    </section>`;
+  }
+  if (!mayor) return `${open}<span class="k">Prefeitura · eleição de 2024</span>
+    <p class="city-answer-lead">${esc(data.messages?.municipalElection || 'O resultado de 2024 para prefeito(a) não está nesta base.')}</p>
+    <p class="city-answer-note">Ausência de dado não significa que não houve eleição.</p></section>`;
+  const name = cityPersonName(mayor);
+  return `${open}<span class="k">Prefeitura · eleição de 2024</span>
+    <div class="city-mayor"><span class="city-initials" aria-hidden="true">${esc(cityInitials(name))}</span><div><b>${esc(name)}</b><span>Prefeito(a)${mayor.party ? ` · ${esc(mayor.party)}` : ''}</span></div></div>
+    ${vice ? `<p class="city-answer-note">Vice: <b>${esc(cityPersonName(vice))}</b>${vice.party ? ` (${esc(vice.party)})` : ''}</p>` : ''}
+    <p class="city-answer-note">Mandato de 2025 a 2028.</p>
+    ${council.length ? `<div class="city-mini-seats"><span class="k">Maiores bancadas na Câmara Municipal</span><div class="city-seats">${cityCouncilSeats(council).slice(0, 4).map(([party, count]) => `<span class="fchip city-seat"><b>${esc(party)}</b> ${count}</span>`).join('')}</div></div>` : ''}
+    ${council.length ? `<button type="button" class="opt city-answer-action" data-profile-open="council"><span>Câmara Municipal: ${council.length} ${council.length === 1 ? 'vereador(a)' : 'vereadores(as)'}</span><span>→</span></button>` : ''}
   </section>`;
 }
 
-function cityAmendmentMetric(label, cents, explanation, missingText = 'Não informado') {
-  const amount = cityMoneyFromCents(cents);
-  return `<div class="city-amendment-metric"><span class="k">${esc(label)}</span><b class="mono">${amount || esc(missingText)}</b><span class="muted">${esc(explanation)}</span></div>`;
-}
-
-function cityAmendmentFinancials(totals = {}) {
-  return `<div class="city-amendment-metrics">
-    ${cityAmendmentMetric('Empenhado (compromisso)', totals.committedCents, 'Valor reservado para a emenda; não significa que já foi pago.')}
-    ${cityAmendmentMetric('Pago', totals.paidCents, 'Valor classificado como pago na fonte consultada.')}
-    ${cityAmendmentMetric('Restos a pagar pagos', totals.restosPaidCents, 'Pagamento de compromisso de ano anterior, mostrado à parte.')}
-  </div>`;
-}
-
-function cityAmendmentAuthorName(author) {
-  return String(author?.name || '').trim() || 'Autoria não identificada';
-}
-
-function cityAmendmentAuthorRow(author) {
-  const types = Array.isArray(author.types) ? author.types.filter(type => typeof type === 'string' && type.trim()) : [];
-  const variants = Array.isArray(author.nameVariants) ? [...new Set(author.nameVariants)].filter(name => typeof name === 'string' && name.trim() && name !== author.name) : [];
-  const profileId = String(author.profileId || '');
-  const profile = /^(?:camara|senado):\d+$/.test(profileId)
-    ? `<button type="button" class="city-profile-link" data-deputy="${esc(profileId)}">Ver ficha parlamentar</button>` : '';
-  return `<li class="city-amendment-author"><div class="city-amendment-author-heading"><span><b>${esc(cityAmendmentAuthorName(author))}</b>${types.length ? `<small>${types.map(esc).join(' · ')}</small>` : ''}${variants.length ? `<small>Outros nomes publicados para esta autoria: ${variants.map(esc).join(' · ')}</small>` : ''}</span>${profile}</div>
-    <div class="city-amendment-author-values">${cityAmendmentMetric('Empenhado (compromisso)', author.committedCents, 'Valor reservado.')}${cityAmendmentMetric('Pago', author.paidCents, 'Valor pago na fonte.')}${cityAmendmentMetric('Restos a pagar pagos', author.restosPaidCents, 'Compromisso de ano anterior.')}</div>
-    ${Number(author.recordCount) > 0 ? `<small class="muted">${Number(author.recordCount).toLocaleString('pt-BR')} registros associados</small>` : ''}</li>`;
-}
-
-function cityAmendmentRecord(record) {
-  const authorName = String(record.authorName || '').trim() || 'Autoria não identificada';
-  const type = String(record.type || '').trim() || 'Tipo não informado';
-  const recordId = String(record.id || '').trim() || 'Não informado';
-  const title = `${type} · ${authorName}`;
-  const sourceUrl = citySafeUrl(record.sourceUrl);
-  return `<details class="city-amendment-record"><summary><span>${esc(title)}</span><span class="city-amendment-tag">ID ${esc(recordId)}</span>${record.specialTransfer === true ? '<span class="city-amendment-tag">Transferência especial (Pix)</span>' : ''}</summary>
-    <div class="city-amendment-record-body"><p class="city-amendment-id-line"><span class="k">ID da emenda</span><b>${esc(recordId)}</b></p>${cityAmendmentFinancials(record)}${sourceUrl ? `<a class="city-amendment-source" href="${esc(sourceUrl)}" target="_blank" rel="noopener">Abrir registro na fonte ↗</a>` : ''}</div>
-  </details>`;
-}
-
-function cityAmendmentFallback(status, year) {
-  if (status === 'no_records' || status === 'available' || status === 'partial' || status === 'stale') {
-    return `Nenhuma emenda com município identificado foi encontrada para o ano da proposta ${year || 'consultado'}. Registros sem município identificado ficam fora deste recorte.`;
-  }
-  return `Os dados de emendas parlamentares para o ano da proposta ${year || 'consultado'} não estão disponíveis neste recorte.`;
-}
-
-function cityAmendmentsSection(data) {
-  const amendments = data.amendments && typeof data.amendments === 'object' ? data.amendments : {};
-  const status = ['available', 'partial', 'unavailable', 'no_records', 'stale'].includes(amendments.status) ? amendments.status : 'unavailable';
-  const year = Number.isInteger(amendments.year) ? String(amendments.year) : null;
-  const recordCount = Number.isFinite(Number(amendments.recordCount)) && Number(amendments.recordCount) > 0 ? Number(amendments.recordCount) : 0;
-  const hasRecords = recordCount > 0 && ['available', 'partial', 'stale'].includes(status);
-  const records = Array.isArray(amendments.records) ? amendments.records : [];
-  const authors = Array.isArray(amendments.authors) ? [...amendments.authors].sort((left, right) => cityAmendmentAuthorName(left).localeCompare(cityAmendmentAuthorName(right), 'pt-BR', { sensitivity: 'base' })) : [];
-  const statusMessage = amendments.message || (status === 'stale'
-    ? 'Os dados vêm de uma consulta anterior. Confira a data indicada pela fonte.'
-    : status === 'partial' ? 'A cobertura está parcial para este recorte.' : '');
-  const special = amendments.specialTransfers;
-  const specialCount = Number.isFinite(Number(special?.recordCount)) && Number(special.recordCount) > 0 ? Number(special.recordCount) : 0;
-  const specialBlock = special?.identified === true && hasRecords ? `<section class="city-special-transfers" aria-labelledby="city-special-transfers-title"><div><span class="k">Recorte identificado pela fonte</span><h3 id="city-special-transfers-title">Transferências especiais (“Pix”)</h3></div>
-    <p class="muted">Este é um subconjunto das emendas e dos valores apresentados acima. Não some estes valores novamente ao total.</p>
-    ${specialCount ? cityAmendmentFinancials(special.totals || {}) : cityUnavailable(special.message, 'A fonte permite identificar transferências especiais, mas não há registros deste tipo neste recorte.')}
-    ${specialCount ? `<small class="muted">${specialCount.toLocaleString('pt-BR')} registros identificados como transferência especial.</small>` : ''}
-  </section>` : '';
-  const authorDetails = hasRecords && authors.length
-    ? `<details class="city-collapsible city-amendment-disclosure"><summary>Ver autorias · ${authors.length}</summary><ol class="city-amendment-authors">${authors.map(cityAmendmentAuthorRow).join('')}</ol></details>`
-    : hasRecords ? cityUnavailable('As autorias detalhadas não estão disponíveis neste recorte.', 'As autorias detalhadas não estão disponíveis neste recorte.') : '';
-  const recordDetails = hasRecords && records.length
-    ? `<details class="city-collapsible city-amendment-disclosure"><summary>Ver registros de emendas · ${records.length}</summary><div class="city-amendment-records">${records.map(cityAmendmentRecord).join('')}</div></details>`
-    : hasRecords ? cityUnavailable('Os registros individuais não estão disponíveis neste recorte; os valores agregados aparecem acima.', 'Os registros individuais não estão disponíveis neste recorte.') : '';
-  const statusLabel = status === 'stale' ? 'Consulta anterior' : status === 'partial' ? 'Cobertura parcial' : status === 'available' && hasRecords ? `${recordCount.toLocaleString('pt-BR')} registros` : null;
-  return `<section class="card city-data-section city-amendments-section" aria-labelledby="city-amendments-title"><div class="city-section-heading"><div><span class="k">Ano da proposta</span><h2 class="h" id="city-amendments-title">Emendas parlamentares${year ? ` · ${esc(year)}` : ''}</h2></div>${statusLabel ? `<span class="pill">${esc(statusLabel)}</span>` : ''}</div>
-    <p class="city-amendment-year-note">O ano indicado é o da proposta da emenda. Pagamentos podem ocorrer em outros anos; “pago” e “restos a pagar pagos” aparecem em campos separados.</p>
-    ${hasRecords
-      ? `${statusMessage ? `<p class="note">${esc(statusMessage)}</p>` : ''}${cityAmendmentFinancials(amendments.totals || {})}${specialBlock}${authorDetails}${recordDetails}`
-      : cityUnavailable(amendments.message, cityAmendmentFallback(status, year))}
-    <p class="city-amendment-caveat">Esta consulta usa a localidade associada à emenda; ela não representa todos os gastos realizados no município. Registros sem município identificado ficam fora deste recorte.</p>
-    ${citySource(amendments.source, 'Fonte das emendas')}</section>`;
-}
-
-function cityAccountStatusLabel(status) {
-  return ({
-    available: 'Dados disponíveis', partial: 'Cobertura parcial', unavailable: 'Consulta indisponível',
-    not_filed: 'Não entregou ao Tesouro', not_applicable: 'Não se aplica', stale: 'Consulta anterior',
-  })[status] || 'Consulta indisponível';
-}
-
-function cityAccountClassification(value) {
-  return ({
-    revenue: 'Receita', function: 'Despesa por função', nature: 'Despesa por natureza', total: 'Despesa total',
-  })[value] || (value ? 'Outra classificação publicada pela fonte' : 'Classificação não informada');
-}
-
-function cityAccountStage(value) {
-  if (!value) return null;
-  const key = cityNormalize(value).replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-  const labels = {
-    committed: 'Empenhada', empenhado: 'Empenhada', empenhada: 'Empenhada',
-    liquidated: 'Liquidada', liquidado: 'Liquidada', liquidada: 'Liquidada',
-    paid: 'Paga', pago: 'Pago', paga: 'Paga',
-    realized: 'Realizada', realised: 'Realizada', realizada: 'Realizada', realizado: 'Realizada',
-    budgeted: 'Orçada', orcado: 'Orçada', orcada: 'Orçada',
-  };
-  return labels[key] || String(value);
-}
-
-function cityAccountComparisonMetric(comparison, metricId) {
-  if (!comparison || !Array.isArray(comparison.metrics)) return null;
-  return comparison.metrics.find(item => item && String(item.id) === String(metricId)) || null;
-}
-
-function cityAccountComparisonValue(comparison, metric) {
-  if (!comparison?.available) {
-    return '<b>Comparação indisponível</b>';
-  }
-  const sampleSize = Number.isInteger(metric?.sampleSize) && metric.sampleSize >= 0 ? metric.sampleSize : null;
-  if (sampleSize === null || sampleSize < 3) {
-    return `<b>Sem comparação</b><small>${sampleSize === null ? 'A amostra comparável não foi informada.' : 'Menos de 3 municípios com valor válido.'}</small>`;
-  }
-  const amount = cityMoneyFromCents(metric?.medianCents);
-  if (!amount) return '<b>Não informado</b><small>Mediana não publicada para este indicador.</small>';
-  const sampleNote = sampleSize === null ? '' : `<small>n = ${sampleSize.toLocaleString('pt-BR')} municípios com valor válido</small>`;
-  return `<b>${amount}</b>${sampleNote}`;
-}
-
-function cityAccountMetric(metric, comparison, year) {
-  const label = String(metric.label || 'Indicador não informado');
-  const comparisonMetric = cityAccountComparisonMetric(comparison, metric.id);
-  const amount = cityMoneyFromCents(metric.amountCents);
-  const stage = cityAccountStage(metric.stage);
-  const source = metric.source ? `<div class="city-account-metric-source">${citySource(metric.source, `Fonte de ${label}`)}</div>` : '';
-  return `<article class="city-account-metric"><div class="city-account-metric-heading"><div><span class="k">${esc(cityAccountClassification(metric.classification))}${stage ? ` · ${esc(stage)}` : ''}</span><h3>${esc(label)}</h3></div></div>
-    <div class="city-account-values"><div><span class="city-account-value-label">${year ? `Município · exercício ${esc(year)}` : 'Município · exercício não informado'}</span><b class="mono">${amount || 'Não informado'}</b>${stage ? '' : '<small>Etapa não informada</small>'}</div>
-      <div><span class="city-account-value-label">Mediana dos demais municípios</span>${cityAccountComparisonValue(comparison, comparisonMetric)}</div></div>${source}</article>`;
-}
-
-function cityAccountsSection(data, isDf, isFernando) {
+function citySpendAnswer(data, isDf, isFernando) {
   const accounts = data.accounts && typeof data.accounts === 'object' ? data.accounts : {};
-  const knownStatuses = ['available', 'partial', 'unavailable', 'not_filed', 'not_applicable', 'stale'];
-  const status = knownStatuses.includes(accounts.status) ? accounts.status : (isDf || isFernando ? 'not_applicable' : 'unavailable');
   const year = cityYear(accounts.year);
-  const comparison = accounts.comparison && typeof accounts.comparison === 'object' ? accounts.comparison : null;
+  const total = cityAccountMetric(accounts, 'total-expense');
+  const open = '<section class="card citizen-answer city-answer" data-city-answer="spend"><h2 class="h">Quanto a prefeitura gasta por morador?</h2>';
+  if (!cityAccountsUsable(accounts) || !cityHasCents(total?.perCapitaCents)) {
+    return `${open}<span class="k">Contas da prefeitura${year ? ` · ${esc(year)}` : ''}</span>
+      <p class="city-answer-lead">${esc(cityAccountsMessage(accounts, isDf, isFernando))}</p>
+      ${isDf || isFernando ? '' : '<p class="city-answer-note">Ausência de dado não significa gasto zero.</p>'}</section>`;
+  }
+  const typicalTotal = cityTypicalPerResident(accounts, 'total-expense');
+  const verdict = cityVerdict(total.perCapitaCents, typicalTotal);
+  const bars = [['health', 'Saúde'], ['education', 'Educação']].map(([id, label]) => {
+    const metric = cityAccountMetric(accounts, id);
+    if (!cityHasCents(metric?.perCapitaCents)) return '';
+    const value = Number(metric.perCapitaCents), typical = cityTypicalPerResident(accounts, id);
+    const scale = Math.max(value, typical || 0) || 1;
+    return `<div class="city-bar-row"><div class="city-bar-label"><span>${label}</span><b class="mono">${cityPerResident(value)}</b></div>
+      <div class="city-bar" role="img" aria-label="${label}: ${cityPerResident(value)} por morador${typical ? `; típico ${cityPerResident(typical)}` : ''}"><i style="width:${(value / scale * 100).toFixed(1)}%"></i>${typical ? `<span class="city-bar-mark" style="left:${(typical / scale * 100).toFixed(1)}%"></span>` : ''}</div>
+      ${typical ? `<small class="muted">Típico: ${cityPerResident(typical)}</small>` : ''}</div>`;
+  }).join('');
+  const residents = accounts.population?.value;
+  return `${open}<span class="k">Contas de ${esc(year || '')} · por morador, no ano</span>
+    <div class="huge"><small>R$</small>${cityNumber(Number(total.perCapitaCents) / 100)}</div>
+    <p class="city-answer-note">Tudo o que a prefeitura gastou${residents ? `, dividido pelos ${cityNumber(residents)} moradores` : ' por morador'}.</p>
+    ${bars ? `<div class="city-bars">${bars}</div>` : ''}
+    ${verdict ? `<div class="city-verdict"><span class="fchip citizen-verdict">${esc(verdict)}</span><small class="muted">Comparado com ${esc(cityBandText(accounts.comparison?.band))}. A marca na barra é o típico.</small></div>` : ''}
+  </section>`;
+}
+
+function cityAmendmentsAnswer(data, cityName) {
+  const amendments = data.amendments && typeof data.amendments === 'object' ? data.amendments : {};
+  const year = Number.isInteger(amendments.year) ? amendments.year : null;
+  const records = Number(amendments.recordCount) > 0 ? Number(amendments.recordCount) : 0;
+  const hasRecords = records > 0 && ['available', 'partial', 'stale'].includes(amendments.status) && cityHasCents(amendments.totals?.committedCents);
+  const open = `<section class="card citizen-answer city-answer" data-city-answer="amendments"><h2 class="h">Quanto chegou de emendas?</h2><span class="k">Emendas${year ? ` propostas em ${year}` : ''}</span>`;
+  if (!hasRecords) {
+    const unavailable = !amendments.status || amendments.status === 'unavailable';
+    return `${open}<p class="city-answer-lead">${esc(unavailable ? (amendments.message || 'Os dados de emendas não estão disponíveis agora.')
+      : `Nenhuma emenda${year ? ` de ${year}` : ''} indica ${cityName} como destino.`)}</p>
+      <p class="city-answer-note">Muitas emendas não informam a cidade de destino. Ausência de registro não significa que a cidade não recebeu recursos.</p></section>`;
+  }
+  const committed = Number(amendments.totals.committedCents);
+  const paid = cityHasCents(amendments.totals.paidCents) ? Number(amendments.totals.paidCents) : null;
+  const share = paid !== null && committed > 0 ? Math.min(100, paid / committed * 100) : null;
+  const authors = (Array.isArray(amendments.authors) ? amendments.authors : []).filter(author => author && cityHasCents(author.committedCents))
+    .sort((left, right) => Number(right.committedCents) - Number(left.committedCents));
+  const paidText = paid === null ? 'O valor pago não foi informado pela fonte.'
+    : paid === 0 ? 'Nada foi pago até a data da consulta.'
+      : `<b>${esc(cityCompactMoney(paid, true))}</b> já ${paid >= 200 ? 'foram pagos' : 'foi pago'} (${share < 1 ? 'menos de 1' : cityNumber(share)}%).`;
+  return `${open}<div class="huge">${cityHugeMoney(committed)}</div>
+    <p class="city-answer-note">reservados para a cidade em ${records} ${records === 1 ? 'emenda' : 'emendas'}.</p>
+    ${share !== null ? `<div class="city-progress" role="img" aria-label="${cityNumber(share)}% pago"><i style="width:${share.toFixed(1)}%"></i></div>` : ''}
+    <p class="city-answer-note">${paidText}</p>
+    ${authors.length ? `<ol class="city-top-authors">${authors.slice(0, 3).map(author => `<li><span>${esc(cityTitleCase(author.name) || 'Autoria não identificada')}</span><b class="mono">${esc(cityCompactMoney(author.committedCents))}</b>${cityProfileButton(author.profileId, 'Ficha')}</li>`).join('')}</ol>` : ''}
+    ${authors.length > 3 ? `<button type="button" class="more" data-profile-open="amendments">Ver as ${authors.length} autorias →</button>` : ''}
+  </section>`;
+}
+
+/* ---------- Ver mais ---------- */
+function cityCouncilDetail(data) {
+  const council = (Array.isArray(data.municipalElected) ? data.municipalElected : []).filter(person => cityOfficeKey(person.office) === 'councillor');
+  if (!council.length) return null;
+  const parties = cityCouncilSeats(council);
+  const people = [...council].sort((left, right) => cityPersonName(left).localeCompare(cityPersonName(right), 'pt-BR'));
+  return `<p class="muted">Cadeiras por partido na Câmara Municipal, eleição de 2024.</p>
+    <div class="city-seats">${parties.map(([party, count]) => `<span class="fchip city-seat"><b>${esc(party)}</b> ${count}</span>`).join('')}</div>
+    <ul class="city-name-list">${people.map(person => `<li><span>${esc(cityPersonName(person))}</span><span class="muted">${esc(person.party || '')}</span></li>`).join('')}</ul>
+    ${citySource(data.sources?.municipalElection, 'TSE — eleição municipal')}`;
+}
+
+function cityVotesDetail(data) {
+  const people = Array.isArray(data.topFederalVotes) ? data.topFederalVotes.filter(person => cityHasCents(person.votes)) : [];
+  if (!people.length) return `${cityUnavailable(data.messages?.votes, 'Os votos por cidade ainda não estão disponíveis.')}${citySource(data.sources?.votes, 'TSE — votação por município')}`;
+  const top = Math.max(...people.map(person => Number(person.votes))) || 1;
+  return `<p class="muted">Entre os(as) deputados(as) federais eleitos(as) em 2026, quem teve mais votos aqui.</p>
+    <ol class="city-rank">${people.map((person, index) => `<li><span class="city-rank-n mono">${index + 1}</span>
+      <span class="city-rank-name"><b>${esc(cityPersonName(person))}</b><small class="muted">${esc(person.party || '')}</small></span>
+      <span class="city-rank-votes mono">${cityNumber(person.votes)}</span>
+      <span class="city-bar"><i style="width:${(Number(person.votes) / top * 100).toFixed(1)}%"></i></span>
+      ${cityProfileButton(person.profileId)}</li>`).join('')}</ol>
+    ${citySource(data.sources?.votes, 'TSE — votação por município')}`;
+}
+
+function cityStateDetail(data, isDf) {
+  const people = Array.isArray(data.stateElected) ? data.stateElected : [];
+  if (!people.length) return `${cityUnavailable(data.messages?.generalElection, 'Os resultados de 2026 não estão disponíveis para este estado.')}${citySource(data.sources?.generalElection, 'TSE — eleição geral')}`;
+  const byKey = key => people.filter(person => cityOfficeKey(person.office) === key);
+  const row = person => {
+    const result = cityResultText(person, '25/10');
+    return `<li><span>${esc(cityPersonName(person))}${result ? ` <small class="city-tag">${esc(result)}</small>` : ''}</span><span class="muted">${esc(person.party || '')}</span>${cityProfileButton(person.profileId)}</li>`;
+  };
+  const group = (title, list) => list.length ? `<div class="citizen-detail-part"><h3 class="k">${esc(title)} · ${list.length}</h3><ul class="city-name-list">${list.map(row).join('')}</ul></div>` : '';
+  return `<p class="muted">Eleitos(as) em 4/10/2026. Os mandatos começam em 2027; até lá, seguem os atuais.</p>
+    ${group(isDf ? 'Governo do Distrito Federal' : 'Governo do estado', [...byKey('governor'), ...byKey('vice')])}
+    ${group(isDf ? 'Deputados(as) distritais' : 'Deputados(as) estaduais', [...byKey('stateDeputy'), ...byKey('districtDeputy')])}
+    ${group('Deputados(as) federais', byKey('federalDeputy'))}
+    ${group('Senadores(as)', byKey('senator'))}
+    ${citySource(data.sources?.generalElection, 'TSE — eleição geral')}`;
+}
+
+function cityCongressDetail(data) {
+  const people = Array.isArray(data.currentFederal) ? data.currentFederal : [];
+  if (!people.length) return cityUnavailable(data.messages?.currentFederal, 'A lista atual do Congresso não está disponível.');
+  const row = person => `<li><span>${esc(cityTitleCase(person.name))}</span><span class="muted">${esc(person.party || '')}</span>${cityProfileButton(person.id)}</li>`;
+  const chamber = people.filter(person => String(person.id || '').startsWith('camara:'));
+  const senate = people.filter(person => String(person.id || '').startsWith('senado:'));
+  return `<p class="muted">Quem está no mandato hoje, eleito(a) pelo estado inteiro. Não necessariamente mora nesta cidade.</p>
+    ${senate.length ? `<div class="citizen-detail-part"><h3 class="k">Senado · ${senate.length}</h3><ul class="city-name-list">${senate.map(row).join('')}</ul>${citySource(data.sources?.currentFederal?.senado, 'Lista atual do Senado')}</div>` : ''}
+    ${chamber.length ? `<div class="citizen-detail-part"><h3 class="k">Câmara dos Deputados · ${chamber.length}</h3><ul class="city-name-list">${chamber.map(row).join('')}</ul>${citySource(data.sources?.currentFederal?.camara, 'Lista atual da Câmara')}</div>` : ''}`;
+}
+
+function cityAccountsDetail(data, isDf, isFernando) {
+  const accounts = data.accounts && typeof data.accounts === 'object' ? data.accounts : {};
   const metrics = Array.isArray(accounts.metrics) ? accounts.metrics.filter(metric => metric && typeof metric === 'object') : [];
-  const hasMetrics = metrics.length > 0 && ['available', 'partial', 'stale'].includes(status);
-  const statusMessage = accounts.message || (status === 'not_applicable'
-    ? isDf ? 'A declaração municipal não se aplica ao Distrito Federal, que não é município.'
-      : isFernando ? 'A declaração municipal não se aplica a Fernando de Noronha, distrito estadual de Pernambuco.'
-        : 'Esta declaração não se aplica ao município.'
-    : status === 'not_filed' ? 'O município não entregou esta declaração ao Tesouro no recorte consultado.'
-      : status === 'unavailable' ? 'A consulta das contas municipais está indisponível neste momento.'
-        : status === 'stale' ? 'Os dados vêm de uma consulta anterior. Confira a data indicada pela fonte.'
-          : status === 'partial' ? 'A cobertura está parcial para este recorte.' : 'Os indicadores desta declaração não estão disponíveis.');
-  const submittedAt = status !== 'not_filed' && status !== 'not_applicable' && status !== 'unavailable'
-    && accounts.declaration?.submittedAt ? cityReadableDate(accounts.declaration.submittedAt) : null;
-  const populationYear = cityYear(comparison?.populationYear);
-  const band = comparison?.band && typeof comparison.band === 'object' ? comparison.band : null;
-  const minPopulation = cityPopulation(band?.minPopulation), maxPopulation = cityPopulation(band?.maxPopulation);
-  const populationRange = minPopulation !== null && maxPopulation !== null
-    ? ` · ${minPopulation} a ${maxPopulation} habitantes` : '';
-  const comparisonSummary = comparison ? `<div class="city-account-comparison-note"><b>Comparação entre municípios</b>
-    ${comparison.available ? `${band?.label ? `<span>Faixa populacional: ${esc(band.label)}${populationRange}${populationYear ? ` · população de ${esc(populationYear)}` : ''}.</span>` : populationYear ? `<span>Faixa definida pela população de ${esc(populationYear)}.</span>` : ''}
-      ${Number.isInteger(comparison.reportingCount) && Number.isInteger(comparison.universeCount) ? `<span>${comparison.reportingCount.toLocaleString('pt-BR')} de ${comparison.universeCount.toLocaleString('pt-BR')} municípios têm valores disponíveis nesta faixa.</span>` : ''}
-      <span>${comparison.method ? esc(comparison.method) : 'A mediana considera os demais municípios da faixa; este município não entra no cálculo e não há classificação por posição.'}</span>`
-      : `<span>${esc(comparison.message || 'A mediana para municípios de faixa populacional semelhante está indisponível.')}</span>`}
-    ${comparison.source ? citySource(comparison.source, 'Fonte das declarações comparadas') : ''}
-    ${comparison.populationSource ? citySource(comparison.populationSource, 'Fonte da população usada na faixa') : ''}
-  </div>` : '';
-  const hasPersonnel = metrics.some(metric => cityNormalize(metric.id).includes('personnel') || cityNormalize(metric.label).includes('pessoal'));
-  const accountsNote = `<p class="city-account-caveat">A receita bruta é apresentada antes das deduções. Os totais de receita e despesa incluem operações intraorçamentárias; saúde, educação e pessoal aparecem sem essas operações. Despesas por função, como saúde e educação, e por natureza podem incluir os mesmos gastos; não some esses indicadores como parcelas independentes. ${hasPersonnel ? 'O indicador de pessoal descreve a natureza da despesa e não é o limite de despesa com pessoal da LRF.' : ''}</p>`;
-  const metricContent = hasMetrics
-    ? `${statusMessage ? `<p class="note">${esc(statusMessage)}</p>` : ''}${comparisonSummary}<div class="city-account-metrics">${metrics.map(metric => cityAccountMetric(metric, comparison, year)).join('')}</div>${accountsNote}`
-    : cityUnavailable(statusMessage, 'A consulta das contas municipais está indisponível neste momento.');
-  return `<section class="card city-data-section city-accounts-section" aria-labelledby="city-accounts-title"><div class="city-section-heading"><div><span class="k">Exercício financeiro</span><h2 class="h" id="city-accounts-title">Contas do município${year ? ` · ${esc(year)}` : ''}</h2></div><span class="pill">${esc(cityAccountStatusLabel(status))}</span></div>
-    <p class="city-account-year-note">A DCA é a declaração anual enviada pelo município ao Tesouro. Despesa empenhada é um compromisso assumido; não significa que já foi paga.</p>
-    ${submittedAt ? `<p class="city-account-submitted">Entrega registrada em ${esc(submittedAt)}.</p>` : ''}
-    ${metricContent}${citySource(accounts.source, 'Fonte das contas municipais')}</section>`;
+  if (!cityAccountsUsable(accounts) || !metrics.length) return `${cityUnavailable(cityAccountsMessage(accounts, isDf, isFernando), 'As contas não estão disponíveis.')}${citySource(accounts.source, 'Tesouro Nacional')}`;
+  const comparison = accounts.comparison || {};
+  const rows = metrics.map(metric => {
+    const typical = cityAccountTypical(accounts, metric.id), typicalValue = cityTypicalPerResident(accounts, metric.id);
+    const typicalText = !comparison.available ? 'Sem comparação'
+      : typicalValue !== null ? cityPerResident(typicalValue)
+        : Number(typical?.perCapitaSampleSize ?? typical?.sampleSize) < 3 ? 'Menos de 3 cidades para comparar' : 'Não informado';
+    return `<div class="city-account-row"><b>${esc(CITY_ACCOUNT_LABELS[metric.id] || metric.label || 'Indicador')}</b>
+      <div><span>Total</span><b class="mono">${cityExactCompact(metric.amountCents)}</b></div>
+      <div><span>Por morador</span><b class="mono">${cityPerResident(metric.perCapitaCents) || 'Não informado'}</b></div>
+      <div><span>Típico por morador</span><b class="mono">${esc(typicalText)}</b></div></div>`;
+  }).join('');
+  const peers = Number.isInteger(comparison.reportingCount) ? comparison.reportingCount : null;
+  return `${accounts.status !== 'available' && accounts.message ? `<p class="note">${esc(accounts.message)}</p>` : ''}
+    <div class="city-account-table">${rows}</div>
+    ${comparison.available ? `<p class="muted"><b>Típico</b> é o valor do meio (mediana) por morador entre ${peers ? `${cityNumber(peers)} ` : ''}${esc(cityBandText(comparison.band))} com contas de ${esc(cityYear(accounts.year) || 'mesmo ano')}. A própria cidade fica de fora. Não é meta nem ranking.</p>`
+      : `<p class="muted">${esc(comparison.message || 'Comparação com cidades do mesmo porte indisponível.')}</p>`}
+    <p class="muted">Gasto é o valor empenhado, isto é, os compromissos assumidos no ano, e não só o que já foi pago. Receita e gasto total incluem repasses entre órgãos da própria prefeitura; pessoal, saúde e educação não. Saúde e educação também incluem salários, então as linhas não devem ser somadas. Pessoal aqui não é o limite da Lei de Responsabilidade Fiscal.</p>
+    ${citySource(accounts.source, 'Tesouro Nacional')}`;
+}
+
+function cityAmendmentsDetail(data) {
+  const amendments = data.amendments && typeof data.amendments === 'object' ? data.amendments : {};
+  const records = Number(amendments.recordCount) > 0 ? Number(amendments.recordCount) : 0;
+  if (!records || !['available', 'partial', 'stale'].includes(amendments.status)) return null;
+  const totals = amendments.totals || {};
+  const figure = (label, cents, note) => `<div class="city-figure"><span class="k">${label}</span><b class="mono">${cityExactCompact(cents)}</b><small class="muted">${note}</small></div>`;
+  const special = amendments.specialTransfers;
+  const specialCount = Number(special?.recordCount) > 0 ? Number(special.recordCount) : 0;
+  const authors = (Array.isArray(amendments.authors) ? amendments.authors : []).filter(Boolean)
+    .sort((left, right) => Number(right.committedCents || 0) - Number(left.committedCents || 0));
+  return `${amendments.message && amendments.status !== 'available' ? `<p class="note">${esc(amendments.message)}</p>` : ''}
+    <div class="city-figures">${figure('Reservado', totals.committedCents, 'Empenhado: compromisso, ainda não é pagamento.')}${figure('Pago', totals.paidCents, 'Já saiu do caixa federal.')}${figure('Restos a pagar pagos', totals.restosPaidCents, 'Pago agora, de compromisso de ano anterior.')}</div>
+    ${special?.identified === true ? `<p class="muted">${specialCount ? `Destas, ${specialCount} ${specialCount === 1 ? 'é transferência especial' : 'são transferências especiais'} (“emendas Pix”), com ${esc(cityMoneyFromCents(special.totals?.committedCents) || 'valor não informado')} reservados. Esses valores já estão incluídos acima.` : 'Nenhuma é transferência especial (“emenda Pix”).'}</p>` : ''}
+    ${authors.length ? `<div class="citizen-detail-part"><h3 class="k">Quem destinou · ${authors.length}</h3><ol class="city-name-list city-authors">${authors.map(author => `<li><span>${esc(cityTitleCase(author.name) || 'Autoria não identificada')}${Array.isArray(author.types) && author.types.length ? `<small class="muted">${author.types.map(esc).join(' · ')}</small>` : ''}</span>
+      <span class="mono">${cityExactCompact(author.committedCents)}<small class="muted">pago: ${cityHasCents(author.paidCents) ? cityExactCompact(author.paidCents) : 'não informado'}</small></span>${cityProfileButton(author.profileId)}</li>`).join('')}</ol></div>` : ''}
+    <p class="muted">O ano é o da proposta da emenda; o pagamento pode acontecer depois. Só entram emendas que informam esta cidade como destino.</p>
+    ${citySource(amendments.source, 'Portal da Transparência')}`;
+}
+
+function citySourcesDetail(data) {
+  const sources = data.sources || {}, accounts = data.accounts || {}, amendments = data.amendments || {};
+  const items = [
+    ['População', sources.population], ['Lista de municípios', sources.municipalities],
+    ['Eleição municipal de 2024', sources.municipalElection], ['Eleição geral de 2026', sources.generalElection],
+    ['Votos por cidade', sources.votes], ['Códigos TSE e IBGE', sources.tseIbgeMapping],
+    ['Lista atual da Câmara', sources.currentFederal?.camara], ['Lista atual do Senado', sources.currentFederal?.senado],
+    ['Emendas parlamentares', amendments.source], ['Contas da prefeitura', accounts.source],
+    ['População usada na comparação', accounts.comparison?.populationSource],
+  ].filter(([, source]) => source && typeof source === 'object' && (source.label || source.url));
+  const methods = [accounts.comparison?.method, data.profileLinks?.method ? `Ligação com as fichas: ${data.profileLinks.method}` : null,
+    amendments.profileLinks?.method ? `Autorias de emendas: ${amendments.profileLinks.method}` : null].filter(Boolean);
+  return `<div class="citizen-source-list">${items.map(([label, source]) => `<article class="citizen-source"><b>${esc(label)}</b>${citySource(source, label)}</article>`).join('')}</div>
+    ${methods.map(method => `<p class="muted">${esc(method)}</p>`).join('')}
+    ${data.generatedAt ? `<p class="muted">Base montada em ${esc(cityReadableDate(data.generatedAt))}.</p>` : ''}`;
 }
 
 function cityDetailView() {
   if (!cityViewState.selectedId || !cityViewState.selectedCity) return cityPickerView();
-  if (cityViewState.detailLoading && !cityViewState.detail) return `<button type="button" class="back" data-city-search>‹ Voltar à busca</button>${pageHead('Minha cidade', 'Carregando cidade…', 'Consultando os registros disponíveis para este município.')}${skel('ficha', 2)}`;
-  if (cityViewState.detailError && !cityViewState.detail) return `<button type="button" class="back" data-city-search>‹ Voltar à busca</button>${pageHead('Minha cidade', 'Não foi possível abrir esta cidade', 'Os dados municipais e eleitorais não carregaram.')}
+  const back = '<button type="button" class="back" data-city-search>‹ Trocar de cidade</button>';
+  if (cityViewState.detailLoading && !cityViewState.detail) return `${back}${pageHead('Minha cidade', esc(cityViewState.selectedCity.name || 'Carregando cidade…'), 'Juntando eleições, contas e emendas desta cidade.')}${skel('ficha', 2)}`;
+  if (cityViewState.detailError && !cityViewState.detail) return `${back}${pageHead('Minha cidade', 'Não foi possível abrir esta cidade', 'Os dados não carregaram.')}
     <section class="card" role="alert"><p class="muted">${esc(cityViewState.detailError)}</p><button type="button" class="opt" data-city-retry-detail>Tentar de novo</button></section>`;
   const data = cityViewState.detail;
-  if (!data || !data.municipality) return `<button type="button" class="back" data-city-search>‹ Voltar à busca</button>${pageHead('Minha cidade', 'Dados indisponíveis', 'A resposta da API não contém os dados deste município.')}
+  if (!data || !data.municipality) return `${back}${pageHead('Minha cidade', 'Dados indisponíveis', 'A resposta não trouxe os dados desta cidade.')}
     <section class="card"><p>Não foi possível montar a página desta cidade.</p><button type="button" class="opt" data-city-retry-detail>Tentar de novo</button></section>`;
   const municipality = data.municipality, isDf = cityIsBrasilia(municipality), isFernando = cityIsFernandoDeNoronha(municipality);
-  const population = cityPopulation(municipality.population), year = cityYear(municipality.populationYear);
-  return `<button type="button" class="back" data-city-search>‹ Voltar à busca</button>
-    <header class="city-detail-header"><span class="k">Minha cidade · ${esc(municipality.uf)}</span><h1 class="h">${esc(municipality.name)}</h1><p class="ph-lead">Eleições, representantes, emendas e contas públicas, com fonte e período de cada conjunto de dados.</p></header>
-    ${isDf ? `<section class="note city-special-note"><b>Sobre Brasília:</b> esta seleção representa o Distrito Federal, que não tem municípios, prefeitos ou vereadores. Os cargos locais são distritais.</section>` : isFernando ? `<section class="note city-special-note"><b>Sobre Fernando de Noronha:</b> embora conste em cadastros estatísticos, é um distrito estadual de Pernambuco e não elege prefeito nem vereadores.</section>` : ''}
-    <section class="city-overview card"><div class="city-overview-label"><span class="k">População</span><span class="city-population">${population === null ? 'Sem registro' : population}</span><span class="muted">${population === null ? 'habitantes não informados' : `habitantes${year ? ` · ${year}` : ''}`}</span></div>${citySource(data.sources?.population, 'Estimativa de população')}</section>
-    <div class="city-content-grid">${cityMunicipalSection(data, isDf, isFernando)}${cityGeneralElectionSection(data, isDf)}${cityFederalVotesSection(data)}${cityCurrentFederalSection(data)}${cityAmendmentsSection(data)}${cityAccountsSection(data, isDf, isFernando)}</div>
-    ${data.generatedAt ? `<span class="src">Base local montada em ${esc(cityReadableDate(data.generatedAt))}.</span>` : ''}`;
+  const name = municipality.name || 'Cidade', id = String(municipality.id || cityViewState.selectedId);
+  const population = cityPopulationText(municipality.population), year = cityYear(municipality.populationYear);
+  const uf = municipality.uf || '';
+  const accountsYear = cityYear(data.accounts?.year);
+  const amendmentsYear = Number.isInteger(data.amendments?.year) ? data.amendments.year : null;
+  const sections = [
+    ['council', `Vereadores(as) eleitos(as) em 2024`, cityCouncilDetail(data)],
+    ['votes', `Em quem ${name} votou para deputado(a) federal`, isFernando ? null : cityVotesDetail(data)],
+    ['state', `${isDf ? 'Eleitos(as) em 2026 no DF' : `Eleitos(as) em 2026 em ${uf}`} · assumem em 2027`, cityStateDetail(data, isDf)],
+    ['congress', `Quem representa ${uf} no Congresso hoje`, cityCongressDetail(data)],
+    ['accounts', `Contas da prefeitura${accountsYear ? ` em ${accountsYear}` : ''}`, isDf || isFernando ? null : cityAccountsDetail(data, isDf, isFernando)],
+    ['amendments', `Emendas para ${name}${amendmentsYear ? ` em ${amendmentsYear}` : ''}`, cityAmendmentsDetail(data)],
+    ['sources', 'Fontes e datas', citySourcesDetail(data)],
+  ].filter(([, , content]) => typeof content === 'string' && content.trim());
+  return `${back}
+    <header class="city-head"><span class="k">Minha cidade · ${esc(uf)}</span><h1 class="h city-title">${esc(name)}</h1>
+      <p class="city-sub">${population ? `${esc(population)}${year ? ` <span class="muted">· estimativa de ${esc(year)}</span>` : ''}` : 'População não informada'}</p></header>
+    <span class="k citizen-answer-label">${esc(name)} em 3 respostas</span>
+    <div class="citizen-answers city-answers">${cityGovernAnswer(data, isDf, isFernando)}${citySpendAnswer(data, isDf, isFernando)}${cityAmendmentsAnswer(data, name)}</div>
+    <h2 class="h">Ver mais</h2>
+    <div class="citizen-details city-details">${sections.map(([key, title, content]) => cityAccordion(id, key, title, content)).join('')}</div>
+    <span class="src">Dados públicos do IBGE, do TSE, do Portal da Transparência e do Tesouro Nacional. Datas e métodos em “Fontes e datas”.</span>`;
 }
 
 function cityPickerView() {
   const query = cityViewState.query;
-  return `${pageHead('Dados públicos por município', 'Minha cidade', 'Consulte população, eleições municipais, resultados de 2026, emendas parlamentares, contas municipais e a lista parlamentar atual do seu estado.')}
-    <section class="card city-search-card"><label class="k" for="city-search">Qual cidade você quer consultar?</label>
-      <div class="city-search-row"><div class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="city-search" type="search" value="${esc(query)}" placeholder="Digite o nome da cidade" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="city-suggestions"></div><button type="button" class="fchip" data-city-search-submit>Buscar</button></div>
+  return `${pageHead('Onde você mora', 'Minha cidade', 'Digite sua cidade e veja quem governa, quanto a prefeitura gasta por morador e quanto dinheiro de emendas chegou.')}
+    <section class="card city-search-card"><label class="k" for="city-search">Sua cidade</label>
+      <div class="city-search-row"><div class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="city-search" type="search" value="${esc(query)}" placeholder="Ex.: Guarulhos" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="city-suggestions"></div><button type="button" class="fchip" data-city-search-submit>Buscar</button></div>
       <div id="city-results" class="city-results" aria-live="polite">${citySearchResultsMarkup()}</div>
-      <div id="city-search-source">${cityViewState.searchSource ? citySource(cityViewState.searchSource, 'Lista de municípios') : '<span class="src">A fonte da lista aparece junto aos resultados da busca.</span>'}</div>
-    </section>
-    <section class="note city-geography-note"><b>Como interpretar:</b> Brasília representa o Distrito Federal, que não tem prefeitura nem vereadores. Embora conste em cadastros estatísticos, Fernando de Noronha é um distrito estadual de Pernambuco e não elege prefeito nem vereadores.</section>
-    <section class="card city-intro-card"><span class="k">O que você vai encontrar</span><div class="city-intro-grid"><p><b>Dados do município</b><span>População e resultados de 2024 para prefeito(a), vice-prefeito(a) e vereadores(as).</span></p><p><b>Eleição geral de 2026</b><span>Resultados de governador(a) e deputados(as) estaduais ou distritais. Os mandatos começam em 2027.</span></p><p><b>Representação federal</b><span>Votos de pessoas eleitas na cidade e lista atual de deputados(as) e senadores(as) do estado, em blocos separados.</span></p><p><b>Emendas parlamentares</b><span>Valores por ano da proposta, com empenhado, pago e restos a pagar apresentados separadamente.</span></p><p><b>Contas municipais</b><span>Receitas, despesas e comparação com municípios de faixa populacional semelhante, sem ranking.</span></p></div></section>`;
+      <div id="city-search-source">${cityViewState.searchSource ? citySource(cityViewState.searchSource, 'Lista de municípios') : ''}</div>
+    </section>`;
 }
 
 function cityView() {

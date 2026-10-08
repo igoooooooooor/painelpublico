@@ -116,8 +116,28 @@ class AccountDetailTests(unittest.TestCase):
         self.assertEqual(comparison["reportingCount"], 3)
         self.assertEqual(comparison["metrics"], [{
             "id": "expense:health", "medianCents": 100, "sampleSize": 3,
+            "perCapitaCents": 0, "perCapitaMedianCents": 0, "perCapitaSampleSize": 3,
         }])
         self.assertEqual(detail["metrics"][0]["amountCents"], 500)
+
+    def test_per_resident_values_compare_cities_of_different_sizes_fairly(self):
+        rows = {"1000001": account_row(metric_amount=50_000_000), "1000002": account_row(metric_amount=90_000_000),
+                "1000003": account_row(metric_amount=30_000_000), "1000004": account_row(metric_amount=12_000_000),
+                "1000005": account_row(metric_amount=None)}
+        populations = {"1000001": 10_000, "1000002": 9_000, "1000003": 6_000, "1000004": 6_000, "1000005": 8_000}
+        write_snapshot(self.snapshot_path, rows=rows, populations=populations)
+        detail = accounts.detail("1000001", self.snapshot_path)
+        # 50.000.000 / 10.000 = 5.000 centavos por morador; pares: 10.000, 5.000 e 2.000.
+        self.assertEqual(detail["population"], {"value": 10_000, "year": 2025})
+        self.assertEqual(detail["metrics"][0]["perCapitaCents"], 5_000)
+        metric = detail["comparison"]["metrics"][0]
+        self.assertEqual(metric["medianCents"], 30_000_000)
+        self.assertEqual((metric["perCapitaCents"], metric["perCapitaMedianCents"], metric["perCapitaSampleSize"]), (5_000, 5_000, 3))
+        missing = accounts.detail("1000005", self.snapshot_path)
+        self.assertIsNone(missing["metrics"][0]["perCapitaCents"])
+        write_snapshot(self.snapshot_path, rows=rows, populations={})
+        self.assertEqual(accounts.detail("1000001", self.snapshot_path)["population"], {"value": None, "year": None})
+        self.assertIsNone(accounts.detail("1000001", self.snapshot_path)["metrics"][0]["perCapitaCents"])
 
     def test_comparison_excludes_other_expense_stages_and_population_years(self):
         self.rows["1234567"]["metrics"][0]["stage"] = "committed"

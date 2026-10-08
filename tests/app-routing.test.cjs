@@ -45,7 +45,7 @@ test('combined scripts boot and navigate through all public views with unavailab
     vm.runInContext(`navigateToView(${JSON.stringify(view)})`, context);
     assert.equal(document.body.dataset.view, view);
     assert.ok(app.innerHTML.length > 50);
-    if (view === 'city') assert.match(app.innerHTML, /Qual cidade você quer consultar\?/);
+    if (view === 'city') assert.match(app.innerHTML, /Sua cidade/);
   }
 });
 

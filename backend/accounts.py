@@ -90,6 +90,13 @@ def _median_cents(values):
     return int(midpoint.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
 
+def _per_capita_cents(amount_cents, population):
+    """Valor por habitante em centavos, arredondado; None sem valor ou população válida."""
+    if not _is_int(amount_cents) or not _is_int(population) or population <= 0:
+        return None
+    return int((Decimal(amount_cents) / Decimal(population)).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
+
 def _eligible_account(row, source):
     if not isinstance(row, dict) or row.get("status") not in ELIGIBLE_STATUSES:
         return False
@@ -171,8 +178,8 @@ def _comparison(identifier, row, snapshot, source):
         metric_id = str(metric.get("id"))
         if not _is_int(metric.get("amountCents")) or not _metric_source_is_available(metric, source):
             continue
-        peer_values = []
-        for _peer_id, peer in peers:
+        peer_values, peer_per_capita = [], []
+        for peer_id, peer in peers:
             peer_metrics = [candidate for candidate in _public_metrics(peer)
                             if str(candidate.get("id")) == metric_id
                             and candidate.get("stage") == metric.get("stage")
@@ -182,11 +189,19 @@ def _comparison(identifier, row, snapshot, source):
             # A municipality contributes at most one observation per metric.
             if len(peer_metrics) == 1:
                 peer_values.append(peer_metrics[0]["amountCents"])
+                per_capita = _per_capita_cents(peer_metrics[0]["amountCents"], population_rows.get(peer_id))
+                if per_capita is not None:
+                    peer_per_capita.append(per_capita)
         sample_size = len(peer_values)
+        per_capita_size = len(peer_per_capita)
         comparison_metrics.append({
             "id": metric_id,
             "medianCents": _median_cents(peer_values) if sample_size >= MIN_PEER_SAMPLE else None,
             "sampleSize": sample_size,
+            # Por habitante: compara cidades da mesma faixa sem que o tamanho da cidade decida o resultado.
+            "perCapitaCents": _per_capita_cents(metric.get("amountCents"), selected_population),
+            "perCapitaMedianCents": _median_cents(peer_per_capita) if per_capita_size >= MIN_PEER_SAMPLE else None,
+            "perCapitaSampleSize": per_capita_size,
             **({} if sample_size >= MIN_PEER_SAMPLE else {
                 "message": f"A mediana exige ao menos {MIN_PEER_SAMPLE} cidades comparáveis com este indicador."
             }),
@@ -208,6 +223,7 @@ def _comparison(identifier, row, snapshot, source):
         "universeCount": len(universe_ids),
         "reportingCount": len(peers),
         "metrics": comparison_metrics,
+        "population": selected_population,
         "method": "Mediana dos valores declarados no mesmo exercício e faixa populacional; a própria cidade, Brasília e Fernando de Noronha são excluídas. Cada indicador exige ao menos três outros municípios com dado válido. A mediana é o valor central do grupo; não é uma meta de gasto nem um ranking.",
     }
 
@@ -300,8 +316,16 @@ def detail(identifier, snapshot_path=None):
             status = "stale"
             message = source.get("note") or "A fonte não foi atualizada; exibimos os dados locais preservados."
 
+    population_info = snapshot.get("population") if isinstance(snapshot.get("population"), dict) else {}
+    population_rows = population_info.get("municipalities") if isinstance(population_info.get("municipalities"), dict) else {}
+    same_year = _is_int(population_info.get("year")) and population_info.get("year") == snapshot.get("year")
+    population = population_rows.get(str(identifier)) if same_year else None
+    population = population if _is_int(population) and population > 0 else None
+    for metric in metrics:
+        metric["perCapitaCents"] = _per_capita_cents(metric.get("amountCents"), population)
     return {
         "year": snapshot.get("year") if _is_int(snapshot.get("year")) else None,
+        "population": {"value": population, "year": population_info.get("year") if population else None},
         "status": status,
         "message": message,
         "source": deepcopy(display_source),

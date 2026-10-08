@@ -6,6 +6,7 @@ from copy import deepcopy
 import json
 import re
 import threading
+import time
 from pathlib import Path
 
 from . import config
@@ -25,13 +26,17 @@ def _load(path):
     path = path.expanduser().resolve()
     with _lock:
         try:
-            mtime = path.stat().st_mtime_ns
+            stat = path.stat()
         except OSError:
             _cache.pop(path, None)
             return None
+        mtime = (stat.st_mtime_ns, stat.st_size)
+        # Relógios de arquivo podem ter resolução grossa: duas gravações no mesmo instante teriam a
+        # mesma data. Um arquivo alterado há menos de 2 s é relido em vez de confiar no cache.
+        settled = time.time_ns() - stat.st_mtime_ns > 2_000_000_000
 
         cached = _cache.get(path)
-        if cached is not None and cached[0] == mtime:
+        if cached is not None and cached[0] == mtime and settled:
             return cached[1]
 
         try:

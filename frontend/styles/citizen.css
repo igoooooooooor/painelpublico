@@ -482,3 +482,78 @@ nav.tabs button svg { flex: none; }
   .city-content-grid > .city-accounts-section { grid-column: 1 / -1; }
   .city-account-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Minha cidade em 3 respostas (mesmo padrão da ficha parlamentar) */
+.city-head { display: flex; flex-direction: column; gap: 4px; }
+.city-title { margin: 0; font-size: clamp(40px, 10vw, 60px); line-height: 1; }
+.city-sub { margin: 4px 0 0; font-size: 17px; color: var(--ink-2); }
+.city-answer { gap: var(--space-3); }
+.city-answer p { margin: 0; }
+.city-answer-lead { font-family: var(--f-display); font-size: 22px; line-height: 1.25; text-wrap: balance; }
+.city-answer-note { font-size: 14px; line-height: 1.45; color: var(--ink-2); }
+.hero .city-answer-note { color: var(--hero-muted); }
+.hero .city-answer-note b, .hero .city-answer-lead { color: var(--hero-fg); }
+.city-mayor { display: flex; align-items: center; gap: 14px; padding: 6px 0 2px; }
+.city-mayor > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.city-mayor b { font-family: var(--f-display); font-size: 28px; line-height: 1.1; color: var(--hero-fg); }
+.city-mayor span { font-size: 14px; color: var(--hero-muted); }
+.city-initials { flex: none; width: 56px; height: 56px; border-radius: 28px; display: grid; place-items: center; background: var(--hero-chip); color: var(--hero-fg); font: 700 19px var(--f-data); letter-spacing: -0.02em; }
+.city-answer-action { margin-top: auto; }
+.city-mini-seats { display: flex; flex-direction: column; gap: 8px; padding-top: 12px; border-top: 1px solid var(--hero-line); }
+.hero .city-seat { background: var(--hero-chip); border-color: var(--hero-line); color: var(--hero-fg); }
+.city-figure b, .city-account-row > div b { white-space: nowrap; }
+.city-unit { margin-left: 4px; }
+.city-bars { display: flex; flex-direction: column; gap: 12px; }
+.city-bar-row small { display: block; margin-top: 4px; font-size: 12px; }
+.city-bar-label { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+.city-bar { position: relative; display: block; height: 10px; margin-top: 6px; border-radius: 5px; background: var(--chip); }
+.city-bar i { display: block; height: 100%; border-radius: 5px; background: var(--accent); }
+.city-bar-mark { position: absolute; top: -4px; width: 3px; height: 18px; border-radius: 2px; background: var(--ink); transform: translateX(-50%); }
+.city-verdict { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-top: auto; }
+.city-verdict .citizen-verdict { margin: 0; }
+.city-verdict small { font-size: 12px; line-height: 1.4; }
+.city-progress { height: 10px; border-radius: 5px; background: var(--chip); overflow: hidden; }
+.city-progress i { display: block; height: 100%; min-width: 3px; background: var(--accent); }
+.city-top-authors { list-style: none; margin: 0; padding: 0; }
+.city-top-authors li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.city-top-authors li > span { flex: 1; min-width: 0; }
+.city-top-authors .city-profile-link { min-height: 32px; }
+.city-seats { display: flex; flex-wrap: wrap; gap: 6px; }
+.city-seat { min-height: 32px; cursor: default; font-size: 13px; }
+.city-name-list { list-style: none; margin: 0; padding: 0; display: grid; column-gap: 28px; }
+.city-name-list li { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.city-name-list li > span:first-child { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.city-name-list li > .mono { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.city-name-list small { font-size: 12px; }
+.city-tag { display: inline; font-size: 12px; color: var(--accent); font-weight: 600; }
+.city-rank { list-style: none; margin: 0; padding: 0; }
+.city-rank li { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 6px 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+.city-rank-n { color: var(--muted); font-size: 13px; }
+.city-rank-name { display: flex; flex-direction: column; min-width: 0; font-size: 14px; }
+.city-rank-votes { font-size: 14px; font-weight: 700; }
+.city-rank .city-bar { grid-column: 2 / 4; height: 6px; margin: 0; }
+.city-rank .city-profile-link { grid-column: 2 / 4; justify-self: start; min-height: 32px; }
+.city-figures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.city-figure { display: flex; flex-direction: column; gap: 4px; padding: 12px; border-radius: 14px; background: var(--chip); min-width: 0; }
+.city-figure b { font-size: 15px; overflow-wrap: anywhere; }
+.city-figure small { font-size: 12px; line-height: 1.35; }
+.city-account-table { display: flex; flex-direction: column; }
+.city-account-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.city-account-row > b { grid-column: 1 / -1; font-size: 15px; }
+.city-account-row > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.city-account-row > div span { font-size: 11px; color: var(--muted); }
+.city-account-row > div b { font-size: 13px; overflow-wrap: anywhere; }
+@media (max-width: 520px) {
+  .city-figures { grid-template-columns: 1fr; }
+  .city-account-row { grid-template-columns: 1fr 1fr; }
+  .city-account-row > div:nth-child(2) { grid-column: 1 / -1; }
+}
+@media (min-width: 640px) { .city-name-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } .city-authors, .city-rank { grid-template-columns: 1fr; } }
+@media (min-width: 900px) {
+  .city-account-row { grid-template-columns: 1.2fr repeat(3, minmax(0, 1fr)); align-items: center; }
+  .city-account-row > b { grid-column: auto; }
+  .city-rank li { grid-template-columns: 22px minmax(170px, 1.3fr) 80px minmax(0, 1fr) 100px; }
+  .city-rank .city-profile-link { justify-self: end; }
+  .city-rank .city-bar { grid-column: auto; }
+  .city-rank .city-profile-link { grid-column: auto; }
+}
