@@ -64,8 +64,10 @@ function attendanceView() {
   const fullAttendanceCount = all.filter(person => person.presente === person.dias).length;
   const belowHalfCount = all.filter(person => person.presente / person.dias < 0.5).length;
   const sessionCount = all.length ? Math.max(...all.map(person => person.dias)) : 0;
+  const starts = all.map(person => person.inicio).filter(Boolean).sort(), ends = all.map(person => person.fim).filter(Boolean).sort();
+  const period = typeof citizenQuotaPeriod === 'function' && starts.length ? citizenQuotaPeriod(starts[0], ends.at(-1)) : '';
   return `<button type="button" class="back" data-back>‹ Voltar</button>
-  ${pageHead('Câmara · 2026', 'Presença', `Quantos dias cada deputado(a) foi às ${sessionCount} sessões de votação do Plenário em 2026.`)}
+  ${pageHead(`Câmara · ${period || 'mandato'}`, 'Presença', `Quantos dias cada deputado(a) foi às ${sessionCount} sessões de votação do Plenário no mandato atual${period ? ` (${period})` : ''}.`)}
   <section class="card hero">
     <span class="k">Média dos dados disponíveis</span>
     <div class="huge">${Math.round(average * 100)}<small style="margin-left:4px">%</small></div>
@@ -76,7 +78,7 @@ function attendanceView() {
   <label class="search" for="attendance-q"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="attendance-q" type="search" placeholder="Nome, partido ou estado" value="${esc(extrasState.attendanceQuery)}" autocomplete="off"></label>
   <div class="chips" role="group" aria-label="Ordenar">${[['less', 'Menos presentes'], ['more', 'Mais presentes']].map(([key, label]) => `<button type="button" class="fchip" data-attendance-order="${key}" aria-pressed="${extrasState.attendanceOrder === key}">${label}</button>`).join('')}</div>
   <div id="attendance-list" class="citizen-stack">${attendanceList(people)}</div>
-  <span class="src">Fonte: página de presença em Plenário de cada deputado(a) na Câmara, ${sessionCount} dias com sessão deliberativa em 2026. Falta justificada inclui missão autorizada, licença e atestado. Quem assumiu no meio do ano tem menos dias na conta.</span>`;
+  <span class="src">Fonte: página de presença em Plenário de cada deputado(a) na Câmara, ${sessionCount} dias com sessão deliberativa no mandato atual${period ? ` (${period})` : ''}. Falta justificada inclui missão autorizada, licença e atestado. Quem assumiu no meio do mandato tem menos dias na conta.</span>`;
 }
 function attendanceList(people) {
   if (!people.length) return '<section class="card"><p>Ninguém encontrado.</p></section>';
@@ -185,13 +187,13 @@ function profileExtras(id) {
   const voteCount = votes.length;
   const presenceUrl = /^\d+$/.test(personNumber || '') ? `https://www.camara.leg.br/deputados/${encodeURIComponent(personNumber)}/presenca-plenario/2026` : null;
   return `${presenceRecord ? `<section class="card ${presenceRecord.presente / presenceRecord.dias < 0.5 ? 'alarm' : ''}">
-    <span class="k">Presença nas sessões de votação · 2026</span>
+    <span class="k">Presença nas sessões de votação · ${esc(typeof citizenQuotaPeriod === 'function' ? citizenQuotaPeriod(presenceRecord.inicio, presenceRecord.fim) || 'mandato' : 'mandato')}</span>
     <div><span class="big">${presenceRecord.presente}/${presenceRecord.dias}</span> <span class="muted">dias${averagePresence === null ? '' : ` · média dos registros válidos ${Math.round(averagePresence * 100)}%`}</span></div>
     ${attendanceBar(presenceRecord)}
     <div class="legend"><span><i style="background:var(--accent)"></i>Presente ${presenceRecord.presente}</span><span><i style="background:var(--muted);opacity:.55"></i>Justificada ${presenceRecord.justificadas}</span><span><i style="background:var(--warn)"></i>Falta ${presenceRecord.falta}</span></div>
     ${presenceRecord.motivos?.length ? `<p class="note">Justificativas: ${presenceRecord.motivos.map(([reason, count]) => `${esc(reason.toLowerCase())} (${count})`).join(', ')}.</p>` : ''}
     <button type="button" class="more" data-go="attendance">Ver a presença de todos(as)</button>
-  </section>` : `<section class="card"><span class="k">Presença nas sessões de votação · 2026</span><p class="muted">Sem registro importado para este perfil. Ausência de dado não significa zero presença.</p></section>`}
+  </section>` : `<section class="card"><span class="k">Presença nas sessões de votação · mandato</span><p class="muted">Sem registro importado para este perfil. Ausência de dado não significa zero presença.</p></section>`}
   <section class="card"><span class="k">Votações selecionadas do Placar · ${voteCount}</span>
     ${voteCount ? `<div class="votes">${votes.map(({ vote, recordedVote }) => {
       const voteLabel = recordedVote == null ? 'Sem registro importado' : vote.secreta ? 'Presença registrada · voto secreto' : String(recordedVote).toLowerCase();
@@ -245,7 +247,8 @@ function comparisonView() {
 function comparisonShareCard([a, b]) {
   const name = f => citizenName(f.pessoa.name);
   const money = value => value == null ? 'Sem dados' : formatCitizenAmount(value);
-  const vsAverage = f => f.total != null && f.media ? `${f.total >= f.media ? '+' : ''}${Math.round((f.total / f.media - 1) * 100)}%` : 'Sem dados';
+  const vsAverage = f => f.mediaMensal != null && f.media ? `${f.mediaMensal >= f.media ? '+' : ''}${Math.round((f.mediaMensal / f.media - 1) * 100)}%` : 'Sem dados';
+  const quotaNote = f => typeof citizenQuotaPeriod === 'function' ? citizenQuotaPeriod(f.periodo?.inicio, f.periodo?.fim) : '';
   const chamber = f => String(f.pessoa.id).split(':')[0];
   const presence = f => {
     if (chamber(f) === 'senado') { const record = senateRegisteredPresence(f.pessoa.id); return record ? `${record.presente} sessões` : 'Sem dados'; }
@@ -258,7 +261,7 @@ function comparisonShareCard([a, b]) {
     rows.push({ label: `Custo médio do mandato por mês · ${PROFILE_COST_RANGE}`, values: costs.map(cost => profileCostMoney(cost.monthlyAverageCents)),
       notes: costs.map(cost => profileCostMonthList(cost.usedMonths)) });
   }
-  rows.push({ label: 'Cota gasta em 2026', values: [money(a.total), money(b.total)] });
+  rows.push({ label: 'Cota parlamentar por mês', values: [money(a.mediaMensal), money(b.mediaMensal)], notes: [quotaNote(a), quotaNote(b)] });
   rows.push({ label: 'Cota comparada à média do cargo', values: [vsAverage(a), vsAverage(b)] });
   rows.push({ label: 'Alertas de gastos incomuns', values: [a, b].map(f => f.total == null ? 'Sem dados' : String(f.alertas.length)) });
   rows.push({ label: chamber(a) === chamber(b) && chamber(a) === 'senado' ? 'Presença registrada no Senado' : chamber(a) === chamber(b) ? 'Presença no Plenário · Câmara' : 'Presença (casas com métodos diferentes)',
@@ -370,14 +373,15 @@ function comparisonVotes(a, b) {
     : votes };
 }
 function comparisonTable([a, b]) {
-  const personA = a.pessoa, personB = b.pessoa, maxTotal = Math.max(a.total, b.total, 1);
+  const personA = a.pessoa, personB = b.pessoa, maxMonthly = Math.max(a.mediaMensal || 0, b.mediaMensal || 0, 1);
   const profileA = comparisonProfile(a), profileB = comparisonProfile(b);
   const firstName = person => esc(citizenName(person.name).split(' ')[0]);
   const sideHtml = (valueA, valueB, format, higherIsWorse = true) => {
     const winner = valueA == null || valueB == null || valueA === valueB || valueA < 0 || valueB < 0 ? '' : (valueA > valueB) === higherIsWorse ? 'b' : 'a';
     return `<div class="cmp-v ${winner === 'a' ? 'best' : ''}">${valueA == null ? 'Sem dados' : format(valueA)}</div><div class="cmp-v ${winner === 'b' ? 'best' : ''}">${valueB == null ? 'Sem dados' : format(valueB)}</div>`;
   };
-  const vsAverage = profile => profile.total != null && profile.media ? Math.round((profile.total / profile.media - 1) * 100) : null;
+  const vsAverage = profile => profile.mediaMensal != null && profile.media ? Math.round((profile.mediaMensal / profile.media - 1) * 100) : null;
+  const quotaPeriod = profile => typeof citizenQuotaPeriod === 'function' ? citizenQuotaPeriod(profile.periodo?.inicio, profile.periodo?.fim) : '';
   if ([a, b].some(f => String(f.pessoa.id).startsWith('senado:')) && typeof profileSenateEnsure === 'function') profileSenateEnsure();
   const pA = attendanceForPerson(a.pessoa.id), pB = attendanceForPerson(b.pessoa.id);
   const topCategory = f => f.categorias[0] ? `${esc(f.categorias[0].nome)} <small>${percent(f.categorias[0].valor, f.total)}%</small>` : '—';
@@ -401,8 +405,9 @@ function comparisonTable([a, b]) {
   }).join('');
   return `<section class="card cmp wide">
     <div class="cmp-head"><span></span>${[a, b].map(profile => `<button type="button" class="cmp-who" data-politician="${esc(profile.pessoa.id)}">${citizenAvatar(profile.pessoa, 56)}<b>${esc(citizenName(profile.pessoa.name))}</b><small>${esc([ROLE_LABELS[profile.pessoa.role], profile.pessoa.party, profile.pessoa.uf].filter(Boolean).join(' · '))}</small></button>`).join('')}</div>
-    <div class="cmp-row"><span class="cmp-l">Cota gasta em 2026</span>${sideHtml(a.total, b.total, value => `<b class="mono">${formatCitizenAmount(value)}</b>`)}</div>
-    <div class="cmp-row cmp-bars"><span class="cmp-l"></span><div><i style="width:${a.total == null ? 0 : a.total / maxTotal * 100}%"></i></div><div><i style="width:${b.total == null ? 0 : b.total / maxTotal * 100}%"></i></div></div>
+    <div class="cmp-row"><span class="cmp-l">Cota parlamentar por mês</span>${sideHtml(a.mediaMensal, b.mediaMensal, value => `<b class="mono">${formatCitizenAmount(value)}</b>`)}</div>
+    <div class="cmp-row cmp-bars"><span class="cmp-l"></span><div><i style="width:${a.mediaMensal == null ? 0 : a.mediaMensal / maxMonthly * 100}%"></i></div><div><i style="width:${b.mediaMensal == null ? 0 : b.mediaMensal / maxMonthly * 100}%"></i></div></div>
+    <div class="cmp-row"><span class="cmp-l"></span><div class="cmp-v muted cmp-source">${esc(quotaPeriod(a))}</div><div class="cmp-v muted cmp-source">${esc(quotaPeriod(b))}</div></div>
     <div class="cmp-row"><span class="cmp-l">Comparado à média do cargo</span>${sideHtml(vsAverage(a), vsAverage(b), value => `<b>${value > 0 ? '+' : ''}${value}%</b>`)}</div>
     <div class="cmp-row"><span class="cmp-l">Alertas</span>${sideHtml(a.total == null ? null : a.alertas.length, b.total == null ? null : b.alertas.length, value => `<b>${value}</b>`)}</div>
     ${comparisonAttendanceRows(a, b, pA, pB)}

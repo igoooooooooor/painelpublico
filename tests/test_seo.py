@@ -61,7 +61,7 @@ class SeoPagesTests(unittest.TestCase):
         self.assertIn(f'<link rel="canonical" href="{self.base}/deputado/1-ana-avila">', page)
         self.assertIn('"@type": "Person"', page)
         self.assertIn('<div class="app" id="app"><article class="seo-summary"><h1>Ana Ávila</h1>', page)
-        self.assertIn('R$ 1.234 em reembolsos da cota em 2026', page)
+        self.assertIn('R$ 1.234 por mês em reembolsos da cota (mar/2026, nos meses com notas)', page)
         self.assertIn('<script>app()</script>', page)
 
     def test_profile_without_name_redirects_and_unknown_or_wrong_house_is_not_found(self):

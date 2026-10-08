@@ -218,13 +218,21 @@ function loadPoliticians(more) {
   citizenGet(qs).then(d => { if (p.key !== key) return; p.items = p.items.concat(d.itens); p.total = d.total; p.averageSpend = d.medias; p.coverage = d.cobertura; p.loading = false; if (['politicians'].includes(state.view)) renderPoliticianList(); })
     .catch(e => { if (p.key !== key) return; p.loading = false; p.error = citizenErrorMessage(e); if (['politicians'].includes(state.view)) renderPoliticianList(); });
 }
+/* "fev/2023–set/2026" a partir de "AAAA-MM"; a cota da Câmara cobre o mandato e a do Senado, 2026. */
+function citizenQuotaPeriod(start, end) {
+  const label = value => typeof value === 'string' && /^\d{4}-\d{2}$/.test(value)
+    ? `${['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][Number(value.slice(5)) - 1]}/${value.slice(0, 4)}` : null;
+  const from = label(start), to = label(end);
+  return from && to ? (from === to ? from : `${from}–${to}`) : '';
+}
 function politicianRow(person, max) {
-  const hasExpenseData = person.hasExpenseData === undefined ? person.gasto != null : Boolean(person.hasExpenseData);
+  const hasExpenseData = person.hasExpenseData === undefined ? person.gastoMensal != null : Boolean(person.hasExpenseData);
   const averageSpend = citizenState.politicians.averageSpend?.[person.role]?.media;
-  const aboveAverage = hasExpenseData && averageSpend && person.gasto > averageSpend * 1.25;
+  const monthly = person.gastoMensal;
+  const aboveAverage = hasExpenseData && averageSpend && monthly > averageSpend * 1.25;
   const roleLabel = person.role === 'senador' ? 'Senador(a)' : 'Deputado(a)';
-  const barWidth = hasExpenseData && person.gasto > 0 ? Math.max(2, person.gasto / max * 100) : 0;
-  const spendLabel = hasExpenseData ? (person.gasto === 0 ? 'R$ 0' : formatCitizenAmount(person.gasto)) : 'Sem dados';
+  const barWidth = hasExpenseData && monthly > 0 ? Math.max(2, monthly / max * 100) : 0;
+  const spendLabel = hasExpenseData && Number.isFinite(monthly) ? (monthly === 0 ? 'R$ 0' : formatCitizenAmount(monthly)) : 'Sem dados';
   return `<button type="button" class="citizen-row" data-politician="${esc(person.id)}">${citizenAvatar(person, 48)}<span class="citizen-rowtxt"><b>${esc(citizenName(person.name))}</b><small>${[roleLabel, person.party, person.uf].filter(Boolean).map(esc).join(' · ')}</small>
       <span class="citizen-rowbar"><i style="width:${barWidth}%" class="${aboveAverage ? 'hi' : ''}"></i></span></span>
     <span class="citizen-rowval"><b class="mono">${spendLabel}</b>${person.alertas ? `<span class="citizen-chip high citizen-mini"><i></i>${person.alertas} ${person.alertas === 1 ? 'alerta' : 'alertas'}</span>` : `<small>${hasExpenseData ? aboveAverage ? 'acima da média' : 'na cota' : 'sem despesa observada'}</small>`}</span></button>`;
@@ -251,9 +259,9 @@ function politicianListHTML() {
   if (p.error) return `<section class="card"><p>Não deu para carregar a lista agora.</p><p class="muted">${esc(p.error)}</p><button type="button" class="more" data-politician-retry>Tentar de novo</button></section>`;
   if (!p.items.length && p.loading) return skel('lista', 8);
   if (!p.items.length) return `<section class="card"><p>Ninguém encontrado com “${esc(p.query)}”.</p><p class="muted">A busca mostra só deputados(as) federais e senadores(as) com mandato em curso. Eleitos(as) em 2026 aparecem a partir da posse, em 1º de fevereiro de 2027; vereadores(as), prefeitos(as) e governadores(as) não fazem parte da busca.</p><p class="muted">Tente só o sobrenome, a sigla do partido (PT, PL…) ou do estado (SP, MG…).</p></section>`;
-  const observedSpending = p.items.filter(person => person.gasto != null).map(person => person.gasto);
+  const observedSpending = p.items.filter(person => person.gastoMensal != null).map(person => person.gastoMensal);
   const max = Math.max(1, ...observedSpending, ...Object.values(p.averageSpend || {}).map(item => (item.media || 0) * 1.5));
-  return `<span class="muted" role="status">${p.total} ${p.total === 1 ? 'pessoa' : 'pessoas'} · valor gasto da cota em 2026</span><section class="card citizen-list">${p.items.map(x => politicianRow(x, max)).join('')}</section>
+  return `<span class="muted" role="status">${p.total} ${p.total === 1 ? 'pessoa' : 'pessoas'} · gasto médio da cota por mês</span><section class="card citizen-list">${p.items.map(x => politicianRow(x, max)).join('')}</section>
     ${p.loading ? skel('lista', 3) : p.items.length < p.total ? '<button type="button" class="opt citizen-more" data-politician-more>Mostrar mais</button>' : ''}`;
 }
 function renderPoliticianList() {
@@ -266,7 +274,7 @@ function renderPoliticianList() {
 }
 function politiciansView() {
   const p = citizenState.politicians; loadPoliticians(false);
-  return `${pageHead('Deputados(as) e senadores(as)', 'Políticos', 'Busque qualquer um(a) e veja quanto gastou da cota em 2026, com os alertas.')}
+  return `${pageHead('Deputados(as) e senadores(as)', 'Políticos', 'Busque qualquer um(a) e veja quanto gasta da cota por mês, com os alertas.')}
     <div id="citizen-politician-summary" class="citizen-roster-summary" role="status">${politicianCoverageHTML(p.coverage)}</div>
     <label class="search" for="citizen-search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="citizen-search" type="search" placeholder="Nome, partido ou estado" value="${esc(p.query)}" autocomplete="off"></label>
     <div class="citizen-filters">
@@ -276,7 +284,7 @@ function politiciansView() {
     <div class="citizen-actions"><button type="button" class="fchip" data-cmp-start="">Comparar dois(duas) lado a lado →</button><button type="button" class="fchip" data-go="parties">Comparar partidos →</button><button type="button" class="fchip" data-go="attendance">Presença dos deputados →</button></div>
     <div id="citizen-politician-list" class="citizen-stack" aria-live="polite">${politicianListHTML()}</div>
     <div id="citizen-politician-notes">${politicianCoverageNotesHTML(p.coverage)}</div>
-    <span class="src">Valor: quanto cada um(a) gastou da cota em 2026, pelas notas publicadas. Não é salário. A barra roxa mais forte indica gasto acima da média.</span>`;
+    <span class="src">Valor: média mensal da cota pelas notas publicadas, nos meses com notas. Deputados(as): mandato atual, desde fev/2023. Senadores(as): 2026. Valores da época, sem correção pela inflação. Não é salário. A barra roxa mais forte indica gasto acima da média.</span>`;
 }
 
 /* ---------- Ficha leve (qualquer deputado ou senador) ---------- */
@@ -287,19 +295,21 @@ function loadProfile(id) {
     .catch(e => { if (citizenState.profileId !== id) return; citizenState.profileLoading = false; citizenState.profileError = citizenErrorMessage(e); if (state.view === 'profile') rerender(); });
 }
 function profileExpenseAnswer(profileRecord, person, hasExpenseData) {
-  const averageSpend = profileRecord.media || 0, difference = averageSpend ? profileRecord.total / averageSpend - 1 : 0;
-  const totalLabel = profileRecord.total === 0 ? '0' : Math.round(profileRecord.total / 1e3).toLocaleString('pt-BR') + ' mil';
+  const monthly = profileRecord.mediaMensal ?? null, period = profileRecord.periodo || {};
+  const averageSpend = profileRecord.media || 0, difference = averageSpend && monthly != null ? monthly / averageSpend - 1 : 0;
+  const totalLabel = monthly === 0 ? '0' : Math.round((monthly || 0) / 1e3).toLocaleString('pt-BR') + ' mil';
   const verdict = Math.abs(difference) < 0.1 ? 'Parecido com a média' : `${Math.round(Math.abs(difference) * 100)}% ${difference > 0 ? 'acima' : 'abaixo'} da média`;
   const salaryNote = person.role === 'senador'
     ? `<p class="citizen-salary">Salário efetivamente pago não disponível nesta base de forma individual. Subsídio bruto de referência do cargo: ${brl(PROFILE_SALARY[person.role].amount)}/mês.</p>`
     : `<p class="citizen-salary">Salário à parte: ${brl(PROFILE_SALARY[person.role].amount)}/mês</p>`;
   return `<section class="card hero citizen-answer" data-profile-answer="expenses">
-    <h2 class="h">Quanto custa?</h2><span class="k">Cota parlamentar · 2026</span>
-    <div class="huge">${hasExpenseData ? `<small>R$</small>${totalLabel}` : 'Sem dados'}</div>
+    <h2 class="h">Quanto custa?</h2><span class="k">Cota parlamentar · média por mês</span>
+    <div class="huge">${hasExpenseData && monthly != null ? `<small>R$</small>${totalLabel}<small>/mês</small>` : 'Sem dados'}</div>
+    ${hasExpenseData && monthly != null ? `<p class="muted">${esc(citizenQuotaPeriod(period.inicio, period.fim))}, ${period.meses} ${period.meses === 1 ? 'mês' : 'meses'} com notas · total ${formatCitizenAmount(profileRecord.total)}</p>` : ''}
     ${salaryNote}
-    ${hasExpenseData ? (averageSpend ? `<div class="citizen-vs">
-      <div><span>${esc(citizenName(person.name).split(' ')[0])}</span><b class="mono">${profileRecord.total === 0 ? 'R$ 0' : formatCitizenAmount(profileRecord.total)}</b></div><div class="citizen-vsbar"><i style="width:${Math.min(100, profileRecord.total / Math.max(profileRecord.total, averageSpend) * 100)}%"></i></div>
-      <div><span>Média dos(as) ${ROLE_LABELS_PLURAL[person.role] || 'colegas'}</span><b class="mono">${formatCitizenAmount(averageSpend)}</b></div><div class="citizen-vsbar avg"><i style="width:${Math.min(100, averageSpend / Math.max(profileRecord.total, averageSpend) * 100)}%"></i></div>
+    ${hasExpenseData && monthly != null ? (averageSpend ? `<div class="citizen-vs">
+      <div><span>${esc(citizenName(person.name).split(' ')[0])}</span><b class="mono">${monthly === 0 ? 'R$ 0' : formatCitizenAmount(monthly)}</b></div><div class="citizen-vsbar"><i style="width:${Math.min(100, monthly / Math.max(monthly, averageSpend) * 100)}%"></i></div>
+      <div><span>Média dos(as) ${ROLE_LABELS_PLURAL[person.role] || 'colegas'}</span><b class="mono">${formatCitizenAmount(averageSpend)}</b></div><div class="citizen-vsbar avg"><i style="width:${Math.min(100, averageSpend / Math.max(monthly, averageSpend) * 100)}%"></i></div>
     </div><span class="fchip citizen-verdict">${verdict}</span>` : '<p class="muted">Média do cargo indisponível neste recorte.</p>')
     : '<p class="muted">Nenhuma despesa de reembolso foi observada para este perfil no recorte importado. Ausência não significa gasto zero.</p>'}
   </section>`;
@@ -318,7 +328,8 @@ function profileWorkAnswer(shared) {
   const presenceOnlyCount = knownVotes.filter(record => ['Presente', 'Presidiu'].includes(record.recordedVote)).length;
   const identifiedVotes = knownVotes.filter(record => senate ? ['Sim', 'Não', 'Abstenção', 'Obstrução', 'Não votou'].includes(record.recordedVote) : !['Presente', 'Presidiu'].includes(record.recordedVote));
   const recordedVoteCount = identifiedVotes.filter(record => record.recordedVote !== 'Não votou').length;
-  return `${head}<span class="k">Presença no Plenário · 2026</span>
+  const presencePeriod = !senate && presence ? citizenQuotaPeriod(presence.inicio, presence.fim) : '';
+  return `${head}<span class="k">Presença no Plenário · ${senate ? '2026' : presencePeriod || 'mandato'}</span>
     ${presence ? `<div class="huge">${presencePercent}<small>%</small></div>
       <p>${presence.presente} de ${presence.dias} ${unit}${averagePresence !== null ? ` · média ${senate ? 'do' : 'da'} ${house}: ${averagePresence}%` : ''}</p>
       ${attendanceBar(presence)}
@@ -374,17 +385,19 @@ function profileExpenseDetails(f, hasExpenseData) {
   if (!hasExpenseData) return '<p class="muted">Não há lançamentos observados para calcular total, média, série mensal ou alertas.</p>';
   const maxMonth = Math.max(1, ...f.meses.map(month => month.valor));
   const categoryTotal = f.categorias.reduce((sum, category) => sum + category.valor, 0) || 1;
-  const monthNames = ['', 'jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-  const observedMonths = f.meses.filter(month => Number.isInteger(month.month) && month.month >= 1 && month.month <= 12)
-    .map(month => monthNames[month.month]);
+  const period = f.periodo || {}, periodLabel = citizenQuotaPeriod(period.inicio, period.fim);
   const complement = f.complementoMoradia;
-  return `<section class="citizen-detail-part citizen-expense-original"><h3 class="k">Cota parlamentar · total de 2026</h3>
-    <p><b>Total da cota em 2026:</b> ${brl(f.total, 2)}, somando todas as notas publicadas até agora.</p>
-    ${observedMonths.length ? `<p class="muted">Meses com notas: ${esc([...new Set(observedMonths)].join(', '))}.</p>` : ''}
+  /* Um gráfico por ano (o mais recente primeiro), para caber no celular. */
+  const years = [...new Set(f.meses.map(month => month.year))].sort((a, b) => b - a);
+  const isPeak = month => f.alertas.some(alert => alert.tipo === 'pico' && alert.periodo === `${month.year}-${String(month.month).padStart(2, '0')}`);
+  const yearChart = year => `<p class="k">${year}</p><div class="citizen-months">${f.meses.filter(month => month.year === year).map(month => `<div><small>${Math.round(month.valor / 1e3)}k</small><b class="mt"><i style="height:${month.valor > 0 ? Math.max(2, month.valor / maxMonth * 100) : 0}%" class="${isPeak(month) ? 'hot' : ''}"></i></b><span>${SHORT_MONTHS[month.month]}</span></div>`).join('')}</div>`;
+  return `<section class="citizen-detail-part citizen-expense-original"><h3 class="k">Cota parlamentar · ${esc(periodLabel || 'total')}</h3>
+    <p><b>Total da cota${periodLabel ? ` de ${esc(periodLabel)}` : ''}:</b> ${brl(f.total, 2)}, somando todas as notas publicadas até agora.${Number.isFinite(f.mediaMensal) ? ` Média de ${brl(f.mediaMensal, 2)} por mês nos ${period.meses} meses com notas.` : ''}</p>
+    <p class="muted">${f.pessoa?.role === 'deputado' ? 'Mandato atual, desde fev/2023.' : 'Ano de 2026.'} Valores da época, sem correção pela inflação.</p>
     ${complement && Number.isFinite(complement.valor) ? `<p class="muted">À parte: complemento do auxílio-moradia lançado na cota, ${brl(complement.valor, 2)} em ${complement.notas} ${complement.notas === 1 ? 'nota' : 'notas'}. A Câmara publica esse valor como negativo; ele não reduz o total acima.</p>` : ''}
   </section>
   <section class="citizen-detail-part"><h3 class="k">Mês a mês</h3>
-    <div class="citizen-months">${f.meses.map(month => `<div><small>${Math.round(month.valor / 1e3)}k</small><b class="mt"><i style="height:${month.valor > 0 ? Math.max(2, month.valor / maxMonth * 100) : 0}%" class="${f.alertas.some(alert => alert.tipo === 'pico' && alert.mes === month.month) ? 'hot' : ''}"></i></b><span>${SHORT_MONTHS[month.month]}</span></div>`).join('')}</div>
+    ${years.map(yearChart).join('')}
     <p class="muted">Os últimos meses ainda podem crescer: as notas são publicadas com atraso.</p>
   </section>
   <section class="citizen-detail-part"><h3 class="k">Com o que gastou</h3>
@@ -393,7 +406,7 @@ function profileExpenseDetails(f, hasExpenseData) {
   <section class="citizen-detail-part"><h3 class="k">Para quem foi o dinheiro</h3>
     ${f.fornecedores.map(x => `<div class="citizen-bar"><div><span>${esc(citizenName(x.name))}</span><b class="mono">${formatCitizenAmount(x.valor)}</b></div><div class="bar"><i style="width:${f.total ? x.valor / f.total * 100 : 0}%;background:${f.total && x.valor / f.total >= 0.5 ? 'var(--warn)' : 'var(--accent)'}"></i></div><small class="muted">${f.total ? Math.round(x.valor / f.total * 100) : 0}% do total · ${x.notas} ${x.notas === 1 ? 'nota' : 'notas'}</small></div>`).join('')}
   </section>
-  <section class="citizen-detail-part"><h3 class="k">Maiores notas do ano</h3>
+  <section class="citizen-detail-part"><h3 class="k">Maiores notas${periodLabel ? ` · ${esc(periodLabel)}` : ''}</h3>
     ${f.maiores.map(m => `<${m.documentUrl ? `a href="${esc(m.documentUrl)}" target="_blank" rel="noopener"` : 'div'} class="item"><span class="mono muted" style="width:52px">${SHORT_MONTHS[m.month]}/${String(m.year).slice(2)}</span><span class="g"><span>${esc(citizenName(m.fornecedor || 'Fornecedor não informado'))}</span><span class="muted">${esc(m.categoria)}${m.documentUrl ? ' · ver nota ↗' : ''}</span></span><span class="mono" style="font-weight:700">${brl(m.valor)}</span></${m.documentUrl ? 'a' : 'div'}>`).join('')}
   </section>`;
 }
@@ -403,10 +416,11 @@ function profileShareCard(f, shared, alerts, hasExpenseData) {
   const average = person.role === 'deputado' && cost ? profileCostMoney(cost.monthlyAverageCents) : null;
   const costRow = average !== null
     ? { label: 'Custa em média por mês', values: [average], notes: [`${profileCostMonthList(cost.usedMonths)} · salário, auxílios, cota e gabinete`] }
-    : { label: 'Cota parlamentar em 2026', values: [hasExpenseData ? formatCitizenAmount(f.total) : 'Sem dados'], notes: [hasExpenseData ? 'reembolsos publicados até agora' : 'ausência de dado não é zero'] };
+    : { label: 'Cota parlamentar por mês', values: [hasExpenseData && Number.isFinite(f.mediaMensal) ? formatCitizenAmount(f.mediaMensal) : 'Sem dados'],
+      notes: [hasExpenseData ? `média de ${citizenQuotaPeriod(f.periodo?.inicio, f.periodo?.fim)}` : 'ausência de dado não é zero'] };
   const presence = shared.presence, registered = senate ? shared.registeredPresence : null;
   const workRow = presence
-    ? { label: 'Presença no Plenário em 2026', values: [`${Math.round(presence.presente / presence.dias * 100)}%`], notes: [`${presence.presente} de ${presence.dias} ${senate ? 'sessões' : 'dias'}`] }
+    ? { label: senate ? 'Presença no Plenário em 2026' : `Presença no Plenário · ${citizenQuotaPeriod(presence.inicio, presence.fim) || 'mandato'}`, values: [`${Math.round(presence.presente / presence.dias * 100)}%`], notes: [`${presence.presente} de ${presence.dias} ${senate ? 'sessões' : 'dias'}`] }
     : registered
       ? { label: 'Presença registrada no Senado em 2026', values: [`${registered.presente} sessões`], notes: ['faltas e justificativas não apuradas'] }
       : { label: 'Presença no Plenário em 2026', values: ['Sem registro'], notes: ['ausência de dado não é zero'] };
@@ -436,14 +450,15 @@ function profileView() {
   const presenceUrl = isChamberPerson && /^\d+$/.test(personNumber || '') ? `https://www.camara.leg.br/deputados/${personNumber}/presenca-plenario/2026` : null;
   const sourcesHtml = `<p>Cota é reembolso de gastos com o trabalho: escritório, divulgação, carro e viagens.</p>
     <p class="src">Fonte: notas da cota publicadas ${isChamberPerson ? 'pela Câmara (sem as passagens aéreas, que ficam fora do arquivo aberto)' : 'pelo Senado'}. Retrato de ${f.snapshotAt ? esc(f.snapshotAt.slice(0, 10)) : 'data não informada'}.</p>
-    ${isChamberPerson ? `<p class="muted">Presença em sessões deliberativas de 2026. Média da Câmara: média das proporções individuais entre registros válidos. O selo compara os percentuais arredondados. Os dias observados podem variar entre mandatos.</p>
+    ${isChamberPerson ? `<p class="muted">Presença em sessões deliberativas do mandato atual, desde fev/2023. Média da Câmara: média das proporções individuais entre registros válidos. O selo compara os percentuais arredondados. Os dias observados podem variar entre mandatos.</p>
     ${presenceUrl ? `<a class="src" href="${esc(presenceUrl)}" target="_blank" rel="noopener">Fonte da presença no Plenário ↗</a>` : ''}
     <p class="muted">Os votos cobrem apenas a seleção do Placar em 2026. Cada votação abre seu resumo e fontes oficiais.</p>` : ''}
     ${!isChamberPerson ? ['presenca', 'votacoes'].map(key => { const source = profileSenateSource(key); return source ? `<p><b>${key === 'presenca' ? 'Presença' : 'Votações'} do Senado</b></p>${profileSource(source)}<p class="muted">${esc(source.detail || '')}</p>` : ''; }).join('') : ''}
     ${!isChamberPerson ? profileAttendanceSources(shared.id) : ''}
     <p class="muted">Alertas indicam registros para conferir, não conclusões de irregularidade. “Parecido com a média” mantém a faixa de diferença inferior a 10% na cota.</p>
     ${citizenSourceUrl(person) ? `<a class="fchip" href="${esc(citizenSourceUrl(person))}" target="_blank" rel="noopener">Página oficial ↗</a>` : ''}
-    ${hasExpenseData ? `<a class="fchip" href="${esc('/api/c/gastos.csv?id=' + encodeURIComponent(person.id))}" download>Baixar todas as notas (CSV)</a>` : ''}`;
+    ${hasExpenseData ? `<a class="fchip" href="${esc('/api/c/gastos.csv?id=' + encodeURIComponent(person.id))}" download>Baixar as notas de 2026 (CSV)</a>` : ''}
+    ${hasExpenseData && isChamberPerson ? '<p class="muted">O arquivo traz as notas de 2026, uma por linha. De 2023 a 2025, a ficha mostra totais por mês, categoria e fornecedor; as notas originais estão nos arquivos anuais da Câmara.</p>' : ''}`;
   return `${back}
     <div class="citizen-profile-head"><div class="profile">${citizenAvatar(person, 64)}<div><h1 class="n">${esc(citizenName(person.name))}</h1><span class="muted">${citizenRoleDescription(person)}</span>${election?.summary ? `<span class="pill citizen-election" data-tone="${esc(election.tone)}"><i></i>${esc(election.summary)}</span>` : ''}</div></div>
       <button type="button" class="fchip" data-cmp-start="${esc(shared.id)}">Comparar com outro(a) →</button></div>

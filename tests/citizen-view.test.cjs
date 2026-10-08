@@ -125,7 +125,7 @@ test('the roster and profile distinguish missing reimbursements from an observed
   }, 100);
   const zero = api.politicianRow({
     id: 'camara:zero', name: 'Pessoa com zero', role: 'deputado',
-    gasto: 0, hasExpenseData: true, alertas: 0,
+    gasto: 0, gastoMensal: 0, hasExpenseData: true, alertas: 0,
   }, 100);
 
   assert.match(missing, /Sem dados/);
@@ -227,7 +227,7 @@ test('profiles with observed expenses still receive shared sections and separate
   api.citizenState.profileId = state.politicianId;
   api.citizenState.profile = {
     pessoa: { id: state.politicianId, name: 'Perfil com despesas', role: 'deputado', party: 'PV', uf: 'RJ' },
-    total: 80000, media: 70000, hasExpenseData: true,
+    total: 80000, mediaMensal: 80000, periodo: { inicio: '2026-01', fim: '2026-01', meses: 1 }, media: 70000, hasExpenseData: true,
     meses: [], categorias: [], fornecedores: [], maiores: [], alertas: [],
   };
 
@@ -237,13 +237,13 @@ test('profiles with observed expenses still receive shared sections and separate
   assert.match(profile, /Cota é reembolso/);
   assert.match(profile, /subsídio bruto mensal de referência do cargo/);
   assert.doesNotMatch(profile, /Não é o salário, que é de/);
-  assert.match(profile, /<a class="fchip" href="\/api\/c\/gastos\.csv\?id=camara%3A55" download>Baixar todas as notas \(CSV\)<\/a>/);
+  assert.match(profile, /<a class="fchip" href="\/api\/c\/gastos\.csv\?id=camara%3A55" download>Baixar as notas de 2026 \(CSV\)<\/a>/);
 });
 
 test('profile starts with three ordered answers and keeps the complementary details', () => {
   const { api, state } = makeView();
   setProfileFixture(api, state, 'camara:55', {
-    total: 80000, hasExpenseData: true,
+    total: 80000, mediaMensal: 80000, periodo: { inicio: '2026-01', fim: '2026-01', meses: 1 }, hasExpenseData: true,
     meses: [], categorias: [], fornecedores: [], maiores: [],
     alertas: [{ nivel: 'medio', tipo: 'valor', titulo: 'Alerta preservado', frase: 'Conferir registro.' }],
   });
@@ -262,7 +262,7 @@ test('profile starts with three ordered answers and keeps the complementary deta
 test('profile without alerts explains which rules were checked and keeps neutral contact wording', () => {
   const { api, state } = makeView();
   setProfileFixture(api, state, 'camara:56', {
-    total: 80000, hasExpenseData: true, meses: [], categorias: [], fornecedores: [], maiores: [], alertas: [],
+    total: 80000, mediaMensal: 80000, periodo: { inicio: '2026-01', fim: '2026-01', meses: 1 }, hasExpenseData: true, meses: [], categorias: [], fornecedores: [], maiores: [], alertas: [],
   });
   const html = api.profileView();
   const answer = html.slice(html.indexOf('data-profile-answer="alerts"'));
@@ -276,13 +276,13 @@ test('profile without alerts explains which rules were checked and keeps neutral
 test('profile offers sharing with the same three answers on the card', () => {
   const { api, state, context } = makeView();
   setProfileFixture(api, state, 'camara:57', {
-    total: 80000, hasExpenseData: true, meses: [], categorias: [], fornecedores: [], maiores: [],
+    total: 80000, mediaMensal: 80000, periodo: { inicio: '2026-01', fim: '2026-01', meses: 1 }, hasExpenseData: true, meses: [], categorias: [], fornecedores: [], maiores: [],
     alertas: [{ nivel: 'medio', tipo: 'valor', titulo: 'A', frase: 'B' }], snapshotAt: '2026-10-07T12:00:00Z',
   });
   const html = api.profileView();
   assert.match(html, /data-share="image"/);
   const card = vm.runInContext('SHARE_STATE.card', context);
-  assert.deepEqual(Array.from(card.rows, row => row.label), ['Cota parlamentar em 2026', 'Presença no Plenário em 2026', 'Gastos incomuns na cota']);
+  assert.deepEqual(Array.from(card.rows, row => row.label), ['Cota parlamentar por mês', 'Presença no Plenário em 2026', 'Gastos incomuns na cota']);
   assert.equal(card.rows[2].values[0], '1 alerta');
   assert.match(card.footnote, /Retrato de 2026-10-07/);
 });
@@ -297,13 +297,13 @@ test('profile distinguishes missing cota from an observed zero and treats a diff
   assert.match(missingAnswer, /Salário à parte:.*46\.366/);
   assert.doesNotMatch(missingAnswer, /R\$ 0/);
 
-  setProfileFixture(api, state, 'camara:55', { total: 0, hasExpenseData: true });
+  setProfileFixture(api, state, 'camara:55', { total: 0, mediaMensal: 0, periodo: { inicio: '2026-01', fim: '2026-01', meses: 1 }, hasExpenseData: true });
   const zero = api.profileView();
   const zeroAnswer = zero.match(/<section[^>]*data-profile-answer="expenses"[\s\S]*?<\/section>/)?.[0] || '';
   assert.match(zeroAnswer, /R\$ 0/);
   assert.doesNotMatch(zeroAnswer, /Sem dados/);
 
-  setProfileFixture(api, state, 'camara:55', { total: 109000, hasExpenseData: true, media: 100000 });
+  setProfileFixture(api, state, 'camara:55', { total: 109000, mediaMensal: 109000, periodo: { inicio: '2026-01', fim: '2026-01', meses: 1 }, hasExpenseData: true, media: 100000 });
   const nearAverage = api.profileView();
   assert.match(nearAverage, /<span class="fchip citizen-verdict">Parecido com a média<\/span>/);
 });
@@ -425,7 +425,7 @@ test('Senate registered attendance is a positive count without an inferred atten
 test('three-answer alert highlights only the strongest alert while details retain every alert in source order', () => {
   const { api, state } = makeView();
   setProfileFixture(api, state, 'camara:55', {
-    total: 120000, media: 100000, hasExpenseData: true,
+    total: 120000, mediaMensal: 120000, periodo: { inicio: '2026-01', fim: '2026-01', meses: 1 }, media: 100000, hasExpenseData: true,
     alertas: [
       { nivel: 'info', tipo: 'valor', titulo: 'Primeiro alerta informativo', frase: 'Informação inicial.' },
       { nivel: 'alto', tipo: 'valor', titulo: 'Primeiro alerta alto', frase: 'Maior gravidade, primeiro.' },

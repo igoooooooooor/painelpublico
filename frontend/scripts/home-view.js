@@ -27,11 +27,11 @@ function homeCostCard(data) {
   const salary = PROFILE_SALARY.deputado;
   return `<section class="card hero">
     <span class="k">Cota parlamentar por deputado(a)</span>
-    <div class="huge">${Number.isFinite(quota.media) ? `<small>R$</small>${mil(quota.media)} mil` : 'Sem dados'}</div>
-    <span class="muted">Média acumulada entre os(as) ${quota.comRegistros} deputados(as) com reembolsos observados, dos ${deputies.total} registros da lista. ${esc(homePeriod(quota.periodo))}.</span>
+    <div class="huge">${Number.isFinite(quota.media) ? `<small>R$</small>${mil(quota.media)} mil<small>/mês</small>` : 'Sem dados'}</div>
+    <span class="muted">Média mensal, nos meses com notas, entre os(as) ${quota.comRegistros} deputados(as) com reembolsos observados, dos ${deputies.total} registros da lista. Mandato atual: ${esc(homePeriod(quota.periodo))}. Valores da época.</span>
     <div>
       <div class="cost-row"><i style="background:var(--hero-fg)"></i><b>Salário de referência</b><span class="val">${brl(salary.amount, 2)}</span><p>Subsídio bruto mensal do cargo. O pagamento individual não foi importado.</p></div>
-      <div class="cost-row"><i style="background:var(--cat1)"></i><b>Cota parlamentar</b><span class="val">${Number.isFinite(quota.total) ? formatCitizenAmount(quota.total) : 'Sem dados'}</span><p>Total observado para os(as) deputados(as) da lista. Reembolsa despesas do trabalho; não é salário.</p></div>
+      <div class="cost-row"><i style="background:var(--cat1)"></i><b>Cota parlamentar</b><span class="val">${Number.isFinite(quota.total) ? formatCitizenAmount(quota.total) : 'Sem dados'}</span><p>Total observado no mandato para os(as) deputados(as) da lista. Reembolsa despesas do trabalho; não é salário.</p></div>
       <div class="cost-row"><i style="background:var(--cat3)"></i><b>Verba de gabinete</b><span class="val">Por perfil</span><p>Gasto da equipe, com os meses publicados na ficha. Os valores têm recortes próprios e não são somados ao subsídio.</p></div>
     </div>
     <button type="button" class="opt" data-go="politicians" style="justify-content:center">Ver quanto gasta cada um(a)</button>
@@ -44,7 +44,7 @@ function homePresenceCard() {
   const identity = { id: profileId(person.id), name: person.nome, party: person.partido, uf: person.uf, role: 'deputado' };
   return `<section class="card alarm"><span class="k">Menor presença proporcional no recorte</span>
     <button type="button" class="citizen-who" data-politician="${esc(identity.id)}">${citizenAvatar(identity, 52)}<span><b>${esc(person.nome)}</b><small>${esc(person.partido || '')} · ${esc(person.uf || '')}</small></span></button>
-    <div><span class="big">${person.presente} de ${person.dias}</span><span class="muted"> dias com sessão de votação em 2026</span></div>
+    <div><span class="big">${person.presente} de ${person.dias}</span><span class="muted"> dias com sessão de votação no mandato</span></div>
     ${attendanceBar(person)}
     <p class="muted">Comparação entre todos os ${rows.length} registros válidos de presença. Ausências justificadas: ${person.justificadas}; não justificadas: ${person.falta}. Os dias observados podem variar entre mandatos.</p>
     <div class="citizen-actions"><button type="button" class="fchip" data-politician="${esc(identity.id)}">Abrir a ficha</button><button type="button" class="fchip citizen-cta" data-go="attendance">Ver presença dos deputados →</button></div>
@@ -79,10 +79,10 @@ function homeCoverageCard(data) {
 }
 function homeTopCard(data) {
   if (!data) return '';
-  const ranking = data.topCamara, top = ranking.slice(0, 5), max = Math.max(1, ...top.map(p => p.gasto));
-  return `<section class="card"><span class="k">Maiores totais de cota entre os(as) deputados(as) da lista</span>
-    ${top.length ? `<div>${top.map((p, i) => `<button type="button" class="who" data-politician="${esc(p.id)}" style="${i ? '' : 'border-top:0'}">${citizenAvatar({ id: p.id, name: p.nome }, 40)}<span class="n">${i + 1}. ${esc(p.nome)}</span><span class="v">${mil(p.gasto)} mil</span><span class="s">${esc(p.partido || '')} · ${esc(p.uf || '')}</span><span class="b"><i class="grow-x" style="width:${Math.max(0, p.gasto) / max * 100}%"></i></span></button>`).join('')}</div>` : '<p>Sem reembolsos importados para ordenar.</p>'}
-    <span class="muted">Os cinco maiores valores entre ${ranking.length} deputados(as) com dados. ${esc(homePeriod(data.reembolsos.deputado.periodo))}. Totais não indicam irregularidade.</span>
+  const ranking = data.topCamara, top = ranking.slice(0, 5), max = Math.max(1, ...top.map(p => p.gastoMensal));
+  return `<section class="card"><span class="k">Maiores gastos médios de cota por mês entre os(as) deputados(as) da lista</span>
+    ${top.length ? `<div>${top.map((p, i) => `<button type="button" class="who" data-politician="${esc(p.id)}" style="${i ? '' : 'border-top:0'}">${citizenAvatar({ id: p.id, name: p.nome }, 40)}<span class="n">${i + 1}. ${esc(p.nome)}</span><span class="v">${mil(p.gastoMensal)} mil/mês</span><span class="s">${esc(p.partido || '')} · ${esc(p.uf || '')}</span><span class="b"><i class="grow-x" style="width:${Math.max(0, p.gastoMensal) / max * 100}%"></i></span></button>`).join('')}</div>` : '<p>Sem reembolsos importados para ordenar.</p>'}
+    <span class="muted">Os cinco maiores valores entre ${ranking.length} deputados(as) com dados. ${esc(homePeriod(data.reembolsos.deputado.periodo))}. Média nos meses com notas; valores altos não indicam irregularidade.</span>
     <button type="button" class="more" data-go="politicians">Consultar a lista completa</button>
   </section>`;
 }

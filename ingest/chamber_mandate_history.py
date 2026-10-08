@@ -2,8 +2,10 @@
 """Gabinete e presença da Câmara nos anos anteriores do mandato atual (desde fev/2023).
 
 Coleta manual e retomável. Lê só os deputados da lista atual em
-``data/imports/legislative.json`` e grava ``data/snapshots/chamber-mandate-history.json``.
-Não altera a ficha nem o SQLite. Mês sem dado fica ausente, nunca zero.
+``data/imports/legislative.json`` e grava ``data/snapshots/chamber-mandate-history.json``
+(gabinete 2023–2025 e presença desde fev/2023, inclusive o ano corrente) e
+``data/snapshots/presenca.json``, a presença do mandato usada pelas telas.
+Mês sem dado fica ausente, nunca zero.
 """
 from __future__ import annotations
 
@@ -28,6 +30,7 @@ from ingest.profile_office import load_office  # noqa: E402
 
 MANDATE_START = "2023-02"
 DEFAULT_YEARS = (2023, 2024, 2025)
+CURRENT_YEAR = 2026
 PRESENCE_URL = "https://www.camara.leg.br/deputados/{deputy_id}/presenca-plenario/{year}"
 USER_AGENT = "Mozilla/5.0 (PainelPublico)"
 DAY_PATTERN = re.compile(
@@ -44,6 +47,7 @@ def paths(root: Path = ROOT) -> dict[str, Path]:
         "presence": raw / "presence",
         "roster": root / "data" / "imports" / "legislative.json",
         "output": root / "data" / "snapshots" / "chamber-mandate-history.json",
+        "presence_output": root / "data" / "snapshots" / "presenca.json",
     }
 
 
@@ -109,6 +113,15 @@ def presence_months(days: list[list[str]]) -> dict[str, dict[str, int]]:
     return months
 
 
+def presence_reasons(days: list[list[str]]) -> dict[str, int]:
+    """Contagem dos motivos de dias sem presença nem ausência simples (ex.: justificativas)."""
+    reasons: dict[str, int] = {}
+    for date, status in days:
+        if date[:7] >= MANDATE_START and status not in ("Presença", "Ausência"):
+            reasons[status] = reasons.get(status, 0) + 1
+    return reasons
+
+
 def office_months(office: dict[str, Any], year: int) -> dict[str, float]:
     if office.get("status") == "unavailable":
         return {}
@@ -128,16 +141,23 @@ def build_snapshot(root: Path = ROOT, years=DEFAULT_YEARS, collect=False, refres
 
     def one(person: dict[str, str]) -> tuple[str, dict[str, Any]]:
         deputy_id = person["id"].removeprefix("camara:")
-        entry: dict[str, Any] = {"name": person["name"], "office": {}, "presence": {}, "sources": {}}
-        for year in years:
-            in_scope = collect and person in selected
-            office = load_office(deputy_id, where["office"], collect=in_scope, refresh=refresh, year=year)
-            entry["office"].update(office_months(office, year))
-            presence = load_presence(deputy_id, year, where["presence"], in_scope, refresh)
+        entry: dict[str, Any] = {"name": person["name"], "office": {}, "presence": {}, "presenceReasons": {},
+                                 "sources": {}}
+        in_scope = collect and person in selected
+        for year in (*years, CURRENT_YEAR):
+            # O gabinete de 2026 já vem da ficha; aqui só os anos anteriores.
+            office = (load_office(deputy_id, where["office"], collect=in_scope, refresh=refresh, year=year)
+                      if year != CURRENT_YEAR else {})
+            entry["office"].update(office_months(office, year) if office else {})
+            # O ano corrente muda toda semana: com --collect, a presença dele é sempre consultada de novo.
+            presence = load_presence(deputy_id, year, where["presence"], in_scope,
+                                     refresh or (in_scope and year == CURRENT_YEAR))
             if presence is not None:
                 entry["presence"].update(presence_months(presence["days"]))
+                for reason, count in presence_reasons(presence["days"]).items():
+                    entry["presenceReasons"][reason] = entry["presenceReasons"].get(reason, 0) + count
             entry["sources"][str(year)] = {
-                "office": {"status": office.get("status"), "url": office.get("sourceUrl"),
+                "office": None if not office else {"status": office.get("status"), "url": office.get("sourceUrl"),
                            "fetchedAt": office.get("fetchedAt"), "updatedAt": office.get("sourceUpdatedAt")},
                 "presence": None if presence is None else {
                     "url": presence["sourceUrl"], "fetchedAt": presence["fetchedAt"],
@@ -175,6 +195,34 @@ def build_snapshot(root: Path = ROOT, years=DEFAULT_YEARS, collect=False, refres
     }
 
 
+def load_metadata(path: Path) -> dict[str, dict[str, Any]]:
+    """Partido e UF da lista atual, para as linhas de presença."""
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return {row["id"]: row for row in payload.get("authorities", []) if isinstance(row, dict) and row.get("id")}
+
+
+def presence_rows(snapshot: dict[str, Any], metadata: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    """Mesmo formato de ``presenca.json``, somando os dias do mandato, com o período ao lado."""
+    rows = []
+    for identifier, entry in snapshot["profiles"].items():
+        months = entry.get("presence") or {}
+        days = sum(month["days"] for month in months.values())
+        if not days:
+            continue
+        info = metadata.get(identifier, {})
+        reasons = sorted((entry.get("presenceReasons") or {}).items(), key=lambda item: (-item[1], item[0]))
+        rows.append({
+            "id": int(identifier.removeprefix("camara:")), "nome": entry["name"],
+            "partido": info.get("party"), "uf": info.get("uf"), "dias": days,
+            "presente": sum(month["present"] for month in months.values()),
+            "falta": sum(month["absent"] for month in months.values()),
+            "justificadas": sum(month["justified"] for month in months.values()),
+            "motivos": [list(item) for item in reasons[:3]],
+            "inicio": min(months), "fim": max(months),
+        })
+    return sorted(rows, key=lambda row: row["nome"])
+
+
 def parse_years(value: str) -> tuple[int, ...]:
     try:
         years = tuple(int(part) for part in value.split(",") if part.strip())
@@ -201,6 +249,10 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     output = paths()["output"]
     _atomic_json(output, snapshot)
+    rows = presence_rows(snapshot, load_metadata(paths()["roster"]))
+    if rows:
+        _atomic_json(paths()["presence_output"], rows)
+        print(f"Wrote {paths()['presence_output']}: presença do mandato de {len(rows)} deputados.")
     with_office = sum(bool(e["office"]) for e in snapshot["profiles"].values())
     with_presence = sum(bool(e["presence"]) for e in snapshot["profiles"].values())
     print(f"Wrote {output}: {snapshot['rosterCount']} deputados, {with_office} com gabinete, "

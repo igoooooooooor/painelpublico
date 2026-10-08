@@ -51,7 +51,7 @@ function comparison(a, b) {
     '\nthis.__api = { extrasState, comparisonTable, searchComparisonPeople, comparisonPickerList, comparisonView, taxCard, voteRowsForItem, votesForPerson, attendanceForPerson, attendanceRows, attendanceBar, profileExtras };', context);
   return { html: context.__api.comparisonTable([a, b]), api: context.__api, context, senate };
 }
-const profile = (id, total) => ({ pessoa: { id, name: id, role: 'senador' }, total, media: 100,
+const profile = (id, total) => ({ pessoa: { id, name: id, role: 'senador' }, total, mediaMensal: total, media: 100,
   categorias: [], fornecedores: [], alertas: [], meses: [] });
 
 test('comparison keeps missing spending unavailable instead of awarding it a zero or -100% result', () => {

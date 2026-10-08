@@ -153,7 +153,9 @@ def collect_presence(seconds, fetch=get):
     print(f"cache de presença: {cached}/{len(deputies)} deputados")
 
 
-def build_presence(output=SNAPSHOTS / "presenca.json"):
+# A presença do mandato (presenca.json) vem de ingest/chamber_mandate_history.py; esta versão só de 2026
+# grava em arquivo separado para não sobrescrevê-la.
+def build_presence(output=SNAPSHOTS / "presenca-2026.json"):
     deputies = load_deputies()
     out = []
     for deputy in deputies:

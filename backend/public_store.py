@@ -158,7 +158,8 @@ def import_documents(paths, db_path=DB_PATH):
             db.execute('''UPDATE expenses SET lastChanged=? WHERE supplierKey IN
                 (SELECT s.key FROM suppliers s JOIN original_suppliers o ON o.key=s.key
                  WHERE s.name IS NOT o.name OR s.cnpj IS NOT o.cnpj)''', (stamp,))
-            db.execute('DELETE FROM suppliers WHERE key NOT IN (SELECT supplierKey FROM expenses WHERE supplierKey IS NOT NULL)')
+            db.execute('''DELETE FROM suppliers WHERE key NOT IN (SELECT supplierKey FROM expenses WHERE supplierKey IS NOT NULL)
+                AND key NOT IN (SELECT supplierKey FROM quota_history_suppliers)''')
             rebuild_aggregates(db)
             db.execute("INSERT OR REPLACE INTO meta VALUES('snapshotAt',?)", (stamp,))
         return counts
@@ -182,8 +183,13 @@ def rebuild_aggregates(db):
 
 def _rebuild_aggregates(db):
     db.execute('DELETE FROM authority_totals')
-    db.execute("""INSERT INTO authority_totals SELECT authorityId,kind,SUM(amountCents),COUNT(*),
-        MIN(printf('%04d-%02d',year,month)),MAX(printf('%04d-%02d',year,month)) FROM expenses GROUP BY authorityId,kind""")
+    # Notas detalhadas (ano corrente) mais os agregados mensais dos anos anteriores do mandato.
+    db.execute("""INSERT INTO authority_totals(authorityId,kind,amountCents,count,periodStart,periodEnd,monthCount)
+        SELECT authorityId,kind,SUM(cents),SUM(n),MIN(period),MAX(period),COUNT(DISTINCT period) FROM (
+        SELECT authorityId,kind,amountCents cents,1 n,printf('%04d-%02d',year,month) period FROM expenses
+        UNION ALL
+        SELECT authorityId,kind,amountCents,count,printf('%04d-%02d',year,month) FROM quota_history_months
+        ) GROUP BY authorityId,kind""")
     db.execute('DELETE FROM supplier_totals')
     db.execute('''INSERT INTO supplier_totals SELECT supplierKey,SUM(amountCents),COUNT(*),COUNT(DISTINCT authorityId)
         FROM expenses WHERE supplierKey IS NOT NULL AND kind='reembolso' GROUP BY supplierKey''')

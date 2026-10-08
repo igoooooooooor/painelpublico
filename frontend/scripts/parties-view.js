@@ -80,7 +80,7 @@ function partyShareCard(a, b) {
     kicker: 'Comparação de partidos', title: `${a.sigla} × ${b.sigla}`, columns: [a.sigla, b.sigla],
     rows: [
       { label: 'Registros na lista (deputados(as) + senadores(as))', values: [String(a.membros), String(b.membros)] },
-      { label: 'Gasto médio de cota por deputado(a) em 2026', values: [money(a.deputado?.media), money(b.deputado?.media)] },
+      { label: 'Cota por mês, média por deputado(a) · mandato', values: [money(a.deputado?.media), money(b.deputado?.media)] },
       { label: 'Alertas a cada 10 parlamentares', values: [perTen(a), perTen(b)] },
       { label: 'Presença média no Plenário · Câmara', values: [percentText(partyAttendance(a.sigla)?.media), percentText(partyAttendance(b.sigla)?.media)] },
       { label: 'Unidade nas votações · Câmara', values: [percentText(partyVoteAlignment(partyVotes(a.sigla))), percentText(partyVoteAlignment(partyVotes(b.sigla)))] },
@@ -120,8 +120,8 @@ function partyComparisonTable(a, b) {
   return `<section class="card cmp wide party-cmp">
     <div class="cmp-head"><span></span>${[a, b].map(party => `<div class="party-who"><span class="party-acronym" style="--fit:${Math.min(30, Math.round(170 / Math.max(5, party.sigla.length)))}px">${esc(party.sigla)}</span><small>${party.membros} registros da lista</small></div>`).join('')}</div>
     <div class="cmp-row"><span class="cmp-l">Registros na lista disponível</span><div class="cmp-v party-stack">${recordSummary(a)}</div><div class="cmp-v party-stack">${recordSummary(b)}</div></div>
-    ${comparisonRow('Gasto médio de cota por deputado(a) em 2026', a.deputado?.media, b.deputado?.media, value => `<b class="mono">${formatCitizenAmount(value)}</b>`, 'lower')}
-    ${comparisonRow('Gasto médio de cota por senador(a) em 2026', a.senador?.media, b.senador?.media, value => `<b class="mono">${formatCitizenAmount(value)}</b>`, 'lower')}
+    ${comparisonRow('Cota por mês, média por deputado(a) · mandato desde fev/2023', a.deputado?.media, b.deputado?.media, value => `<b class="mono">${formatCitizenAmount(value)}</b>`, 'lower')}
+    ${comparisonRow('Cota por mês, média por senador(a) · 2026', a.senador?.media, b.senador?.media, value => `<b class="mono">${formatCitizenAmount(value)}</b>`, 'lower')}
     ${comparisonRow('Alertas a cada 10 parlamentares', alertsPerTenMembers(a), alertsPerTenMembers(b), value => `<b>${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</b>`, 'lower')}
     ${comparisonRow('Presença média dos(as) deputados(as) no Plenário · Câmara', pa?.media, pb?.media, formatPercent, 'higher')}
     ${registeredAttendanceRow(psa, psb, isSenateLoading, senatePresenceSource)}
@@ -140,8 +140,8 @@ function partyComparisonTable(a, b) {
       ${senateVoteSource.detail ? `<p class="muted">${esc(senateVoteSource.detail)}</p>` : ''}${sourceMeta(senateVoteSource)}`
       : `<p class="muted">Votações nominais do Senado ainda não importadas.</p>${sourceMeta(senateVoteSource)}`}
   </section>
-  <section class="card wide"><span class="k">Quem mais gastou a cota em cada partido</span>
-    <div class="party-tops">${[a, b].map(party => `<div><b class="party-acronym sm">${esc(party.sigla)}</b>${party.top.length ? party.top.map(person => `<button type="button" class="citizen-row" data-politician="${esc(person.id)}">${citizenAvatar(person, 40)}<span class="citizen-rowtxt"><b>${esc(citizenName(person.name))}</b><small>${esc(ROLE_LABELS[person.role] || '')}</small></span><span class="citizen-rowval"><b class="mono">${person.gasto === null || person.gasto === undefined ? 'Sem dados' : formatCitizenAmount(person.gasto)}</b></span></button>`).join('') : '<p class="muted">Sem notas importadas.</p>'}</div>`).join('')}</div>
+  <section class="card wide"><span class="k">Maior gasto médio mensal da cota em cada partido</span>
+    <div class="party-tops">${[a, b].map(party => `<div><b class="party-acronym sm">${esc(party.sigla)}</b>${party.top.length ? party.top.map(person => `<button type="button" class="citizen-row" data-politician="${esc(person.id)}">${citizenAvatar(person, 40)}<span class="citizen-rowtxt"><b>${esc(citizenName(person.name))}</b><small>${esc(ROLE_LABELS[person.role] || '')}</small></span><span class="citizen-rowval"><b class="mono">${person.gastoMensal === null || person.gastoMensal === undefined ? 'Sem dados' : `${formatCitizenAmount(person.gastoMensal)}<small>/mês</small>`}</b></span></button>`).join('') : '<p class="muted">Sem notas importadas.</p>'}</div>`).join('')}</div>
   </section>`;
 }
 

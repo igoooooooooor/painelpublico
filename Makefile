@@ -100,9 +100,10 @@ audit-mandate-cost:
 	$(PYTHON) ingest/senate_payroll_pilot.py
 	$(PYTHON) ingest/mandate_cost_audit.py --year $(or $(YEAR),2026)
 
-# Mandato desde fev/2023: coleta por ano em arquivos próprios e recompõe a média da ficha; não modifica o SQLite.
+# Mandato desde fev/2023: coleta por ano, recompõe a média da ficha, gera presenca.json e importa no SQLite
+# só os agregados da cota de 2023–2025 (faça make db-backup antes).
 collect-mandate-history:
-	@for year in 2023 2024 2025; do $(PYTHON) ingest/legislative.py --year $$year --output data/imports/legislative-$$year.json || exit 1; done
+	@for year in 2023 2024 2025; do $(PYTHON) ingest/legislative.py --year $$year --output data/raw/legislative/history/legislative-$$year.json || exit 1; done
 	$(PYTHON) ingest/chamber_housing.py --collect --year 2023 --months 2,3,4,5,6,7,8,9,10,11,12
 	$(PYTHON) ingest/chamber_housing.py --collect --year 2024 --months 1,2,3,4,5,6,7,8,9,10,11,12
 	$(PYTHON) ingest/chamber_housing.py --collect --year 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12
@@ -112,6 +113,8 @@ collect-mandate-history:
 	$(PYTHON) ingest/chamber_payroll.py --collect --year 2025 --months 1-12 --output data/snapshots/chamber-payroll-2025.json
 	@for year in 2023 2024 2025; do $(PYTHON) ingest/chamber_service.py --year $$year --months 1-12 || exit 1; done
 	$(PYTHON) -m ingest.mandate_cost_composition
+	$(PYTHON) ingest/chamber_quota_history.py
+	$(PYTHON) -m backend.quota_history
 
 prod: build
 	$(PYTHON) -m backend.server --prod --host 127.0.0.1 --port $(PORT)

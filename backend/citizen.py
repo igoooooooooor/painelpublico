@@ -16,6 +16,14 @@ from .config import HOUSING_COMPLEMENT_KIND
 ROLES = ('deputado', 'senador')
 ROLE_LABELS = {'deputado': 'deputados(as)', 'senador': 'senadores(as)'}
 CURRENT = {'deputado': 'camara_deputies_current', 'senador': 'senado_senators_current'}
+# Meses com notas da cota (authority_totals, alias t). Mês sem nota é ausência de dado, não gasto zero;
+# assim licenças e trocas de suplente não diluem a média.
+MONTH_COUNT = 't.monthCount'
+# Média mensal da cota: compara deputados (mandato desde fev/2023) e senadores (2026) no mesmo critério.
+MONTHLY = f't.amountCents*1.0/{MONTH_COUNT}'
+# Notas detalhadas (ano corrente) mais os agregados mensais dos anos anteriores do mandato.
+QUOTA_MONTHS = '''(SELECT authorityId,year,month,category,kind,amountCents,1 count FROM expenses
+    UNION ALL SELECT authorityId,year,month,category,kind,amountCents,count FROM quota_history_months)'''
 MONTHS = ['', 'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto',
          'setembro', 'outubro', 'novembro', 'dezembro']
 
@@ -210,7 +218,7 @@ def _snapshot(db):
 def _averages(db):
     out = {}
     for role in ROLES:
-        r = db.execute('''SELECT AVG(t.amountCents)/100.0, COUNT(*) FROM authority_totals t JOIN authorities a ON a.id=t.authorityId
+        r = db.execute(f'''SELECT AVG({MONTHLY})/100.0, COUNT(*) FROM authority_totals t JOIN authorities a ON a.id=t.authorityId
             WHERE t.kind='reembolso' AND a.role=? AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?)''', (role, CURRENT[role])).fetchone()
         out[role] = {'media': r[0] or 0, 'n': r[1]}
     return out
@@ -240,8 +248,8 @@ def summary(db):
     Médias usam somente parlamentares com registros; sem registros, total e média ficam nulos.
     O ranking inclui todos os membros atuais da Câmara com registros, sem limitar a uma amostra.
     """
-    aggregates = rows(db, '''SELECT a.role,COUNT(*) total,COUNT(t.authorityId) comReembolsos,
-            SUM(t.amountCents) cents,AVG(t.amountCents) mediaCents,
+    aggregates = rows(db, f'''SELECT a.role,COUNT(*) total,COUNT(t.authorityId) comReembolsos,
+            SUM(t.amountCents) cents,AVG({MONTHLY}) mediaCents,
             MIN(t.periodStart) inicio,MAX(t.periodEnd) fim
         FROM authorities a LEFT JOIN authority_totals t
             ON t.authorityId=a.id AND t.kind='reembolso'
@@ -266,8 +274,8 @@ def summary(db):
             'periodo': {'inicio': row['inicio'], 'fim': row['fim']},
         }
 
-    category_rows = rows(db, '''SELECT e.category,SUM(e.amountCents) cents
-        FROM authorities a JOIN expenses e ON e.authorityId=a.id
+    category_rows = rows(db, f'''SELECT e.category,SUM(e.amountCents) cents
+        FROM authorities a JOIN {QUOTA_MONTHS} e ON e.authorityId=a.id
         WHERE a.role='deputado' AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?) AND e.kind='reembolso'
         GROUP BY e.category''', (CURRENT['deputado'],))
     categories = {}
@@ -275,10 +283,11 @@ def summary(db):
         name = category_name(row['category'])
         categories[name] = categories.get(name, 0) + row['cents'] / 100
 
-    top = rows(db, '''SELECT a.id,a.name nome,a.party partido,a.uf,t.amountCents/100.0 gasto
+    top = rows(db, f'''SELECT a.id,a.name nome,a.party partido,a.uf,t.amountCents/100.0 gasto,
+            {MONTHLY}/100.0 gastoMensal,t.periodStart inicio,t.periodEnd fim
         FROM authorities a JOIN authority_totals t ON t.authorityId=a.id AND t.kind='reembolso'
         WHERE a.role='deputado' AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?)
-        ORDER BY t.amountCents DESC,a.name,a.id''', (CURRENT['deputado'],))
+        ORDER BY gastoMensal DESC,a.name,a.id''', (CURRENT['deputado'],))
     return {
         'parlamentares': parliamentarians,
         'reembolsos': reimbursements,
@@ -292,7 +301,7 @@ def summary(db):
 
 
 def politicians(db, params):
-    """Lista simples de deputados(as) e senadores(as) em exercício, com gasto de 2026 e nº de alertas."""
+    """Lista de deputados(as) e senadores(as) em exercício, com gasto médio mensal da cota e nº de alertas."""
     clauses, args = ["a.role IN ('deputado','senador')", "a.id IN (SELECT authorityId FROM roster WHERE sourceId IN (?,?))"], [CURRENT['deputado'], CURRENT['senador']]
     if params.get('cargo') in ROLES:
         clauses.append('a.role=?'); args.append(params['cargo'])
@@ -301,15 +310,16 @@ def politicians(db, params):
         q = params['q'].strip()
         args += [store.query_text(params), q.upper(), q.upper()]
     sort_order = {
-        'gasto': 'CASE WHEN t.authorityId IS NULL THEN 1 ELSE 0 END,gasto DESC',
+        'gasto': 'CASE WHEN t.authorityId IS NULL THEN 1 ELSE 0 END,gastoMensal DESC',
         # Pelo peso: valor envolvido nos alertas, não a contagem (vários alertas pequenos não passam à frente de um enorme).
-        'alertas': 'valorAlertas DESC,alertas DESC,CASE WHEN t.authorityId IS NULL THEN 1 ELSE 0 END,gasto DESC',
+        'alertas': 'valorAlertas DESC,alertas DESC,CASE WHEN t.authorityId IS NULL THEN 1 ELSE 0 END,gastoMensal DESC',
     }.get(params.get('ordem'), 'a.name')
     page, size, offset = store.page_args(params)
     where = ' AND '.join(clauses)
     total = db.execute(f'SELECT COUNT(*) FROM authorities a WHERE {where}', args).fetchone()[0]
     items = rows(db, f'''SELECT a.id,a.name,a.role,a.party,a.uf,a.position,a.employmentStatus,a.sourceUrl,
         CASE WHEN t.authorityId IS NULL THEN NULL ELSE t.amountCents/100.0 END gasto,
+        CASE WHEN t.authorityId IS NULL THEN NULL ELSE {MONTHLY}/100.0 END gastoMensal,t.periodStart inicio,t.periodEnd fim,
         (t.authorityId IS NOT NULL) hasExpenseData,COALESCE(t.count,0) expenseCount,
         (SELECT COUNT(*) FROM signals s WHERE s.authorityId=a.id AND s.type IN ('pico','fornecedor')) alertas,
         (SELECT COALESCE(SUM(s.amountCents),0)/100.0 FROM signals s WHERE s.authorityId=a.id AND s.type IN ('pico','fornecedor')) valorAlertas
@@ -325,34 +335,46 @@ def politician(db, identifier):
     if identifier not in people:
         return None
     person = people[identifier]
-    monthly_totals = rows(db, "SELECT year,month,SUM(amountCents)/100.0 valor FROM expenses INDEXED BY expense_authority WHERE authorityId=? AND kind='reembolso' GROUP BY year,month ORDER BY year,month", (identifier,))
+    # Notas detalhadas do ano corrente mais os agregados dos anos anteriores do mandato.
+    person_months = '''(SELECT year,month,category,kind,amountCents,1 count FROM expenses INDEXED BY expense_authority WHERE authorityId=:id
+        UNION ALL SELECT year,month,category,kind,amountCents,count FROM quota_history_months WHERE authorityId=:id)'''
+    monthly_totals = rows(db, f"SELECT year,month,SUM(amountCents)/100.0 valor FROM {person_months} WHERE kind='reembolso' GROUP BY year,month ORDER BY year,month", {'id': identifier})
     categories = {}
-    for r in rows(db, "SELECT category,SUM(amountCents)/100.0 v FROM expenses INDEXED BY expense_authority WHERE authorityId=? AND kind='reembolso' GROUP BY category", (identifier,)):
+    for r in rows(db, f"SELECT category,SUM(amountCents)/100.0 v FROM {person_months} WHERE kind='reembolso' GROUP BY category", {'id': identifier}):
         name = category_name(r['category']); categories[name] = categories.get(name, 0) + r['v']
-    expense_count = db.execute("SELECT COUNT(*) FROM expenses WHERE authorityId=? AND kind='reembolso'", (identifier,)).fetchone()[0]
+    expense_count = db.execute(f"SELECT COALESCE(SUM(count),0) FROM {person_months} WHERE kind='reembolso'", {'id': identifier}).fetchone()[0]
     has_expense_data = expense_count > 0
     total = sum(categories.values()) if has_expense_data else None
-    suppliers = rows(db, '''SELECT s.name,s.cnpj,SUM(e.amountCents)/100.0 valor,COUNT(*) notas FROM expenses e INDEXED BY expense_authority JOIN suppliers s ON s.key=e.supplierKey
-        WHERE e.authorityId=? AND e.kind='reembolso' GROUP BY e.supplierKey ORDER BY valor DESC LIMIT 5''', (identifier,))
-    largest_expenses = rows(db, '''SELECT e.date,e.year,e.month,e.category,e.amountCents/100.0 valor,e.documentUrl,s.name fornecedor FROM expenses e INDEXED BY expense_authority
-        LEFT JOIN suppliers s ON s.key=e.supplierKey WHERE e.authorityId=? AND e.kind='reembolso' ORDER BY e.amountCents DESC LIMIT 5''', (identifier,))
+    suppliers = rows(db, '''SELECT s.name,s.cnpj,SUM(x.cents)/100.0 valor,SUM(x.n) notas FROM (
+            SELECT supplierKey,amountCents cents,1 n FROM expenses INDEXED BY expense_authority WHERE authorityId=:id AND kind='reembolso'
+            UNION ALL SELECT supplierKey,amountCents,count FROM quota_history_suppliers WHERE authorityId=:id) x
+        JOIN suppliers s ON s.key=x.supplierKey GROUP BY x.supplierKey ORDER BY valor DESC,s.name LIMIT 5''', {'id': identifier})
+    largest_expenses = rows(db, '''SELECT * FROM (
+            SELECT e.date,e.year,e.month,e.category,e.amountCents/100.0 valor,e.documentUrl,s.name fornecedor FROM expenses e INDEXED BY expense_authority
+            LEFT JOIN suppliers s ON s.key=e.supplierKey WHERE e.authorityId=:id AND e.kind='reembolso'
+            UNION ALL SELECT date,year,month,category,amountCents/100.0,documentUrl,supplierName FROM quota_history_largest WHERE authorityId=:id)
+        ORDER BY valor DESC LIMIT 5''', {'id': identifier})
     for m in largest_expenses:
         m['categoria'] = category_name(m.pop('category'))
         m['documentUrl'] = store.safe_url(m['documentUrl']) if m.get('documentUrl') else None
         m['fornecedor'] = (m['fornecedor'] or '').strip() or None
     signals = rows(db, "SELECT s.*,? authorityName FROM signals s WHERE s.authorityId=? AND s.type IN ('pico','fornecedor') ORDER BY s.amountCents DESC", (person['name'], identifier))
     # Complemento de moradia da CEAP: fora da cota, mostrado à parte com o sinal publicado.
-    complement = db.execute('''SELECT SUM(amountCents),COUNT(*),GROUP_CONCAT(DISTINCT year||'-'||printf('%02d',month)) FROM expenses
-        INDEXED BY expense_authority WHERE authorityId=? AND kind=?''', (identifier, HOUSING_COMPLEMENT_KIND)).fetchone()
+    complement = db.execute(f'''SELECT SUM(amountCents),SUM(count),GROUP_CONCAT(DISTINCT year||'-'||printf('%02d',month)) FROM {person_months}
+        WHERE kind=:kind''', {'id': identifier, 'kind': HOUSING_COMPLEMENT_KIND}).fetchone()
     cache = {}
     averages = _averages(db)
+    span = db.execute(f"SELECT t.periodStart,t.periodEnd,{MONTH_COUNT} FROM authority_totals t WHERE t.authorityId=? AND t.kind='reembolso'",
+                      (identifier,)).fetchone()
     return {'pessoa': person, 'total': total, 'hasExpenseData': has_expense_data,
+            'mediaMensal': total / span[2] if has_expense_data and span else None,
+            'periodo': {'inicio': span[0], 'fim': span[1], 'meses': span[2]} if has_expense_data and span else None,
             'expenseCount': expense_count, 'meses': monthly_totals,
             'categorias': [{'nome': k, 'valor': v} for k, v in sorted(categories.items(), key=lambda kv: -kv[1])],
             'fornecedores': suppliers, 'maiores': largest_expenses, 'alertas': [_alert(db, signal, people, cache) for signal in signals],
             'media': averages.get(person.get('role'), {}).get('media'), 'snapshotAt': _snapshot(db),
             'complementoMoradia': {'valor': complement[0] / 100, 'notas': complement[1],
-                                   'meses': sorted(complement[2].split(','))} if complement[1] else None}
+                                   'meses': sorted(set(complement[2].split(',')))} if complement[1] else None}
 
 
 CSV_COLUMNS = ['Parlamentar', 'Competência', 'Data de emissão', 'Categoria', 'Valor (R$)', 'Fornecedor', 'CNPJ',
@@ -408,25 +430,25 @@ def parties(db):
     lines = rows(db, f'''SELECT a.party sigla, a.role,
             COUNT(*) membros,
             SUM(CASE WHEN t.authorityId IS NOT NULL THEN 1 ELSE 0 END) comDados,
-            SUM(t.amountCents)/100.0 gasto,
+            SUM(t.amountCents)/100.0 gasto,AVG({MONTHLY})/100.0 media,
             SUM((SELECT COUNT(*) FROM signals s WHERE s.authorityId=a.id AND s.type IN ('pico','fornecedor'))) alertas
         FROM authorities a LEFT JOIN authority_totals t ON t.authorityId=a.id AND t.kind='reembolso'
         WHERE {condition} AND TRIM(COALESCE(a.party,''))<>''
         GROUP BY a.party, a.role''', args)
-    top_rows = rows(db, f'''SELECT sigla, id, name, role, gasto FROM (
-            SELECT a.party sigla, a.id, a.name, a.role, t.amountCents/100.0 gasto,
-                ROW_NUMBER() OVER (PARTITION BY a.party ORDER BY t.amountCents DESC, a.id) n
+    top_rows = rows(db, f'''SELECT sigla, id, name, role, gasto, gastoMensal FROM (
+            SELECT a.party sigla, a.id, a.name, a.role, t.amountCents/100.0 gasto, {MONTHLY}/100.0 gastoMensal,
+                ROW_NUMBER() OVER (PARTITION BY a.party ORDER BY {MONTHLY} DESC, a.id) n
             FROM authorities a JOIN authority_totals t ON t.authorityId=a.id AND t.kind='reembolso'
             WHERE {condition} AND TRIM(COALESCE(a.party,''))<>'')
         WHERE n<=3 ORDER BY sigla, n''', args)
     out = {}
     for r in lines:
         person = out.setdefault(r['sigla'], {'sigla': r['sigla'], 'membros': 0, 'deputado': None, 'senador': None, 'top': []})
-        average = r['gasto'] / r['comDados'] if r['comDados'] else None
+        # Média por pessoa do gasto médio mensal; sem notas, nula (ausência não é zero).
         person[r['role']] = {'membros': r['membros'], 'comDados': r['comDados'], 'gasto': r['gasto'],
-                        'media': average, 'alertas': r['alertas'] or 0}
+                        'media': r['media'] if r['comDados'] else None, 'alertas': r['alertas'] or 0}
         person['membros'] += r['membros']
     for r in top_rows:
-        out[r['sigla']]['top'].append({k: r[k] for k in ('id', 'name', 'role', 'gasto')})
+        out[r['sigla']]['top'].append({k: r[k] for k in ('id', 'name', 'role', 'gasto', 'gastoMensal')})
     items = sorted(out.values(), key=lambda person: (-person['membros'], person['sigla']))
     return {'itens': items, 'medias': _averages(db), 'snapshotAt': _snapshot(db)}

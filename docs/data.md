@@ -34,7 +34,7 @@ python3 ingest/editorial/collect.py votes
 make build
 ```
 
-`deputies` segue todos os links de paginação da API oficial e grava um cache completo separado do cache antigo. `presence SECONDS` consulta os perfis dentro do tempo informado; pode ser repetido para preencher o cache local. `build` processa somente páginas de presença disponíveis e informa quantos registros foram montados. Perfil sem resposta continua ausente, sem virar zero. `votes` lê os IDs selecionados e versionados em `frontend/data/votes.json` e coleta todas as linhas de participação de cada votação. As respostas oficiais ficam em `data/raw/editorial-extra/`; os snapshots resultantes são opcionais. Esses comandos só rodam quando chamados: `make dev`, `make build` e o uso do app não iniciam coleta nem atualização automática.
+`deputies` segue todos os links de paginação da API oficial e grava um cache completo separado do cache antigo. `presence SECONDS` consulta os perfis dentro do tempo informado; pode ser repetido para preencher o cache local. `build` processa somente páginas de presença disponíveis e grava `presenca-2026.json` (só o ano corrente); a presença que as telas usam, `presenca.json`, cobre o mandato e vem de `make collect-mandate-history` (ver abaixo). Perfil sem resposta continua ausente, sem virar zero. `votes` lê os IDs selecionados e versionados em `frontend/data/votes.json` e coleta todas as linhas de participação de cada votação. As respostas oficiais ficam em `data/raw/editorial-extra/`; os snapshots resultantes são opcionais. Esses comandos só rodam quando chamados: `make dev`, `make build` e o uso do app não iniciam coleta nem atualização automática.
 
 As fichas federais têm um coletor complementar manual, sem dependências externas:
 
@@ -467,7 +467,7 @@ etapa própria. Nenhum desses arquivos altera a ficha, a média ou o SQLite.
 make collect-mandate-history
 ```
 
-- **Cota:** `ingest/legislative.py --year {ano} --output data/imports/legislative-{ano}.json`.
+- **Cota:** `ingest/legislative.py --year {ano} --output data/raw/legislative/history/legislative-{ano}.json`. Fica fora de `data/imports/`: o `make import` importa tudo dessa pasta, e a fonte `camara_ceap` de outro ano substituiria a de 2026.
   O `legislative.json` do ano corrente não é tocado.
 - **Moradia:** `ingest/chamber_housing.py --year {ano}` grava
   `data/snapshots/chamber-housing-{ano}.json`; 2026 continua em `chamber-housing.json`.
@@ -529,6 +529,41 @@ são gravados. `backend.profiles.expand_mandate_cost` devolve o formato completo
 antes de responder, então a API e a ficha não mudam (conferido: zero diferenças
 contra o formato anterior). ~15,5 MB no disco e ~105 MB de memória ao carregar,
 contra 31 MB e ~180 MB sem compactar.
+
+### Cota e presença da Câmara no mandato inteiro (desde 8/10/2026)
+
+A cota e a presença da Câmara nas telas (lista, ficha, comparação, home, partidos
+e presença) cobrem o mandato, desde fev/2023. O Senado continua em 2026.
+
+- **Cota no SQLite (esquema v4):** as notas de 2026 seguem uma a uma em
+  `expenses`. De fev/2023 a dez/2025, o banco recebe só agregados por pessoa,
+  como decidido no roadmap: `quota_history_months` (mês, categoria e natureza),
+  `quota_history_suppliers` (fornecedor) e `quota_history_largest` (5 maiores notas
+  por pessoa e ano). Cada ano é uma fonte própria (`camara_ceap_2023` etc.) e não
+  substitui a fonte `camara_ceap` de 2026. O banco local foi de 84 MB para 109 MB;
+  com as notas brutas seria ~250 MB.
+  ```sh
+  python3 ingest/chamber_quota_history.py   # data/raw/legislative/history → data/imports-history
+  make db-backup && python3 -m backend.quota_history
+  ```
+  `data/imports-history/` fica fora de `data/imports/` de propósito: `make import`
+  continua importando só o ano corrente.
+- **Média mensal:** lista, comparação, partidos, home e o cartão de cota usam o gasto
+  médio por mês, `total ÷ meses com notas` (`authority_totals.monthCount`). Mês sem
+  nota é ausência de dado, não gasto zero, então licenças e trocas de suplente não
+  diluem a média. Assim deputados (mandato) e senadores (2026) ficam comparáveis.
+  A ficha mostra também o total e o período.
+- **O que segue em 2026:** alertas (calculados só sobre as notas detalhadas), o CSV da
+  ficha (a tela avisa que traz só 2026), fornecedores globais (`supplier_totals`) e
+  tudo do Senado.
+- **Presença:** `presenca.json` agora soma o mandato (fev/2023 até o mês corrente),
+  com `inicio` e `fim` por deputado, e vem de `ingest/chamber_mandate_history.py`
+  (que reconsulta o ano corrente a cada `--collect`). Conferência em 8/10: a parte de
+  2026 bate dia a dia com o snapshot anterior nos 512 deputados com dados.
+
+A média mensal da cota na lista (meses com notas) e a parte "cota" do custo do
+mandato (meses em exercício com as quatro partes) usam recortes diferentes e podem
+diferir um pouco; cada uma diz o seu período.
 
 ## Minha cidade — Fase 1: IBGE e TSE
 

@@ -50,6 +50,16 @@ class MandateHistoryTests(unittest.TestCase):
         self.assertIsNone(snapshot["profiles"]["camara:2"]["sources"]["2024"]["presence"])
         self.assertEqual(snapshot["coverage"], {"2024-11": {"office": 1, "presence": 0}})
 
+    def test_presence_rows_sum_the_mandate_in_the_snapshot_format(self):
+        snapshot = {"profiles": {"camara:7": {"name": "A", "presenceReasons": {"Missão Autorizada": 2, "Atestado": 1},
+            "presence": {"2023-02": {"days": 10, "present": 7, "absent": 1, "justified": 2},
+                         "2026-09": {"days": 5, "present": 4, "absent": 0, "justified": 1}}},
+            "camara:8": {"name": "B", "presence": {}}}}
+        rows = history.presence_rows(snapshot, {"camara:7": {"party": "PX", "uf": "SP"}})
+        self.assertEqual(rows, [{"id": 7, "nome": "A", "partido": "PX", "uf": "SP", "dias": 15, "presente": 11,
+                                 "falta": 1, "justificadas": 3, "motivos": [["Missão Autorizada", 2], ["Atestado", 1]],
+                                 "inicio": "2023-02", "fim": "2026-09"}])
+
     def test_years_outside_the_mandate_history_are_rejected(self):
         with self.assertRaises(Exception):
             history.parse_years("2022")

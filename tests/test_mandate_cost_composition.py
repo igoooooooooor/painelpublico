@@ -151,12 +151,12 @@ class MandatePeriodTests(unittest.TestCase):
         from ingest.mandate_cost_composition import history_quota
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / 'data/imports').mkdir(parents=True)
+            (root / 'data/raw/legislative/history').mkdir(parents=True)
             rows = [{'authorityId': 'camara:1', 'sourceId': 'camara_ceap', 'year': 2023, 'month': 3, 'amount': 10.1,
                      'category': 'X'},
                     {'authorityId': 'camara:1', 'sourceId': 'camara_ceap', 'year': 2023, 'month': 3, 'amount': -5.0,
                      'category': 'COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA'}]
-            (root / 'data/imports/legislative-2023.json').write_text(json.dumps({
+            (root / 'data/raw/legislative/history/legislative-2023.json').write_text(json.dumps({
                 'sources': [{'id': 'camara_ceap', 'status': 'imported', 'url': 'u'}], 'expenses': rows}))
             month = history_quota(root, 2023)['camara:1']['2023-03']
         self.assertEqual(month['amountCents'], 510)

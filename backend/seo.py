@@ -33,7 +33,7 @@ SECTIONS = {
     '/comparar': ('compare', 'Comparar políticos',
                   'Dois(duas) parlamentares lado a lado: custo, cota, alertas, presença e votos.'),
     '/presenca': ('attendance', 'Presença no Plenário da Câmara',
-                  'Presença de cada deputado(a) nas sessões deliberativas de 2026, com faltas justificadas e não justificadas.'),
+                  'Presença de cada deputado(a) nas sessões deliberativas do mandato atual, desde fev/2023, com faltas justificadas e não justificadas.'),
     '/minha-cidade': ('city', 'Minha cidade',
                       'Quem representa sua cidade, emendas parlamentares e contas da prefeitura, com dados do IBGE, TSE e Tesouro.'),
 }
@@ -90,6 +90,16 @@ def month_range(periods):
     return f'{label}, {len(serials)} {"mês" if len(serials) == 1 else "meses"}'
 
 
+def period_label(start, end):
+    """'fev/2023–set/2026' a partir de 'AAAA-MM'; vazio se faltar alguma ponta."""
+    def label(value):
+        if not isinstance(value, str) or len(value) != 7:
+            return ''
+        return f'{MONTHS[int(value[5:7])]}/{value[:4]}'
+    first, last = label(start), label(end)
+    return '' if not first or not last else first if first == last else f'{first}–{last}'
+
+
 def _chamber_presence(number):
     try:
         rows = json.loads((SNAPSHOTS_PATH / 'presenca.json').read_text(encoding='utf-8'))
@@ -110,20 +120,23 @@ def profile_facts(db, identifier):
     if isinstance(cost.get('monthlyAverageCents'), int) and cost.get('usedMonths'):
         facts['lines'].append(('Quanto custa', f'Custa em média {money_cents(cost["monthlyAverageCents"])} por mês '
                                f'({month_range(cost["usedMonths"])}), somando salário bruto, auxílios, cota parlamentar e verba do gabinete, em valores da época.'))
-    if record.get('hasExpenseData'):
+    monthly = record.get('mediaMensal')
+    if record.get('hasExpenseData') and monthly is not None:
         average = record.get('media')
+        period = record.get('periodo') or {}
         comparison = ''
         if average:
-            difference = record['total'] / average - 1
+            difference = monthly / average - 1
             comparison = (' Parecido com a média do cargo.' if abs(difference) < 0.1
                           else f' {round(abs(difference) * 100)}% {"acima" if difference > 0 else "abaixo"} da média do cargo ({money(average)}).')
-        facts['lines'].append(('Cota parlamentar', f'{money(record["total"])} em reembolsos da cota em 2026.{comparison}'))
+        facts['lines'].append(('Cota parlamentar', f'{money(monthly)} por mês em reembolsos da cota '
+                               f'({period_label(period.get("inicio"), period.get("fim"))}, nos meses com notas).{comparison}'))
     else:
-        facts['lines'].append(('Cota parlamentar', 'Sem notas da cota importadas para 2026 (ausência de dado não é zero).'))
+        facts['lines'].append(('Cota parlamentar', 'Sem notas da cota importadas (ausência de dado não é zero).'))
     house, number = identifier.split(':', 1)
     presence = _chamber_presence(number) if house == 'camara' else None
     if presence:
-        facts['lines'].append(('Trabalha', f'Presença no Plenário em 2026: {round(presence["presente"] / presence["dias"] * 100)}% '
+        facts['lines'].append(('Trabalha', f'Presença no Plenário no mandato ({period_label(presence.get("inicio"), presence.get("fim"))}): {round(presence["presente"] / presence["dias"] * 100)}% '
                                f'({presence["presente"]} de {presence["dias"]} dias com sessão deliberativa).'))
     alerts = record.get('alertas') or []
     if record.get('hasExpenseData'):

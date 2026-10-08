@@ -18,7 +18,7 @@ CREATE INDEX IF NOT EXISTS authority_name ON authorities(name,id);
 CREATE INDEX IF NOT EXISTS expense_kind_date ON expenses(kind,year DESC,month DESC,date DESC,id);
 CREATE INDEX IF NOT EXISTS expense_kind_amount ON expenses(kind,amountCents DESC,id);
 CREATE TABLE IF NOT EXISTS authority_totals(authorityId TEXT,kind TEXT,amountCents INTEGER,count INTEGER,
- periodStart TEXT,periodEnd TEXT,PRIMARY KEY(authorityId,kind));
+ periodStart TEXT,periodEnd TEXT,monthCount INTEGER,PRIMARY KEY(authorityId,kind));
 CREATE TABLE IF NOT EXISTS supplier_totals(supplierKey TEXT PRIMARY KEY,amountCents INTEGER,count INTEGER,authorityCount INTEGER);
 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY,value TEXT);
 CREATE TABLE IF NOT EXISTS signals(id TEXT PRIMARY KEY,authorityId TEXT,sourceId TEXT,type TEXT,title TEXT,
@@ -28,3 +28,15 @@ CREATE INDEX IF NOT EXISTS signals_authority ON signals(authorityId,type);
 CREATE TABLE IF NOT EXISTS roster(sourceId TEXT NOT NULL REFERENCES sources(id),
  authorityId TEXT NOT NULL REFERENCES authorities(id), PRIMARY KEY(sourceId,authorityId));
 CREATE INDEX IF NOT EXISTS roster_authority ON roster(authorityId);
+-- v4: cota da Câmara de anos anteriores do mandato, só em agregados por pessoa (notas brutas ficam na base local).
+CREATE TABLE IF NOT EXISTS quota_history_months(authorityId TEXT NOT NULL REFERENCES authorities(id),
+ sourceId TEXT NOT NULL REFERENCES sources(id), year INTEGER NOT NULL, month INTEGER NOT NULL, category TEXT NOT NULL,
+ kind TEXT NOT NULL, amountCents INTEGER NOT NULL, count INTEGER NOT NULL,
+ PRIMARY KEY(authorityId,sourceId,month,category,kind)) WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS quota_history_suppliers(authorityId TEXT NOT NULL REFERENCES authorities(id),
+ sourceId TEXT NOT NULL REFERENCES sources(id), supplierKey TEXT NOT NULL REFERENCES suppliers(key),
+ amountCents INTEGER NOT NULL, count INTEGER NOT NULL, PRIMARY KEY(authorityId,sourceId,supplierKey)) WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS quota_history_largest(authorityId TEXT NOT NULL REFERENCES authorities(id),
+ sourceId TEXT NOT NULL REFERENCES sources(id), rank INTEGER NOT NULL, date TEXT, year INTEGER NOT NULL,
+ month INTEGER NOT NULL, category TEXT, amountCents INTEGER NOT NULL, documentUrl TEXT, supplierName TEXT,
+ PRIMARY KEY(authorityId,sourceId,rank)) WITHOUT ROWID;

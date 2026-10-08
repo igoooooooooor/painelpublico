@@ -173,7 +173,7 @@ def _read(path):
 
 def history_quota(root, year):
     """Monthly CEAP sums from the year's local import; the archive itself is the snapshot."""
-    data = _read(root / f'data/imports/legislative-{year}.json')
+    data = _read(root / f'data/raw/legislative/history/legislative-{year}.json')
     source = next((s for s in data.get('sources', []) if s.get('id') == 'camara_ceap'), {})
     if source.get('status') != 'imported':
         return {}

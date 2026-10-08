@@ -75,6 +75,12 @@ def migrate(db):
             db.execute(f'INSERT OR IGNORE INTO roster(sourceId,authorityId) SELECT sourceId,id FROM authorities '
                        f'WHERE sourceId IN ({marks})', ROSTER_SOURCES)
 
+        # v4: meses com notas por pessoa, denominador da média mensal da cota.
+        if 'monthCount' not in {row[1] for row in db.execute('PRAGMA table_info(authority_totals)')}:
+            db.execute('ALTER TABLE authority_totals ADD COLUMN monthCount INTEGER')
+            from .public_store import rebuild_aggregates
+            rebuild_aggregates(db)
+
         if version < 3:
             # v3: o complemento de moradia da CEAP deixa de ser reembolso e não reduz mais a cota.
             changed = db.execute(
