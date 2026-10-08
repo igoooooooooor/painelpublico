@@ -446,9 +446,13 @@ principal. Não há nova média geral, comparação entre Casas, ranking ou orde
 Nesta fotografia, 508/513 deputados têm média mensal; 452 com os sete meses. Os
 5 sem principal estão listados nas verificações.
 
-O cálculo anterior da cota, os dados SQLite, a home e as comparações existentes
-não foram corrigidos por esta etapa. A proposta de correção das linhas negativas
-é separada. O Senado continua com cota e referência do cargo, sem novo total;
+Desde o esquema v3 (8/10/2026), as linhas `COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA` da
+CEAP da Câmara têm natureza `complemento_moradia`: ficam fora do total, da média,
+da lista e dos alertas da cota, aparecem à parte na ficha com o sinal publicado e
+continuam na exportação de notas. A migração roda ao iniciar o servidor ou com
+`make db-init`; faça `make db-backup` antes.
+
+O Senado continua com cota e referência do cargo, sem novo total;
 a consulta individual existe oficialmente, mas o piloto não validou pagamentos
 individuais nesta base.
 

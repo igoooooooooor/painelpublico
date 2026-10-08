@@ -1,7 +1,17 @@
 # Auditoria de sinal da complementação do auxílio-moradia na CEAP
 
 Este levantamento isola a categoria oficial `COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA`
-no arquivo anual da CEAP. Ele não altera o banco nem os totais exibidos hoje.
+no arquivo anual da CEAP. O auditor não altera o banco.
+
+**Correção aplicada em 8/10/2026 (esquema v3).** Essas linhas passaram a ter
+natureza própria (`kind = complemento_moradia`) em vez de `reembolso`, na
+migração do banco e no importador. Assim, total, média, lista, categorias,
+fornecedores e alertas da cota não são mais reduzidos por elas. O sinal
+publicado é preservado; a ficha mostra o complemento à parte e a exportação de
+notas continua com essas linhas. As tabelas abaixo descrevem a situação antes
+da correção: o “total atual” passou a ser o “total após removê-las”. A
+recomputação dos sinais retirou 8 alertas (5 de fornecedor e 3 de pico), que só
+existiam porque as linhas negativas reduziam o total.
 Os valores são centavos inteiros, com o sinal publicado preservado.
 
 Reprodução sem rede:

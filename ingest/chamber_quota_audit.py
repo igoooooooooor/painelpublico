@@ -249,7 +249,7 @@ def _database_evidence(path: Path, year: int) -> dict[str, Any]:
                FROM expenses e JOIN (SELECT DISTINCT authorityId FROM roster WHERE sourceId=?) r
                  ON r.authorityId=e.authorityId
                JOIN authorities a ON a.id=e.authorityId
-               WHERE a.role='deputado' AND e.kind='reembolso'""",
+               WHERE a.role='deputado' AND e.kind IN ('reembolso','complemento_moradia')""",
             (CURRENT_ROSTER_SOURCE,),
         ))
         source_rows = list(connection.execute(
@@ -258,7 +258,7 @@ def _database_evidence(path: Path, year: int) -> dict[str, Any]:
                FROM expenses e JOIN (SELECT DISTINCT authorityId FROM roster WHERE sourceId=?) r
                  ON r.authorityId=e.authorityId
                JOIN authorities a ON a.id=e.authorityId
-               WHERE a.role='deputado' AND e.sourceId=? AND e.year=? AND e.kind='reembolso'""",
+               WHERE a.role='deputado' AND e.sourceId=? AND e.year=? AND e.kind IN ('reembolso','complemento_moradia')""",
             (CURRENT_ROSTER_SOURCE, CEAP_SOURCE_ID, year),
         ))
 

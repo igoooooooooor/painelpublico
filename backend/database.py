@@ -10,7 +10,8 @@ import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .config import DB_PATH, ROOT, ROSTER_SOURCES, SCHEMA_PATH, SCHEMA_VERSION
+from .config import (DB_PATH, HOUSING_COMPLEMENT_CATEGORY, HOUSING_COMPLEMENT_KIND, HOUSING_COMPLEMENT_SOURCE,
+                     ROOT, ROSTER_SOURCES, SCHEMA_PATH, SCHEMA_VERSION)
 
 
 def fold(value):
@@ -73,6 +74,15 @@ def migrate(db):
             marks = ','.join('?' * len(ROSTER_SOURCES))
             db.execute(f'INSERT OR IGNORE INTO roster(sourceId,authorityId) SELECT sourceId,id FROM authorities '
                        f'WHERE sourceId IN ({marks})', ROSTER_SOURCES)
+
+        if version < 3:
+            # v3: o complemento de moradia da CEAP deixa de ser reembolso e não reduz mais a cota.
+            changed = db.execute(
+                "UPDATE expenses SET kind=? WHERE sourceId=? AND kind='reembolso' AND category=?",
+                (HOUSING_COMPLEMENT_KIND, HOUSING_COMPLEMENT_SOURCE, HOUSING_COMPLEMENT_CATEGORY)).rowcount
+            if changed:
+                from .public_store import rebuild_aggregates
+                rebuild_aggregates(db)
 
         db.execute(f'PRAGMA user_version = {SCHEMA_VERSION}')
         db.commit()

@@ -78,12 +78,13 @@ def existing_parts(database, profiles, year, months):
             JOIN roster r ON r.authorityId=a.id WHERE a.role IN ('deputado','senador') ORDER BY a.id''').fetchall()
         sources = {row['id']: dict(row) for row in connection.execute('SELECT * FROM sources')}
         observed = {}
+        # A cota da composição parte da publicação original, com o complemento, e o subtrai explicitamente.
         for row in connection.execute('''SELECT e.authorityId,e.month,e.sourceId,
                 sum(e.amountCents) amountCents,count(*) rowCount,
                 sum(CASE WHEN category=? THEN amountCents ELSE 0 END) complementCents,
                 sum(CASE WHEN category=? THEN 1 ELSE 0 END) complementRows
                 FROM expenses e JOIN roster r ON r.authorityId=e.authorityId
-                WHERE e.year=? AND e.kind='reembolso'
+                WHERE e.year=? AND e.kind IN ('reembolso','complemento_moradia')
                 GROUP BY e.authorityId,e.month,e.sourceId''', (COMPLEMENT_CATEGORY, COMPLEMENT_CATEGORY, year)):
             observed.setdefault((row['authorityId'], row['month']), []).append(dict(row))
         result = {}

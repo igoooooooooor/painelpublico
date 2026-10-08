@@ -102,6 +102,16 @@ class ChamberQuotaAuditTests(unittest.TestCase):
         connection.commit()
         connection.close()
 
+    def test_importer_gives_housing_complement_its_own_kind_and_keeps_the_sign(self):
+        from backend.config import HOUSING_COMPLEMENT_CATEGORY, HOUSING_COMPLEMENT_KIND
+        import ingest.legislative as legislative
+        self.assertEqual((legislative.HOUSING_COMPLEMENT_CATEGORY, legislative.HOUSING_COMPLEMENT_KIND),
+                         (HOUSING_COMPLEMENT_CATEGORY, HOUSING_COMPLEMENT_KIND))
+        expenses, _ = load_chamber_expenses(self.archive_path, 2026, {}, audit.CEAP_SOURCE_ID)
+        kinds = {(e["category"], e["amount"]): e["kind"] for e in expenses}
+        self.assertEqual(kinds[(audit.COMPLEMENT_CATEGORY, -10.0)], "complemento_moradia")
+        self.assertEqual(kinds[("MANUTENÇÃO DE ESCRITÓRIO", 100.5)], "reembolso")
+
     def test_signed_quota_composition_uses_integer_cents_and_current_roster(self):
         self._write_database()
         result = audit.build_audit(self.archive_path, self.database_path, generated_at="2026-10-08T00:00:00+00:00")

@@ -11,6 +11,7 @@ import re
 from statistics import median
 
 from . import public_store as store
+from .config import HOUSING_COMPLEMENT_KIND
 
 ROLES = ('deputado', 'senador')
 ROLE_LABELS = {'deputado': 'deputados(as)', 'senador': 'senadores(as)'}
@@ -340,13 +341,18 @@ def politician(db, identifier):
         m['documentUrl'] = store.safe_url(m['documentUrl']) if m.get('documentUrl') else None
         m['fornecedor'] = (m['fornecedor'] or '').strip() or None
     signals = rows(db, "SELECT s.*,? authorityName FROM signals s WHERE s.authorityId=? AND s.type IN ('pico','fornecedor') ORDER BY s.amountCents DESC", (person['name'], identifier))
+    # Complemento de moradia da CEAP: fora da cota, mostrado à parte com o sinal publicado.
+    complement = db.execute('''SELECT SUM(amountCents),COUNT(*),GROUP_CONCAT(DISTINCT year||'-'||printf('%02d',month)) FROM expenses
+        INDEXED BY expense_authority WHERE authorityId=? AND kind=?''', (identifier, HOUSING_COMPLEMENT_KIND)).fetchone()
     cache = {}
     averages = _averages(db)
     return {'pessoa': person, 'total': total, 'hasExpenseData': has_expense_data,
             'expenseCount': expense_count, 'meses': monthly_totals,
             'categorias': [{'nome': k, 'valor': v} for k, v in sorted(categories.items(), key=lambda kv: -kv[1])],
             'fornecedores': suppliers, 'maiores': largest_expenses, 'alertas': [_alert(db, signal, people, cache) for signal in signals],
-            'media': averages.get(person.get('role'), {}).get('media'), 'snapshotAt': _snapshot(db)}
+            'media': averages.get(person.get('role'), {}).get('media'), 'snapshotAt': _snapshot(db),
+            'complementoMoradia': {'valor': complement[0] / 100, 'notas': complement[1],
+                                   'meses': sorted(complement[2].split(','))} if complement[1] else None}
 
 
 CSV_COLUMNS = ['Parlamentar', 'Competência', 'Data de emissão', 'Categoria', 'Valor (R$)', 'Fornecedor', 'CNPJ',
@@ -381,8 +387,8 @@ def expenses_csv(db, identifier):
         yield '\ufeff' + line(CSV_COLUMNS)
         for e in db.execute('''SELECT e.year,e.month,e.date,e.category,e.amountCents,s.name,s.cnpj,e.documentId,e.documentUrl,
                 src.label,src.url,src.fetchedAt FROM expenses e INDEXED BY expense_authority JOIN sources src ON src.id=e.sourceId
-                LEFT JOIN suppliers s ON s.key=e.supplierKey WHERE e.authorityId=? AND e.kind='reembolso'
-                ORDER BY e.year,e.month,e.date,e.id''', (identifier,)):
+                LEFT JOIN suppliers s ON s.key=e.supplierKey WHERE e.authorityId=? AND e.kind IN ('reembolso',?)
+                ORDER BY e.year,e.month,e.date,e.id''', (identifier, HOUSING_COMPLEMENT_KIND)):
             year, month, date, category, cents, supplier, cnpj, document, document_url, source, source_url, fetched = tuple(e)
             amount_text = f'{"-" if cents < 0 else ""}{abs(cents) // 100},{abs(cents) % 100:02d}'
             yield line([_csv_safe_text(name), f'{year:04d}-{month:02d}', date or '', _csv_safe_text(category), amount_text,

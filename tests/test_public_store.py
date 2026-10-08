@@ -184,6 +184,33 @@ class PublicStoreTests(unittest.TestCase):
         self.assertIsNone(ensure_schema(self.root / 'absent.sqlite3'))
         self.assertFalse((self.root / 'absent.sqlite3').exists())
 
+    def test_version_two_moves_housing_complement_out_of_the_quota(self):
+        self.payload['sources'].append({'id': 'camara_ceap', 'label': 'CEAP', 'status': 'imported', 'url': 'https://www.camara.leg.br/cotas/Ano-2026.csv.zip'})
+        self.payload['expenses'].append({'id': 'complement', 'authorityId': 'p:0', 'sourceId': 'camara_ceap', 'year': 2026, 'month': 3,
+            'date': '2026-03-10', 'category': 'COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA', 'kind': 'reembolso', 'amount': -1747})
+        self.import_data()
+        with closing(sqlite3.connect(self.db_path)) as db:
+            before = db.execute("SELECT amountCents FROM authority_totals WHERE authorityId='p:0' AND kind='reembolso'").fetchone()[0]
+            db.execute('PRAGMA user_version = 2')
+            db.commit()
+        self.assertEqual(ensure_schema(self.db_path), SCHEMA_VERSION)
+        with closing(store.connect(self.db_path)) as db, db:
+            kind, cents = db.execute("SELECT kind,amountCents FROM expenses WHERE id='complement'").fetchone()
+            self.assertEqual((kind, cents), ('complemento_moradia', -174700))
+            after = db.execute("SELECT amountCents FROM authority_totals WHERE authorityId='p:0' AND kind='reembolso'").fetchone()[0]
+            self.assertEqual(after - before, 174700)
+            profile = citizen.politician(db, 'p:0')
+            self.assertEqual(profile['total'] * 100, after)
+            self.assertEqual(profile['complementoMoradia'], {'valor': -1747.0, 'notas': 1, 'meses': ['2026-03']})
+            self.assertNotIn('COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA', [c['nome'] for c in profile['categorias']])
+            self.assertIsNone(citizen.politician(db, 'p:1')['complementoMoradia'])
+
+    def test_importer_kind_for_housing_complement_is_accepted(self):
+        self.payload['expenses'][0]['kind'] = 'complemento_moradia'
+        self.import_data()
+        with closing(store.connect(self.db_path)) as db, db:
+            self.assertEqual(db.execute("SELECT kind FROM expenses WHERE id='e:0:1'").fetchone()[0], 'complemento_moradia')
+
     def test_legacy_schema_migrates_once_and_preserves_data(self):
         db = sqlite3.connect(self.root / 'legacy.sqlite3')
         db.execute('''CREATE TABLE authorities (

@@ -8,7 +8,7 @@ import sqlite3
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
-from .config import DB_PATH, ROOT, ROSTER_SOURCES
+from .config import DB_PATH, HOUSING_COMPLEMENT_KIND, ROOT, ROSTER_SOURCES
 from .database import fold, migrate
 
 
@@ -113,7 +113,7 @@ def import_documents(paths, db_path=DB_PATH):
                 for e in payload.get('expenses', []):
                     if e.get('sourceId') not in source_ids or not e.get('id'):
                         raise ValueError('Despesa sem identidade/fonte')
-                    if e.get('kind') not in ('reembolso', 'remuneracao'):
+                    if e.get('kind') not in ('reembolso', 'remuneracao', HOUSING_COMPLEMENT_KIND):
                         raise ValueError('Natureza da despesa desconhecida')
                     year, month = int(e['year']), int(e['month'])
                     if year < 1900 or year > 2100 or not 1 <= month <= 12:
@@ -159,13 +159,7 @@ def import_documents(paths, db_path=DB_PATH):
                 (SELECT s.key FROM suppliers s JOIN original_suppliers o ON o.key=s.key
                  WHERE s.name IS NOT o.name OR s.cnpj IS NOT o.cnpj)''', (stamp,))
             db.execute('DELETE FROM suppliers WHERE key NOT IN (SELECT supplierKey FROM expenses WHERE supplierKey IS NOT NULL)')
-            db.execute('DELETE FROM authority_totals')
-            db.execute("""INSERT INTO authority_totals SELECT authorityId,kind,SUM(amountCents),COUNT(*),
-                MIN(printf('%04d-%02d',year,month)),MAX(printf('%04d-%02d',year,month)) FROM expenses GROUP BY authorityId,kind""")
-            db.execute('DELETE FROM supplier_totals')
-            db.execute('''INSERT INTO supplier_totals SELECT supplierKey,SUM(amountCents),COUNT(*),COUNT(DISTINCT authorityId)
-                FROM expenses WHERE supplierKey IS NOT NULL AND kind='reembolso' GROUP BY supplierKey''')
-            rebuild_signals(db)
+            rebuild_aggregates(db)
             db.execute("INSERT OR REPLACE INTO meta VALUES('snapshotAt',?)", (stamp,))
         return counts
     finally:
@@ -174,6 +168,26 @@ def import_documents(paths, db_path=DB_PATH):
 
 def rows(db, sql, args=()):
     return [dict(row) for row in db.execute(sql, args)]
+
+
+def rebuild_aggregates(db):
+    """Totais por pessoa e fornecedor e sinais, recalculados a partir das despesas."""
+    # A migração pode chamar com uma conexão sem row_factory; os sinais leem colunas por nome.
+    previous_factory, db.row_factory = db.row_factory, sqlite3.Row
+    try:
+        _rebuild_aggregates(db)
+    finally:
+        db.row_factory = previous_factory
+
+
+def _rebuild_aggregates(db):
+    db.execute('DELETE FROM authority_totals')
+    db.execute("""INSERT INTO authority_totals SELECT authorityId,kind,SUM(amountCents),COUNT(*),
+        MIN(printf('%04d-%02d',year,month)),MAX(printf('%04d-%02d',year,month)) FROM expenses GROUP BY authorityId,kind""")
+    db.execute('DELETE FROM supplier_totals')
+    db.execute('''INSERT INTO supplier_totals SELECT supplierKey,SUM(amountCents),COUNT(*),COUNT(DISTINCT authorityId)
+        FROM expenses WHERE supplierKey IS NOT NULL AND kind='reembolso' GROUP BY supplierKey''')
+    rebuild_signals(db)
 
 
 def rebuild_signals(db):

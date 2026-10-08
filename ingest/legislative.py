@@ -38,6 +38,9 @@ SENATE_CEAPS_URL = (
 )
 SENATE_ROSTER_URL = "https://legis.senado.leg.br/dadosabertos/senador/lista/atual"
 USER_AGENT = "QuantoCusta/1.0 (public-data importer)"
+# Mesmos valores de backend/config.py: o complemento de moradia da CEAP fica fora da cota.
+HOUSING_COMPLEMENT_CATEGORY = "COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA"
+HOUSING_COMPLEMENT_KIND = "complemento_moradia"
 CPF_IN_NAME = re.compile(
     r"(?<![A-Za-z0-9])(?:CPF\s*[:#-]?\s*)?(?:\d{11}|\d{3}\.\d{3}\.\d{3}-\d{2})(?![A-Za-z0-9])",
     re.IGNORECASE,
@@ -481,7 +484,9 @@ def load_chamber_expenses(path: Path, year: int, authorities: dict[str, dict[str
                                 "camara",
                                 row_index,
                             ),
-                            "kind": "reembolso",
+                            "kind": HOUSING_COMPLEMENT_KIND
+                            if str(row.get("txtDescricao") or "").strip() == HOUSING_COMPLEMENT_CATEGORY
+                            else "reembolso",
                         }
                     )
                     native_ids.append(native_id)

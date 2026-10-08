@@ -19,6 +19,11 @@ SNAPSHOTS_PATH = Path(_snapshots_setting).expanduser() if _snapshots_setting els
 if not SNAPSHOTS_PATH.is_absolute():
     SNAPSHOTS_PATH = ROOT / SNAPSHOTS_PATH
 SCHEMA_PATH = Path(__file__).resolve().parent / "schema.sql"
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
+# Complemento do auxílio-moradia lançado na CEAP da Câmara: publicado com líquido negativo, fica
+# à parte da cota (natureza própria) para não reduzir total, média, lista ou alertas. O sinal é preservado.
+HOUSING_COMPLEMENT_CATEGORY = "COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA"
+HOUSING_COMPLEMENT_KIND = "complemento_moradia"
+HOUSING_COMPLEMENT_SOURCE = "camara_ceap"
 # Listas oficiais completas (quem está em exercício). Só uma coleta bem-sucedida troca quem está nelas.
 ROSTER_SOURCES = ("camara_deputies_current", "senado_senators_current")

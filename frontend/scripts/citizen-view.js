@@ -362,18 +362,18 @@ function profileVoteDetails(shared) {
     ${presence?.motivos?.length ? `<p class="note">Justificativas de presença: ${presence.motivos.map(([reason, count]) => `${esc(reason.toLowerCase())} (${count})`).join(', ')}.</p>` : ''}
     ${senate ? '' : '<button type="button" class="more" data-go="attendance">Ver a presença de todos(as)</button>'}`;
 }
-function profileExpenseDetails(f, hasExpenseData, cost = null) {
+function profileExpenseDetails(f, hasExpenseData) {
   if (!hasExpenseData) return '<p class="muted">Não há lançamentos observados para calcular total, média, série mensal ou alertas.</p>';
   const maxMonth = Math.max(1, ...f.meses.map(month => month.valor));
   const categoryTotal = f.categorias.reduce((sum, category) => sum + category.valor, 0) || 1;
   const monthNames = ['', 'jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
   const observedMonths = f.meses.filter(month => Number.isInteger(month.month) && month.month >= 1 && month.month <= 12)
     .map(month => monthNames[month.month]);
-  const complement = cost?.complement?.signedAmountCents;
+  const complement = f.complementoMoradia;
   return `<section class="citizen-detail-part citizen-expense-original"><h3 class="k">Cota parlamentar · total de 2026</h3>
     <p><b>Total da cota em 2026:</b> ${brl(f.total, 2)}, somando todas as notas publicadas até agora.</p>
     ${observedMonths.length ? `<p class="muted">Meses com notas: ${esc([...new Set(observedMonths)].join(', '))}.</p>` : ''}
-    ${Number.isSafeInteger(complement) && complement !== 0 ? '<p class="muted">Esse total conta as notas do complemento de moradia como a Câmara publica, com sinal negativo. No custo mensal acima, essas notas ficam de fora e aparecem separadas no custo mês a mês.</p>' : ''}
+    ${complement && Number.isFinite(complement.valor) ? `<p class="muted">À parte: complemento do auxílio-moradia lançado na cota, ${brl(complement.valor, 2)} em ${complement.notas} ${complement.notas === 1 ? 'nota' : 'notas'}. A Câmara publica esse valor como negativo; ele não reduz o total acima.</p>` : ''}
   </section>
   <section class="citizen-detail-part"><h3 class="k">Mês a mês</h3>
     <div class="citizen-months">${f.meses.map(month => `<div><small>${Math.round(month.valor / 1e3)}k</small><b class="mt"><i style="height:${month.valor > 0 ? Math.max(2, month.valor / maxMonth * 100) : 0}%" class="${f.alertas.some(alert => alert.tipo === 'pico' && alert.mes === month.month) ? 'hot' : ''}"></i></b><span>${SHORT_MONTHS[month.month]}</span></div>`).join('')}</div>
@@ -421,7 +421,7 @@ function profileView() {
     <div class="citizen-answers">${costAnswer}${profileWorkAnswer(shared)}${profileAlertAnswer(alerts, hasExpenseData)}</div>
     <h2 class="h">Ver mais</h2>
     ${profileSectionsHTML(person, {
-      expenses: (person.role === 'deputado' ? profileCostDetails(shared.cost) : '') + profileExpenseDetails(f, hasExpenseData, shared.cost),
+      expenses: (person.role === 'deputado' ? profileCostDetails(shared.cost) : '') + profileExpenseDetails(f, hasExpenseData),
       alerts: alerts.length ? alerts.map(alert => alertCard(alert, { semPessoa: true })).join('') : `<p class="muted">${hasExpenseData ? 'Nenhum gasto incomum pelas regras do painel: nenhum mês muito acima do habitual e nenhum fornecedor com metade do dinheiro.' : 'Sem dados de cota para checar alertas.'}</p>`,
       votes: profileVoteDetails(shared), sources: sourcesHtml,
     })}`;

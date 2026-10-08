@@ -2,8 +2,8 @@
 
 Recorte aprovado: janeiro–julho de 2026, Câmara. A fotografia das fontes é local;
 não é uma afirmação sobre valores finais após futuras revisões dos órgãos.
-A composição nova não altera os lançamentos importados nem o cálculo anterior
-da cota, suas médias, alertas, lista ou ordenação.
+A composição nova não altera os lançamentos importados. A correção da cota
+exibida para o complemento de moradia foi aplicada depois, em 8/10/2026.
 
 ## A. Complemento na cota
 
@@ -32,7 +32,10 @@ linhas de moradia, o documento é positivo, a glosa está vazia e o líquido é 
 oposto do documento. Não se presumiu que glosa vazia seja zero nem se inventou
 uma justificativa contábil para essa combinação.
 
-**Proposta separada de correção da cota atual, não aplicada:** retirar somente
+**Correção aplicada em 8/10/2026** (ver [auditoria da cota](mandate-quota-audit.md)):
+a categoria tem natureza própria e não reduz mais a cota exibida; a ficha passa a
+mostrar um único total de cota, coerente com o custo do mandato. Texto original da
+proposta: retirar somente
 essa categoria da soma apresentada e exibir seus lançamentos uma vez à parte,
 com o sinal original e indicação de que o tratamento é provisório. Isso exige
 revisar também a coerência de médias, alertas, totais de categorias e exportação.
