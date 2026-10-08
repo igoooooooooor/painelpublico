@@ -1,0 +1,9 @@
+# Snapshots que só servem para montar mandate-cost.json e presenca.json localmente.
+# O servidor não os lê; `make deploy-data` não os envia e apaga cópias antigas na VPS.
+chamber-payroll*.json
+chamber-housing*.json
+chamber-service*.json
+chamber-mandate-history.json
+chamber-quota-audit.json
+mandate-cost-audit.json
+senate-payroll-pilot.json
