@@ -333,6 +333,11 @@ function profileWorkAnswer(shared) {
     ${presence && averagePresence !== null ? `<span class="fchip citizen-verdict">${presencePercent === averagePresence ? 'Perto da média' : presencePercent > averagePresence ? 'Acima da média' : 'Abaixo da média'}</span>` : ''}
   </section>`;
 }
+/* As duas regras de alerta, iguais para todos(as); detalhes na aba Alertas. */
+const ALERT_RULES_HTML = `<ul class="citizen-alert-rules">
+    <li><b>Mês acima do habitual:</b> um mês com gasto 1,75 vez maior que a mediana dos meses anteriores da própria pessoa, com pelo menos R$ 10 mil de diferença e acima do gasto mensal típico dos(as) colegas.</li>
+    <li><b>Mesmo fornecedor:</b> metade ou mais da cota do ano paga a uma só empresa, somando pelo menos R$ 30 mil.</li>
+  </ul>`;
 function profileAlertAnswer(alerts, hasExpenseData) {
   const ranks = { alto: 3, medio: 2, info: 1 };
   const top = [...alerts].sort((a, b) => (ranks[b.nivel] || 0) - (ranks[a.nivel] || 0))[0];
@@ -341,7 +346,10 @@ function profileAlertAnswer(alerts, hasExpenseData) {
     ${top ? `<span class="fchip citizen-alert-count">${alerts.length} ${alerts.length === 1 ? 'alerta' : 'alertas'}</span>
       <h3 class="citizen-title">${esc(top.titulo)}</h3>${alertVisualization(top)}<p class="citizen-statement">${esc(top.frase)}</p>${top.contexto?.frase ? `<p class="citizen-context">${esc(top.contexto.frase)}</p>` : ''}
       <button type="button" class="more" data-profile-open="alerts">${alerts.length > 1 ? `Ver os demais alertas (${alerts.length - 1})` : 'Ver alerta em detalhe'} →</button>`
-    : `<p class="citizen-empty">${hasExpenseData ? 'Nenhum gasto incomum pelas regras do painel' : 'Sem dados de cota para checar alertas.'}</p>`}
+    : hasExpenseData ? `<p class="citizen-empty">Nenhum gasto incomum nas notas da cota de 2026</p>
+      <p class="muted">Checamos duas regras, as mesmas para todos(as):</p>${ALERT_RULES_HTML}
+      <p class="muted">Não apareceu nenhum dos dois casos. Isso não é uma auditoria completa das notas.</p>`
+    : '<p class="citizen-empty">Sem dados de cota para checar alertas.</p>'}
   </section>`;
 }
 const PROFILE_VOTE_LIMIT = new Map();
@@ -422,7 +430,7 @@ function profileView() {
     <h2 class="h">Ver mais</h2>
     ${profileSectionsHTML(person, {
       expenses: (person.role === 'deputado' ? profileCostDetails(shared.cost) : '') + profileExpenseDetails(f, hasExpenseData),
-      alerts: alerts.length ? alerts.map(alert => alertCard(alert, { semPessoa: true })).join('') : `<p class="muted">${hasExpenseData ? 'Nenhum gasto incomum pelas regras do painel: nenhum mês muito acima do habitual e nenhum fornecedor com metade do dinheiro.' : 'Sem dados de cota para checar alertas.'}</p>`,
+      alerts: alerts.length ? alerts.map(alert => alertCard(alert, { semPessoa: true })).join('') : (hasExpenseData ? `<p class="muted">Nenhum gasto incomum nas notas da cota de 2026. Regras checadas, iguais para todos(as):</p>${ALERT_RULES_HTML}<button type="button" class="more" data-go="alerts">Como funcionam os alertas →</button>` : '<p class="muted">Sem dados de cota para checar alertas.</p>'),
       votes: profileVoteDetails(shared), sources: sourcesHtml,
     })}`;
 }

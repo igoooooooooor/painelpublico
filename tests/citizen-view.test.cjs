@@ -254,6 +254,20 @@ test('profile starts with three ordered answers and keeps the complementary deta
   assert.match(html, /Alerta preservado/);
 });
 
+test('profile without alerts explains which rules were checked and keeps neutral contact wording', () => {
+  const { api, state } = makeView();
+  setProfileFixture(api, state, 'camara:56', {
+    total: 80000, hasExpenseData: true, meses: [], categorias: [], fornecedores: [], maiores: [], alertas: [],
+  });
+  const html = api.profileView();
+  const answer = html.slice(html.indexOf('data-profile-answer="alerts"'));
+  assert.match(answer, /Nenhum gasto incomum nas notas da cota de 2026/);
+  assert.match(answer, /Mês acima do habitual:<\/b> um mês com gasto 1,75 vez/);
+  assert.match(answer, /Mesmo fornecedor:<\/b> metade ou mais/);
+  assert.doesNotMatch(html, /regras do painel|fora do normal|estranho/);
+  assert.match(html, /Fale com ele\(a\)/);
+});
+
 test('profile distinguishes missing cota from an observed zero and treats a difference under ten percent as similar', () => {
   const { api, state } = makeView();
   setProfileFixture(api, state, 'camara:55');
