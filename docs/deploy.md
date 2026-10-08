@@ -67,7 +67,15 @@ O HTML contém os metadados curtos dos quatro cartões de votação e os complem
 
 ## Endereço público e buscadores
 
-Defina o domínio no serviço para que `sitemap.xml`, `robots.txt` e os endereços canônicos usem sempre o mesmo
-endereço: acrescente `Environment=PAINEL_SITE_URL=https://seudominio.com.br` em `deploy/dashboard.service` (ou num
-override local do systemd). Sem a variável, o servidor usa o `Host` que o Cloudflare Tunnel repassa.
+Defina o domínio no servidor para que `sitemap.xml`, `robots.txt` e os endereços canônicos usem sempre o mesmo
+endereço. Use um override do systemd: o deploy reinstala `deploy/dashboard.service` a cada publicação, mas não
+toca no override.
+
+```sh
+sudo mkdir -p /etc/systemd/system/painel.service.d
+printf '[Service]\nEnvironment=PAINEL_SITE_URL=https://seudominio.com.br\n' | sudo tee /etc/systemd/system/painel.service.d/site-url.conf
+sudo systemctl daemon-reload && sudo systemctl restart painel
+```
+
+Sem a variável, o servidor usa o `Host` que o Cloudflare Tunnel repassa.
 Depois do deploy, envie `https://seudominio.com.br/sitemap.xml` no Google Search Console e no Bing Webmaster Tools.
