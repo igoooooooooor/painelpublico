@@ -6,7 +6,7 @@ HOST ?= 127.0.0.1
 
 
 .PHONY: ci deploy-data remote-build
-.PHONY: help build dev prod test check db-init db-check db-backup import collect-legislative collect-profiles collect-senate collect-project-status collect-elections collect-cities collect-amendments collect-accounts collect-mandate-cost audit-mandate-cost deploy deploy-db deploy-status
+.PHONY: help build dev prod test check db-init db-check db-backup import collect-legislative collect-profiles collect-senate collect-project-status collect-elections collect-cities collect-amendments collect-accounts collect-mandate-cost audit-mandate-cost collect-mandate-history deploy deploy-db deploy-status
 help:
 	@echo "make dev                Gera o app e inicia em localhost:8000"
 	@echo "make check              Build, sintaxe e testes (sem downloads)"
@@ -22,6 +22,7 @@ help:
 	@echo "make collect-cities     Coleta manual da base nacional IBGE e TSE"
 	@echo "make collect-mandate-cost  Coleta manual e retomável de folha e moradia da Câmara"
 	@echo "make audit-mandate-cost    Reconstrói os novos snapshots sem rede"
+	@echo "make collect-mandate-history  Cota, moradia, gabinete e presença da Câmara de 2023 a 2025"
 	@echo "make prod               Roda como em produção (cache, só localhost)"
 	@echo "make deploy SERVER=...  Testa e publica o código no servidor"
 	@echo "make deploy-data SERVER=...  Envia banco e snapshots (alias: deploy-db)"
@@ -98,6 +99,14 @@ audit-mandate-cost:
 	$(PYTHON) ingest/chamber_housing.py --year $(or $(YEAR),2026) --months 1,2,3,4,5,6,7,8,9
 	$(PYTHON) ingest/senate_payroll_pilot.py
 	$(PYTHON) ingest/mandate_cost_audit.py --year $(or $(YEAR),2026)
+
+# Partes baratas do mandato (2023–2025), em arquivos próprios por ano; não modifica a ficha nem o SQLite.
+collect-mandate-history:
+	@for year in 2023 2024 2025; do $(PYTHON) ingest/legislative.py --year $$year --output data/imports/legislative-$$year.json || exit 1; done
+	$(PYTHON) ingest/chamber_housing.py --collect --year 2023 --months 2,3,4,5,6,7,8,9,10,11,12
+	$(PYTHON) ingest/chamber_housing.py --collect --year 2024 --months 1,2,3,4,5,6,7,8,9,10,11,12
+	$(PYTHON) ingest/chamber_housing.py --collect --year 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12
+	$(PYTHON) ingest/chamber_mandate_history.py --collect
 
 prod: build
 	$(PYTHON) -m backend.server --prod --host 127.0.0.1 --port $(PORT)

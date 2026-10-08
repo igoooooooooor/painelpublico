@@ -456,6 +456,43 @@ O Senado continua com cota e referência do cargo, sem novo total;
 a consulta individual existe oficialmente, mas o piloto não validou pagamentos
 individuais nesta base.
 
+## Quanto custa um mandato — período do mandato (2023–2025), partes baratas
+
+Primeira coleta para trocar o recorte de jan–jul/2026 pelo mandato atual (desde
+fev/2023). Fontes e limites no [levantamento](mandate-period-sources.md). Só a
+Câmara, só os deputados da lista atual e sem folha individual, que fica para uma
+etapa própria. Nenhum desses arquivos altera a ficha, a média ou o SQLite.
+
+```bash
+make collect-mandate-history
+```
+
+- **Cota:** `ingest/legislative.py --year {ano} --output data/imports/legislative-{ano}.json`.
+  O `legislative.json` do ano corrente não é tocado.
+- **Moradia:** `ingest/chamber_housing.py --year {ano}` grava
+  `data/snapshots/chamber-housing-{ano}.json`; 2026 continua em `chamber-housing.json`.
+- **Gabinete e presença:** `ingest/chamber_mandate_history.py` lê o perfil anual
+  (`/deputados/{id}?ano={ano}`, mesmo parser da ficha) e a página de presença em
+  Plenário (`/deputados/{id}/presenca-plenario/{ano}`), e grava
+  `data/snapshots/chamber-mandate-history.json` com valores por mês desde 2023-02.
+  O cache em `data/raw/mandate-history/` guarda só o extrato do gabinete e
+  datas/status da presença, sem HTML.
+
+Valores da época, sem correção pela inflação. Mês ausente é dado não publicado ou
+não coletado, nunca zero.
+
+Cobertura da coleta de 8/10/2026 (513 deputados da lista atual):
+
+| Parte | Resultado |
+| --- | --- |
+| Cota | Arquivos de 2023, 2024 e 2025 importados (175.140, 174.699 e 171.081 notas da Câmara, todas as pessoas) |
+| Moradia | Todos os meses de fev/2023 a dez/2025 consultados com status `available` |
+| Gabinete | 503 deputados com algum mês; por mês, 478 a 498. **Dez/2024: 0** — a fonte não publica o mês para ninguém |
+| Presença | 502 deputados com algum mês; por mês, 444 a 481. Janeiro sem sessões (recesso), não é ausência |
+
+Os 10 sem gabinete e os 11 sem presença são, em geral, suplentes que entraram
+depois de 2025; os nomes estão no snapshot.
+
 ## Minha cidade — Fase 1: IBGE e TSE
 
 ```sh

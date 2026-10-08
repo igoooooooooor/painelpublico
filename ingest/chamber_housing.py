@@ -49,7 +49,10 @@ def paths(root: Path = ROOT, year: int = DEFAULT_YEAR) -> dict[str, Path]:
     return {
         "cache_dir": raw,
         "roster": root / "data" / "imports" / "legislative.json",
-        "output": root / "data" / "snapshots" / "chamber-housing.json",
+        # Anos anteriores ficam em arquivo próprio para não sobrescrever o ano corrente da ficha.
+        "output": root / "data" / "snapshots" / (
+            "chamber-housing.json" if year == DEFAULT_YEAR else f"chamber-housing-{year}.json"
+        ),
     }
 
 
