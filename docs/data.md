@@ -363,6 +363,48 @@ A v1 proposta preserva essas diferenças: subsídio de referência fora do total
 pago, imóveis sem valor imputado, benefícios sem duplicar folha/cota e comparação
 somente com mesmas partes e períodos. Detalhes e condições estão no levantamento.
 
+## Quanto custa um mandato — Fase 2: coleta local
+
+A coleta de folha da Fase 2 terminou com 4.617 competências consultadas (513 deputados × 9 meses): 1.014 completas, 3.512 parciais e 91 indisponíveis. A [tabela mensal e os três exemplos auditados](mandate-cost-collection.md) detalham cota, gabinete, folha e moradia, incluindo suplementares e divergências entre fontes.
+
+Os [resultados e exemplos da coleta](mandate-cost-collection.md) documentam a
+folha individual e moradia da Câmara, o inventário de folhas suplementares e o
+piloto interrompido do Senado. Os snapshots novos são locais e **ainda não são
+consumidos pela ficha, comparação, lista ou API**. O SQLite não foi modificado.
+Cota e gabinete são reaproveitados com suas próprias datas e competências.
+
+```sh
+make collect-mandate-cost YEAR=2026   # rede explícita, janeiro–setembro
+make audit-mandate-cost YEAR=2026     # reconstrução offline
+```
+
+Folha: no máximo duas consultas simultâneas, intervalo mínimo de 0,25 segundo
+entre inícios, resposta gravada atomicamente por pessoa/mês. Moradia: consultas
+sequenciais e cache por página/mês. Retomadas pulam respostas válidas, repetem
+falhas e preservam observações anteriores com suas datas. Há centavos inteiros,
+fontes, competências e hashes; não há rateio de folhas anônimas ou anualização.
+As páginas individuais podem conter normal, complementar e adiantamento de 13º;
+todas as tabelas observadas são mantidas. Inventários CSV preservam somente
+agregados do grupo parlamentar, sem dados de servidores ou códigos por pessoa.
+
+Moradia tem **4.597 registros pessoa/mês com valores publicados de 4.617
+possíveis** (513 × 9): 507 por mês em janeiro–março, 511 em abril e 513 por mês
+em maio–setembro. Os 20 ausentes ficam nulos. Setembro tem zeros publicados de
+auxílio/complemento para todos, mas a folha de Rui Falcão informa auxílio; isso
+é uma divergência entre fontes, não prova de que ninguém recebeu benefício.
+
+No Senado, o CSV mensal não oferece nome/identificador individual seguro:
+**10 IDs selecionados, 0 ligações, 0 competências validadas, 0 consultas
+individuais**. A validação parou no esquema e o coletor final guarda somente
+cabeçalhos/metadados, sem linhas de servidores. O subsídio permanece referência.
+
+A proposta de período comum é **janeiro–julho de 2026**, condicionada à presença
+das mesmas partes em cada mês. Folhas com cobertura mensal não certificada,
+lacunas e divergências continuam explícitas. Nenhuma média é liberada nesta
+fase; comparações futuras exigem mesma Casa, partes e competências. O auxílio
+já observado na folha não será somado novamente como moradia. Complementos
+com sinais diferentes permanecem separados até conciliação contábil comprovada.
+
 ## Minha cidade — Fase 1: IBGE e TSE
 
 ```sh
