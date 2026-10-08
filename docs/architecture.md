@@ -67,3 +67,24 @@ por modificação de arquivo. Ausência do snapshot ou do código municipal rece
 estado explícito. A ligação com fichas consulta o roster nacional somente para
 leitura: nome público exato e único, sem usar a UF de destino como UF do autor.
 Os valores permanecem em centavos até a formatação na interface.
+
+## Minha cidade — Contas municipais
+
+`ingest/accounts.py` consulta DCA/SICONFI e mantém as contas em
+`data/snapshots/accounts.json`, sem alteração do SQLite. Cada município tem estado
+de disponibilidade; uma falha de consulta não comprova falta de entrega. Brasília
+e Fernando de Noronha ficam fora da comparação municipal. A população usada nas
+faixas é uma fotografia IBGE do mesmo exercício, independente da população mais
+recente exibida no cabeçalho da cidade.
+
+`backend/accounts.py` complementa a rota de detalhe municipal. Só libera medianas
+após confirmação da coleta nacional completa. Para cada indicador, exclui a cidade
+consultada, dados ausentes e observações de outra etapa ou classificação. Exige
+três outros municípios com valores válidos, mostra o tamanho da amostra e mantém
+zeros efetivamente declarados. Não calcula ranking.
+
+`ingest/finbra.py` importa os três CSVs nacionais para um estágio separado, com
+hashes e fontes por indicador. A instalação opcional completa caches ausentes e
+retém evidências de divergências antes de ocultar valores conflitantes. O estágio
+não escreve o snapshot: `ingest/accounts.py` continua responsável pela publicação
+local e pela verificação de cobertura nacional.

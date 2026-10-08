@@ -2,7 +2,7 @@
 
 Protótipo para entender, em linguagem simples, gastos, presença e votações de deputados(as) e senadores(as). Alertas indicam registros para conferir, não conclusões de irregularidade.
 
-A área **Minha cidade** consulta a base nacional do IBGE e os resultados eleitorais do TSE e as emendas municipais do Portal da Transparência, com busca por nome, fontes, períodos e indicação de dados ausentes.
+A área **Minha cidade** reúne a base nacional do IBGE, os resultados eleitorais do TSE, as emendas municipais do Portal da Transparência e as contas anuais do SICONFI, com busca por nome, fontes, períodos e indicação de dados ausentes.
 
 É um projeto pessoal, independente e apartidário, sem vínculo com partidos, políticos ou órgãos públicos. Ele apenas reúne e organiza informações que os próprios órgãos já publicam. Veja o [Aviso legal](LEGAL-NOTICE.md).
 
@@ -42,6 +42,7 @@ python3 -m backend.server --port 8000
 | `make collect-profiles` | Coletar manualmente os complementos das fichas; depois rode `make build` |
 | `make collect-senate YEAR=2026` | Coletar presença registrada, votos nominais e autoria do Senado; depois rode `make build` |
 | `make collect-project-status` | Consultar a situação dos projetos já listados, com fontes e datas; atualização e modo offline em [Dados e SQLite](docs/data.md) |
+| `make collect-accounts YEAR=2025` | Coletar contas anuais municipais do SICONFI, com cache e reconstrução offline |
 | `make collect-amendments YEAR=2026` | Coletar emendas por município e ano da proposta; valores empenhados e pagos separados |
 | `make collect-cities` | Coletar a base nacional de Minha cidade (IBGE e TSE); reconstrução offline em [Dados e SQLite](docs/data.md) |
 | `make collect-elections` | Ligar a lista atual às candidaturas de 2026 no TSE; depois rode `make build` |

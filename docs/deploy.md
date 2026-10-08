@@ -35,7 +35,7 @@ visitante → Cloudflare (HTTPS, cache, proteção) → túnel → 127.0.0.1:800
 
 | O que mudou | Comando |
 |---|---|
-| Código, telas ou snapshots | `make deploy` |
+| Código ou telas | `make deploy` |
 | Banco ou snapshots (nova coleta/importação) | `make db-check` e depois `make deploy-data` (alias `deploy-db`) |
 | Ver se está no ar | `make deploy-status` |
 

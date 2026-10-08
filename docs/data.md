@@ -385,7 +385,7 @@ snapshots e capturas de revisão ficam fora do Git.
 Bens declarados e financiamento de campanha ficam para uma etapa posterior: será
 necessário validar os respectivos leiautes, períodos, unidades monetárias (centavos)
 e junções por identificador de candidatura, mantendo a mesma projeção de privacidade.
-Emendas e contas municipais pertencem às Fases 2 e 3, ainda não implementadas.
+Emendas e contas municipais são descritas nas seções das Fases 2 e 3 abaixo.
 
 ### Cobertura verificada em 7/10/2026
 
@@ -406,8 +406,8 @@ O cadastro inclui os 5.569 municípios, Brasília e Fernando de Noronha. A difer
 em relação ao planejamento de 5.570 localidades é Boa Esperança do Norte/MT
 (IBGE `5101837`, TSE `73709`), presente nas fontes oficiais consultadas. População
 vem da [tabela 6579, variável 9324, período 2026 do IBGE](https://servicodados.ibge.gov.br/api/v3/agregados/6579/periodos/2026/variaveis/9324?localidades=N6%5Ball%5D),
-com valor observado para todas as localidades. Não há comparação de contas ou
-faixas populacionais nesta fase.
+com valor observado para todas as localidades. Na Fase 3, as comparações financeiras
+usam a população do exercício correspondente, como descrito adiante.
 
 Brasília e Fernando de Noronha não têm eleição municipal. Iporá/GO não tem eleitos
 confirmados no recorte ordinário do arquivo consultado; a página mantém população,
@@ -565,3 +565,177 @@ Serra da Saudade/MG não tem linha com destino municipal identificado para 2026;
 a tela explica a ausência. Nenhum desses resultados comprova o total recebido
 pelo município. A distribuição municipal incompleta é a principal limitação desta
 fase; os valores sem destino não são rateados nem atribuídos por inferência.
+
+## Minha cidade — Contas municipais (Fase 3)
+
+Fontes oficiais: [DCA/SICONFI — conjunto de dados](https://www.tesourotransparente.gov.br/ckan/dataset/api-dca-entes),
+[documentação da API](https://apidatalake.tesouro.gov.br/docs/siconfi/),
+[esquema dos endpoints](https://apidatalake.tesouro.gov.br/docs/siconfi.yaml),
+[FINBRA — consulta nacional](https://siconfi.tesouro.gov.br/siconfi/pages/public/consulta_finbra/finbra_list.jsf)
+e [instruções de preenchimento](https://www.siconfi.tesouro.gov.br/siconfi/pages/public/conteudo/conteudo.jsf?id=42).
+O recorte inicial é o **exercício encerrado de 2025**, disponível em 7/10/2026.
+Não mistura o exercício de 2026 ainda em andamento, nem substitui lacunas de uma
+cidade por valores de anos diferentes.
+
+### Indicadores e limites
+
+| Indicador | Anexo e seleção da fonte |
+| --- | --- |
+| Receita bruta realizada | I-C, rótulo `Padrão`, conta `TotalReceitas`, coluna `Receitas Brutas Realizadas` |
+| Despesa empenhada total | I-D, `Padrão`, `TotalDespesas`, `Despesas Empenhadas` |
+| Saúde, exceto intraorçamentárias | I-E, `Total Geral da Despesa por Função`, `TotalDespesas`, conta `10 - Saúde`, `Despesas Empenhadas` |
+| Educação, exceto intraorçamentárias | I-E, `Total Geral da Despesa por Função`, `TotalDespesas`, conta `12 - Educação`, `Despesas Empenhadas` |
+| Pessoal e encargos, exceto intraorçamentárias | I-D, `Padrão`, `DO3.1.00.00.00.00`, `Despesas Empenhadas` |
+
+Os nomes completos dos anexos na API têm prefixo `DCA-Anexo`. O total de receita
+bruta é anterior às deduções de FUNDEB e outras deduções. Receita e despesa totais
+incluem operações intraorçamentárias, conforme os agregados publicados; não são
+uma medida líquida consolidada sem essas operações. Saúde e educação não incluem intraorçamentárias no detalhamento por função.
+Pessoal usa explicitamente a natureza ordinária, excluindo intraorçamentárias. Esse indicador não é a despesa
+com pessoal calculada para o limite da LRF.
+
+Saúde e educação são funções; pessoal é uma natureza de despesa que pode estar
+contida nessas funções. Não se somam recortes sobrepostos, totais com seus filhos,
+nem empenhado com liquidado ou pago. Todos os valores de despesa usam a mesma
+etapa: empenhado. Valores monetários são lidos com precisão decimal e guardados
+em centavos inteiros. Campo ausente, inválido ou conflitante permanece ausente;
+zero só aparece quando efetivamente publicado na fonte.
+
+O endpoint DCA é
+`https://apidatalake.tesouro.gov.br/ords/cdwhprd/siconfi/tt/dca?an_exercicio=2025&id_ente=CODIGO_IBGE`.
+A API exige o ente, retorna até 5.000 linhas por página e informa `hasMore` e
+links de paginação. O limite oficial é uma requisição por segundo. Uma resposta
+sem ente não constitui uma base nacional. O extrato de entregas identifica
+`Balanço Anual (DCA)`, período 1, com estados homologado (`HO`) ou retificado (`RE`).
+Ausência de linhas financeiras ou falha de rede, sozinha, não comprova falta de entrega.
+A classificação de não entrega exige consulta completa ao extrato e identidade
+confirmada no cadastro oficial `/entes` (código, UF e esfera municipal) ou em
+registro válido do próprio extrato. O cache de entes descarta CNPJ e mantém apenas
+código, nome, UF e esfera. Código sem identidade confirmada permanece indisponível.
+
+Brasília não recebe os valores do Governo do Distrito Federal (código SICONFI 53)
+como se fossem contas de uma prefeitura. Fernando de Noronha também não é um
+município com DCA própria neste recorte. Ambos têm explicação e ficam fora das
+medianas e dos denominadores municipais.
+
+### Comparação por porte
+
+As faixas seguem as classes de tamanho populacional usadas pelo IBGE na
+[Pesquisa de Informações Básicas Municipais](https://agenciadenoticias.ibge.gov.br/media/com_mediaibge/arquivos/070e55d231118f7c5e02f77187bad04e.pdf):
+até 5.000; 5.001–10.000; 10.001–20.000; 20.001–50.000; 50.001–100.000;
+100.001–500.000; mais de 500.000 habitantes.
+A população vem das [estimativas municipais de 2025, tabela 6579 do IBGE](https://servicodados.ibge.gov.br/api/v3/agregados/6579/periodos/2025/variaveis/9324?localidades=N6%5Ball%5D),
+com 5.571 localidades. Ela é independente da população de 2026 no cabeçalho da página.
+
+A mediana considera os demais municípios brasileiros da mesma faixa, excluindo a
+cidade consultada, Brasília, Fernando de Noronha e observações sem valor válido.
+Cada indicador informa seu próprio tamanho de amostra; no mínimo três pares são
+necessários. Valores declarados iguais a zero entram no cálculo. Não há ranking,
+percentil, pontuação nem juízo de eficiência. Os valores comparados são totais
+anuais, não valores por habitante. A mediana não é uma meta de gasto.
+
+As comparações só são liberadas após a confirmação de cobertura nacional completa.
+A seção indica também a fonte e a data da base nacional usada nas medianas.
+Esse indicador mede cobertura, não atualização: uma falha de atualização preserva
+a observação anterior, com estado e data próprios; ela não vira ausência ou zero.
+Medianas de grupos com número par usam a média dos dois valores centrais;
+meio centavo é arredondado para longe de zero. Não se misturam exercícios,
+etapas financeiras ou classificações distintas em um indicador.
+
+### Reconstrução das contas
+
+```sh
+make collect-accounts YEAR=2025
+python3 ingest/accounts.py --collect --refresh --year 2025
+python3 ingest/accounts.py --year 2025
+```
+
+O primeiro comando consulta o cadastro de entes quando ausente, carrega a população
+do exercício quando necessário e completa as consultas municipais ausentes em cache.
+A atualização forçada refaz consultas; a reconstrução sem `--collect` não acessa a rede. Caches
+municipais são gravados atomicamente, permitindo retomada, e ficam em
+`data/raw/siconfi/accounts-2025/`. O snapshot final é independente do banco SQLite.
+Falhas preservam observações úteis anteriores com indicação de fotografia antiga;
+consulta indisponível deve ser tentada novamente na próxima coleta.
+
+As consultas completas de São Paulo/SP e Serra da Saudade/MG foram verificadas na
+API: 3.197 e 814 linhas, respectivamente, ambas sem página seguinte. O extrato
+registra DCA homologada de 2025 para São Paulo em 30/4/2026 e Serra da Saudade em
+5/5/2026. O código SICONFI 53 tem a declaração própria do Governo do Distrito
+Federal; não é uma substituição para o código IBGE de Brasília.
+
+
+### Importação nacional do FINBRA
+
+Os três CSVs de 2025 foram baixados manualmente na consulta pública do FINBRA,
+com escopo **Municípios** e sem limitar a data de homologação: receitas (I-C),
+despesas orçamentárias (I-D) e despesas por função (I-E). O importador usa leitura
+em streaming, codificação Windows-1252, separador ponto e vírgula e valida
+exercício, escopo, anexo, cabeçalho e oito campos por linha. Aspas internas da
+publicação são toleradas sem dispensar a validação do layout. Identificadores
+recebem apenas a remoção do prefixo oficial `siconfi-cor_` para corresponder às
+contas da API. Em I-E, o código repetido `TotalDespesas` exige também o nome exato
+da função; não se somam linhas nem se confunde o total com saúde ou educação.
+
+```sh
+python3 -m ingest.finbra --year 2025
+python3 -m ingest.finbra --year 2025 --install-missing
+python3 ingest/accounts.py --collect --year 2025
+python3 ingest/accounts.py --year 2025
+```
+
+Os arquivos de entrada padrão são `data/raw/finbra.csv`,
+`data/raw/finbra-expenses.csv` e `data/raw/finbra-functions.csv`.
+O estágio `data/raw/siconfi/finbra-2025/` guarda a projeção municipal e um manifesto
+com hashes SHA-256 e contagens dos arquivos. O horário do arquivo local registra
+a obtenção local; os CSVs não informam a revisão ou o instante de extração no
+Tesouro. Não se atribui uma divergência a uma retificação sem essa evidência.
+
+A instalação preenche caches ausentes, preserva os valores já consultados na API
+quando coincidem e registra divergências em auditoria local. Valor numérico que
+diverge entre as fontes fica ausente; conflito entre o CSV e o extrato de entrega
+não recebe o rótulo de não entrega. A consulta posterior à API cobre os municípios
+sem linhas nos CSVs. Os arquivos originais, caches e auditoria ficam fora do Git.
+
+Na auditoria de 7/10/2026, os anexos continham 712.113 linhas (I-C), 962.401
+(I-D) e 1.105.409 (I-E), sem linhas com número incorreto de campos. Cada seleção
+produziu no máximo uma observação por cidade. O somatório de primeiro nível das
+funções coincidiu com o agregado “Despesas Exceto Intraorçamentárias” em todas
+as 5.499 cidades do anexo I-E, confirmando o escopo desse detalhamento.
+
+Três divergências foram confirmadas em nova consulta à API:
+
+- **Curaçá/BA (2909901):** receita bruta de R$ 200.154.508,19 na API e
+  R$ 215.303.277,58 no CSV. Somente a receita foi ocultada e excluída da mediana;
+  os quatro indicadores de despesa coincidem entre as fontes.
+- **Mato Grosso/PB (2509370)** e **São João do Caiuá/PR (4124905):** os CSVs têm
+  valores, mas a API não retorna DCA e o extrato não confirma entrega. A tela
+  informa o conflito, com indicadores ausentes, sem afirmar que não entregaram.
+
+O relatório local preserva os registros anteriores à conciliação. Uma nova
+importação não substitui indicadores ausentes por valores escolhidos de outra
+fonte automaticamente. Para resolver os conflitos, é preciso nova evidência
+oficial compatível entre os canais; a data do CSV não explica sua causa.
+
+
+### Cobertura local concluída em 7/10/2026
+
+| Recorte | Quantidade |
+| --- | ---: |
+| Localidades no catálogo | 5.571 |
+| Municípios aplicáveis com consulta completa ou arquivos nacionais conferidos | 5.569 |
+| Municípios com os cinco indicadores disponíveis | 5.494 |
+| Municípios com valores parciais ou divergências explícitas | 6 |
+| Municípios com não entrega confirmada no extrato | 69 |
+| Municípios sem consulta concluída | 0 |
+| Localidades fora da DCA municipal (Brasília e Fernando de Noronha) | 2 |
+| Populações do exercício de 2025 disponíveis | 5.571 |
+
+O estágio FINBRA tem 5.499 municípios, dos quais 5.497 têm os cinco indicadores
+selecionados. Ele completou 1.181 caches ausentes; os demais vieram da API.
+A cobertura nacional foi confirmada e as medianas foram liberadas.
+Os seis casos parciais são Curaçá/BA, Mato Grosso/PB e São João do Caiuá/PR
+(divergências acima), Peabiru/PR (saúde e educação sem valor válido),
+Alvorada do Sul/PR (receita sem valor válido) e Volta Redonda/RJ (declaração
+registrada, mas nenhum dos cinco indicadores válido na consulta).
+Valores parciais só entram no indicador para o qual há valor válido e único.
