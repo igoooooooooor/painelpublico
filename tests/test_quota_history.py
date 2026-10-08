@@ -86,6 +86,15 @@ class QuotaHistoryTests(unittest.TestCase):
             # Alertas continuam calculados só sobre as notas detalhadas.
             self.assertEqual(db.execute("SELECT COUNT(*) FROM signals WHERE period LIKE '2023%'").fetchone()[0], 0)
 
+    def test_month_notes_sum_to_the_month_and_only_exist_for_detailed_years(self):
+        with closing(store.connect(self.db_path)) as db, db:
+            notes = citizen.month_notes(db, 'camara:1', '2026-01')
+            self.assertEqual((notes['total'], len(notes['notas'])), (200.0, 1))
+            self.assertEqual(notes['notas'][0]['fornecedor'], 'Gráfica')
+            self.assertIsNone(citizen.month_notes(db, 'camara:1', '2023-03'))  # só agregados
+            self.assertIsNone(citizen.month_notes(db, 'camara:1', '2026-13'))
+            self.assertIsNone(citizen.month_notes(db, 'camara:404', '2026-01'))
+
     def test_list_orders_by_monthly_average(self):
         with closing(store.connect(self.db_path)) as db, db:
             item = citizen.politicians(db, {'ordem': 'gasto'})['itens'][0]

@@ -178,7 +178,8 @@ class Handler(BaseHTTPRequestHandler):
             routes = {'/api/c/radar': lambda: citizen.radar(db, params),
                       '/api/c/resumo': lambda: citizen.summary(db),
                       '/api/c/politicos': lambda: citizen.politicians(db, params),
-                      '/api/c/partidos': lambda: citizen.parties(db)}
+                      '/api/c/partidos': lambda: citizen.parties(db),
+                      '/api/c/notas': lambda: citizen.month_notes(db, params.get('id', ''), params.get('mes', ''))}
             if url.path in routes:
                 result = routes[url.path]()
             elif url.path.startswith('/api/c/politico/'):

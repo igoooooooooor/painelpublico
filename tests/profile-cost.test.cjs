@@ -106,3 +106,23 @@ test('a confirmed source gap is shown empty, never as zero', () => {
   assert.match(details, /data-cost-month="2026-03"[\s\S]*Não publicado pela Câmara/);
   assert.match(details, /data-cost-year="2026" open/);
 });
+
+test('quota source of a 2026 month opens the month notes instead of the annual file', () => {
+  const { profileCostDetails, profileCostNotesHTML } = load();
+  const details = profileCostDetails(costFixture());
+  assert.match(details, /data-cost-notes="2026-03" data-cost-person="camara:1"/);
+  assert.match(details, /Ver as notas da cota deste mês/);
+  assert.doesNotMatch(profileCostNotesToggleSafe(load(), 'camara:1', '2025-03'), /details/);
+  const html = profileCostNotesHTML({ periodo: '2026-03', total: 77262.6, complemento: null,
+    fonte: { url: 'https://www.camara.leg.br/cotas/Ano-2026.csv.zip' },
+    notas: [{ data: '2026-03-20', fornecedor: 'Táxi Aéreo', categoria: 'Fretamento de avião', valor: 67750,
+      documentUrl: 'https://www.camara.leg.br/cota-parlamentar/documentos/publ/1/2026/1.pdf' }] }, 'camara:220714');
+  assert.match(html, /Táxi Aéreo[\s\S]*20\/03\/2026 · Fretamento de avião/);
+  assert.match(html, /R\$\s?77\.262,60/);
+  assert.match(html, /ideCadastro<\/code> = 220714 e <code>numMes<\/code> = 3/);
+  assert.match(html, /1\.pdf/);
+});
+
+function profileCostNotesToggleSafe(context, id, period) {
+  return context.profileCostNotesToggle(id, period, 'x');
+}

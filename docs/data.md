@@ -553,6 +553,12 @@ e presença) cobrem o mandato, desde fev/2023. O Senado continua em 2026.
   nota é ausência de dado, não gasto zero, então licenças e trocas de suplente não
   diluem a média. Assim deputados (mandato) e senadores (2026) ficam comparáveis.
   A ficha mostra também o total e o período.
+- **Notas do mês:** na ficha da Câmara, a fonte da cota de um mês de 2026 abre a lista
+  das notas daquele mês (`/api/c/notas?id=camara:<id>&mes=AAAA-MM`), com link para
+  cada nota original, o total e como achar o mesmo total no arquivo anual (filtrar
+  `ideCadastro` e `numMes` e somar `vlrLiquido`). A página do deputado na Câmara não
+  serve de fonte: o gráfico dela inclui passagens aéreas, que ficam fora do arquivo
+  aberto. Para 2023–2025 o servidor só tem agregados; a lista fica para depois.
 - **O que segue em 2026:** alertas (calculados só sobre as notas detalhadas), o CSV da
   ficha (a tela avisa que traz só 2026), fornecedores globais (`supplier_totals`) e
   tudo do Senado.

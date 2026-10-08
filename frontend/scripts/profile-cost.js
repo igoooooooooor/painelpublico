@@ -69,16 +69,58 @@ function profileCostAllOutside(cost) {
   return present.length > 0 && present.every(period => months[period].exercise === 'outside_mandate');
 }
 
-function profileCostPartRow([key, label, sourceLabel], part, value, scale, detail) {
+/* Ano com notas detalhadas no banco: a fonte da cota abre a lista de notas do mês, não o arquivo anual. */
+const PROFILE_COST_NOTES_YEAR = '2026';
+
+function profileCostNotesToggle(personId, period, label) {
+  if (!/^camara:\d+$/.test(personId || '') || !String(period).startsWith(PROFILE_COST_NOTES_YEAR)) return '';
+  return `<details class="citizen-cost-notes" data-cost-notes="${esc(period)}" data-cost-person="${esc(personId)}">
+    <summary>${esc(label)}</summary><div class="citizen-cost-notes-body" aria-live="polite"></div></details>`;
+}
+
+function profileCostNotesHTML(data, personId) {
+  const money = value => profileCostMoney(Math.round(value * 100)) || 'Sem dado';
+  const notes = Array.isArray(data?.notas) ? data.notas : [];
+  if (!notes.length) return '<p class="muted">Nenhuma nota de reembolso publicada neste mês.</p>';
+  const [year, month] = String(data.periodo).split('-');
+  const rows = notes.map(note => {
+    const url = typeof profileSafeUrl === 'function' ? profileSafeUrl(note.documentUrl) : null;
+    return `<li><span class="citizen-cost-note-who">${esc(note.fornecedor || 'Fornecedor não informado')}</span><b class="mono">${esc(money(note.valor))}</b>
+      <small>${esc(note.data ? note.data.split('-').reverse().join('/') : 'sem data')} · ${esc(note.categoria || '')}</small>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">Nota ↗</a>` : '<span class="muted">Sem link</span>'}</li>`;
+  }).join('');
+  const complement = data.complemento ? `<p class="muted">À parte, fora desse total: complemento do auxílio-moradia, ${esc(money(data.complemento.valor))} em ${data.complemento.notas} ${data.complemento.notas === 1 ? 'nota' : 'notas'}.</p>` : '';
+  const fileUrl = typeof profileSafeUrl === 'function' ? profileSafeUrl(data.fonte?.url) : null;
+  return `<ul class="citizen-cost-note-list">${rows}</ul>
+    <p><b>Total: ${esc(money(data.total))}</b>, soma das ${notes.length} ${notes.length === 1 ? 'nota' : 'notas'} acima.</p>${complement}
+    <p class="muted">Para conferir na planilha da Câmara${fileUrl ? ` (<a href="${esc(fileUrl)}" target="_blank" rel="noopener">arquivo anual</a>, com todos os deputados, cerca de 40 MB)` : ''}: filtre <code>ideCadastro</code> = ${esc(String(personId).split(':')[1])} e <code>numMes</code> = ${Number(month)} e some a coluna <code>vlrLiquido</code>.</p>`;
+}
+
+/* Carrega as notas só quando a pessoa abre a lista. */
+if (typeof document !== 'undefined' && document.addEventListener) {
+  document.addEventListener('toggle', event => {
+    const details = event.target;
+    if (!details?.matches?.('[data-cost-notes]') || !details.open || details.dataset.loaded) return;
+    const body = details.querySelector('.citizen-cost-notes-body');
+    const path = `/api/c/notas?id=${encodeURIComponent(details.dataset.costPerson)}&mes=${encodeURIComponent(details.dataset.costNotes)}`;
+    details.dataset.loaded = '1';
+    body.innerHTML = '<p class="muted">Carregando as notas…</p>';
+    const get = typeof citizenGet === 'function' ? citizenGet : url => fetch(url, { headers: { Accept: 'application/json' } }).then(r => r.ok ? r.json() : Promise.reject(r));
+    get(path).then(data => { body.innerHTML = profileCostNotesHTML(data, details.dataset.costPerson); })
+      .catch(() => { delete details.dataset.loaded; body.innerHTML = '<p class="muted">Não deu para carregar as notas agora. Feche e abra de novo para tentar outra vez.</p>'; });
+  }, true);
+}
+
+function profileCostPartRow([key, label, sourceLabel], part, value, scale, detail, personId) {
   const money = profileCostMoney(value);
   const source = profileCostLatestSource(part.sources);
+  const notes = key === 'quota' && source ? profileCostNotesToggle(personId, source.period, `Ver as notas de ${PROFILE_COST_MONTHS[source.period]}`) : '';
   const width = money !== null && scale > 0 && value > 0 ? Math.max(1, value / scale * 100).toFixed(1) : 0;
   return `<div class="citizen-cost-part" data-cost-part="${key}">
     <div class="citizen-cost-part-label"><span>${label}</span><b class="mono">${money === null ? 'Sem dado' : `${esc(money)}<small>/mês</small>`}</b></div>
     ${money !== null ? `<span class="citizen-cost-bar" aria-hidden="true"><i style="width:${width}%"></i></span>` : ''}
-    <small>${detail ? `${esc(detail)} · ` : ''}${source
+    <small>${detail ? `${esc(detail)} · ` : ''}${notes || (source
       ? `<a href="${esc(source.url)}" target="_blank" rel="noopener" aria-label="${esc(sourceLabel)}, ${esc(PROFILE_COST_MONTHS[source.period])}">${esc(sourceLabel)} ↗</a>`
-      : 'fonte indisponível'}</small>
+      : 'fonte indisponível')}</small>
   </div>`;
 }
 
@@ -103,7 +145,7 @@ function profileCostAnswer(cost) {
   if (hasPrincipal) {
     const values = PROFILE_COST_PARTS.map(([key]) => partOf(key).usedMonthsAverageCents);
     const scale = Math.max(0, ...values.filter(profileCostInteger));
-    rows = PROFILE_COST_PARTS.map((entry, index) => profileCostPartRow(entry, partOf(entry[0]), values[index], scale)).join('');
+    rows = PROFILE_COST_PARTS.map((entry, index) => profileCostPartRow(entry, partOf(entry[0]), values[index], scale, '', cost?.id)).join('');
     principal = `<div class="citizen-cost-main"><span>Custa em média</span><b class="mono">${esc(amount)}</b><span>por mês</span></div>
       <p class="citizen-cost-period">${esc(profileCostMonthList(used))} em exercício</p>`;
   } else if (profileCostAllOutside(cost)) {
@@ -113,7 +155,7 @@ function profileCostAnswer(cost) {
     const scale = Math.max(0, ...values.filter(profileCostInteger));
     rows = PROFILE_COST_PARTS.map((entry, index) => {
       const months = profileCostPeriods(partOf(entry[0]).months);
-      return profileCostPartRow(entry, partOf(entry[0]), values[index], scale, months.length ? `média de ${profileCostMonthList(months)}` : '');
+      return profileCostPartRow(entry, partOf(entry[0]), values[index], scale, months.length ? `média de ${profileCostMonthList(months)}` : '', cost?.id);
     }).join('');
     principal = `<p class="citizen-cost-unavailable">Sem média mensal para o mandato (${PROFILE_COST_RANGE}).</p>
       <p class="citizen-cost-period">Em nenhum mês do mandato as quatro partes abaixo foram publicadas juntas. Veja cada parte com seus próprios meses.</p>`;
@@ -158,20 +200,22 @@ function profileCostDaysInMonth(period) {
   return new Date(Number(period.slice(0, 4)), Number(period.slice(5)), 0).getDate();
 }
 
-function profileCostMonthlyParts(month) {
+function profileCostMonthlyParts(month, personId) {
   const values = month.valuesCents && typeof month.valuesCents === 'object' ? month.valuesCents : {};
   const sources = month.sources && typeof month.sources === 'object' ? month.sources : {};
   const gaps = new Set(Array.isArray(month.sourceGaps) ? month.sourceGaps : []);
+  const notes = profileCostInteger(values.quota) ? profileCostNotesToggle(personId, month.period, 'Ver as notas da cota deste mês') : '';
   const rows = PROFILE_COST_PARTS.map(([key, label]) => {
     const value = profileCostMoney(values[key]);
     if (value === null) return `<li><span>${label}</span><b>${gaps.has(key) ? 'Não publicado pela Câmara' : 'Sem dado'}</b></li>`;
     const source = profileCostSafeSource(sources[key]);
-    const sourceLink = source
+    const withNotes = key === 'quota' && notes;
+    const sourceLink = withNotes ? '<span class="muted">Notas ↓</span>' : source
       ? `<a href="${esc(source.url)}" target="_blank" rel="noopener" aria-label="Fonte de ${esc(label)} em ${esc(PROFILE_COST_MONTHS[source.period])}">Fonte ↗</a>`
       : '<span class="muted">Sem link</span>';
     return `<li><span>${label}</span><b class="mono">${esc(value)}</b>${sourceLink}</li>`;
   }).join('');
-  return `<ul class="citizen-cost-month-parts">${rows}</ul>`;
+  return `<ul class="citizen-cost-month-parts">${rows}</ul>${notes}`;
 }
 
 function profileCostDetails(cost) {
@@ -198,7 +242,7 @@ function profileCostDetails(cost) {
     return `<div class="citizen-cost-month" data-cost-month="${period}">
       <b>${esc(PROFILE_COST_MONTHS[period])}</b>
       <span>${esc(status)}${used.has(period) ? ' · <span class="citizen-cost-used">entra na média</span>' : ''}${exerciseSource ? ` · <a href="${esc(exerciseSource)}" target="_blank" rel="noopener">Conferir ↗</a>` : ''}</span>
-      ${inOffice ? profileCostMonthlyParts(month) : ''}
+      ${inOffice ? profileCostMonthlyParts(month, cost.id) : ''}
       ${christmas !== null ? `<p class="muted">13º salário${period.endsWith('-06') ? ' (adiantamento)' : ''}: ${esc(christmas)} (fora da média).</p>` : ''}
       ${reasons.map(label => `<p class="muted">${esc(label)}</p>`).join('')}
       ${property}${housing}

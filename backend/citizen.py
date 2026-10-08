@@ -377,6 +377,39 @@ def politician(db, identifier):
                                    'meses': sorted(set(complement[2].split(',')))} if complement[1] else None}
 
 
+def month_notes(db, identifier, period):
+    """Notas da cota de um mês com notas detalhadas (ano corrente), para conferir o valor da ficha.
+
+    A soma das notas de reembolso é o valor da cota do mês; o complemento de moradia vem à parte.
+    Meses só com agregados (anos anteriores) devolvem None.
+    """
+    match = re.fullmatch(r'(\d{4})-(\d{2})', period or '')
+    person = db.execute("SELECT id,name FROM authorities WHERE id=? AND role IN ('deputado','senador')", (identifier,)).fetchone()
+    if not match or not person or not 1 <= int(match[2]) <= 12:
+        return None
+    year, month = int(match[1]), int(match[2])
+    notes = rows(db, '''SELECT e.date data,e.category,e.amountCents,e.kind,e.documentUrl,s.name fornecedor,s.cnpj,
+            e.sourceId,src.label fonte,src.url fonteUrl,src.fetchedAt coletadoEm
+        FROM expenses e INDEXED BY expense_authority LEFT JOIN suppliers s ON s.key=e.supplierKey
+        LEFT JOIN sources src ON src.id=e.sourceId
+        WHERE e.authorityId=? AND e.year=? AND e.month=? ORDER BY e.amountCents DESC,e.date,e.id''', (identifier, year, month))
+    if not notes:
+        return None
+    reimbursements = [n for n in notes if n['kind'] == 'reembolso']
+    complement = [n for n in notes if n['kind'] == HOUSING_COMPLEMENT_KIND]
+    first = notes[0]
+
+    def public(note):
+        return {'data': note['data'], 'categoria': category_name(note['category']), 'valor': note['amountCents'] / 100,
+                'fornecedor': (note['fornecedor'] or '').strip() or None, 'cnpj': note['cnpj'],
+                'documentUrl': store.safe_url(note['documentUrl'])}
+    return {'pessoa': {'id': person[0], 'name': person[1]}, 'periodo': f'{year:04d}-{month:02d}',
+            'notas': [public(n) for n in reimbursements],
+            'total': sum(n['amountCents'] for n in reimbursements) / 100,
+            'complemento': {'valor': sum(n['amountCents'] for n in complement) / 100, 'notas': len(complement)} if complement else None,
+            'fonte': {'label': first['fonte'], 'url': store.safe_url(first['fonteUrl']), 'coletadoEm': first['coletadoEm']}}
+
+
 CSV_COLUMNS = ['Parlamentar', 'Competência', 'Data de emissão', 'Categoria', 'Valor (R$)', 'Fornecedor', 'CNPJ',
                'Documento', 'Link do documento', 'Fonte', 'Link da fonte', 'Data da coleta']
 
