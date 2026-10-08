@@ -42,11 +42,11 @@ def load(db_path: Path):
     db = sqlite3.connect(f'{db_path.resolve().as_uri()}?mode=ro', uri=True)
     db.row_factory = sqlite3.Row
     records = [dict(r) for r in db.execute('''
-        SELECT e.id,e.authorityId,e.sourceId,e.year,e.month,e.supplierKey,s.name supplierName,e.amountCents
+        SELECT e.id,e.authorityId,e.sourceId,e.year,e.month,e.supplierKey,s.name supplierName,e.amountCents,e.airline
           FROM expenses e LEFT JOIN suppliers s ON s.key=e.supplierKey WHERE e.kind='reembolso'
         UNION ALL
         SELECT 'hist:'||h.authorityId||':'||h.year||':'||h.month||':'||h.seq,h.authorityId,h.sourceId,h.year,h.month,
-               h.supplierKey,s.name,h.amountCents
+               h.supplierKey,s.name,h.amountCents,h.airline
           FROM quota_history h LEFT JOIN suppliers s ON s.key=h.supplierKey WHERE h.kind='reembolso' ''')]
     records = [r for r in records if (int(r['year']), int(r['month'])) >= MANDATE_START]
     fetched = {r['id']: r['fetchedAt'] for r in db.execute('SELECT id,fetchedAt FROM sources')}
@@ -68,6 +68,7 @@ def summarize(result, population):
         house, year, detail = alert_rules.house_of(c['sourceId']), c['year'], c['detail']
         if c['rule'] == 'pico':
             months[(house, year, 'avaliado')] += len(detail['evaluated'])
+            months[(house, year, 'marcado')] += len(detail['flagged'])
             for reason, values in detail['notEvaluated'].items():
                 months[(house, year, reason)] += len(values)
             people_evaluated[(house, year, 'pico', bool(detail['evaluated']))] += 1
@@ -77,7 +78,10 @@ def summarize(result, population):
     for house, year in sorted({(h, y) for (h, y, _) in months} | {(h, y) for (h, _, y) in counts}):
         rows.append({
             'casa': house, 'ano': year,
+            # Alertas agrupam meses seguidos; a taxa compara meses marcados com meses avaliados.
             'alertas': {'pico': counts[(house, 'pico', year)], 'fornecedor': counts[(house, 'fornecedor', year)]},
+            'taxaMesesMarcados': round(months[(house, year, 'marcado')] / months[(house, year, 'avaliado')], 4)
+                                 if months[(house, year, 'avaliado')] else None,
             'mesesPessoa': {k[2]: v for k, v in months.items() if k[:2] == (house, year)},
             'pessoas': {'picoAvaliadas': people_evaluated[(house, year, 'pico', True)],
                         'picoSemAvaliacao': people_evaluated[(house, year, 'pico', False)],
@@ -160,6 +164,23 @@ def main(argv=None):
                 sample.append({'tipo': s['type'], 'id': s['id'], 'authorityId': s['authorityId'], 'sourceId': s['sourceId'],
                                'periodo': s['period'], 'valorCents': s['amountCents'], 'detalhe': s['detail']})
         sample += near_threshold(records, fetched, roster, rng, args.sample)
+        # Casos que só aparecem nas bases móveis (sobretudo 2023 e base curta): a revisão precisa vê-los,
+        # porque a amostra pela regra anual não diz nada sobre o que as variantes acrescentam.
+        year_months = {(c['authorityId'], c['sourceId'], c['year'], m) for c in results['year']['coverage']
+                       if c['rule'] == 'pico' for m in c['detail']['flagged']}
+        for baseline in ('rolling12', 'rolling-short'):
+            only = {}
+            for s in results[baseline]['signals']:
+                if s['type'] != 'pico' or s['authorityId'] not in roster:
+                    continue
+                marked = [m['month'] for m in s['detail']['months']]
+                if all((s['authorityId'], s['sourceId'], s['detail']['year'], m) not in year_months for m in marked):
+                    only.setdefault((alert_rules.house_of(s['sourceId']), s['period'][:4]), []).append(s)
+            for key in sorted(only):
+                for s in rng.sample(sorted(only[key], key=lambda x: x['id']), min(args.sample, len(only[key]))):
+                    sample.append({'tipo': 'pico-so-' + baseline, 'id': s['id'], 'authorityId': s['authorityId'],
+                                   'sourceId': s['sourceId'], 'periodo': s['period'], 'valorCents': s['amountCents'],
+                                   'detalhe': s['detail']})
         report['amostra'] = {'semente': args.seed, 'porEstrato': args.sample, 'base': 'year', 'populacao': 'listaAtual',
                              'casos': sample}
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -168,8 +189,10 @@ def main(argv=None):
         print(f'== base {baseline} (lista atual)')
         for row in report['resultados'][baseline]['listaAtual']:
             m = row['mesesPessoa']
+            rate = f"{row['taxaMesesMarcados'] * 100:5.2f}%" if row['taxaMesesMarcados'] is not None else '    —'
             print(f"{row['casa']:6} {row['ano']}  pico {row['alertas']['pico']:4}  fornecedor {row['alertas']['fornecedor']:3}  "
-                  f"meses avaliados {m.get('avaliado', 0):5}  sem base {m.get('sem_base', 0):5}  prazo aberto {m.get('prazo_aberto', 0):5}  "
+                  f"meses marcados/avaliados {m.get('marcado', 0):4}/{m.get('avaliado', 0):5} ({rate})  "
+                  f"sem base {m.get('sem_base', 0):5}  prazo aberto {m.get('prazo_aberto', 0):5}  "
                   f"sem notas {m.get('sem_notas', 0):4}  pessoas sem avaliação de pico {row['pessoas']['picoSemAvaliacao']}")
     print(f'Gravado em {args.output}' + (f" com {len(report['amostra']['casos'])} casos na amostra" if args.sample else ''))
     return 0

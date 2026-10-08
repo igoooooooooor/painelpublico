@@ -101,7 +101,7 @@ const citizenSourceUrl = person => {
 /* O selo diz o tipo do alerta, não uma gravidade; a cor só distingue o tipo de informação. */
 function alertKind(a) {
   if (a.tipo === 'pico') return ['type-peak', 'Mês acima da referência'];
-  if (a.tipo === 'fornecedor') return ['type-supplier', a.parcial ? 'Concentração em fornecedor · parcial' : 'Concentração em fornecedor'];
+  if (a.tipo === 'fornecedor') return ['type-supplier', `${a.intermediacao ? 'Passagens intermediadas' : 'Concentração em fornecedor'}${a.parcial ? ' · parcial' : ''}`];
   return ['info', 'Para conferir'];
 }
 function alertVisualization(a) {
@@ -118,13 +118,14 @@ function alertVisualization(a) {
     return `<div class="citizen-share" role="img" aria-label="${Math.round(a.parte * 100)}% para ${esc(a.fornecedor)}">
       <div class="citizen-sharebar"><i style="width:${a.parte * 100}%"></i></div>
       <div class="citizen-sharelbl"><span><b>${Math.round(a.parte * 100)}%</b> ${esc(citizenName(a.fornecedor))}</span><span>${100 - Math.round(a.parte * 100)}% outros</span></div>
+      ${Number.isFinite(a.total) ? `<div class="citizen-sharelbl"><span>${esc(formatCitizenAmount(a.valor))} de ${esc(formatCitizenAmount(a.total))}</span><span>${Number.isInteger(a.mesesComNotas) ? `${a.mesesComNotas} ${a.mesesComNotas === 1 ? 'mês' : 'meses'} com notas` : ''}</span></div>` : ''}
     </div>`;
   }
   return '';
 }
 function alertExplanation(a) {
   if (a.tipo === 'pico') return `Aparece quando o gasto de um mês passa de 1,75 vez a referência da própria pessoa, a diferença é de pelo menos R$ 10 mil e o mês também fica acima do gasto mensal típico dos(as) colegas${Number.isFinite(a.piso) ? ` (${formatCitizenAmount(a.piso)} neste ano)` : ''}. A referência é o valor do meio (a mediana) dos meses anteriores do mesmo ano, com pelo menos 3 meses sem lacuna. Só entram meses cujo prazo de apresentação das notas já tinha terminado na data da coleta: 90 dias na Câmara; no Senado, até o fim de abril do ano seguinte. Meses seguidos marcados contam como um alerta só. Novembro e dezembro também são avaliados; o cartão avisa que o saldo não usado da cota se acumula no ano e expira em 31 de dezembro. A mesma regra vale para todos(as).`;
-  if (a.tipo === 'fornecedor') return `Aparece quando metade ou mais do dinheiro da cota no ano foi para uma mesma empresa, somando pelo menos R$ 30 mil.${a.parcial ? ` Período parcial: o cálculo usa as notas disponíveis de ${esc(a.periodoObservado || 'o ano')}, e o ano ainda pode receber notas.` : ''} Um contrato recorrente pode explicar a concentração; vale conferir as notas.`;
+  if (a.tipo === 'fornecedor') return `Aparece quando metade ou mais do dinheiro da cota no ano foi para uma mesma empresa, somando pelo menos R$ 30 mil.${a.parcial ? ` Período parcial: o cálculo usa as notas disponíveis de ${esc(a.periodoObservado || 'o ano')}, e o ano ainda pode receber notas.` : ''} ${a.intermediacao ? ' Aqui, a maioria das notas cita uma companhia aérea que não é o fornecedor pago: o fornecedor é uma agência que intermediou passagens. O critério usa a companhia citada no registro oficial do Senado; quando o registro traz o nome da própria agência, não há como saber a companhia.' : ' Pagamentos recorrentes podem ser compatíveis com um contrato; vale conferir as notas.'}`;
   return `Aparece para toda nota de R$ 10 mil ou mais. É só um corte de valor.`;
 }
 /* Contexto, não atenuante: o alerta continua; o cartão só informa a regra do saldo anual. */
@@ -144,6 +145,7 @@ function alertCard(a, opts = {}) {
     ${a.contexto?.frase ? `<p class="citizen-context">${esc(a.contexto.frase)}</p>` : ''}
     ${alertYearEndNote(a)}
     <details class="citizen-why"><summary>Por que apareceu aqui?</summary><p>${alertExplanation(a)}</p><p class="muted">A regra mostra variação de gasto ou concentração em fornecedor; não mede irregularidade. Confira as notas na fonte oficial.</p></details>
+    ${Array.isArray(a.fontesOficiais) && a.fontesOficiais.length ? `<p class="muted">Detalhamento oficial: ${a.fontesOficiais.map(f => `<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.label)} ↗</a>`).join(', ')}.${a.notaDocumento ? ` ${esc(a.notaDocumento)}` : ''}</p>` : ''}
     <div class="citizen-actions">${opts.semPessoa ? '' : `<button type="button" class="fchip" data-politician="${esc(p.id)}">Ver a ficha</button>`}${citizenSourceUrl(p) ? `<a class="fchip" href="${esc(citizenSourceUrl(p))}" target="_blank" rel="noopener">Conferir na fonte ↗</a>` : ''}</div>
   </article>`;
 }
@@ -319,6 +321,7 @@ function profileExpenseAnswer(profileRecord, person, hasExpenseData) {
     <h2 class="h">Quanto custa?</h2><span class="k">Cota parlamentar · média por mês</span>
     <div class="huge">${hasExpenseData && monthly != null ? `<small>R$</small>${totalLabel}<small>/mês</small>` : 'Sem dados'}</div>
     ${hasExpenseData && monthly != null ? `<p class="muted">${esc(citizenQuotaPeriod(period.inicio, period.fim))}, ${period.meses} ${period.meses === 1 ? 'mês' : 'meses'} com notas · total ${formatCitizenAmount(profileRecord.total)}</p>` : ''}
+    <p class="citizen-cost-scope">Só a cota parlamentar. ${person.role === 'senador' ? 'Salário e verba de gabinete do Senado não estão nesta base.' : 'Salário, auxílios e verba de gabinete desta pessoa não estão compostos nesta ficha.'} Não compare com o custo de deputados(as) que soma salário, auxílios, cota e gabinete.</p>
     ${salaryNote}
     ${hasExpenseData && monthly != null ? (averageSpend ? `<div class="citizen-vs">
       <div><span>${esc(citizenName(person.name).split(' ')[0])}</span><b class="mono">${monthly === 0 ? 'R$ 0' : formatCitizenAmount(monthly)}</b></div><div class="citizen-vsbar"><i style="width:${Math.min(100, monthly / Math.max(monthly, averageSpend) * 100)}%"></i></div>

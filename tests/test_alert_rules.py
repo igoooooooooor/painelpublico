@@ -87,3 +87,21 @@ class TotalsTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class IntermediationTests(unittest.TestCase):
+    def concentration(self, supplier_name, airline):
+        notes = [{'id': f'n{m}', 'authorityId': 'senado:1', 'sourceId': 'senado_ceaps', 'year': 2025, 'month': m,
+                  'supplierKey': 'cnpj:9', 'supplierName': supplier_name, 'amountCents': 5_000_00, 'airline': airline}
+                 for m in range(1, 13)]
+        result = alert_rules.evaluate(notes, {'senado_ceaps': '2026-06-01T00:00:00+00:00'})
+        return next(s for s in result['signals'] if s['type'] == 'fornecedor')['detail']
+
+    def test_agency_paid_for_another_airline_is_intermediation(self):
+        detail = self.concentration('VITÓRIA RÉGIA', 'LATAM')
+        self.assertEqual(detail['intermediation'], {'records': 12, 'airlines': ['LATAM']})
+        self.assertEqual(detail['monthsWithNotes'], 12)
+
+    def test_airline_paid_directly_or_no_evidence_is_not_intermediation(self):
+        self.assertIsNone(self.concentration('TAM LINHAS AEREAS S/A', 'LATAM')['intermediation'])
+        self.assertIsNone(self.concentration('AEROTUR SERVIÇOS', None)['intermediation'])

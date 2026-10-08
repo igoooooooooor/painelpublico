@@ -32,7 +32,8 @@ MONTHS = ['', 'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho
 # Nomes curtos para as categorias da Câmara e do Senado (que usam textos diferentes).
 CATEGORIES = [
     (r'divulga', 'Divulgação'),
-    (r'passagem a[ée]rea|a[ée]reas?$', 'Passagens aéreas'),
+    # Câmara: "PASSAGEM AÉREA - ..."; Senado: "Passagens aéreas, aquáticas e terrestres nacionais".
+    (r'passage(m|ns) a[ée]reas?|a[ée]reas?$', 'Passagens aéreas'),
     (r'aeronave', 'Fretamento de avião'),
     (r've[íi]culos? automotor|loca[çc][ãa]o.*ve[íi]culo', 'Aluguel de carro'),
     (r'combust', 'Combustível'),
@@ -124,6 +125,57 @@ def _context(db, person, authority, source, year, cache, total=None):
             'frase': f'No ano, gastou {store_money(total)} na cota, {store_money(monthly)} por mês em média, {comparison}.'}
 
 
+# Tipos de despesa do CEAPS → número usado nas páginas de detalhamento do portal do Senado
+# (www6g.senado.leg.br/transparencia/sen/<senador>/ceaps/<n>/...), conferido em 8/10/2026.
+SENATE_CEAPS_PAGES = (
+    ('Aluguel de imóveis', 1), ('Aquisição de material de consumo', 2), ('Locomoção, hospedagem', 3),
+    ('Contratação de consultorias', 4), ('Divulgação da atividade parlamentar', 5),
+    ('Passagens aéreas', 8), ('Serviços de Segurança Privada', 9),
+)
+SENATE_DOCUMENT_NOTE = 'Análise dos registros publicados; imagem do documento não disponível nesta base.'
+
+
+def _senate_page(category):
+    for prefix, number in SENATE_CEAPS_PAGES:
+        if (category or '').startswith(prefix):
+            return number
+    return None
+
+
+def senate_sources(db, authority, year, months=None, supplier=None):
+    """Links do detalhamento oficial do Senado para os registros de um alerta, por tipo de despesa."""
+    code = authority.split(':', 1)[1] if authority.startswith('senado:') else None
+    if not code or not code.isdigit():
+        return []
+    filters, args = ['authorityId=?', 'year=?', "kind='reembolso'"], [authority, year]
+    if months:
+        filters.append(f'month IN ({",".join("?" * len(months))})'); args += months
+    if supplier:
+        filters.append('supplierKey=?'); args.append(supplier)
+    where = ' AND '.join(filters)
+    found = rows(db, f'''SELECT DISTINCT category,month FROM (SELECT category,month,authorityId,year,kind,supplierKey FROM expenses
+        UNION ALL SELECT category,month,authorityId,year,kind,supplierKey FROM quota_history) WHERE {where} ORDER BY month,category''', args)
+    links, seen = [], set()
+    base = f'https://www6g.senado.leg.br/transparencia/sen/{code}/ceaps'
+    for r in found:
+        page = _senate_page(r['category'])
+        if page is None:
+            continue
+        label = category_name(r['category'])
+        if months:
+            key = (page, r['month'])
+            url = f'{base}/{page}/detalhe/?mesAno={r["month"]:02d}/{year}'
+            label = f'{label} · {MONTHS[r["month"]][:3]}/{year}'
+        else:
+            key = (page,)
+            url = f'{base}/{page}/?ano={year}'
+            label = f'{label} · {year}'
+        if key not in seen:
+            seen.add(key)
+            links.append({'label': label, 'url': url})
+    return links
+
+
 def _alert_period_label(detail):
     """'jan–set/2026' com os meses observados, para dizer de onde saiu um cálculo parcial."""
     first, last = (detail.get('monthsObserved') or [None, None])
@@ -145,6 +197,11 @@ def _alert(db, signal, people, totals_cache):
             'pessoa': {k: person.get(k) for k in ('id', 'name', 'role', 'party', 'uf', 'foraDaLista')}, 'criterio': signal['description'],
             'regra': detail.get('ruleVersion'), 'parcial': bool(detail.get('partial')), 'coletadoEm': detail.get('fetchedAt')}
     authority, source = signal['authorityId'], signal['sourceId']
+    if authority.startswith('senado:') and detail:
+        base['fontesOficiais'] = senate_sources(db, authority, detail['year'],
+                                                months=[m['month'] for m in detail.get('months', [])] or None,
+                                                supplier=detail.get('supplierKey'))
+        base['notaDocumento'] = SENATE_DOCUMENT_NOTE
     if signal['type'] == 'pico' and detail:
         marked = detail['months']
         first = marked[0]
@@ -175,11 +232,11 @@ def _alert(db, signal, people, totals_cache):
         base.update({'fornecedor': supplier_name, 'cnpj': supplier_rows[0]['cnpj'] if supplier_rows else None,
                      'total': detail['totalCents'] / 100, 'parte': detail['share'], 'notas': detail['records'],
                      'categoria': category_name(category[0]['category']) if category else None,
-                     'periodoObservado': period,
-                     'titulo': 'Concentração em fornecedor' + (' (período parcial)' if detail.get('partial') else ''),
-                     'frase': (f'Nas notas disponíveis de {period}, que somam {store_money(detail["totalCents"] / 100)}, '
-                               f'{store_money(detail["supplierCents"] / 100)} ({round(detail["share"] * 100)}%) foram para '
-                               f'{supplier_name} ({detail["records"]} notas).{partial}'),
+                     'periodoObservado': period, 'mesesComNotas': detail.get('monthsWithNotes'),
+                     'intermediacao': detail.get('intermediation'),
+                     'titulo': ('Pagamentos de passagens intermediados por uma agência' if detail.get('intermediation')
+                                else 'Concentração em fornecedor') + (' (período parcial)' if detail.get('partial') else ''),
+                     'frase': _supplier_sentence(detail, supplier_name, period) + partial,
                      'fornecedorKey': detail['supplierKey'],
                      'contexto': _context(db, person, authority, source, year, totals_cache, detail['totalCents'] / 100)})
     elif signal['type'] == 'nota':
@@ -191,6 +248,20 @@ def _alert(db, signal, people, totals_cache):
                      'titulo': f'Nota de {store_money(base["valor"])}',
                      'frase': f'Uma única nota de {category_name(e.get("category")).lower()}' + (f', paga a {e.get("supplier").strip()}.' if e.get('supplier') else '.')})
     return base
+
+
+def _supplier_sentence(detail, supplier_name, period):
+    """Porcentagem sempre com os valores absolutos e a cobertura (meses com notas) que a sustentam."""
+    months = detail.get('monthsWithNotes')
+    coverage = f' ({months} {"mês" if months == 1 else "meses"} com notas)' if months else ''
+    share = f'{store_money(detail["supplierCents"] / 100)} ({round(detail["share"] * 100)}%)'
+    base = f'Nas notas disponíveis de {period}{coverage}, que somam {store_money(detail["totalCents"] / 100)}, '
+    intermediation = detail.get('intermediation')
+    if intermediation:
+        return (base + f'{share} foram pagos a {supplier_name} por passagens de outras companhias '
+                f'({", ".join(intermediation["airlines"])}; {intermediation["records"]} de {detail["records"]} notas). '
+                'É o total pago pelas passagens, não a receita da agência nem gasto com uma só companhia aérea.')
+    return base + f'{share} foram para {supplier_name} ({detail["records"]} notas).'
 
 
 def alert_coverage(db, identifier):

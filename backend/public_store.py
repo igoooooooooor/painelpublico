@@ -89,9 +89,13 @@ def import_documents(paths, db_path=DB_PATH):
                     for i in (3, 4, 6):
                         if isinstance(values[i], (dict, list)):
                             values[i] = json.dumps(values[i], ensure_ascii=False)
-                    db.execute('INSERT INTO sources VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET '
+                    db.execute(f'INSERT INTO sources({",".join(columns)}) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET '
                                'label=excluded.label,url=excluded.url,scope=excluded.scope,period=excluded.period,'
                                'status=excluded.status,detail=excluded.detail,fetchedAt=excluded.fetchedAt', values)
+                    # Só uma coleta que forneceu as notas muda a data usada nos prazos dos alertas;
+                    # uma tentativa indisponível atualiza o status, não essa data.
+                    if s.get('status') in ('imported', 'partial'):
+                        db.execute('UPDATE sources SET dataFetchedAt=fetchedAt WHERE id=?', (s['id'],))
                     counts['sources'] += 1
                 listed = {}
                 for a in payload.get('authorities', []):
@@ -131,8 +135,10 @@ def import_documents(paths, db_path=DB_PATH):
                                    'name=excluded.name,cnpj=excluded.cnpj', (key, supplier['name'], cnpj))
                     values = (e['id'], e['authorityId'], e['sourceId'], e.get('date'), year, month,
                               e.get('category') or 'Não informada', money(e['amount']), public_document_id(e.get('documentId')),
-                              safe_url(e.get('documentUrl')), key, e['kind'], stamp, stamp)
-                    db.execute('''INSERT INTO expenses VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
+                              safe_url(e.get('documentUrl')), key, e['kind'], stamp, stamp, e.get('airline'))
+                    db.execute('''INSERT INTO expenses(id,authorityId,sourceId,date,year,month,category,amountCents,documentId,
+                        documentUrl,supplierKey,kind,firstSeen,lastChanged,airline) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
+                        airline=excluded.airline,
                         authorityId=excluded.authorityId,sourceId=excluded.sourceId,date=excluded.date,
                         year=excluded.year,month=excluded.month,category=excluded.category,
                         amountCents=excluded.amountCents,documentId=excluded.documentId,documentUrl=excluded.documentUrl,
@@ -213,9 +219,9 @@ def rebuild_signals(db):
     for e in db.execute("SELECT id,authorityId,sourceId,amountCents,year,month FROM expenses WHERE kind='reembolso' AND amountCents>=1000000"):
         add('nota:' + e['id'], e['authorityId'], e['sourceId'], 'nota', 'Lançamento de valor alto', e['amountCents'],
             'Registro de pelo menos R$ 10.000 no arquivo importado. É um corte para conferência, não uma avaliação de preço ou legalidade. Créditos e estornos devem ser verificados no contexto do documento.', f'{e["year"]}-{e["month"]:02d}')
-    records = rows(db, '''SELECT e.id,e.authorityId,e.sourceId,e.year,e.month,e.supplierKey,s.name supplierName,e.amountCents
+    records = rows(db, '''SELECT e.id,e.authorityId,e.sourceId,e.year,e.month,e.supplierKey,s.name supplierName,e.amountCents,e.airline
         FROM expenses e LEFT JOIN suppliers s ON s.key=e.supplierKey WHERE e.kind='reembolso' ''')
-    fetched = {r['id']: r['fetchedAt'] for r in rows(db, 'SELECT id,fetchedAt FROM sources')}
+    fetched = {r['id']: r['dataFetchedAt'] for r in rows(db, 'SELECT id,dataFetchedAt FROM sources')}
     result = alert_rules.evaluate(records, fetched)
     for signal in result['signals']:
         add(signal['id'], signal['authorityId'], signal['sourceId'], signal['type'], signal['title'],

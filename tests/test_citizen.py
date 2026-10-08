@@ -282,3 +282,24 @@ class PeakRuleTests(unittest.TestCase):
         self.assertEqual(alert['mes'], 4)
         self.assertEqual([a['pessoa']['id'] for a in radar['itens']], ['camara:30'])
         self.assertEqual(radar['contagem']['pico'], 1)
+
+
+class CategoryNameTests(unittest.TestCase):
+    def test_senate_air_tickets_are_not_labeled_as_bus_and_boat(self):
+        self.assertEqual(citizen.category_name('Passagens aéreas, aquáticas e terrestres nacionais'), 'Passagens aéreas')
+        self.assertEqual(citizen.category_name('PASSAGEM AÉREA - REEMBOLSO'), 'Passagens aéreas')
+        self.assertEqual(citizen.category_name('PASSAGENS TERRESTRES, MARÍTIMAS OU FLUVIAIS'), 'Ônibus e barco')
+
+
+class SupplierSentenceTests(unittest.TestCase):
+    def test_share_always_comes_with_absolute_values_and_months(self):
+        detail = {'supplierCents': 3_200_000, 'totalCents': 3_500_000, 'share': 0.9143, 'records': 12, 'monthsWithNotes': 12}
+        sentence = citizen._supplier_sentence(detail, 'Imobiliária', 'jan–dez/2025')
+        self.assertIn('Nas notas disponíveis de jan–dez/2025 (12 meses com notas), que somam R$ 35.000, R$ 32.000 (91%)', sentence)
+
+    def test_intermediation_is_not_presented_as_agency_revenue(self):
+        detail = {'supplierCents': 600_000_00, 'totalCents': 800_000_00, 'share': 0.75, 'records': 163, 'monthsWithNotes': 12,
+                  'intermediation': {'records': 150, 'airlines': ['GOL', 'LATAM']}}
+        sentence = citizen._supplier_sentence(detail, 'Agência', '2025')
+        self.assertIn('foram pagos a Agência por passagens de outras companhias (GOL, LATAM; 150 de 163 notas)', sentence)
+        self.assertIn('não a receita da agência', sentence)

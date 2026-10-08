@@ -108,6 +108,16 @@ class PublicStoreTests(unittest.TestCase):
             self.assertEqual(coverage['notEvaluated']['prazo_aberto'], [4, 5])
             self.assertEqual(coverage['evaluated'], [])
 
+    def test_failed_collection_does_not_move_the_eligibility_date(self):
+        self.payload['sources'][0]['fetchedAt'] = '2026-07-15T12:00:00+00:00'  # abril ainda aberto
+        self.import_data()
+        self.payload['sources'][0].update(status='unavailable', fetchedAt='2026-10-06T12:00:00+00:00')
+        self.import_data()  # mesmas notas; só a tentativa é mais recente
+        with closing(store.connect(self.db_path)) as db, db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM signals WHERE type='pico'").fetchone()[0], 0)
+            row = db.execute("SELECT status,fetchedAt,dataFetchedAt FROM sources WHERE id='test'").fetchone()
+            self.assertEqual(tuple(row), ('unavailable', '2026-10-06T12:00:00+00:00', '2026-07-15T12:00:00+00:00'))
+
     def test_salary_not_added_to_reimbursements_and_missing_not_zero(self):
         salary = {**self.payload['expenses'][0], 'id': 'pay', 'kind': 'remuneracao', 'amount': 0, 'supplier': None}
         self.payload['expenses'].append(salary)

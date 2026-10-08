@@ -574,3 +574,23 @@ test('year-end peak keeps the alert and adds the yearly balance context', () => 
   assert.match(html, /expira em 31 de dezembro\. Dezembro pode incluir gastos feitos com esse saldo/);
   assert.doesNotMatch(api.alertCard({ ...alert, fimDeAno: [] }), /expira em 31 de dezembro\. Dezembro/);
 });
+
+test('quota-only card says it is not comparable with the deputy mandate cost', () => {
+  const { api, state } = makeView();
+  setProfileFixture(api, state, 'camara:59', {
+    total: 80000, mediaMensal: 40000, periodo: { inicio: '2026-01', fim: '2026-02', meses: 2 }, hasExpenseData: true,
+    meses: [], categorias: [], fornecedores: [], maiores: [], alertas: [],
+  });
+  const answer = api.profileView().match(/<section[^>]*data-profile-answer="expenses"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(answer, /Só a cota parlamentar\./);
+  assert.match(answer, /Não compare com o custo de deputados\(as\) que soma salário, auxílios, cota e gabinete/);
+});
+
+test('senate alert cards point to the official breakdown and say the document image is unavailable', () => {
+  const { api } = makeView();
+  const html = api.alertCard({ tipo: 'fornecedor', periodo: '2025', valor: 1, parte: 0.6, fornecedor: 'X', titulo: 'T', frase: 'F', pessoa: {},
+    fontesOficiais: [{ label: 'Escritório · 2025', url: 'https://www6g.senado.leg.br/transparencia/sen/1/ceaps/1/?ano=2025' }],
+    notaDocumento: 'Análise dos registros publicados; imagem do documento não disponível nesta base.' });
+  assert.match(html, /Detalhamento oficial: <a href="https:\/\/www6g\.senado\.leg\.br\/transparencia\/sen\/1\/ceaps\/1\/\?ano=2025"/);
+  assert.match(html, /imagem do documento não disponível nesta base/);
+});

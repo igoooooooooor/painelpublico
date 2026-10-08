@@ -55,11 +55,13 @@ def import_history(paths, db_path=DB_PATH):
                 payload = json.loads(Path(path).read_text(encoding='utf-8'))
                 source, year, house = _validate(payload)
                 sid = source['id']
-                db.execute('INSERT INTO sources VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET '
+                db.execute('INSERT INTO sources(id,label,url,scope,period,status,detail,fetchedAt,dataFetchedAt) '
+                           'VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET '
                            'label=excluded.label,url=excluded.url,scope=excluded.scope,period=excluded.period,'
-                           'status=excluded.status,detail=excluded.detail,fetchedAt=excluded.fetchedAt',
+                           'status=excluded.status,detail=excluded.detail,fetchedAt=excluded.fetchedAt,'
+                           'dataFetchedAt=excluded.dataFetchedAt',
                            (sid, source['label'], safe_url(source.get('url')), source.get('scope'), source.get('period'),
-                            source['status'], source.get('detail'), source.get('fetchedAt')))
+                            source['status'], source.get('detail'), source.get('fetchedAt'), source.get('fetchedAt')))
                 counts['sources'] += 1
                 for a in payload.get('authorities', []):
                     # Só cadastra quem ainda não existe (ex.: quem saiu antes de 2026); não muda cadastros atuais.
@@ -82,8 +84,9 @@ def import_history(paths, db_path=DB_PATH):
                     sequence[key] = sequence.get(key, 0) + 1
                     rows.append((n['authorityId'], year, int(n['month']), sequence[key], n.get('date'), categories[n['category']],
                                  int(n['amountCents']), 1 if n['kind'] == 'complemento_moradia' else 0,
-                                 (n.get('supplier') or {}).get('key'), _document_path(n.get('documentUrl'))))
-                db.executemany('INSERT INTO quota_history_notes VALUES(?,?,?,?,?,?,?,?,?,?)', rows)
+                                 (n.get('supplier') or {}).get('key'), _document_path(n.get('documentUrl')), n.get('airline')))
+                db.executemany('INSERT INTO quota_history_notes(authorityId,year,month,seq,date,categoryId,amountCents,'
+                               'complement,supplierKey,documentPath,airline) VALUES(?,?,?,?,?,?,?,?,?,?,?)', rows)
                 counts['notes'] += len(rows)
             db.execute('DELETE FROM quota_categories WHERE id NOT IN (SELECT categoryId FROM quota_history_notes)')
             rebuild_aggregates(db)

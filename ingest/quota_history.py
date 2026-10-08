@@ -86,6 +86,7 @@ def build_year(history: dict, year: int, house: str = "camara") -> dict:
             "kind": HOUSING_COMPLEMENT_KIND if category == HOUSING_COMPLEMENT_CATEGORY else "reembolso",
             "supplier": {"key": key, "name": name, "cnpj": cnpj} if key and name else None,
             "documentUrl": url if isinstance(url, str) and url.startswith("http") else None,
+            "airline": row.get("airline"),
         })
     # Ordem estável dentro do mês: a numeração das notas não muda entre coletas.
     notes.sort(key=lambda note: (note["authorityId"], note["month"], note["recordId"]))

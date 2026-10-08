@@ -325,6 +325,7 @@ b.warn { color: var(--warn); }
 .citizen-cost-details { min-width: 0; }
 .citizen-cost-months { display: grid; gap: 8px; }
 .citizen-cost-year { display: grid; gap: 8px; }
+.citizen-cost-scope { margin: 0; font-size: 13px; color: var(--ink-2); }
 .citizen-cost-notes summary { cursor: pointer; color: var(--accent); font-weight: 600; min-height: 32px; display: flex; align-items: center; }
 .citizen-cost-notes-body { display: grid; gap: 8px; }
 .citizen-cost-note-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }

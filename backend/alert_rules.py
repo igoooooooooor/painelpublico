@@ -15,6 +15,8 @@ Prazos de apresentação das notas (meses ainda abertos não entram nos picos):
 from __future__ import annotations
 
 import calendar
+import re
+import unicodedata
 from datetime import date, datetime, timedelta
 from statistics import median
 
@@ -37,6 +39,18 @@ NOT_EVALUATED = {
     'sem_referencia_colegas': 'sem meses fechados suficientes dos colegas para o piso',
     'sem_notas': 'sem notas publicadas no mês',
 }
+
+
+# Intermediação de passagens: o registro oficial cita uma companhia aérea que não é o fornecedor pago.
+# Só há essa evidência no Senado (campo de detalhamento); a Câmara não publica a companhia.
+AIRLINE_NAMES = {'LATAM': ('LATAM', 'TAM'), 'GOL': ('GOL',), 'AZUL': ('AZUL',)}
+
+
+def is_intermediated(supplier_name, airline) -> bool:
+    if not airline or airline not in AIRLINE_NAMES:
+        return False
+    words = set(re.findall(r'[A-Z0-9]+', unicodedata.normalize('NFKD', str(supplier_name or '')).upper()))
+    return not any(name in words for name in AIRLINE_NAMES[airline])
 
 
 def house_of(source_id: str) -> str:
@@ -93,7 +107,10 @@ def _peak_runs(series, closed, floor):
     return evaluated, skipped, flagged
 
 
-BASELINES = ('year', 'rolling12')
+# year: regra em uso. rolling12: 12 meses anteriores completos (variante recomendada para estudo).
+# rolling-short: de 3 a 12 meses, conforme o histórico disponível (só para comparação na simulação).
+BASELINES = ('year', 'rolling12', 'rolling-short')
+ROLLING_MONTHS = 12
 
 
 def _rolling_series(series):
@@ -105,10 +122,12 @@ def _rolling_series(series):
     return joined
 
 
-def _rolling_peaks(series, floors, fetched_at_by_source):
+def _rolling_peaks(series, floors, fetched_at_by_source, min_prior=ROLLING_MONTHS):
     """Variante em estudo: referência = mediana dos 12 meses anteriores, atravessando o ano.
 
-    Exige ao menos 3 meses anteriores, todos com notas, dentro da janela disponível. O piso
+    Com min_prior=12, exige os 12 meses anteriores completos (todos com notas); com o histórico
+    começando em fev/2023, isso só ocorre a partir de fev/2024. Com min_prior=3 (base curta), aceita de
+    3 a 12 meses conforme o histórico disponível. Em ambos, meses sem notas na janela impedem. O piso
     continua sendo o dos colegas no ano do mês avaliado. Só usada pela simulação.
     """
     out = {}
@@ -122,7 +141,7 @@ def _rolling_peaks(series, floors, fetched_at_by_source):
             before = [points.get(s, (None, None))[1] for s in window]
             if not month_closed(source, year, month, fetched_at_by_source.get(source)):
                 reason = 'prazo_aberto'
-            elif len(before) < PEAK_MIN_PRIOR_MONTHS or any(v is None or v < 0 for v in before) or median(before) <= 0:
+            elif len(before) < min_prior or any(v is None or v < 0 for v in before) or median(before) <= 0:
                 reason = 'sem_base'
             elif floors.get((source, year)) is None:
                 reason = 'sem_referencia_colegas'
@@ -147,7 +166,7 @@ def evaluate(records, fetched_at_by_source, baseline='year'):
     """Calcula sinais, cobertura e valor sem duplicidade a partir das notas de reembolso.
 
     records: dicts com id, authorityId, sourceId, year, month, supplierKey, supplierName, amountCents.
-    baseline: 'year' (regra em uso) ou 'rolling12' (variante em estudo, só na simulação).
+    baseline: 'year' (regra em uso), 'rolling12' ou 'rolling-short' (variantes em estudo, só na simulação).
     Devolve {'signals', 'coverage', 'totals'}; nenhum valor ausente vira zero.
     """
     if baseline not in BASELINES:
@@ -160,9 +179,13 @@ def evaluate(records, fetched_at_by_source, baseline='year'):
         totals[key] = totals.get(key, 0) + r['amountCents']
         record_ids.setdefault((*key, month), []).append((r['id'], r['amountCents']))
         if r.get('supplierKey'):
-            entry = by_supplier.setdefault(key, {}).setdefault(r['supplierKey'], {'name': r.get('supplierName'), 'cents': 0, 'records': []})
+            entry = by_supplier.setdefault(key, {}).setdefault(r['supplierKey'], {'name': r.get('supplierName'), 'cents': 0, 'records': [],
+                                                                                 'intermediated': 0, 'airlines': set()})
             entry['cents'] += r['amountCents']
             entry['records'].append((r['id'], r['amountCents']))
+            if is_intermediated(r.get('supplierName'), r.get('airline')):
+                entry['intermediated'] += 1
+                entry['airlines'].add(r['airline'])
 
     def closed_for(source, year):
         return lambda month: month_closed(source, year, month, fetched_at_by_source.get(source))
@@ -176,7 +199,8 @@ def evaluate(records, fetched_at_by_source, baseline='year'):
                 peer_values.setdefault((source, year), []).append(value)
     floors = {k: median(v) for k, v in peer_values.items() if len(v) >= PEER_MIN_VALUES}
 
-    rolling = _rolling_peaks(series, floors, fetched_at_by_source) if baseline == 'rolling12' else None
+    rolling = (None if baseline == 'year' else
+               _rolling_peaks(series, floors, fetched_at_by_source, ROLLING_MONTHS if baseline == 'rolling12' else PEAK_MIN_PRIOR_MONTHS))
     signals, coverage, alert_records = [], [], {}
     for (authority, source, year), months in sorted(series.items()):
         fetched = fetched_at_by_source.get(source)
@@ -231,6 +255,10 @@ def evaluate(records, fetched_at_by_source, baseline='year'):
                     'supplierCents': entry['cents'], 'totalCents': total, 'share': round(share, 4),
                     'records': len(entry['records']), 'monthsObserved': [observed[0], observed[-1]],
                     'partial': partial, 'fetchedAt': fetched,
+                    # Maioria das notas cita outra companhia aérea: pagamentos intermediados por agência.
+                    'intermediation': ({'records': entry['intermediated'], 'airlines': sorted(entry['airlines'])}
+                                       if entry['intermediated'] * 2 > len(entry['records']) else None),
+                    'monthsWithNotes': len(months),
                     'criteria': {'minShare': SUPPLIER_MIN_SHARE, 'minCents': SUPPLIER_MIN_CENTS}}})
             alert_records[signal_id] = entry['records']
 
@@ -259,6 +287,10 @@ def describe(signal) -> str:
                 f'({money(detail["floorCents"])}). Só meses com prazo de apresentação encerrado na coleta.'
                 f'{" Fim do exercício: o saldo não usado da cota se acumula no ano e expira em 31/12." if detail.get("yearEndMonths") else ""}'
                 f' Regra {detail["ruleVersion"]}.')
+    intermediation = detail.get('intermediation')
+    middle = (f' Intermediação: {intermediation["records"]} de {detail["records"]} notas citam outra companhia aérea '
+              f'({", ".join(intermediation["airlines"])}); o valor é o total pago pelas passagens, não a receita da agência.'
+              if intermediation else '')
     return (f'{detail["supplierName"]}: {money(detail["supplierCents"])} de {money(detail["totalCents"])} '
-            f'({detail["share"] * 100:.1f}%). Critério: pelo menos 50% e R$ 30.000 no ano.'
+            f'({detail["share"] * 100:.1f}%). Critério: pelo menos 50% e R$ 30.000 no ano.{middle}'
             f'{" Período parcial: o ano ainda pode receber notas." if detail["partial"] else ""} Regra {detail["ruleVersion"]}.')

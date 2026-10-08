@@ -81,6 +81,22 @@ def migrate(db):
             dropped = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)).fetchone() or dropped
             db.execute(f'DROP TABLE IF EXISTS {table}')
 
+        # v7: companhia aérea citada nas passagens (evidência de intermediação por agência).
+        for table in ('expenses', 'quota_history_notes'):
+            if 'airline' not in {row[1] for row in db.execute(f'PRAGMA table_info({table})')}:
+                db.execute(f'ALTER TABLE {table} ADD COLUMN airline TEXT')
+        db.execute('DROP VIEW IF EXISTS quota_history')
+        for statement in _schema_statements(SCHEMA_PATH.read_text(encoding='utf-8')):
+            if statement.startswith('CREATE VIEW'):
+                db.execute(statement)
+
+        # v7: data da última coleta que forneceu as notas, separada da última tentativa (prazos dos alertas).
+        if 'dataFetchedAt' not in {row[1] for row in db.execute('PRAGMA table_info(sources)')}:
+            db.execute('ALTER TABLE sources ADD COLUMN dataFetchedAt TEXT')
+            # Sem histórico de tentativas, a melhor evidência é a data das fontes que estão importadas.
+            db.execute("UPDATE sources SET dataFetchedAt=fetchedAt WHERE status IN ('imported','partial')")
+            dropped = True
+
         # v6: o resultado de cada alerta fica gravado; refaz os sinais com a regra em backend/alert_rules.py.
         if 'detail' not in {row[1] for row in db.execute('PRAGMA table_info(signals)')}:
             db.execute('ALTER TABLE signals ADD COLUMN detail TEXT')

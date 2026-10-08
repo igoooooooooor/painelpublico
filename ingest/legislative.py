@@ -41,6 +41,18 @@ USER_AGENT = "QuantoCusta/1.0 (public-data importer)"
 # Mesmos valores de backend/config.py: o complemento de moradia da CEAP fica fora da cota.
 HOUSING_COMPLEMENT_CATEGORY = "COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA"
 HOUSING_COMPLEMENT_KIND = "complemento_moradia"
+# Companhia aérea citada no detalhamento das passagens do Senado ("Companhia Aérea: LATAM, Localizador: ...").
+# Só o nome da companhia é guardado; passageiros, matrículas e localizadores não.
+AIRLINE_IN_DETAIL = re.compile(r"Companhia A[ée]rea:\s*([^,;\n]+)", re.IGNORECASE)
+AIRLINES = {"LATAM": "LATAM", "TAM": "LATAM", "GOL": "GOL", "AZUL": "AZUL", "AZUL 1": "AZUL"}
+
+
+def ticket_airline(detail: Any) -> str | None:
+    """Companhia aérea reconhecida no detalhamento; outros nomes (ex.: a própria agência) não contam."""
+    match = AIRLINE_IN_DETAIL.search(str(detail or ""))
+    return AIRLINES.get(match.group(1).strip().upper()) if match else None
+
+
 CPF_IN_NAME = re.compile(
     r"(?<![A-Za-z0-9])(?:CPF\s*[:#-]?\s*)?(?:\d{11}|\d{3}\.\d{3}\.\d{3}-\d{2})(?![A-Za-z0-9])",
     re.IGNORECASE,
@@ -664,6 +676,7 @@ def load_senate_expenses(path: Path, year: int, authorities: dict[str, dict[str,
                     row_index,
                 ),
                 "kind": "reembolso",
+                "airline": ticket_airline(row.get("detalhamento")),
             }
         )
         native_ids.append(row.get("id"))
