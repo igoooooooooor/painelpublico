@@ -37,6 +37,11 @@ Antes de entrar no roadmap, cada item passa por duas perguntas:
    - **Fase 1 aprovada (7/10):** [levantamento oficial](mandate-cost-sources.md), com disponibilidade, limitações, cobertura local e proposta de v1. Sem coleta em massa ou alteração do produto. Gabinete da Câmara tem meses até julho; moradia e folha exigem cuidado com períodos e dupla contagem. A Fase 2 foi autorizada com foco na Câmara e piloto de até 10 senadores.
    - **Fase 2 aprovada:** [coleta e conferência](mandate-cost-collection.md), com folha e moradia por competência, retomada, inventário das suplementares e piloto do Senado interrompido por falta de identidade individual segura. Cota e gabinete reaproveitados; sem alteração da ficha ou do banco. Janeiro–julho é a proposta de período comum, com lacunas e sobreposição explícitas. Fase 3 autorizada para janeiro–julho/2026, somente Câmara.
    - **Fase 3 local:** custo médio mensal na ficha da Câmara, com meses explícitos, partes e fontes, exercício confirmado, auxílio vindo só da folha e 13º à parte. [Verificações A–C e resultado](mandate-cost-preflight.md). Regra revisada em 8/10: a página individual de remuneração é o registro da pessoa; o inventário anônimo é só nota. Média disponível em 508/513 fichas; Senado sem total novo. Sem ranking ou nova ordenação. Complemento de moradia da cota corrigido em 8/10 (esquema v3): fica à parte e não reduz mais a cota.
+   - **Próximo: período do mandato, não do calendário (decidido em 8/10).** Hoje a média usa só jan–jul/2026, que é ano eleitoral e pode distorcer cota e presença. A régua passa a ser o mandato atual: Câmara desde fev/2023 (legislatura 57); Senado no mesmo recorte, para manter as mesmas regras, com aviso quando o mandato começou antes. Em 1º/2/2027 a média recomeça e o mandato 2023–2027 fica como histórico na ficha. Carreira inteira (2008 em diante) fica fora: custo alto, pouco ganho para o leigo.
+     - **Antes de coletar:** levantar fonte por fonte até onde cada uma vai de verdade (cota, folha individual, gabinete, auxílios, votações, presença). Só levantamento, sem coleta. Se uma das quatro partes do custo não cobrir o mandato inteiro, a média só usa os meses em que todas existem, com os meses escritos ao lado.
+     - **Peso na VPS:** o servidor guarda agregados por pessoa e mês (média, categorias, maiores fornecedores, alertas). Notas brutas antigas ficam só na base local; o servidor mantém as notas detalhadas do ano corrente e o CSV da ficha diz o período coberto.
+     - **Valores da época, sem correção pela inflação**, com essa frase na ficha. Correção pelo IPCA fica para depois, se fizer falta.
+     - Minha cidade mantém "último ano fechado" como régua: contas municipais são anuais e chegam com atraso.
 4. **Placar mais amplo.** Hoje a Câmara tem só quatro votações selecionadas. Ampliar com um critério neutro e público (por exemplo, todas as votações finais de PEC e PL), com resumo em linguagem simples a partir da ementa oficial e agrupamento por tema com metodologia publicada.
 5. **Antes de divulgar o site:**
    - Atualização automática das cotas da Câmara e do Senado, com data da coleta, validação e registro das falhas. Hoje as coletas são manuais e o app não agenda downloads.
@@ -49,7 +54,7 @@ Antes de entrar no roadmap, cada item passa por duas perguntas:
 - Botão de destaque "Fale com ele(a)" na ficha, com o e-mail e o telefone do gabinete que já são coletados.
 - Aviso por e-mail quando algo muda na ficha de quem a pessoa acompanha; depende da atualização automática.
 - Busca por CEP em "Minha cidade".
-- Histórico de anos anteriores das cotas e lacunas da Câmara, somente com fonte validada.
+- Histórico anterior ao mandato atual (antes de 2023), somente com fonte validada e se houver demanda.
 
 ## Fora do escopo
 
