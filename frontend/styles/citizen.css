@@ -474,14 +474,11 @@ nav.tabs button svg { flex: none; }
 .city-account-values { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; min-width: 0; }
 .city-account-values > div { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; padding: 12px; border-radius: var(--radius-control); background: var(--chip); }
 .city-account-value-label { color: var(--ink-2); font-size: 12px; line-height: 1.4; }
-.city-account-values b { max-width: 100%; font-size: clamp(17px, 4vw, 22px); overflow-wrap: anywhere; }
+.city-account-values b { max-width: 100%; font-size: clamp(14px, 3.8vw, 20px); white-space: nowrap; }
 .city-account-values small { color: var(--muted); line-height: 1.4; overflow-wrap: anywhere; }
 .city-account-metric-source { min-width: 0; overflow-wrap: anywhere; }
 .city-account-caveat { margin: 0; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--ink-2); background: var(--surface); font-size: 13px; line-height: 1.5; }
-@media (min-width: 520px) {
-  .city-account-values { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
 @media (min-width: 720px) {
   .city-content-grid > .city-accounts-section { grid-column: 1 / -1; }
-  .city-account-metrics { grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+  .city-account-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
