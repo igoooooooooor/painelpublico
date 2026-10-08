@@ -133,6 +133,12 @@ class ChamberPayrollTests(unittest.TestCase):
         ])
         self.assertEqual(result["sheets"][2]["componentsCents"]["fixed_remuneration"], 123_456)
 
+    def test_december_christmas_bonus_sheet_is_recognized(self):
+        html = payroll_table("FOLHA NORMAL", period="12/2023") + payroll_table("FOLHA DE GRATIFICAÇÃO NATALINA", period="12/2023")
+        result = payroll.parse_payroll_html(html, "camara:220661", 2023, 12)
+        self.assertEqual([sheet["sheetType"] for sheet in result["sheets"]], ["normal", "christmas_bonus"])
+        self.assertNotIn("sheet-2-unknown-identity", result["issues"])
+
     def test_detail_url_must_match_public_profile_and_requested_month(self):
         with self.assertRaisesRegex(payroll.SourceError, "perfil e período"):
             payroll.parse_payroll_html(

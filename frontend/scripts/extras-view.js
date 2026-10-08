@@ -255,7 +255,7 @@ function comparisonShareCard([a, b]) {
   const rows = [];
   const costs = [a, b].map(f => comparisonProfile(f).cost);
   if (costs.every(cost => cost && Number.isSafeInteger(cost.monthlyAverageCents)) && typeof profileCostMoney === 'function') {
-    rows.push({ label: 'Custo médio do mandato por mês · jan–jul/2026', values: costs.map(cost => profileCostMoney(cost.monthlyAverageCents)),
+    rows.push({ label: `Custo médio do mandato por mês · ${PROFILE_COST_RANGE}`, values: costs.map(cost => profileCostMoney(cost.monthlyAverageCents)),
       notes: costs.map(cost => profileCostMonthList(cost.usedMonths)) });
   }
   rows.push({ label: 'Cota gasta em 2026', values: [money(a.total), money(b.total)] });

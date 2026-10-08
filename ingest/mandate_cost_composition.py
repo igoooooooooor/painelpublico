@@ -1,4 +1,4 @@
-"""Compose a Câmara monthly average from local source snapshots.
+"""Compose a Câmara monthly average over the current mandate from local source snapshots.
 
 No network, database writes, ranking or cross-House comparison. Housing amounts
 are reconciliation evidence only; allowances enter through individual payroll.
@@ -9,13 +9,29 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
+from fractions import Fraction
+import math
 import json
 from pathlib import Path
 
-from ingest.mandate_cost_audit import build as build_audit, observed_payroll_components
+from ingest.mandate_cost_audit import (COMPLEMENT_CATEGORY, build as build_audit, cents,
+                                      observed_payroll_components)
 
 ROOT = Path(__file__).resolve().parents[1]
-PERIODS = tuple(f'2026-{month:02d}' for month in range(1, 8))
+# Mandato atual (legislatura 57) até o último mês com as quatro partes publicadas em 2026.
+MANDATE_START = '2023-02'
+CURRENT_YEAR = 2026
+CURRENT_LAST_MONTH = 7
+HISTORY_YEARS = (2023, 2024, 2025)
+PERIODS = tuple(
+    f'{year}-{month:02d}'
+    for year in (*HISTORY_YEARS, CURRENT_YEAR)
+    for month in range(1, (CURRENT_LAST_MONTH if year == CURRENT_YEAR else 12) + 1)
+    if f'{year}-{month:02d}' >= MANDATE_START
+)
+# Lacunas confirmadas na própria fonte para todos os deputados: o mês entra na média
+# com as partes publicadas e a parte ausente fica vazia, sem virar zero.
+SOURCE_GAPS = {'2024-12': ('office',)}
 # 13º salário fica fora da média mensal e aparece à parte.
 CHRISTMAS_COMPONENT = 'christmas_bonus'
 GROSS_COMPONENTS = ('fixed_remuneration', 'personal_advantages', 'commission_role',
@@ -33,9 +49,9 @@ def valid(row, period):
 
 
 def source(row):
+    # Só link e mês por parte: com 42 meses, o resto da procedência fica nos snapshots de origem.
     original = row.get('source', row)
-    return {'url': original.get('url', original.get('sourceUrl')),
-            'fetchedAt': original.get('fetchedAt'), 'period': row.get('period')}
+    return {'url': original.get('url', original.get('sourceUrl')), 'period': row.get('period')}
 
 
 def compose_month(parts, service, period):
@@ -62,6 +78,7 @@ def compose_month(parts, service, period):
     office_value = office.get('amountCents') if (valid(office, period)
                    and office.get('status') == 'available' and integer(office.get('amountCents'))) else None
     values = dict(zip(PARTS, (remuneration, allowances, quota_excluding_complement, office_value)))
+    gaps = [part for part in SOURCE_GAPS.get(period, ()) if values[part] is None]
     reasons = []
     if service_status != 'in_office':
         reasons.append('outside_mandate' if outside else 'exercise_unknown')
@@ -69,18 +86,19 @@ def compose_month(parts, service, period):
         reasons.append('payroll_unavailable')
     if quota.get('completeSnapshot') is not True:
         reasons.append('quota_snapshot_unverified')
-    if office.get('sourceStatus') != 'imported':
+    if office.get('sourceStatus') != 'imported' and 'office' not in gaps:
         reasons.append('office_incomplete')
-    if any(value is None for value in values.values()):
+    if any(value is None for part, value in values.items() if part not in gaps):
         reasons.append('missing_parts')
     # Preserve observed signed evidence in details; never clamp negative values.
     housing_value = housing.get('housingAllowanceCents') if valid(housing, period) else None
     discrepancy = (allowances is not None and integer(housing_value) and allowances != housing_value)
     inventory = payroll.get('sheetCoverage') or {}
     return {'period': period, 'exercise': service_status, 'daysInOffice': service.get('daysInOffice'),
-            'exerciseSource': service.get('source'), 'valuesCents': values,
-            'eligible': not reasons, 'exclusionReasons': reasons,
-            'knownSumCents': sum(values.values()) if not reasons else None,
+            'exerciseSource': {'url': (service.get('source') or {}).get('url')} if service.get('source') else None,
+            'valuesCents': values,
+            'eligible': not reasons, 'exclusionReasons': reasons, 'sourceGaps': gaps,
+            'knownSumCents': sum(v for v in values.values() if v is not None) if not reasons else None,
             'christmasBonusCents': christmas if payroll_read else None,
             'payrollStatus': payroll.get('status', 'unavailable'),
             # Nota de rodapé: o inventário anônimo de folhas não identifica deputados.
@@ -94,29 +112,50 @@ def compose_month(parts, service, period):
                         'quota': source(quota), 'office': source(office), 'housing': source(housing)}}
 
 
+def principal(months, used):
+    """Soma exata das médias de cada parte, arredondada para baixo uma única vez.
+
+    Sem lacunas, é igual à média das somas mensais; numa lacuna confirmada, a parte
+    ausente é média só dos meses em que foi publicada.
+    """
+    if not used:
+        return None
+    total = Fraction(0)
+    for part in PARTS:
+        values = [months[p]['valuesCents'][part] for p in used if months[p]['valuesCents'][part] is not None]
+        if not values:
+            return None
+        total += Fraction(sum(values), len(values))
+    return math.floor(total)
+
+
 def compose_person(person, service):
     if person.get('house') != 'camara':
         return None
     months = {period: compose_month(person['parts'], service.get('months', {}).get(period, {}), period)
               for period in PERIODS}
     used = [period for period, row in months.items() if row['eligible']]
-    total = sum(months[period]['knownSumCents'] for period in used)
     summaries = {}
     for part in PARTS:
+        part_used = [p for p in used if months[p]['valuesCents'][part] is not None]
         available = [period for period, row in months.items()
                      if row['exercise'] == 'in_office' and row['valuesCents'][part] is not None]
         amount = sum(months[p]['valuesCents'][part] for p in available) if available else None
         summaries[part] = {'months': available, 'amountCents': amount,
                            # Médias arredondadas para baixo ao centavo, como o número principal.
                            'averageCents': amount // len(available) if available else None,
-                           'usedMonthsAverageCents': sum(months[p]['valuesCents'][part] for p in used) // len(used) if used else None,
-                           'sources': [months[p]['sources'][part] for p in available]}
+                           # Lacuna da fonte: a parte é média só dos meses em que foi publicada.
+                           'usedMonthsAverageCents': (sum(months[p]['valuesCents'][part] for p in part_used)
+                                                      // len(part_used)) if part_used else None,
+                           # A ficha mostra a fonte do mês mais recente; as demais ficam em cada mês.
+                           'sources': [months[available[-1]]['sources'][part]] if available else []}
     complement_months = [p for p, r in months.items() if r['exercise'] == 'in_office' and r['complementSignedCents'] is not None]
     christmas_months = [p for p, r in months.items() if r['exercise'] == 'in_office' and r['christmasBonusCents'] is not None]
     inventory_months = [p for p, r in months.items() if p in used and (r['payrollInventory'] or {}).get('status') == 'partial']
     return {'id': person['id'], 'house': 'camara', 'periodStart': PERIODS[0], 'periodEnd': PERIODS[-1],
             'months': months, 'usedMonths': used,
-            'monthlyAverageCents': total // len(used) if used else None,
+            'monthlyAverageCents': principal(months, used),
+            'sourceGapMonths': {p: months[p]['sourceGaps'] for p in used if months[p]['sourceGaps']},
             'parts': summaries, 'complement': {'months': complement_months,
                 'signedAmountCents': sum(months[p]['complementSignedCents'] for p in complement_months) if complement_months else None},
             'christmasBonus': {'months': christmas_months,
@@ -124,7 +163,81 @@ def compose_person(person, service):
                 'sources': [months[p]['sources']['remuneration'] for p in christmas_months]},
             'payrollInventoryPartialMonths': inventory_months,
             'policy': 'individual-payroll-page;average-of-in-office-months-with-all-parts;christmas-bonus-apart;'
-                      'payroll-allowances-only;exclude-quota-housing-complement;no-ranking'}
+                      'payroll-allowances-only;exclude-quota-housing-complement;no-ranking;'
+                      'mandate-period;nominal-values;confirmed-source-gaps-left-empty'}
+
+
+def _read(path):
+    return json.loads(path.read_text(encoding='utf-8')) if path.exists() else {}
+
+
+def history_quota(root, year):
+    """Monthly CEAP sums from the year's local import; the archive itself is the snapshot."""
+    data = _read(root / f'data/imports/legislative-{year}.json')
+    source = next((s for s in data.get('sources', []) if s.get('id') == 'camara_ceap'), {})
+    if source.get('status') != 'imported':
+        return {}
+    totals = {}
+    for row in data.get('expenses', []):
+        if row.get('sourceId') != 'camara_ceap' or row.get('year') != year:
+            continue
+        value = cents(row.get('amount'))
+        key = (row.get('authorityId'), f"{year}-{int(row['month']):02d}")
+        bucket = totals.setdefault(key, {'amount': 0, 'rows': 0, 'complement': 0, 'complementRows': 0, 'invalid': False})
+        if value is None:
+            bucket['invalid'] = True
+            continue
+        bucket['amount'] += value
+        bucket['rows'] += 1
+        if row.get('category') == COMPLEMENT_CATEGORY:
+            bucket['complement'] += value
+            bucket['complementRows'] += 1
+    result = {}
+    for (identifier, period), bucket in totals.items():
+        result.setdefault(identifier, {})[period] = {
+            'status': 'unavailable' if bucket['invalid'] else 'available', 'period': period,
+            'amountCents': None if bucket['invalid'] else bucket['amount'], 'rowCount': bucket['rows'],
+            'sourceConflict': False, 'completeSnapshot': True,
+            'housingComplementSignedCents': bucket['complement'] if bucket['complementRows'] else None,
+            'housingComplementRows': bucket['complementRows'],
+            'sourceUrl': source.get('url'), 'fetchedAt': source.get('fetchedAt')}
+    return result
+
+
+def history_office(root):
+    """Monthly office spending from the annual profile pages (reais → cents)."""
+    data = _read(root / 'data/snapshots/chamber-mandate-history.json')
+    result = {}
+    for identifier, person in data.get('profiles', {}).items():
+        rows = {}
+        for period, value in person.get('office', {}).items():
+            meta = person.get('sources', {}).get(period[:4], {}).get('office') or {}
+            amount = cents(value)
+            rows[period] = {'status': 'available' if amount is not None else 'unavailable',
+                            'amountCents': amount, 'period': period,
+                            'sourceStatus': 'imported' if meta.get('status') in ('imported', 'partial') else meta.get('status'),
+                            'sourceUrl': meta.get('url'), 'fetchedAt': meta.get('fetchedAt'), 'stale': False}
+        result[identifier] = rows
+    return result
+
+
+def history_parts(root, identifiers):
+    """Parts and exercise for 2023–2025, keyed like the 2026 audit."""
+    office = history_office(root)
+    parts = {identifier: {'payroll': {}, 'housing': {}, 'quota': {}, 'office': dict(office.get(identifier, {}))}
+             for identifier in identifiers}
+    service = {identifier: {} for identifier in identifiers}
+    for year in HISTORY_YEARS:
+        quota = history_quota(root, year)
+        payroll = _read(root / f'data/snapshots/chamber-payroll-{year}.json').get('profiles', {})
+        housing = _read(root / f'data/snapshots/chamber-housing-{year}.json').get('profiles', {})
+        exercise = _read(root / f'data/snapshots/chamber-service-{year}.json').get('profiles', {})
+        for identifier in identifiers:
+            parts[identifier]['quota'].update(quota.get(identifier, {}))
+            parts[identifier]['payroll'].update(payroll.get(identifier, {}).get('months', {}))
+            parts[identifier]['housing'].update(housing.get(identifier, {}).get('months', {}))
+            service[identifier].update(exercise.get(identifier, {}).get('months', {}))
+    return parts, service
 
 
 def build(root=ROOT):
@@ -138,9 +251,17 @@ def build(root=ROOT):
         for period, row in person['parts']['quota'].items():
             evidence = quota_check.get('profiles', {}).get(identifier, {}).get('months', {}).get(period, {})
             row['completeSnapshot'] = evidence.get('completeSnapshot') is True
-    people = {identifier: compose_person(person, service.get('profiles', {}).get(identifier, {}))
-              for identifier, person in audit['profiles'].items() if person['house'] == 'camara'}
-    return {'schemaVersion': 2, 'generatedAt': datetime.now(timezone.utc).isoformat(),
+    chamber = [identifier for identifier, person in audit['profiles'].items() if person['house'] == 'camara']
+    old_parts, old_service = history_parts(root, chamber)
+    people = {}
+    for identifier in chamber:
+        person = audit['profiles'][identifier]
+        for part, rows in old_parts[identifier].items():
+            person['parts'][part] = {**rows, **person['parts'].get(part, {})}
+        current = service.get('profiles', {}).get(identifier, {})
+        months = {**old_service[identifier], **current.get('months', {})}
+        people[identifier] = compose_person(person, {**current, 'months': months})
+    return {'schemaVersion': 3, 'generatedAt': datetime.now(timezone.utc).isoformat(),
             'periods': list(PERIODS), 'profiles': people,
             'quotaVerification': {key: quota_check.get(key) for key in ('completeSnapshot', 'sourceArchiveSha256', 'sourceFetchedAt')},
             'coverage': {'profiles': len(people), 'withPrincipal': sum(p['monthlyAverageCents'] is not None for p in people.values())}}

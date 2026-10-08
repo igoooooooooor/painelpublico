@@ -493,6 +493,37 @@ Cobertura da coleta de 8/10/2026 (513 deputados da lista atual):
 Os 10 sem gabinete e os 11 sem presença são, em geral, suplentes que entraram
 depois de 2025; os nomes estão no snapshot.
 
+### Média sobre o mandato (desde 8/10/2026)
+
+`mandate-cost.json` (esquema 3) passou a cobrir fev/2023–jul/2026: 2023–2025 vêm
+dos arquivos por ano da seção anterior, mais `chamber-payroll-{ano}.json` (folha
+individual) e `chamber-service-{ano}.json` (exercício, reconstruído offline do
+mesmo histórico em cache). 2026 segue a regra da Fase 3. Mesmas exigências por
+mês: exercício confirmado e as quatro partes.
+
+```sh
+for year in 2023 2024 2025; do python3 ingest/chamber_service.py --year $year --months 1-12; done
+python3 ingest/chamber_payroll.py --collect --year 2023 --months 2-12 --output data/snapshots/chamber-payroll-2023.json
+python3 ingest/chamber_payroll.py --collect --year 2024 --months 1-12 --output data/snapshots/chamber-payroll-2024.json
+python3 ingest/chamber_payroll.py --collect --year 2025 --months 1-12 --output data/snapshots/chamber-payroll-2025.json
+python3 -m ingest.mandate_cost_composition
+```
+
+Única exceção: **dezembro/2024 sem verba de gabinete**, lacuna da própria fonte
+para todos os deputados. O mês entra na média com o gabinete vazio
+(`sourceGapMonths`), e a média do gabinete usa os demais meses. O principal é a
+soma exata das médias de cada parte, arredondada para baixo uma vez; sem lacuna,
+é idêntico à média das somas mensais (conferido: as 513 médias de jan–jul/2026
+ficaram iguais). Valores da época, sem correção pela inflação, com essa frase na
+ficha.
+
+Resultado em 8/10/2026: **510/513 deputados com média** (antes 508), 376 com os 42
+meses e mediana de 42 meses usados. Dez/2024 entra com o gabinete vazio para 474.
+Os 3 sem média não têm mês com as quatro partes. O leitor da folha passou a
+reconhecer a "Folha de gratificação natalina" de dezembro (13º, fora da média);
+antes ela bloqueava o mês. `mandate-cost.json` tem ~31 MB no disco (cada mês guarda
+só link e mês por parte); a ficha recebe ~4 KB comprimidos por pessoa.
+
 ## Minha cidade — Fase 1: IBGE e TSE
 
 ```sh

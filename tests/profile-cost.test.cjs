@@ -30,7 +30,7 @@ function costFixture({ used = PERIODS, exercise = 'in_office' } = {}) {
   const part = value => ({ months: used, amountCents: value * used.length, averageCents: value, usedMonthsAverageCents: used.length ? value : null,
     sources: used.map(period => ({ url: payrollUrl(period), period })) });
   return {
-    id: 'camara:1', house: 'camara', periodStart: '2026-01', periodEnd: '2026-07', months, usedMonths: used,
+    id: 'camara:1', house: 'camara', periodStart: '2023-02', periodEnd: '2026-07', months, usedMonths: used,
     monthlyAverageCents: used.length ? 22061919 : null,
     parts: { remuneration: part(4636619), allowances: part(425300), quota: part(3000000), office: part(14000000) },
     christmasBonus: { months: ['2026-06'], amountCents: 2270997, sources: [] },
@@ -46,8 +46,8 @@ test('principal shows the monthly average, the months used and the 13th apart', 
   const html = profileCostAnswer(costFixture());
   assert.match(html, /Custa em média/);
   assert.match(html, /R\$\s?220\.619,19/);
-  assert.match(html, /jan–jul\/2026, 7 meses/);
-  assert.match(html, /13º adiantado em junho: <b class="mono">R\$\s?22\.709,97<\/b>/);
+  assert.match(html, /jan\/2026–jul\/2026, 7 meses/);
+  assert.match(html, /13º salário em junho de 2026: <b class="mono">R\$\s?22\.709,97<\/b>/);
   assert.equal((html.match(/data-cost-part=/g) || []).length, 4);
   assert.match(html, /remuneracao-deputado-detalhado\?mesAno=072026/);
   assert.doesNotMatch(html, /pelo menos/);
@@ -56,13 +56,13 @@ test('principal shows the monthly average, the months used and the 13th apart', 
 
 test('non-consecutive months are listed instead of shown as a range', () => {
   const { profileCostAnswer } = load();
-  assert.match(profileCostAnswer(costFixture({ used: ['2026-01', '2026-03'] })), /jan, mar\/2026, 2 meses/);
+  assert.match(profileCostAnswer(costFixture({ used: ['2026-01', '2026-03'] })), /jan\/2026, mar\/2026, 2 meses/);
 });
 
 test('outside the mandate is neither zero nor missing data', () => {
   const { profileCostAnswer } = load();
   const html = profileCostAnswer(costFixture({ used: [], exercise: 'outside_mandate' }));
-  assert.match(html, /Não estava no mandato entre janeiro e julho de 2026/);
+  assert.match(html, /Não estava no mandato entre fevereiro de 2023 e julho de 2026/);
   assert.doesNotMatch(html, /R\$\s?0,00/);
   assert.doesNotMatch(html, /Custa em média/);
 });
@@ -83,4 +83,26 @@ test('details keep the complement signed and the anonymous inventory as a footno
   assert.match(html, /sinal negativo/);
   assert.match(html, /citizen-cost-footnote/);
   assert.equal((html.match(/entra na média/g) || []).length, 7);
+});
+
+test('month ranges cross years and the mandate period is named', () => {
+  const { profileCostMonthList, profileCostAnswer } = load();
+  assert.equal(profileCostMonthList(['2023-02', '2023-03', '2024-11', '2025-01', '2025-02']),
+    'fev/2023–mar/2023, nov/2024, jan/2025–fev/2025, 5 meses');
+  assert.equal(profileCostMonthList(['2023-01', '2026-08']), 'nenhum mês');
+  const html = profileCostAnswer(costFixture());
+  assert.match(html, /mandato 2023–2027/);
+  assert.match(html, /Valores da época, sem correção pela inflação/);
+});
+
+test('a confirmed source gap is shown empty, never as zero', () => {
+  const { profileCostAnswer, profileCostDetails } = load();
+  const cost = costFixture();
+  cost.sourceGapMonths = { '2026-03': ['office'] };
+  cost.months['2026-03'].valuesCents.office = null;
+  cost.months['2026-03'].sourceGaps = ['office'];
+  assert.match(profileCostAnswer(cost), /não publicou a verba do gabinete de mar\/2026/);
+  const details = profileCostDetails(cost);
+  assert.match(details, /data-cost-month="2026-03"[\s\S]*Não publicado pela Câmara/);
+  assert.match(details, /data-cost-year="2026" open/);
 });

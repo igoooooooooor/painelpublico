@@ -74,13 +74,20 @@ def money_cents(cents):
 
 
 def month_range(periods):
-    months = sorted(int(period[5:7]) for period in periods)
-    if not months:
+    """'fev/2023–jul/2026, 42 meses'; meses não seguidos viram trechos separados."""
+    serials = sorted({int(period[:4]) * 12 + int(period[5:7]) - 1 for period in periods})
+    if not serials:
         return ''
-    consecutive = months == list(range(months[0], months[-1] + 1))
-    label = (f'{MONTHS[months[0]]}–{MONTHS[months[-1]]}' if consecutive and len(months) > 1
-             else ', '.join(MONTHS[m] for m in months)) + '/2026'
-    return f'{label}, {len(months)} {"mês" if len(months) == 1 else "meses"}'
+    runs = []
+    for serial in serials:
+        if runs and serial == runs[-1][-1] + 1:
+            runs[-1].append(serial)
+        else:
+            runs.append([serial])
+    label_of = lambda serial: f'{MONTHS[serial % 12 + 1]}/{serial // 12}'
+    label = ', '.join(label_of(run[0]) if len(run) == 1 else f'{label_of(run[0])}–{label_of(run[-1])}'
+                      for run in runs)
+    return f'{label}, {len(serials)} {"mês" if len(serials) == 1 else "meses"}'
 
 
 def _chamber_presence(number):
@@ -102,7 +109,7 @@ def profile_facts(db, identifier):
     cost = (profiles.profile(identifier) or {}).get('mandateCost') or {}
     if isinstance(cost.get('monthlyAverageCents'), int) and cost.get('usedMonths'):
         facts['lines'].append(('Quanto custa', f'Custa em média {money_cents(cost["monthlyAverageCents"])} por mês '
-                               f'({month_range(cost["usedMonths"])}), somando salário bruto, auxílios, cota parlamentar e verba do gabinete.'))
+                               f'({month_range(cost["usedMonths"])}), somando salário bruto, auxílios, cota parlamentar e verba do gabinete, em valores da época.'))
     if record.get('hasExpenseData'):
         average = record.get('media')
         comparison = ''

@@ -265,6 +265,9 @@ def _sheet_identity(label: str) -> tuple[str, str, int | None]:
         "folha de adiantamento de gratificacao natalina",
     }:
         return normalized.upper(), "advance_christmas_bonus", None
+    # Em dezembro a Câmara publica o restante do 13º numa folha própria.
+    if key == "folha de gratificacao natalina":
+        return normalized.upper(), "christmas_bonus", None
     return normalized.upper(), "unknown", None
 
 
@@ -778,6 +781,11 @@ def _apply_inventory(observation: dict[str, Any], inventory: dict[str, Any] | No
         "adiantamento de gratificacao natalina"
         for sheet in result.get("sheets", [])
         if isinstance(sheet, dict) and sheet.get("sheetType") == "advance_christmas_bonus"
+    )
+    represented_types.update(
+        "gratificacao natalina"
+        for sheet in result.get("sheets", [])
+        if isinstance(sheet, dict) and sheet.get("sheetType") == "christmas_bonus"
     )
     represented_types = {value for value in represented_types if value}
     expected_types = {

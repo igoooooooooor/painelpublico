@@ -50,11 +50,14 @@ class SourceError(RuntimeError):
     """Raised when an official response cannot support a safe observation."""
 
 
-def paths(root: Path = ROOT) -> dict[str, Path]:
+def paths(root: Path = ROOT, year: int = DEFAULT_YEAR) -> dict[str, Path]:
     return {
         "cache_dir": root / "data" / "raw" / "mandate-cost" / "service",
         "roster": root / "data" / "imports" / "legislative.json",
-        "output": root / "data" / "snapshots" / "chamber-service.json",
+        # Anos anteriores ficam em arquivo próprio; o histórico de exercício em cache é o mesmo.
+        "output": root / "data" / "snapshots" / (
+            "chamber-service.json" if year == DEFAULT_YEAR else f"chamber-service-{year}.json"
+        ),
     }
 
 
@@ -477,7 +480,7 @@ def build_snapshot(
     if limit is not None and limit < 1:
         raise ValueError("Limit must be positive")
 
-    configured_paths = paths(root)
+    configured_paths = paths(root, year)
     roster = load_roster(configured_paths["roster"])
     if profile_id is not None:
         normalized_id = _person_id(profile_id)

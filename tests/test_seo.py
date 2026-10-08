@@ -111,7 +111,8 @@ class SeoPagesTests(unittest.TestCase):
     def test_slug_and_money_helpers(self):
         self.assertEqual(seo.slug('Rui Falcão'), 'rui-falcao')
         self.assertEqual(seo.money_cents(22633099), 'R$ 226.330,99')
-        self.assertEqual(seo.month_range(['2026-01', '2026-07', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06']), 'jan–jul/2026, 7 meses')
-        self.assertEqual(seo.month_range(['2026-01', '2026-03']), 'jan, mar/2026, 2 meses')
+        self.assertEqual(seo.month_range(['2026-01', '2026-07', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06']), 'jan/2026–jul/2026, 7 meses')
+        self.assertEqual(seo.month_range(['2023-02', '2023-03', '2026-07']), 'fev/2023–mar/2023, jul/2026, 3 meses')
+        self.assertEqual(seo.month_range(['2026-01', '2026-03']), 'jan/2026, mar/2026, 2 meses')
         self.assertEqual(seo.shorten('um dois tres quatro', 12), 'um dois…')
         self.assertEqual(seo.shorten('curto'), 'curto')

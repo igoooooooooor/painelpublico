@@ -22,7 +22,7 @@ help:
 	@echo "make collect-cities     Coleta manual da base nacional IBGE e TSE"
 	@echo "make collect-mandate-cost  Coleta manual e retomável de folha e moradia da Câmara"
 	@echo "make audit-mandate-cost    Reconstrói os novos snapshots sem rede"
-	@echo "make collect-mandate-history  Cota, moradia, gabinete e presença da Câmara de 2023 a 2025"
+	@echo "make collect-mandate-history  Coleta 2023–2025 da Câmara e recompõe a média do mandato"
 	@echo "make prod               Roda como em produção (cache, só localhost)"
 	@echo "make deploy SERVER=...  Testa e publica o código no servidor"
 	@echo "make deploy-data SERVER=...  Envia banco e snapshots (alias: deploy-db)"
@@ -100,13 +100,18 @@ audit-mandate-cost:
 	$(PYTHON) ingest/senate_payroll_pilot.py
 	$(PYTHON) ingest/mandate_cost_audit.py --year $(or $(YEAR),2026)
 
-# Partes baratas do mandato (2023–2025), em arquivos próprios por ano; não modifica a ficha nem o SQLite.
+# Mandato desde fev/2023: coleta por ano em arquivos próprios e recompõe a média da ficha; não modifica o SQLite.
 collect-mandate-history:
 	@for year in 2023 2024 2025; do $(PYTHON) ingest/legislative.py --year $$year --output data/imports/legislative-$$year.json || exit 1; done
 	$(PYTHON) ingest/chamber_housing.py --collect --year 2023 --months 2,3,4,5,6,7,8,9,10,11,12
 	$(PYTHON) ingest/chamber_housing.py --collect --year 2024 --months 1,2,3,4,5,6,7,8,9,10,11,12
 	$(PYTHON) ingest/chamber_housing.py --collect --year 2025 --months 1,2,3,4,5,6,7,8,9,10,11,12
 	$(PYTHON) ingest/chamber_mandate_history.py --collect
+	$(PYTHON) ingest/chamber_payroll.py --collect --year 2023 --months 2-12 --output data/snapshots/chamber-payroll-2023.json
+	$(PYTHON) ingest/chamber_payroll.py --collect --year 2024 --months 1-12 --output data/snapshots/chamber-payroll-2024.json
+	$(PYTHON) ingest/chamber_payroll.py --collect --year 2025 --months 1-12 --output data/snapshots/chamber-payroll-2025.json
+	@for year in 2023 2024 2025; do $(PYTHON) ingest/chamber_service.py --year $$year --months 1-12 || exit 1; done
+	$(PYTHON) -m ingest.mandate_cost_composition
 
 prod: build
 	$(PYTHON) -m backend.server --prod --host 127.0.0.1 --port $(PORT)

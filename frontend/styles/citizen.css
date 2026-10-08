@@ -321,6 +321,8 @@ b.warn { color: var(--warn); }
 .citizen-cost-extra span { color: var(--hero-muted); }
 .citizen-cost-details { min-width: 0; }
 .citizen-cost-months { display: grid; gap: 8px; }
+.citizen-cost-year { display: grid; gap: 8px; }
+.citizen-cost-year summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; font-weight: 600; color: var(--ink-2); }
 .citizen-cost-month { display: grid; grid-template-columns: minmax(72px, auto) minmax(0, 1fr); gap: 3px 10px; align-items: baseline; padding: 10px 0; border-top: 1px solid var(--line); }
 .citizen-cost-month > *:nth-child(n + 3) { grid-column: 1 / -1; }
 .citizen-cost-used { color: var(--ok, var(--accent)); font-size: 12px; font-weight: 700; }
