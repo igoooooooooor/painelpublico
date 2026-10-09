@@ -158,7 +158,7 @@ function profileData(value) {
     sourceUrl: supplied.sourceUrl || snapshot.sourceUrl, fetchedAt: supplied.fetchedAt || snapshot.fetchedAt, role };
   return { id, person, contact: snapshot.contato || null, projects: snapshot.projetos || null,
     office: snapshot.gabinete || null, mandate: snapshot.mandato || null, election: snapshot.eleicao2026 || null,
-    cost: snapshot.mandateCost || null, senateCost: snapshot.senateCost || null,
+    cost: snapshot.mandateCost || null, senateCost: snapshot.senateCost || null, tenure: snapshot.noCargoDesde || null,
     loading: PROFILE_LOAD.pending.has(id), presence: profilePresence(id),
     registeredPresence: role === 'senador' ? profileRegisteredPresence(id) : null, votes: profileVotes(id),
     compensation: PROFILE_SALARY[role] ? { ...PROFILE_SALARY[role], individual: null } : null };
@@ -400,7 +400,7 @@ function profileSectionsHTML(value, slots = {}) {
       <p class="muted citizen-project-empty" data-project-empty role="status" aria-live="polite"${visibleProjects ? ' hidden' : ''}>Nenhum projeto nesta situação neste recorte.</p>
     </div>` : ''}
     ${profileSource(projects)}`;
-  const officeContent = profile.loading ? loading() : `${hasOffice ? `<div><span class="big">${money(office.amount)}</span><span class="muted"> · gasto publicado no recorte</span></div>`
+  const officeContent = profile.loading ? loading() : profile.senateCost && typeof senateOfficeHTML === 'function' ? senateOfficeHTML(profile.senateCost) : `${hasOffice ? `<div><span class="big">${money(office.amount)}</span><span class="muted"> · gasto publicado no recorte</span></div>`
       : '<p class="muted">Gastos com a equipe ainda não importados para este perfil. Ausência de dado não significa gasto zero.</p>'}
     ${Number.isFinite(office?.staffActive) ? `<p>${esc(office.staffActive)} pessoas ativas na fotografia da fonte.</p>` : '<p class="muted">Quantidade de assessores não importada.</p>'}
     ${months.length ? `<p class="muted">Meses informados: ${months.map(m => monthNames[m]).join(', ')}.</p>` : ''}

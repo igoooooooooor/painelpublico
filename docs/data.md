@@ -594,6 +594,13 @@ partir de fev/2023.
   coluna Documento fica vazia.
 - **Alertas:** picos e concentração avaliam o mandato inteiro, nas duas Casas (regra,
   cobertura e prazos em [Alertas](alerts.md)); lançamentos de valor alto seguem só em 2026.
+- **No cargo desde:** o cabeçalho da ficha diz "Na Câmara desde 2007" ou "No Senado desde 2019", o início
+  da sequência ininterrupta de legislaturas (Câmara) ou mandatos (Senado) com exercício até o atual; um
+  mandato anterior separado por um intervalo não entra. `make collect-tenure` gera `tenure.json` a partir do
+  histórico de cada deputado(a) (`/deputados/{id}/historico`, com o registro "no início da legislatura"
+  antes de 2003, quando a Câmara não publica a situação) e do histórico de mandatos do Senado.
+- **Equipe e verba de gabinete no Senado:** a seção mostra a equipe comissionada do gabinete no mês mais
+  recente e a média do mandato, da mesma folha do cartão de despesas; não é comparável à verba da Câmara.
 - **O que segue em 2026:** fornecedores globais (`supplier_totals`) e a presença do Senado.
 - **Presença:** `presenca.json` agora soma o mandato (fev/2023 até o mês corrente),
   com `inicio` e `fim` por deputado, e vem de `ingest/chamber_mandate_history.py`

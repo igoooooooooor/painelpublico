@@ -143,3 +143,24 @@ function senateCostDetails(cost, profileRecord) {
     ${rows ? `<div class="citizen-cost-months">${rows}</div>` : '<p class="muted">Sem meses no recorte.</p>'}
   </section>`;
 }
+
+/* Seção "Equipe e verba de gabinete" do Senado: o mês mais recente com equipe identificada e a média dos
+   meses com equipe, a partir da mesma folha. No Senado não há verba de gabinete publicada como na Câmara. */
+function senateOfficeHTML(cost) {
+  const entries = Object.entries(cost?.months || {}).sort(([a], [b]) => a.localeCompare(b));
+  const known = entries.filter(([, month]) => profileCostInteger(month.officeCents));
+  if (!known.length) {
+    const last = entries[entries.length - 1]?.[1];
+    return `<p class="muted">Equipe do gabinete não identificada na folha do Senado: ${esc(senateCostReason(last?.officeReason || 'sem_lotacao_propria').toLowerCase())}. Ausência de dado não significa gasto zero.</p>`;
+  }
+  const [latestPeriod, latest] = known[known.length - 1];
+  const average = senateCostAverage(known.map(([, month]) => month.officeCents));
+  const source = (cost.sources || []).find(item => item.competence === latestPeriod);
+  const url = source && typeof profileSafeUrl === 'function' ? profileSafeUrl(source.url) : null;
+  const periods = known.map(([period]) => period);
+  return `<div><span class="big">${esc(profileCostMoney(latest.officeCents))}</span><span class="muted"> · equipe do gabinete em ${esc(profileCostLabel(latestPeriod))}</span></div>
+    ${latest.officePeople ? `<p>${esc(latest.officePeople)} pessoas comissionadas nesse mês.</p>` : ''}
+    <p>Média de <b class="mono">${esc(profileCostMoney(average))}</b> por mês em ${known.length} ${known.length === 1 ? 'mês' : 'meses'} com equipe identificada (${esc(senateCostMonthList(periods))}).</p>
+    <p class="muted">Soma bruta da folha normal dos comissionados lotados no gabinete com o nome da pessoa, no arquivo mensal de remuneração do Senado. 13º, férias, auxílios e servidores efetivos ficam fora. O Senado não publica uma verba de gabinete como a da Câmara; não compare os dois valores. Os nomes da equipe não são guardados.</p>
+    ${url ? `<span class="src">Folha de ${esc(profileCostLabel(latestPeriod))}. <a href="${esc(url)}" target="_blank" rel="noopener">Fonte do Senado ↗</a></span>` : ''}`;
+}

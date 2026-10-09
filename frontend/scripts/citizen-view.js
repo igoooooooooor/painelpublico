@@ -557,6 +557,13 @@ function profileShareCard(f, shared, alerts, hasExpenseData) {
     footnote: `Fontes: ${senate ? 'Senado Federal' : 'Câmara dos Deputados'} (notas da cota${average !== null ? ', remuneração, gabinete' : ''} e presença). Retrato de ${f.snapshotAt ? dateBR(f.snapshotAt) : 'data não informada'}.`,
   };
 }
+/* "Na Câmara desde 2007": início da sequência ininterrupta de mandatos até o atual, não da carreira. */
+function profileTenureLabel(shared) {
+  const tenure = shared.tenure, year = /^(\d{4})-\d{2}-\d{2}$/.exec(tenure?.since || '')?.[1];
+  if (!year || !['camara', 'senado'].includes(tenure.house)) return '';
+  const where = tenure.house === 'senado' ? 'No Senado' : 'Na Câmara';
+  return `<span class="citizen-tenure" title="${esc(`Sem interrupção desde ${dateBR(tenure.since)}. Mandatos anteriores separados por um intervalo não entram.`)}">${where} desde ${year}</span>`;
+}
 function profileView() {
   const id = state.politicianId;
   loadProfile(id);
@@ -585,7 +592,7 @@ function profileView() {
     ${hasExpenseData ? `<a class="fchip" href="${esc('/api/c/gastos.csv?id=' + encodeURIComponent(person.id))}" download>Baixar todas as notas (CSV)</a>` : ''}
     ${hasExpenseData ? '<p class="muted">O arquivo traz uma nota por linha, desde fev/2023. Nas notas de 2023 a 2025, a coluna Documento fica vazia; o link da nota continua.</p>' : ''}`;
   return `${back}
-    <div class="citizen-profile-head"><div class="profile">${citizenAvatar(person, 64)}<div><h1 class="n">${esc(citizenName(person.name))}</h1><span class="muted">${citizenRoleDescription(person)}</span>${election?.summary ? `<span class="pill citizen-election" data-tone="${esc(election.tone)}"><i></i>${esc(election.summary)}</span>` : ''}</div></div>
+    <div class="citizen-profile-head"><div class="profile">${citizenAvatar(person, 64)}<div><h1 class="n">${esc(citizenName(person.name))}</h1><span class="muted">${citizenRoleDescription(person)}</span>${profileTenureLabel(shared)}${election?.summary ? `<span class="pill citizen-election" data-tone="${esc(election.tone)}"><i></i>${esc(election.summary)}</span>` : ''}</div></div>
       <button type="button" class="fchip" data-cmp-start="${esc(shared.id)}">Comparar com outro(a) →</button></div>
     ${shareActionsHTML(profileShareCard(f, shared, alerts, hasExpenseData))}
     <span class="k citizen-answer-label">Em 3 respostas</span>

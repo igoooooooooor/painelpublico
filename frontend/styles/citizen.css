@@ -121,6 +121,7 @@
 .vbar i:first-child { background: var(--accent); }
 .vbar i:nth-child(2) { background: var(--no); }
 .citizen-stack { display: flex; flex-direction: column; gap: 10px; }
+.citizen-tenure { display: block; margin-top: 2px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
 .citizen-election { display: flex; width: fit-content; margin-top: 8px; font-size: 13px; font-weight: 600; }
 .citizen-election[data-tone="ok"] i { background: var(--accent); }
 .citizen-election[data-tone="info"] i { background: var(--accent-2); }

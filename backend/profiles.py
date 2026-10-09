@@ -171,6 +171,16 @@ def _senate_cost(identifier, profile_path):
             'generatedAt': snapshot.get('generatedAt')}
 
 
+def _tenure(identifier, profile_path):
+    """Início da sequência ininterrupta no cargo (``ingest/tenure.py``), ou None."""
+    snapshot = _load(profile_path.parent / 'tenure.json')
+    records = snapshot.get('profiles') if snapshot else None
+    item = records.get(identifier) if isinstance(records, dict) else None
+    if not isinstance(item, dict) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}', str(item.get('since') or '')):
+        return None
+    return {'house': item.get('house'), 'since': item['since'], 'rule': snapshot.get('rule')}
+
+
 def profile(identifier, path=None):
     """Perfil complementar de um parlamentar ou None se o arquivo ou o registro não existirem."""
     profile_path = Path(path) if path is not None else SNAPSHOTS_PATH / 'perfis.json'
@@ -184,8 +194,9 @@ def profile(identifier, path=None):
     election_result = _election_result(identifier, profile_path)
     mandate_cost = _mandate_cost(identifier, profile_path)
     senate_cost = _senate_cost(identifier, profile_path)
+    tenure = _tenure(identifier, profile_path)
     if profile is None:
-        if projects is None and election_result is None and mandate_cost is None and senate_cost is None:
+        if projects is None and election_result is None and mandate_cost is None and senate_cost is None and tenure is None:
             return None
         result = {'id': identifier, 'role': 'senador' if identifier.startswith('senado:') else 'deputado'}
         if projects is not None:
@@ -203,4 +214,6 @@ def profile(identifier, path=None):
         result['mandateCost'] = mandate_cost
     if senate_cost is not None:
         result['senateCost'] = senate_cost
+    if tenure is not None:
+        result['noCargoDesde'] = tenure
     return _attach_project_statuses(result, identifier, profile_path)

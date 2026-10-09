@@ -61,7 +61,7 @@ function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'
     state,
   };
   vm.createContext(context);
-  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + senateCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { senateCostAnswer, senateCostDetails, senateCostMonths, citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileWorkAnswer, profileView, profileQuotaDifferenceNote, profileMandateStartNote, alertCard, skel };', context);
+  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + senateCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { profileTenureLabel, senateCostAnswer, senateCostDetails, senateCostMonths, citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileWorkAnswer, profileView, profileQuotaDifferenceNote, profileMandateStartNote, alertCard, skel };', context);
   context.votesForPerson = id => context.profileVotes(id).filter(record => String(id).startsWith('senado:') || String(record.vote.data || '').startsWith('2026'));
   context.attendanceBar = presence => presence
     ? `<span class="pbar" data-presence-days="${presence.dias}"></span>` : '';
@@ -706,6 +706,14 @@ test('senate absence says "not identified" unless the exercise history confirms 
   const noOffice = api.senateCostAnswer({ ...cost, office: null, months: { '2026-09': { exercise: 'em_exercicio', remunerationCents: null, remunerationReason: 'sem_lotacao_propria', officeCents: null, officeReason: 'sem_lotacao_propria' } } }, senateQuota);
   assert.match(noOffice, /Sem gabinete com o próprio nome no arquivo de remuneração do Senado: remuneração e equipe não identificadas/);
   assert.doesNotMatch(noOffice, /Em média/);
+});
+
+test('profile shows how long the person has been in office without interruption', () => {
+  const { api } = makeView();
+  assert.match(api.profileTenureLabel({ tenure: { house: 'camara', since: '2007-02-01' } }), />Na Câmara desde 2007</);
+  assert.match(api.profileTenureLabel({ tenure: { house: 'senado', since: '2019-02-01' } }), /title="Sem interrupção desde 01\/02\/2019[^"]*">No Senado desde 2019</);
+  assert.equal(api.profileTenureLabel({ tenure: null }), '');
+  assert.equal(api.profileTenureLabel({ tenure: { house: 'senado', since: '2019' } }), '');
 });
 
 test('quota-only card says it is not comparable with the deputy mandate cost', () => {

@@ -6,7 +6,7 @@ HOST ?= 127.0.0.1
 
 
 .PHONY: ci deploy-data remote-build
-.PHONY: help build dev prod test check db-init db-check db-backup import collect-legislative collect-profiles collect-senate collect-senate-mandate collect-project-status collect-elections collect-cities collect-amendments collect-accounts collect-mandate-cost audit-mandate-cost collect-mandate-history collect-senate-cost deploy deploy-db deploy-status
+.PHONY: help build dev prod test check db-init db-check db-backup import collect-legislative collect-profiles collect-senate collect-senate-mandate collect-project-status collect-elections collect-cities collect-amendments collect-accounts collect-mandate-cost audit-mandate-cost collect-mandate-history collect-senate-cost collect-tenure deploy deploy-db deploy-status
 help:
 	@echo "make dev                Gera o app e inicia em localhost:8000"
 	@echo "make check              Build, sintaxe e testes (sem downloads)"
@@ -24,6 +24,7 @@ help:
 	@echo "make collect-mandate-cost  Coleta manual e retomável de folha e moradia da Câmara"
 	@echo "make audit-mandate-cost    Reconstrói os novos snapshots sem rede"
 	@echo "make collect-mandate-history  Coleta 2023–2025 da Câmara e recompõe a média do mandato"
+	@echo "make collect-tenure  Desde quando cada parlamentar está no cargo sem interrupção (rótulo da ficha)"
 	@echo "make collect-senate-cost  Remuneração e equipe dos gabinetes do Senado no mandato (só agregados)"
 	@echo "make prod               Roda como em produção (cache, só localhost)"
 	@echo "make deploy SERVER=...  Testa e publica o código no servidor"
@@ -110,6 +111,9 @@ audit-mandate-cost:
 collect-senate-cost:
 	$(PYTHON) ingest/senate_office_pilot.py
 	$(PYTHON) ingest/senate_cost.py --collect
+
+collect-tenure:
+	$(PYTHON) ingest/tenure.py --collect
 
 collect-mandate-history:
 	@for year in 2023 2024 2025; do $(PYTHON) ingest/legislative.py --year $$year --output data/raw/legislative/history/legislative-$$year.json || exit 1; done
