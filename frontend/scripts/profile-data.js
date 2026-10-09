@@ -90,8 +90,17 @@ function profileAttendanceSources(id) {
   const records = (Array.isArray(sessions) ? sessions : []).filter(s => Array.isArray(s.presentIds)
     && s.presentIds.includes(profileId(id)) && profileSafeUrl(s.sourceUrl));
   if (!records.length) return '';
-  return `<p class="muted">Sessões com presença registrada no Diário:</p><div class="chips">${records.map(s =>
+  /* No mandato são centenas de sessões: as 12 mais recentes, com a contagem do resto. */
+  const recent = [...records].sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 12);
+  return `<p class="muted">Sessões com presença registrada no Diário${records.length > recent.length ? ` (as ${recent.length} mais recentes de ${records.length})` : ''}:</p><div class="chips">${recent.map(s =>
     `<a class="fchip" href="${esc(profileSafeUrl(s.sourceUrl))}" target="_blank" rel="noopener">${esc(dateBR(s.date))} ↗</a>`).join('')}</div>`;
+}
+/* Período da presença do Senado pelo Diário, a partir da fonte: "desde fev/2023" ou o ano. */
+function senatePresencePeriodLabel() {
+  const period = String(profileSenateSource('presenca')?.period || '');
+  const start = /^(\d{4})-(\d{2})-\d{2}/.exec(period);
+  if (!start) return '2026';
+  return start[1] === '2023' && start[2] === '02' ? 'desde fev/2023' : start[1];
 }
 function profilePresenceRows(chamber = 'camara') {
   if (chamber === 'senado') profileSenateEnsure();

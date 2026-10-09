@@ -449,13 +449,13 @@ function profileWorkAnswer(shared) {
   const presencePeriod = !senate && presence ? citizenQuotaPeriod(presence.inicio, presence.fim) : '';
   const voteSource = senate ? profileSenateSource('votacoes') : null;
   const votePeriod = senate && typeof profileSectionPeriod === 'function' ? profileSectionPeriod(voteSource) : '';
-  return `${head}<span class="k">Presença no Plenário · ${senate ? '2026' : presencePeriod || 'mandato'}</span>
+  return `${head}<span class="k">Presença no Plenário · ${senate ? senatePresencePeriodLabel() : presencePeriod || 'mandato'}</span>
     ${presence ? `<div class="huge">${presencePercent}<small>%</small></div>
       <p>${presence.presente} de ${presence.dias} ${unit}${averagePresence !== null ? ` · média ${senate ? 'do' : 'da'} ${house}: ${averagePresence}%` : ''}</p>
       ${attendanceBar(presence)}
       <div class="legend"><span><i style="background:var(--accent)"></i>Presente ${presence.presente}</span><span><i style="background:var(--muted);opacity:.55"></i>Justificada ${presence.justificadas}</span><span><i style="background:var(--warn)"></i>Falta ${presence.falta}</span></div>`
       : registeredPresence ? `<div class="huge">${registeredPresence.presente}<small> sessões</small></div><p>Com presença registrada no Diário do Senado.</p>
-        <p class="muted">${profileSenateSource('presenca')?.sessionCount || ''} listas de sessões consultadas em 2026. Faltas e justificativas não apuradas; sem percentual de assiduidade.</p>`
+        <p class="muted">${Number.isInteger(registeredPresence.sessoesEmExercicio) ? `De ${registeredPresence.sessoesEmExercicio} sessões deliberativas com lista validada em que estava em exercício` : `${profileSenateSource('presenca')?.sessionCount || ''} listas de sessões consultadas`} (${esc(senatePresencePeriodLabel())}). Faltas e justificativas não apuradas; sem percentual de assiduidade.</p>`
         : `<p class="citizen-empty">Presença ${senate ? 'do Senado ' : ''}sem registro importado.</p><p class="muted">Ausência de dado não significa zero presença.</p>`}
     ${senate ? senateParticipationSummary(shared.participation) : ''}
     <p class="citizen-vote-count">${senate && voteSource?.status === 'unavailable' ? 'Dados de votações nominais do Senado indisponíveis neste recorte.'
@@ -580,10 +580,11 @@ function profileShareCard(f, shared, alerts, hasExpenseData) {
       notes: [hasExpenseData ? `média de ${citizenQuotaPeriod(f.periodo?.inicio, f.periodo?.fim)}` : 'ausência de dado não é zero'] };
   const presence = shared.presence, registered = senate ? shared.registeredPresence : null;
   const workRow = presence
-    ? { label: senate ? 'Presença no Plenário em 2026' : `Presença no Plenário · ${citizenQuotaPeriod(presence.inicio, presence.fim) || 'mandato'}`, values: [`${Math.round(presence.presente / presence.dias * 100)}%`], notes: [`${presence.presente} de ${presence.dias} ${senate ? 'sessões' : 'dias'}`] }
+    ? { label: senate ? `Presença no Plenário · ${senatePresencePeriodLabel()}` : `Presença no Plenário · ${citizenQuotaPeriod(presence.inicio, presence.fim) || 'mandato'}`, values: [`${Math.round(presence.presente / presence.dias * 100)}%`], notes: [`${presence.presente} de ${presence.dias} ${senate ? 'sessões' : 'dias'}`] }
     : registered
-      ? { label: 'Presença registrada no Senado em 2026', values: [`${registered.presente} sessões`], notes: ['faltas e justificativas não apuradas'] }
-      : { label: 'Presença no Plenário em 2026', values: ['Sem registro'], notes: ['ausência de dado não é zero'] };
+      ? { label: `Presença registrada no Senado · ${senatePresencePeriodLabel()}`, values: [`${registered.presente} sessões`],
+        notes: [Number.isInteger(registered.sessoesEmExercicio) ? `de ${registered.sessoesEmExercicio} em exercício · faltas não apuradas` : 'faltas e justificativas não apuradas'] }
+      : { label: `Presença no Plenário · ${senate ? senatePresencePeriodLabel() : 'mandato'}`, values: ['Sem registro'], notes: ['ausência de dado não é zero'] };
   const alertRow = { label: 'Gastos incomuns na cota', values: [!hasExpenseData ? 'Sem dados' : alerts.length ? `${alerts.length} ${alerts.length === 1 ? 'alerta' : 'alertas'}` : 'Nenhum'],
     notes: ['pelas mesmas 2 regras para todos(as)'] };
   return {

@@ -219,10 +219,27 @@ Compareceram 2 senadores."""
         self.assertEqual(section["items"], [{
             "id": "senado:1", "nome": "Ana Exemplo", "partido": "P1", "uf": "AC",
             "presente": 1, "dias": None, "falta": None, "justificadas": None,
+            "sessoesEmExercicio": None,  # sem histórico de exercício nesta base de teste
         }])
         self.assertEqual(section["sessions"][0]["presentIds"], ["senado:1"])
         self.assertNotIn("senado:2", [item["id"] for item in section["items"]])
         self.assertEqual(stats["sessions"], 1)
+
+    def test_default_period_is_the_mandate_across_years(self):
+        start, end = attendance._period_dates(None, date(2026, 10, 9))
+        self.assertEqual((start, end), (date(2023, 2, 1), date(2026, 10, 9)))
+        months = attendance._months(start, end)
+        self.assertEqual((months[0], months[-1], len(months)), ((2023, 2), (2026, 10), 45))
+        self.assertEqual(attendance._period_dates(2023, date(2026, 10, 9)), (date(2023, 2, 1), date(2023, 12, 31)))
+        with self.assertRaises(ValueError):
+            attendance._period_dates(2022, date(2026, 10, 9))
+
+    def test_checked_diary_spelling_maps_to_the_registered_senator(self):
+        index, _ = attendance.build_roster_index(roster(("senado:6362", "MAURO CARVALHO JUNIOR", "P1", "MT")))
+        ids, unmatched, _ = attendance.map_presence_rows([{"nome": "Mauro Carvalho Jr.", "presente": True}], index, set())
+        self.assertEqual((ids, unmatched), (["senado:6362"], 0))
+        other, _ = attendance.build_roster_index(roster(("senado:1", "Ana Exemplo", "P1", "AC")))
+        self.assertNotIn(attendance._normalize_name("Mauro Carvalho Jr."), other)  # sem o ID no cadastro, não liga
 
     def test_duplicate_normalized_roster_name_remains_unassigned(self):
         payload = roster(

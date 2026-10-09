@@ -59,7 +59,7 @@ Antes de entrar no roadmap, cada item passa por duas perguntas:
 
 ## Depois
 
-- Faltas e justificativas do Senado pela lista do Diário no mandato (PDFs). Feito em 9/10, sem PDF: participação nas votações nominais do mandato, com os motivos do Senado, e licenças desde fev/2023.
+- Faltas e justificativas do Senado: o Diário só registra presença. Feito em 9/10: presença pelo Diário no mandato (296 de 301 sessões), participação nas votações nominais com os motivos do Senado e licenças desde fev/2023.
 - Botão de destaque "Fale com ele(a)" na ficha, com o e-mail e o telefone do gabinete que já são coletados.
 - Aviso por e-mail quando algo muda na ficha de quem a pessoa acompanha; depende da atualização automática.
 - Busca por CEP em "Minha cidade".

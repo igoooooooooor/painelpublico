@@ -364,7 +364,7 @@ test('profile offers sharing with the same three answers on the card', () => {
   const html = api.profileView();
   assert.match(html, /data-share="image"/);
   const card = vm.runInContext('SHARE_STATE.card', context);
-  assert.deepEqual(Array.from(card.rows, row => row.label), ['Cota parlamentar por mês', 'Presença no Plenário em 2026', 'Gastos incomuns na cota']);
+  assert.deepEqual(Array.from(card.rows, row => row.label), ['Cota parlamentar por mês', 'Presença no Plenário · mandato', 'Gastos incomuns na cota']);
   assert.equal(card.rows[2].values[0], '1 alerta');
   assert.match(card.footnote, /Retrato de 07\/10\/2026/);
 });

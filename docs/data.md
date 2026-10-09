@@ -594,8 +594,14 @@ partir de fev/2023.
   coluna Documento fica vazia.
 - **Alertas:** picos e concentração avaliam o mandato inteiro, nas duas Casas (regra,
   cobertura e prazos em [Alertas](alerts.md)); lançamentos de valor alto seguem só em 2026.
-- **Senado, participação nas votações nominais e licenças:** a presença pelo Diário do Senado segue só em
-  2026 (PDFs; ampliar custaria cerca de 10 vezes mais coleta). Para o mandato, `make collect-senate-participation`
+- **Senado, presença pelo Diário no mandato (9/10/2026):** `make collect-senate` lê as listas de presença das
+  sessões deliberativas de fev/2023 até hoje (PDFs do Diário; requer `ingest/senate-requirements.txt`). Na
+  primeira coleta: 296 de 301 sessões deliberativas da agenda com tabela validada; as outras ficam de fora,
+  sem virar falta. Os nomes são ligados a todos os senadores do banco (inclui quem saiu), mais duas grafias
+  fixas do Diário conferidas à mão; 22 registros ficam sem ligação (ministros sem cadastro de senador e erros
+  de leitura do PDF). Cada pessoa mostra as sessões com presença registrada e, pelo histórico de exercício,
+  quantas sessões com lista validada caíram nos seus períodos em exercício. Sem faltas nem percentual.
+- **Senado, participação nas votações nominais e licenças:** para o mandato, `make collect-senate-participation`
   usa as votações nominais públicas já coletadas e o histórico de exercício: por sessão com votação nominal
   em que a pessoa estava em exercício, votou ou presidiu, presente sem votar, ausência com motivo registrado
   pelo Senado (atividade parlamentar, missão, licença), não compareceu ou sem registro (que não vira falta).

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Collect explicit Senate presence marks from the 2026 Senate Diaries.
+"""Collect explicit Senate presence marks from the Senate Diaries of the current mandate (Feb/2023 on).
 
 The default run is offline. ``--collect`` fetches the monthly Senate Diary
 calendar and plenary agenda, then downloads only the table-of-contents and
@@ -33,10 +33,19 @@ import xml.etree.ElementTree as ET
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 IMPORT_PATH = ROOT / "data" / "imports" / "legislative.json"
 RAW_DIR = ROOT / "data" / "raw" / "senado-presenca"
 DEFAULT_OUTPUT = ROOT / "data" / "snapshots" / "senado-presenca.json"
 YEAR = 2026
+# Mandato atual: a coleta padrão vai de fev/2023 até hoje; --year coleta um ano só.
+MANDATE_START = date(2023, 2, 1)
+# Nomes como aparecem nas listas do Diário, diferentes do cadastro, conferidos em 9/10/2026.
+DIARY_NAME_ALIASES = {
+    "Mauro Carvalho Jr.": "senado:6362",  # cadastro: MAURO CARVALHO JUNIOR
+    "Veneziano Vital Rêgo": "senado:5748",  # cadastro: Veneziano Vital do Rêgo
+}
 SOURCE_ID = "senado_senators_current"
 SENATOR_ID = re.compile(r"^senado:(\d+)$")
 SENATE_DIARIES = "https://legis.senado.leg.br/diarios"
@@ -80,13 +89,24 @@ def _official_url(value: Any) -> str | None:
     return None
 
 
-def _period_dates(year: int, today: date | None = None) -> tuple[date, date]:
-    if year != YEAR:
-        raise ValueError(f"Este coletor cobre somente {YEAR}.")
+def _period_dates(year: int | None, today: date | None = None) -> tuple[date, date]:
+    """Sem ano: o mandato (fev/2023 até hoje). Com ano: esse ano, a partir de fev/2023."""
     today = today or date.today()
+    if year is None:
+        return MANDATE_START, today
+    if year < MANDATE_START.year:
+        raise ValueError(f"O mandato atual começa em {MANDATE_START.isoformat()}.")
     if today.year < year:
         raise ValueError("Não é possível confirmar cobertura de um ano futuro.")
-    return date(year, 1, 1), min(today, date(year, 12, 31))
+    return max(date(year, 1, 1), MANDATE_START), min(today, date(year, 12, 31))
+
+
+def _months(period_start: date, period_end: date) -> list[tuple[int, int]]:
+    months, year, month = [], period_start.year, period_start.month
+    while (year, month) <= (period_end.year, period_end.month):
+        months.append((year, month))
+        year, month = (year + 1, 1) if month == 12 else (year, month + 1)
+    return months
 
 
 def agenda_url(year: int, month: int) -> str:
@@ -664,6 +684,12 @@ def build_roster_index(payload: Any) -> tuple[dict[str, dict[str, Any]], set[str
     ambiguous = {key for key, rows in candidates.items() if len(rows) > 1}
     if not candidates:
         raise ValueError("Importação legislativa sem senadores da lista oficial atual")
+    # Grafias fixas dos diários, conferidas à mão (sem correspondência aproximada): só valem se o ID existe.
+    by_id = {row["id"]: row for row in unique.values()}
+    for spelling, identifier in DIARY_NAME_ALIASES.items():
+        key = _normalize_name(spelling)
+        if identifier in by_id and key not in unique and key not in ambiguous:
+            unique[key] = by_id[identifier]
     return unique, ambiguous
 
 
@@ -941,10 +967,41 @@ def _collect_diary(
 
 
 def _load_roster(root: Path) -> Any:
+    """Todos os senadores do banco (inclui quem saiu e suplentes), para ligar nomes de todo o mandato;
+    sem banco, a lista legislativa atual."""
+    database = root / "data" / "na-lupa.sqlite3"
+    if database.exists():
+        import sqlite3
+        db = sqlite3.connect(f"file:{database}?mode=ro", uri=True)
+        try:
+            rows = db.execute("SELECT id,name,party,uf FROM authorities WHERE id LIKE 'senado:%' AND role='senador'").fetchall()
+        finally:
+            db.close()
+        if rows:
+            return {"authorities": [{"id": i, "name": n, "party": p, "uf": u, "role": "senador", "sourceId": SOURCE_ID}
+                                    for i, n, p, u in rows]}
     try:
         return json.loads((root / "data" / "imports" / "legislative.json").read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
         raise SourceError("Lista legislativa local não está disponível para associar os nomes.") from error
+
+
+def _add_sessions_in_office(section: dict[str, Any], root: Path) -> None:
+    """Por pessoa com presença, quantas sessões com lista validada caíram nos seus períodos de exercício
+    (histórico de exercício do Senado em cache, de ``senate_cost.py``). Sem histórico, fica nulo."""
+    from ingest import senate_cost
+    exercise_dir = root / "data" / "raw" / "senado-exercicios"
+    dates = [date.fromisoformat(row["date"]) for row in section.get("sessions", [])]
+    for item in section.get("items", []):
+        cache = exercise_dir / f"{item['id'].split(':', 1)[1]}.json"
+        intervals = None
+        if cache.exists():
+            try:
+                intervals = senate_cost.exercise_intervals(json.loads(cache.read_text(encoding="utf-8"))["payload"])
+            except (ValueError, KeyError, TypeError):
+                intervals = None
+        item["sessoesEmExercicio"] = (sum(1 for day in dates if any(start <= day and (end is None or end >= day) for start, end in intervals))
+                                      if intervals is not None else None)
 
 
 def _build_attendance_section(
@@ -963,13 +1020,15 @@ def _build_attendance_section(
     latest_times: list[str] = []
     for month_cache in months:
         month = month_cache["month"]
+        # Cada cache mensal traz o próprio ano: o mandato atravessa vários anos.
+        cache_year = month_cache.get("year", year)
         events, malformed = parse_agenda_xml(
-            month_cache["agendaXml"], year, month, period_end
+            month_cache["agendaXml"], cache_year, month, period_end
         )
         agenda_events.extend(events)
         expected_malformed += malformed
         calendar_entries.extend(
-            entry for entry in parse_calendar_html(month_cache["calendarHtml"], year, month)
+            entry for entry in parse_calendar_html(month_cache["calendarHtml"], cache_year, month)
             if entry["date"] <= period_end.isoformat()
         )
         latest_times.extend([
@@ -1141,7 +1200,7 @@ def _build_attendance_section(
 
 
 def build_snapshot(
-    year: int = YEAR,
+    year: int | None = None,
     *,
     root: Path = ROOT,
     output: Path | None = None,
@@ -1159,16 +1218,16 @@ def build_snapshot(
     cache_root = root / "data" / "raw" / "senado-presenca"
     month_caches: list[dict[str, Any]] = []
     errors: list[str] = []
-    for month in range(1, period_end.month + 1):
-        path = _month_cache_path(cache_root, year, month)
+    for cache_year, month in _months(period_start, period_end):
+        path = _month_cache_path(cache_root, cache_year, month)
         if collect:
-            cache, error = _collect_month(year, month, cache_root, request, refresh)
+            cache, error = _collect_month(cache_year, month, cache_root, request, refresh)
             if error:
                 errors.append(error)
         else:
-            cache = _read_month_cache(path, year, month)
+            cache = _read_month_cache(path, cache_year, month)
             if cache is None:
-                errors.append(f"{year}-{month:02d}: cache de agenda/calendário ausente ou inválido")
+                errors.append(f"{cache_year}-{month:02d}: cache de agenda/calendário ausente ou inválido")
         if cache is not None:
             month_caches.append(cache)
 
@@ -1179,9 +1238,9 @@ def build_snapshot(
     for month_cache in month_caches:
         calendar_entries.extend(
             entry for entry in parse_calendar_html(
-                month_cache["calendarHtml"], year, month_cache["month"]
+                month_cache["calendarHtml"], month_cache.get("year", year), month_cache["month"]
             )
-            if entry["date"] <= period_end.isoformat()
+            if period_start.isoformat() <= entry["date"] <= period_end.isoformat()
         )
     # A calendar can repeat a caderno link; keep one date/code pair.
     unique_entries = {
@@ -1207,11 +1266,13 @@ def build_snapshot(
 
     roster_payload = roster if roster is not None else _load_roster(root)
     section, stats = _build_attendance_section(
-        year, period_start, period_end, month_caches, diaries, roster_payload, errors
+        year or period_end.year, period_start, period_end, month_caches, diaries, roster_payload, errors
     )
+    _add_sessions_in_office(section, root)
     if section["sessionCount"] == 0:
         raise SourceError("Nenhuma tabela de presença foi validada; snapshot anterior preservado.")
-    snapshot = {"generatedAt": utc_now(), "year": year, "presenca": section}
+    snapshot = {"generatedAt": utc_now(), "year": year, "period": {"start": period_start.isoformat(), "end": period_end.isoformat()},
+                "presenca": section}
     stats["errors"] = errors
     stats["monthCaches"] = len(month_caches)
     if output is not None:
@@ -1223,7 +1284,7 @@ def build_snapshot(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--year", type=int, default=YEAR, help="ano da coleta (somente 2026)")
+    parser.add_argument("--year", type=int, default=None, help="um ano só (padrão: o mandato, de fev/2023 até hoje)")
     parser.add_argument("--collect", action="store_true", help="consultar fontes oficiais; padrão é offline")
     parser.add_argument("--refresh", action="store_true", help="forçar atualização dos caches PDF e de agenda")
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
@@ -1235,7 +1296,7 @@ def main(argv: list[str] | None = None) -> int:
     except (SourceError, ValueError) as error:
         parser.error(str(error))
     print(
-        f"Senado {args.year}: {stats['sessions']} tabelas/sessões validadas; "
+        f"Senado {args.year or 'mandato'}: {stats['sessions']} tabelas/sessões validadas; "
         f"{stats['profiles']} IDs com presença positiva; "
         f"{stats['unmatchedRows']} linhas sem ID único; snapshot {args.output}"
     )

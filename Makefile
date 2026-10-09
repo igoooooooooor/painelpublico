@@ -72,7 +72,7 @@ collect-profiles:
 	$(PYTHON) ingest/profiles.py --collect
 
 collect-senate:
-	$(PYTHON) ingest/senate_attendance.py --collect --year $(or $(YEAR),2026)
+	$(PYTHON) ingest/senate_attendance.py --collect $(if $(YEAR),--year $(YEAR),)
 	$(MAKE) collect-senate-mandate
 
 collect-senate-mandate:

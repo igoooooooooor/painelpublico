@@ -379,7 +379,8 @@ def _attendance_from_snapshot(root: Path, year: int) -> dict[str, Any]:
         snapshot = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return _attendance_section(year)
-    if not isinstance(snapshot, dict) or snapshot.get("year") != year:
+    # O coletor do Diário cobre o mandato (year nulo, com o período) ou um ano só.
+    if not isinstance(snapshot, dict) or snapshot.get("year") not in (year, None):
         return _attendance_section(year)
     section = snapshot.get("presenca")
     if not isinstance(section, dict) or not isinstance(section.get("items"), list):
