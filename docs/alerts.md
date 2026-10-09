@@ -183,5 +183,5 @@ Pendências antes de ampliar para o mandato:
 | 8/10/2026 | Passagens intermediadas por agência com critério verificável (companhia citada ≠ fornecedor), sem excluir passagens | Não apresentar como receita da agência nem como uma só companhia |
 | 8/10/2026 | Mínimo de R$ 30 mil mantido; porcentagem sempre com valores absolutos e meses com notas | Não ajustar o corte pelos casos da amostra |
 | 8/10/2026 | Cards de custo dizem a composição: deputado soma quatro partes; cota sozinha não é comparável | Evitar comparação direta entre composições diferentes |
-| Em aberto | Base para ampliar ao mandato: recomendada a de 12 meses completos; a base curta fica só na simulação até revisar seus casos | Simulação e triagem feitas; falta decidir |
+| 8/10/2026 | Base para ampliar ao mandato: 12 meses anteriores completos; antes de fev/2024, histórico insuficiente. A base curta fica só na simulação | Decisão do mantenedor após simulação e triagem; implementação pendente |
 | Em aberto | Pedido de acesso aos documentos do Senado | Investigação posterior |
