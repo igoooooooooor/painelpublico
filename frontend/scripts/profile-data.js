@@ -361,7 +361,7 @@ function profileSectionsHTML(value, slots = {}) {
       ${profileSource({ ...mandate, sourceUrl: mandate?.sourceUrl || person.sourceUrl, fetchedAt: mandate?.fetchedAt || person.fetchedAt }, profile.person.role === 'senador' ? 'Fonte do Senado' : 'Fonte do mandato')}</article>` : '';
   const salarySource = salary ? `<article class="citizen-source"><b>Subsídio parlamentar</b>
     <p><span class="big">${money(salary.amount)}</span> · subsídio bruto mensal de referência do cargo.</p>
-    <p class="muted">Valor previsto desde ${esc(salary.since)}. Fonte conferida em ${esc(salary.checkedAt)}. Pagamento individual, descontos e outras verbas não foram importados nesta ficha.</p>
+    <p class="muted">Valor previsto desde ${esc(salary.since)}. Fonte conferida em ${esc(salary.checkedAt)}. ${profile.cost || profile.senateCost ? 'Este é o valor de referência do cargo; o valor bruto pago mês a mês, pela folha da Casa, está em “Quanto custa?” e em “Gastos em detalhe”.' : 'Pagamento individual, descontos e outras verbas não foram importados nesta ficha.'}</p>
     ${profileSource({ sourceUrl: salary.sourceUrl, fetchedAt: salary.checkedAt, period: `${money(salary.amount)} mensais desde ${salary.since}` }, 'Fonte do subsídio', 'Fonte consultada')}</article>` : '<p class="muted">Sem remuneração importada.</p>';
   const election = profileElection(profile);
   const electionSource = election ? `<article class="citizen-source"><b>Eleição de 2026</b><p>${esc(election.sentence)}</p>

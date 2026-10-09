@@ -639,6 +639,10 @@ test('senate cost card averages only months with all three parts and never compa
   // jul e ago completos: (46.366,19 + 300.000 + 40.000 + 46.366,19 + 200.000 + 20.000) / 2
   assert.match(html, /Em média<\/span><b class="mono">R\$\s?326\.366,19<\/b>/);
   assert.match(html, /2 meses com as três partes identificadas, de 3 no recorte/);
+  assert.doesNotMatch(html, /reajustado/);  // mesmo subsídio nos meses da média
+  const raised = senateFixture();
+  raised.months['2026-07'].remunerationCents = 4400852;
+  assert.match(api.senateCostAnswer(raised, senateQuota), /Média dos meses acima; o subsídio foi reajustado no período\. Em ago\/2026: R\$\s?46\.366,19/);
   assert.match(html, /Não compare com o custo de deputados\(as\)/);
   assert.doesNotMatch(html, /Custa em média|custo do mandato/);
 });

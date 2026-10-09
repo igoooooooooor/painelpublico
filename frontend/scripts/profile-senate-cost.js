@@ -71,7 +71,14 @@ function senateCostAnswer(cost, profileRecord) {
     /* Média só dos meses com as três partes: todas as partes sobre o mesmo conjunto de meses. */
     const averages = SENATE_COST_PARTS.map(([key]) => senateCostAverage(complete.map(month => month.parts[key])));
     const scale = Math.max(...averages);
-    rows = SENATE_COST_PARTS.map((part, index) => row(part, averages[index], scale)).join('');
+    /* A média atravessa reajustes do subsídio: diz o valor do último mês identificado, para não parecer
+       que o valor de hoje está errado. */
+    const latest = [...months].reverse().find(month => month.parts.remuneration !== null);
+    const changed = new Set(complete.map(month => month.parts.remuneration)).size > 1;
+    const remunerationNote = latest && changed
+      ? `Média dos meses acima; o subsídio foi reajustado no período. Em ${profileCostLabel(latest.period)}: ${profileCostMoney(latest.parts.remuneration)}`
+      : '';
+    rows = SENATE_COST_PARTS.map((part, index) => row(part, averages[index], scale, index === 0 ? remunerationNote : '')).join('');
     principal = `<div class="citizen-cost-main"><span>Em média</span><b class="mono">${esc(profileCostMoney(averages.reduce((a, b) => a + b, 0)))}</b><span>por mês</span></div>
       <p class="citizen-cost-period">${complete.length} ${complete.length === 1 ? 'mês' : 'meses'} com as três partes identificadas, de ${months.length} no recorte (${esc(range)}): ${esc(senateCostMonthList(complete.map(month => month.period)))}</p>`;
   } else {
