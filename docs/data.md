@@ -54,6 +54,40 @@ uma coleta curta de diagnóstico. Nenhum desses comandos agenda atualizações.
 
 Os coletores de perfis continuam sendo a fonte manual dos complementos para a lista completa; contatos, projetos, gabinete e presença têm a cobertura registrada em seus snapshots. A arrecadação é outro complemento atualizado manualmente, com fonte e data. Os geradores da página e dos PDFs da amostra editorial foram removidos. `ingest/editorial/requirements.txt` só é necessário para as ferramentas opcionais de passagens e agregação eleitoral; não é requisito do app nem do build.
 
+## Placar — inventário e catálogo nominal
+
+`make collect-vote-inventory YEAR=2026 THROUGH=2026-10-09` consulta a lista
+completa do Plenário (órgão 180) e uma amostra limitada de detalhes e votos.
+`python3 -m ingest.chamber_vote_inventory --year 2026 --through 2026-10-09`
+reconstrói o relatório sem rede, usando os mesmos caches e limites.
+
+Os originais, URLs, datas e checksums ficam em `data/raw/chamber-vote-inventory/`;
+os relatórios JSON/Markdown, em `data/reviews/`. Tudo permanece fora do Git.
+O inventário não publica candidatos automaticamente. Método nominal, objeto
+votado, texto e ausência de votos exigem conferência; contagens e registros
+individuais não comprovam sozinhos o método. Regra, limites e exemplos em
+[Metodologia do Placar](voting-scoreboard.md).
+
+Resultado em 9/10/2026: 1.339 registros retornados pela lista oficial em 14
+páginas, 162 candidatos provisórios, 40 detalhes conferidos e 10 conjuntos de
+votos individuais com os placares publicados reconciliados. Esses números
+descrevem o levantamento inicial.
+
+Na etapa seguinte, os 19 candidatos com placar explícito tiveram relatório
+nominal e versão decidida conferidos, com todos os votos individuais conciliados.
+O catálogo local tem 19 decisões de 2026; 143 candidatos provisórios continuam
+pendentes. Não é cobertura completa do ano nem do mandato. Campo não publicado,
+inclusive abstenção ou tema, permanece ausente.
+
+`make collect-votes THROUGH=2026-10-09` lê as revisões locais em
+`data/reviews/chamber-vote-reviews-2026-10-09.json` e gera
+`data/snapshots/chamber-votes.json` e `data/snapshots/chamber-vote-details/`.
+`python3 -m ingest.chamber_votes --through 2026-10-09` reconstrói sem rede.
+Revisões, fontes e snapshots ficam fora do Git; falhas preservam a saída anterior.
+A API pagina os resumos e carrega os votos individuais por decisão. A home,
+fichas, partidos e comparações mantêm as quatro seleções originais. Um clone
+sem catálogo mostra essas seleções com a limitação explícita.
+
 ## Base e recursos
 
 O esquema normalizado contém `sources(id,label,url,scope,period,status,detail,fetchedAt)`,
@@ -130,7 +164,7 @@ Na coleta de 7/10/2026, o complemento contém os 595 IDs da lista: 513 deputados
 
 O salário nas fichas e comparações é o subsídio bruto de referência do cargo, com fonte oficial e vigência; não comprova pagamento individual. Folha, descontos e outras verbas parlamentares ainda não foram importados. Cota, verba de gabinete e subsídio não são somados. O build pode ser feito sem snapshots; complementos disponíveis identificam seu recorte e sua fonte.
 
-A presença complementar cobre 512 dos 513 deputados; Gilmar Machado não tem dias extraídos no snapshot. Somente denominadores positivos e contagens consistentes entram nas porcentagens. As votações complementares cobrem quatro votações escolhidas para o Placar. Linha ausente significa registro não importado, nunca a inferência de que a pessoa não votou; votação secreta informa somente participação. As comparações de concordância usam apenas votações com registro para ambos. Cadastro completo não significa histórico de presença, votações e remunerações completo.
+A presença complementar cobre 512 dos 513 deputados; Gilmar Machado não tem dias extraídos no snapshot. Somente denominadores positivos e contagens consistentes entram nas porcentagens. Os votos embutidos na home, fichas, partidos e comparações cobrem as quatro seleções originais; o catálogo nominal do Placar usa os snapshots separados descritos acima. Linha ausente significa registro não importado, nunca a inferência de que a pessoa não votou; votação secreta informa somente participação. As comparações de concordância usam apenas votações com registro para ambos. Cadastro completo não significa histórico de presença, votações e remunerações completo.
 
 ### Atividade e autoria do Senado — mandato desde fevereiro de 2023
 
@@ -184,7 +218,7 @@ pessoas usa somente Sim, Não, Abstenção ou Obstrução presentes para os dois
 casas diferentes não têm concordância calculada. O resumo da ficha informa em quantas
 votações com linha individual foi identificado um voto; chamadas sem linha dessa pessoa
 não entram no denominador, e registros sem voto não são classificados como faltas.
-A lista completa deste recorte é distinta das quatro votações editoriais do Placar da Câmara.
+A lista completa deste recorte é distinta das quatro seleções originais das fichas da Câmara e do catálogo nominal separado do Placar.
 Cada item aponta para a consulta oficial da sessão; os títulos vêm da descrição e da
 identificação da matéria, sem resumo editorial novo. Falha de atualização preserva a
 fotografia anterior e sua data, com status parcial.

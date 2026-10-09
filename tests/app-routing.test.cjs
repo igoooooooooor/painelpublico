@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function loadApp({ pathname, history } = {}) {
+function loadApp({ pathname, history, includeScoreboard = false, fetch: fetchImpl } = {}) {
   const app = { innerHTML: '' };
   const listeners = {};
   const document = {
@@ -18,7 +18,7 @@ function loadApp({ pathname, history } = {}) {
     document, window: { scrollY: 0, scrollTo() {} },
     location: { protocol: 'http:', ...(pathname ? { pathname } : {}) }, URL, AbortController,
     ...(history ? { history } : {}),
-    fetch: () => new Promise(() => {}),
+    fetch: fetchImpl || (() => new Promise(() => {})),
     setTimeout: () => 1, clearTimeout() {},
     matchMedia: () => ({ matches: false, addEventListener() {} }),
     MutationObserver: class { observe() {} },
@@ -27,7 +27,7 @@ function loadApp({ pathname, history } = {}) {
   const votes = JSON.parse(fs.readFileSync(path.join(__dirname, '../frontend/data/votes.json'), 'utf8'));
   const data = { votacoes: votes.map(vote => ({ ...vote, partidos: [] })), presencaTodos: [],
     votosCompletos: {}, arrecadacao: null, perfis: { profiles: {} }, senado: {}, ultimaVotacao: null };
-  const names = ['dates.js', 'profile-data.js', 'profile-cost.js', 'profile-senate-cost.js', 'share-card.js', 'citizen-view.js', 'extras-view.js', 'parties-view.js', 'home-view.js', 'city-view.js', 'app.script.js'];
+  const names = ['dates.js', 'profile-data.js', 'profile-cost.js', 'profile-senate-cost.js', 'share-card.js', 'citizen-view.js', 'extras-view.js', 'parties-view.js', 'home-view.js', 'city-view.js', ...(includeScoreboard ? ['scoreboard-view.js'] : []), 'app.script.js'];
   const source = names.map(name => fs.readFileSync(path.join(__dirname, '../frontend/scripts', name), 'utf8')).join('\n');
   vm.runInContext(source.replace('/*DATA*/null', JSON.stringify(data)), context);
   const click = dataset => {
@@ -80,4 +80,15 @@ test('deep links open the profile and navigation updates the address bar', () =>
 test('section paths open their view', () => {
   const { document } = loadApp({ pathname: '/partidos' });
   assert.equal(document.body.dataset.view, 'parties');
+});
+
+test('direct Placar vote paths load the vote view and keep the address', () => {
+  const requested = [];
+  const history = { pushState: (_, __, url) => requested.push(['push', url]), replaceState: (_, __, url) => requested.push(['replace', url]) };
+  const { context, document } = loadApp({ pathname: '/placar/2611313-31', history, includeScoreboard: true,
+    fetch: url => { requested.push(['fetch', url]); return new Promise(() => {}); } });
+  assert.equal(document.body.dataset.view, 'vote');
+  assert.equal(vm.runInContext('state.voteId', context), '2611313-31');
+  assert.ok(requested.some(([kind, url]) => kind === 'fetch' && url === '/api/c/votes/2611313-31'));
+  assert.deepEqual(requested.filter(([kind]) => kind !== 'fetch'), []);
 });

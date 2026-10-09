@@ -28,7 +28,7 @@ function voteCard(v) {
 function partyRow(p) { const t = p.sim + p.nao + p.outros; return `<div class="party"><b>${esc(p.p)}</b><div class="bar"><i style="width:${p.sim / t * 100}%"></i><i style="width:${p.nao / t * 100}%"></i></div><span>${p.sim}–${p.nao}</span></div>`; }
 
 /* ---------- VOTAÇÃO (detalhe) ---------- */
-function voteView() {
+function selectedVoteView() {
   const v = VOTES_BY_ID[state.voteId];
   if (!v) return '<p class="note">Votação não disponível neste recorte.</p>';
   return `<button type="button" class="back" data-back>‹ Voltar</button>
@@ -59,7 +59,7 @@ function voteView() {
 }
 
 /* ---------- PLACAR ---------- */
-function votesView() {
+function selectedVotesView() {
   const votes = DATA.votacoes, approvedVoteCount = votes.filter(vote => vote.aprovada).length;
   if (!votes.length) return pageHead('Câmara · Plenário', 'Placar', 'Nenhuma votação disponível neste recorte.');
   const closestVote = votes.filter(vote => !vote.secreta).map(vote => ({ vote, gap: Math.abs(vote.sim - vote.nao) / Math.max(1, vote.sim + vote.nao) })).sort((first, second) => first.gap - second.gap)[0];
@@ -79,6 +79,12 @@ function votesView() {
   <div class="citizen-actions"><button type="button" class="fchip" data-go="parties">Comparar partidos →</button></div>
   ${votes.map(voteCard).join('')}
   <span class="src">Fonte: Câmara dos Deputados (dados abertos de votações do Plenário).</span>`;
+}
+function voteView() {
+  return typeof scoreboardDetailView === 'function' ? scoreboardDetailView() : selectedVoteView();
+}
+function votesView() {
+  return typeof scoreboardVotesView === 'function' ? scoreboardVotesView() : selectedVotesView();
 }
 
 /* Compatibilidade para entradas antigas que ainda chamem a rota ficha. */
@@ -101,6 +107,7 @@ function render() {
   if (!views[state.view]) state.view = 'home';
   const v = state.view;
   $app.innerHTML = `<div class="view">${views[v]()}</div>`;
+  if (typeof scoreboardViewEntered === 'function') scoreboardViewEntered(v);
   document.body.dataset.view = v;
   syncTitle();
   const tab = ['profile', 'politicians', 'attendance', 'compare', 'parties'].includes(v) ? 'politicians' : v === 'vote' ? 'votes' : v;
@@ -119,6 +126,7 @@ function syncTitle() {
   document.title = page ? `${page} · Painel Público` : 'Painel Público: quanto custa e como trabalha cada parlamentar';
 }
 function viewPath() {
+  if (state.view === 'vote' && typeof SCOREBOARD_VOTE_ID !== 'undefined' && SCOREBOARD_VOTE_ID.test(String(state.voteId || ''))) return `/placar/${state.voteId}`;
   const [house, number] = String(state.politicianId || '').split(':');
   if (state.view === 'profile' && /^\d+$/.test(number || '') && (house === 'camara' || house === 'senado')) {
     return `/${house === 'camara' ? 'deputado' : 'senador'}/${number}`;
@@ -127,6 +135,12 @@ function viewPath() {
 }
 function applyLocation() {
   const path = currentPath();
+  const vote = path.match(/^\/placar\/(\d+-\d+)$/);
+  if (vote) {
+    state.view = 'vote';
+    state.voteId = vote[1];
+    return;
+  }
   const profile = path.match(/^\/(deputado|senador)\/(\d+)(?:-|$)/);
   if (profile) {
     state.view = 'profile';
@@ -151,12 +165,13 @@ function navigateToView(view, keep) {
   if (!keep) navigationHistory.push({ view: state.view, deputyId: state.deputyId, voteId: state.voteId, politicianId: state.politicianId, y: window.scrollY });
   state.view = view; render(); syncLocation(); window.scrollTo(0, 0);
 }
-function navigateBack() { const h = navigationHistory.pop() || { view: 'home', y: 0 }; Object.assign(state, { view: h.view, deputyId: h.deputyId, voteId: h.voteId, politicianId: h.politicianId }); render(); syncLocation('replace'); window.scrollTo(0, h.y || 0); }
+function navigateBack() { const h = navigationHistory.pop() || { view: state.view === 'vote' ? 'votes' : 'home', y: 0 }; Object.assign(state, { view: h.view, deputyId: h.deputyId, voteId: h.voteId, politicianId: h.politicianId }); render(); syncLocation('replace'); window.scrollTo(0, h.y || 0); }
 const rerender = () => { const y = window.scrollY; render(); window.scrollTo(0, y); };
 
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-copy],[data-go],[data-deputy],[data-quiz],[data-vote],[data-back],[data-summary-retry],[data-city-select],[data-city-search],[data-city-search-submit],[data-city-retry-search],[data-city-retry-detail]');
+  const t = e.target.closest('[data-copy],[data-go],[data-deputy],[data-quiz],[data-vote],[data-back],[data-summary-retry],[data-city-select],[data-city-search],[data-city-search-submit],[data-city-retry-search],[data-city-retry-detail],[data-scoreboard-page],[data-scoreboard-retry],[data-scoreboard-more]');
   if (!t) return;
+  if (typeof scoreboardHandleClick === 'function' && scoreboardHandleClick(e, t)) return;
   if (t.dataset.copy) {
     const done = () => { t.textContent = 'Copiado'; setTimeout(() => { t.textContent = 'Copiar'; }, 1500); };
     const pick = () => { const r = document.createRange(); r.selectNodeContents(t.previousElementSibling); const s = getSelection(); s.removeAllRanges(); s.addRange(r); t.textContent = 'Selecionado'; };

@@ -2,16 +2,18 @@
 import argparse
 import gzip
 import json
+import re
 import sqlite3
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
-from . import cities, citizen, database, profiles, public_store as store, seo
+from . import cities, citizen, database, profiles, public_store as store, seo, votes
 from .config import BUILD_PATH, ROOT
 
 FAVICON_PATH = ROOT / 'frontend' / 'static' / 'favicon.svg'
+VOTE_DETAIL_PATH = re.compile(r'^/placar/\d+-\d+$')
 
 QUERY_SECONDS = 8      # consulta que passar disso é abortada (protege o servidor público)
 CACHE_ENTRIES = 3000   # respostas JSON guardadas em memória no modo --prod
@@ -130,6 +132,10 @@ class Handler(BaseHTTPRequestHandler):
             self.send_body(text.encode(), 'text/plain; charset=utf-8', cache='public, max-age=3600' if prod else 'no-store')
             return
         path = '/' if url.path == '/index.html' else url.path.rstrip('/') or '/'
+        if VOTE_DETAIL_PATH.fullmatch(path):
+            # Endereços compartilháveis usam a mesma página e metadados gerais do Placar.
+            self.send_page('/placar', prod)
+            return
         if path in seo.SECTIONS or path == '/sitemap.xml' or seo.PROFILE_PATH.match(path):
             self.send_page(path, prod)
             return
@@ -147,6 +153,17 @@ class Handler(BaseHTTPRequestHandler):
             found = profiles.profile(unquote(url.path[len('/api/c/perfil/'):]))
             self.send_json(found if found is not None else {'error': 'Perfil complementar não encontrado.'},
                            200 if found is not None else 404, 'public, max-age=300' if prod else 'no-store')
+            return
+        if url.path == '/api/c/votes':
+            # O Placar vem de snapshots locais; não depende do SQLite nem do cache de respostas da API.
+            params = {key: values[-1] for key, values in parse_qs(url.query).items()}
+            self.send_json(votes.listing(params))
+            return
+        if url.path.startswith('/api/c/votes/'):
+            identifier = unquote(url.path[len('/api/c/votes/'):])
+            found = votes.detail(identifier)
+            self.send_json(found if found is not None else {'error': 'Votação não encontrada na base local.'},
+                           200 if found is not None else 404)
             return
         if url.path == '/api/c/senado/atividade':
             # O arquivo local é lido somente quando esta rota é chamada e pode mudar entre consultas.

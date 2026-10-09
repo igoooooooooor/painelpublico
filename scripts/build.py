@@ -10,7 +10,7 @@ SNAPSHOTS = Path(os.environ.get("PAINEL_SNAPSHOTS") or ROOT / "data" / "snapshot
 STYLES = ("tokens.css", "base.css", "citizen.css")
 # Ordem explícita: helpers/views antes do bootstrap e router.
 SCRIPTS = ("dates.js", "profile-data.js", "profile-cost.js", "profile-senate-cost.js", "share-card.js", "citizen-view.js",
-           "extras-view.js", "parties-view.js", "home-view.js", "city-view.js", "app.script.js")
+           "extras-view.js", "parties-view.js", "home-view.js", "city-view.js", "scoreboard-view.js", "app.script.js")
 VOTE_METADATA = FRONTEND / "data" / "votes.json"
 
 

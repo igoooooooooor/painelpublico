@@ -43,6 +43,8 @@ python3 -m backend.server --port 8000
 | `make collect-senate YEAR=2026` | Coletar presença registrada de 2026 e votos/autoria do mandato; depois rode `make build` |
 | `make collect-senate-mandate` | Coletar votos nominais e autoria desde fev/2023, sem baixar PDFs de presença |
 | `make collect-project-status` | Consultar a situação dos projetos já listados, com fontes e datas; atualização e modo offline em [Dados e SQLite](docs/data.md) |
+| `make collect-vote-inventory YEAR=2026` | Levantar votações do Plenário para o Placar; relatório local e metodologia em [Piloto do Placar](docs/voting-scoreboard.md) |
+| `make collect-votes THROUGH=2026-10-09` | Gerar o catálogo paginado a partir das revisões locais, com votos individuais separados; [coleta e cobertura](docs/voting-scoreboard.md) |
 | `make collect-accounts YEAR=2025` | Coletar contas anuais municipais do SICONFI, com cache e reconstrução offline |
 | `make collect-amendments YEAR=2026` | Coletar emendas por município e ano da proposta; valores empenhados e pagos separados |
 | `make collect-cities` | Coletar a base nacional de Minha cidade (IBGE e TSE); reconstrução offline em [Dados e SQLite](docs/data.md) |

@@ -5,7 +5,7 @@ PORT ?= 8000
 HOST ?= 127.0.0.1
 
 
-.PHONY: ci deploy-data remote-build
+.PHONY: ci deploy-data remote-build collect-vote-inventory collect-votes
 .PHONY: help build dev prod test check db-init db-check db-backup import collect-legislative collect-profiles collect-senate collect-senate-mandate collect-project-status collect-elections collect-cities collect-amendments collect-accounts collect-mandate-cost audit-mandate-cost collect-mandate-history collect-senate-cost collect-tenure collect-senate-participation deploy deploy-db deploy-status
 help:
 	@echo "make dev                Gera o app e inicia em localhost:8000"
@@ -17,6 +17,8 @@ help:
 	@echo "make collect-senate     Presença de 2026 e votos/autoria do Senado no mandato"
 	@echo "make collect-senate-mandate  Votos e autoria desde fev/2023, sem coletar PDFs"
 	@echo "make collect-project-status  Consulta a situação dos projetos já listados"
+	@echo "make collect-vote-inventory  Inventário do Placar, sem alterar o app (piloto de 2026)"
+	@echo "make collect-votes     Catálogo do Placar a partir das revisões locais conferidas"
 	@echo "make collect-elections  Liga a lista atual às candidaturas de 2026 no TSE"
 	@echo "make collect-accounts YEAR=2025  Coleta contas municipais do SICONFI"
 	@echo "make collect-amendments YEAR=2026  Coleta emendas municipais do Portal da Transparência"
@@ -81,6 +83,12 @@ collect-senate-mandate:
 
 collect-project-status:
 	$(PYTHON) ingest/project_status.py --collect
+
+collect-vote-inventory:
+	$(PYTHON) -m ingest.chamber_vote_inventory --collect --year $(or $(YEAR),2026) $(if $(THROUGH),--through $(THROUGH),)
+
+collect-votes:
+	$(PYTHON) -m ingest.chamber_votes --collect $(if $(THROUGH),--through $(THROUGH),) $(if $(REVIEWS),--reviews $(REVIEWS),)
 
 collect-accounts:
 	$(PYTHON) ingest/accounts.py --collect --year $(or $(YEAR),2025)

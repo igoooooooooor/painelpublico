@@ -647,3 +647,56 @@ nav.tabs button svg { flex: none; }
   .city-rank .city-bar { grid-column: auto; }
   .city-rank .city-profile-link { grid-column: auto; }
 }
+
+/* Placar nominal ampliado */
+.scoreboard-coverage { color: var(--muted); font-size: 13px; }
+.scoreboard-coverage > p { margin: 0; }
+.scoreboard-coverage details { margin-top: 4px; }
+.scoreboard-coverage summary { width: fit-content; min-height: 32px; display: flex; align-items: center; cursor: pointer; color: var(--ink-2); font-weight: 600; }
+.scoreboard-coverage details p { margin: 4px 0 0; line-height: 1.45; }
+.scoreboard-fallback { margin: 0; padding: 12px; border-radius: 14px; background: var(--chip); color: var(--ink-2); font-size: 14px; }
+.scoreboard-filters { gap: var(--space-2); }
+.scoreboard-filters label, .scoreboard-voters label { display: flex; flex-direction: column; gap: 6px; color: var(--ink-2); font-size: 13px; font-weight: 600; }
+.scoreboard-filters input, .scoreboard-filters select, .scoreboard-voters input { width: 100%; min-height: var(--control-height); padding: 0 12px; border-radius: var(--radius-control); border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; }
+.scoreboard-filters input:focus-visible, .scoreboard-filters select:focus-visible, .scoreboard-voters input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.scoreboard-card { gap: 10px; }
+.scoreboard-results { display: grid; gap: var(--space-3); }
+.scoreboard-card .h { font-size: 21px; }
+.scoreboard-card .muted, .scoreboard-card p { margin: 0; line-height: 1.45; }
+.scoreboard-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; color: var(--ink-2); font-family: var(--f-data); font-size: 13px; }
+.scoreboard-themes { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
+.scoreboard-status, .scoreboard-empty, .scoreboard-error { margin: 0; }
+.scoreboard-error { color: var(--ink-2); }
+.scoreboard-pagination { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); }
+.scoreboard-pagination span { text-align: center; }
+.scoreboard-pagination button:disabled { opacity: .5; cursor: default; }
+.scoreboard-result-count { margin: 0; }
+.scoreboard-detail-title { font-size: 30px; }
+.scoreboard-outcome { margin: 0; font-weight: 700; }
+.scoreboard-meaning { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.scoreboard-meaning > div { min-width: 0; }
+.scoreboard-meaning p { margin: 6px 0 0; color: var(--ink-2); line-height: 1.45; }
+.scoreboard-tally { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.scoreboard-tally > div { display: flex; flex-direction: column; gap: 2px; padding: 10px; border-radius: 12px; background: var(--chip); }
+.scoreboard-tally dt { color: var(--muted); font-size: 12px; }
+.scoreboard-tally dd { margin: 0; font-family: var(--f-data); font-size: 20px; font-weight: 700; }
+.scoreboard-source-links { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.scoreboard-source-links a { min-height: 36px; display: inline-flex; align-items: center; font-weight: 600; }
+.scoreboard-voters { gap: var(--space-2); }
+.scoreboard-voters > .muted { margin: 0; }
+.scoreboard-voter-group { border-top: 1px solid var(--line); padding-top: 8px; }
+.scoreboard-voter-group h3 { display: flex; justify-content: space-between; gap: 10px; margin: 0 0 4px; font-size: 14px; }
+.scoreboard-voter-group h3 span { font-family: var(--f-data); color: var(--muted); font-weight: 500; }
+.scoreboard-voter-group ul { list-style: none; margin: 0; padding: 0; }
+.scoreboard-voter-group li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; padding-block: 6px; border-top: 1px solid var(--line); font-size: 14px; }
+.scoreboard-voter-group li a, .scoreboard-voter-group li > span { color: var(--ink); text-decoration: none; font-weight: 600; }
+.scoreboard-voter-group li small { color: var(--muted); font-size: 12px; }
+.scoreboard-party-totals { display: flex; flex-direction: column; }
+.scoreboard-party-totals > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; padding-block: 8px; border-top: 1px solid var(--line); font-size: 13px; }
+.scoreboard-party-totals > div:first-child { border-top: 0; }
+.scoreboard-party-totals span { color: var(--ink-2); }
+@media (max-width: 420px) {
+  .scoreboard-meaning { grid-template-columns: 1fr; }
+  .scoreboard-pagination { flex-wrap: wrap; justify-content: center; }
+  .scoreboard-pagination span { order: -1; flex-basis: 100%; }
+}
