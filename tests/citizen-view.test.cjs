@@ -132,11 +132,11 @@ test('the roster and profile distinguish missing reimbursements from an observed
     gasto: 0, gastoMensal: 0, hasExpenseData: true, alertas: 0,
   }, 100);
 
-  assert.match(missing, /Sem dados/);
-  assert.match(missing, /sem despesa observada/);
+  assert.match(missing, /Sem custo/);
+  assert.match(missing, /sem despesa de cota observada/);
   assert.match(missing, /width:0%/);
-  assert.match(zero, /R\$ 0/);
-  assert.doesNotMatch(zero, /Sem dados|0 mil/);
+  assert.match(zero, /cota R\$ 0/);
+  assert.doesNotMatch(zero, /0 mil/);
   assert.match(zero, /width:0%/);
 
   state.politicianId = 'camara:no-data';
@@ -154,6 +154,33 @@ test('the roster and profile distinguish missing reimbursements from an observed
   assert.doesNotMatch(profile, /Detalhes da amostra editorial|data-editorial-profile|data-pdf/);
   assert.doesNotMatch(profile, /citizen-months|Nenhum alerta|R\$\s?0 mil/);
   assert.match(profile, /Dados insuficientes para avaliar/);
+});
+
+test('roster rows show the monthly cost of the own house, with the quota apart', () => {
+  const { api } = makeView();
+  api.citizenState.politicians.averageCost = { senador: { media: 300000 }, deputado: { media: 200000 } };
+  const row = api.politicianRow({ id: 'senado:70', name: 'Renan Calheiros', role: 'senador', custoMensal: 375869.84, custoMeses: 43,
+    gastoMensal: 27451.33, hasExpenseData: true, alertas: 0 }, 400000);
+  assert.match(row, /R\$ 376 mil<\/b><small>\/mês<\/small>/);
+  assert.match(row, /média de 43 meses · cota R\$ 27 mil · acima da média do Senado/);
+  assert.match(row, /width:93\.9/);  // 375,9 mil sobre a escala de 400 mil do Senado
+});
+
+test('ordering by cost with all houses shows Câmara and Senado in separate blocks', async () => {
+  const people = role => Array.from({ length: 10 }, (_, i) => ({ id: `${role === 'senador' ? 'senado' : 'camara'}:${i}`, name: `P${i}`, role,
+    custoMensal: 100000 - i, custoMeses: 42, gastoMensal: 30000, hasExpenseData: true, alertas: 0 }));
+  const calls = [];
+  const { api } = makeView({ fetchImpl: async url => { calls.push(String(url)); const role = String(url).includes('cargo=senador') ? 'senador' : 'deputado';
+    return { ok: true, json: async () => ({ itens: people(role), total: role === 'senador' ? 81 : 513, medias: {}, custoMedias: {}, cobertura: null }) }; } });
+  Object.assign(api.citizenState.politicians, { order: 'gasto', role: '', query: '', key: '' });
+  api.loadPoliticians(false);
+  await new Promise(resolve => setTimeout(resolve, 0)); await new Promise(resolve => setTimeout(resolve, 0));
+  assert.equal(calls.length, 2);
+  assert.ok(calls.every(url => /ordem=gasto/.test(url) && /pageSize=10/.test(url)));
+  const html = api.politiciansView();
+  assert.match(html, /Câmara · quem mais custa por mês[\s\S]*Senado · quem mais custa por mês/);
+  assert.match(html, /data-politician-role="deputado">Ver todos os 513 deputados\(as\)/);
+  assert.match(html, /data-politician-role="senador">Ver todos os 81 senadores\(as\)/);
 });
 
 test('home alert loading failures show a retry card instead of a sample fallback', async () => {

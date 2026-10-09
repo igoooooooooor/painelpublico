@@ -291,15 +291,30 @@ function alertsView() {
 }
 
 /* ---------- Aba "Políticos" ---------- */
+/* "Quem mais custa" com "Todos": as Casas não publicam as mesmas partes do custo, então a lista mostra
+   dois blocos (Câmara e Senado), cada um ordenado por dentro, em vez de uma ordem única. */
+const POLITICIAN_BLOCK_SIZE = 10;
 function loadPoliticians(more) {
   const p = citizenState.politicians, key = `q=${p.query}&cargo=${p.role}&ordem=${p.order}`;
   if (!more && p.key === key) return;
-  if (!more) { p.key = key; p.page = 1; p.items = []; p.total = null; }
+  const blocks = p.order === 'gasto' && !p.role;
+  if (!more) { p.key = key; p.page = 1; p.items = []; p.total = null; p.blocks = null; }
   p.loading = true; p.error = null;
-  const qs = `/api/c/politicos?pageSize=25&page=${p.page}&ordem=${p.order}${p.role ? '&cargo=' + p.role : ''}${p.query ? '&q=' + encodeURIComponent(p.query) : ''}`;
-  citizenGet(qs).then(d => { if (p.key !== key) return; p.items = p.items.concat(d.itens); p.total = d.total; p.averageSpend = d.medias; p.coverage = d.cobertura; p.loading = false; if (['politicians'].includes(state.view)) renderPoliticianList(); })
-    .catch(e => { if (p.key !== key) return; p.loading = false; p.error = citizenErrorMessage(e); if (['politicians'].includes(state.view)) renderPoliticianList(); });
+  const query = `${p.query ? '&q=' + encodeURIComponent(p.query) : ''}`;
+  const done = d => { p.averageSpend = d.medias; p.averageCost = d.custoMedias; p.coverage = d.cobertura; p.loading = false; if (['politicians'].includes(state.view)) renderPoliticianList(); };
+  const fail = e => { if (p.key !== key) return; p.loading = false; p.error = citizenErrorMessage(e); if (['politicians'].includes(state.view)) renderPoliticianList(); };
+  if (blocks) {
+    Promise.all(ROLES_ORDER.map(role => citizenGet(`/api/c/politicos?pageSize=${POLITICIAN_BLOCK_SIZE}&page=1&ordem=gasto&cargo=${role}${query}`)))
+      .then(([deputies, senators]) => { if (p.key !== key) return;
+        p.blocks = { deputado: { items: deputies.itens, total: deputies.total }, senador: { items: senators.itens, total: senators.total } };
+        p.items = [...deputies.itens, ...senators.itens]; p.total = deputies.total + senators.total; done(deputies); })
+      .catch(fail);
+    return;
+  }
+  const qs = `/api/c/politicos?pageSize=25&page=${p.page}&ordem=${p.order}${p.role ? '&cargo=' + p.role : ''}${query}`;
+  citizenGet(qs).then(d => { if (p.key !== key) return; p.items = p.items.concat(d.itens); p.total = d.total; done(d); }).catch(fail);
 }
+const ROLES_ORDER = ['deputado', 'senador'];
 /* "fev/2023–set/2026" a partir de "AAAA-MM"; a cota das duas Casas conta desde fev/2023. */
 function citizenQuotaPeriod(start, end) {
   const label = value => typeof value === 'string' && /^\d{4}-\d{2}$/.test(value)
@@ -307,17 +322,26 @@ function citizenQuotaPeriod(start, end) {
   const from = label(start), to = label(end);
   return from && to ? (from === to ? from : `${from}–${to}`) : '';
 }
+/* Linha da lista: o custo médio por mês da própria Casa (como no "Quanto custa?" da ficha), com a cota
+   à parte. A barra e o "acima da média" comparam só com a mesma Casa. */
 function politicianRow(person, max) {
   const hasExpenseData = person.hasExpenseData === undefined ? person.gastoMensal != null : Boolean(person.hasExpenseData);
-  const averageSpend = citizenState.politicians.averageSpend?.[person.role]?.media;
-  const monthly = person.gastoMensal;
-  const aboveAverage = hasExpenseData && averageSpend && monthly > averageSpend * 1.25;
+  const cost = Number.isFinite(person.custoMensal) ? person.custoMensal : null;
+  const quota = hasExpenseData && Number.isFinite(person.gastoMensal) ? person.gastoMensal : null;
+  const houseAverage = citizenState.politicians.averageCost?.[person.role]?.media;
+  const aboveAverage = cost !== null && houseAverage && cost > houseAverage * 1.25;
   const roleLabel = person.role === 'senador' ? 'Senador(a)' : 'Deputado(a)';
-  const barWidth = hasExpenseData && monthly > 0 ? Math.max(2, monthly / max * 100) : 0;
-  const spendLabel = hasExpenseData && Number.isFinite(monthly) ? (monthly === 0 ? 'R$ 0' : formatCitizenAmount(monthly)) : 'Sem dados';
+  const barWidth = cost !== null && cost > 0 ? Math.max(2, cost / max * 100) : 0;
+  const details = [
+    cost !== null && person.custoMeses ? `média de ${person.custoMeses} ${person.custoMeses === 1 ? 'mês' : 'meses'}` : cost === null ? 'custo não identificado' : '',
+    quota === null ? 'sem despesa de cota observada' : `cota ${quota === 0 ? 'R$ 0' : formatCitizenAmount(quota)}`,
+    aboveAverage ? `acima da média ${person.role === 'senador' ? 'do Senado' : 'da Câmara'}` : '',
+    citizenState.politicians.order === 'alertas' && person.valorAlertas ? `${formatCitizenAmount(person.valorAlertas)} em alertas${person.valorAlertasParcial ? ' · parcial' : ''}` : '',
+  ].filter(Boolean).join(' · ');
+  /* À direita só o valor; os detalhes vão embaixo do nome, que assim não é cortado no celular. */
   return `<button type="button" class="citizen-row" data-politician="${esc(person.id)}">${citizenAvatar(person, 48)}<span class="citizen-rowtxt"><b>${esc(citizenName(person.name))}</b><small>${[roleLabel, person.party, person.uf].filter(Boolean).map(esc).join(' · ')}</small>
-      <span class="citizen-rowbar"><i style="width:${barWidth}%" class="${aboveAverage ? 'hi' : ''}"></i></span></span>
-    <span class="citizen-rowval"><b class="mono">${spendLabel}</b>${person.alertas ? `<span class="citizen-chip info citizen-mini"><i></i>${person.alertas} ${person.alertas === 1 ? 'alerta' : 'alertas'}</span>` : `<small>${hasExpenseData ? aboveAverage ? 'acima da média' : 'na cota' : 'sem despesa observada'}</small>`}${citizenState.politicians.order === 'alertas' && person.valorAlertas ? `<small>${esc(formatCitizenAmount(person.valorAlertas))} em alertas${person.valorAlertasParcial ? ' · parcial' : ''}</small>` : ''}</span></button>`;
+      <span class="citizen-rowbar"><i style="width:${barWidth}%" class="${aboveAverage ? 'hi' : ''}"></i></span><small class="citizen-rowdetail">${esc(details)}</small></span>
+    <span class="citizen-rowval">${cost !== null ? `<b class="mono">${esc(formatCitizenAmount(cost))}</b><small>/mês</small>` : '<b class="mono">Sem custo</b>'}${person.alertas ? `<span class="citizen-chip info citizen-mini"><i></i>${person.alertas} ${person.alertas === 1 ? 'alerta' : 'alertas'}</span>` : ''}</span></button>`;
 }
 function politicianCoverageHTML(coverage) {
   if (!coverage) return skL('260px', 14);
@@ -333,7 +357,9 @@ function politicianCoverageNotesHTML(coverage) {
     ? '<p class="muted">O Senado tem 81 cadeiras; registros extras no retrato da fonte podem refletir suplentes em transição.</p>'
     : '';
   return `<details class="card"><summary><b>Sobre estes dados</b></summary>
-    <p class="muted">Despesas observadas para ${deputies.withExpenses} de ${deputies.count} deputados(as) e ${senators.withExpenses} de ${senators.count} senadores(as).</p>${senateSeatNote}
+    <p class="muted">Custo por mês: o mesmo do “Quanto custa?” de cada ficha. Na Câmara, salário bruto, auxílios, cota e verba de gabinete, nos meses com as quatro partes. No Senado, remuneração do(a) senador(a), equipe comissionada do gabinete e cota, nos meses com as três. As Casas não publicam as mesmas partes: compare só dentro da mesma Casa. Sem mês com todas as partes, a linha diz “Sem custo”, sem estimativa.</p>
+    ${Number.isFinite(coverage.custo?.deputado) && Number.isFinite(coverage.custo?.senador) ? `<p class="muted">Custo identificado para ${coverage.custo.deputado} de ${deputies.count} deputados(as) e ${coverage.custo.senador} de ${senators.count} senadores(as).</p>` : ''}
+    <p class="muted">Despesas de cota observadas para ${deputies.withExpenses} de ${deputies.count} deputados(as) e ${senators.withExpenses} de ${senators.count} senadores(as).</p>${senateSeatNote}
   </details>`;
 }
 function politicianListHTML() {
@@ -341,9 +367,18 @@ function politicianListHTML() {
   if (p.error) return `<section class="card"><p>Não deu para carregar a lista agora.</p><p class="muted">${esc(p.error)}</p><button type="button" class="more" data-politician-retry>Tentar de novo</button></section>`;
   if (!p.items.length && p.loading) return skel('lista', 8);
   if (!p.items.length) return `<section class="card"><p>Ninguém encontrado com “${esc(p.query)}”.</p><p class="muted">A busca mostra só deputados(as) federais e senadores(as) com mandato em curso. Eleitos(as) em 2026 aparecem a partir da posse, em 1º de fevereiro de 2027; vereadores(as), prefeitos(as) e governadores(as) não fazem parte da busca.</p><p class="muted">Tente só o sobrenome, a sigla do partido (PT, PL…) ou do estado (SP, MG…).</p></section>`;
-  const observedSpending = p.items.filter(person => person.gastoMensal != null).map(person => person.gastoMensal);
-  const max = Math.max(1, ...observedSpending, ...Object.values(p.averageSpend || {}).map(item => (item.media || 0) * 1.5));
-  return `<span class="muted" role="status">${p.total} ${p.total === 1 ? 'pessoa' : 'pessoas'} · gasto médio da cota por mês</span><section class="card citizen-list">${p.items.map(x => politicianRow(x, max)).join('')}</section>
+  /* Escala da barra por Casa: um custo do Senado não encurta as barras da Câmara. */
+  const scale = role => Math.max(1, ...p.items.filter(person => person.role === role && Number.isFinite(person.custoMensal)).map(person => person.custoMensal),
+    (p.averageCost?.[role]?.media || 0) * 1.5);
+  const rows = items => items.map(person => politicianRow(person, scale(person.role))).join('');
+  if (p.blocks) {
+    return ROLES_ORDER.filter(role => p.blocks[role].items.length).map(role => {
+      const block = p.blocks[role], plural = role === 'senador' ? 'senadores(as)' : 'deputados(as)';
+      return `<h3 class="k citizen-list-head">${role === 'senador' ? 'Senado' : 'Câmara'} · quem mais custa por mês</h3><section class="card citizen-list">${rows(block.items)}</section>
+        ${block.total > block.items.length ? `<button type="button" class="opt citizen-more" data-politician-role="${role}">Ver todos os ${block.total} ${plural}</button>` : ''}`;
+    }).join('') + '<p class="muted">Câmara e Senado aparecem separados: as duas Casas não publicam as mesmas partes do custo.</p>';
+  }
+  return `<span class="muted" role="status">${p.total} ${p.total === 1 ? 'pessoa' : 'pessoas'} · custo médio por mês na própria Casa</span><section class="card citizen-list">${rows(p.items)}</section>
     ${p.loading ? skel('lista', 3) : p.items.length < p.total ? '<button type="button" class="opt citizen-more" data-politician-more>Mostrar mais</button>' : ''}`;
 }
 function renderPoliticianList() {
@@ -356,17 +391,17 @@ function renderPoliticianList() {
 }
 function politiciansView() {
   const p = citizenState.politicians; loadPoliticians(false);
-  return `${pageHead('Deputados(as) e senadores(as)', 'Políticos', 'Busque qualquer um(a) e veja quanto gasta da cota por mês, com os alertas.')}
+  return `${pageHead('Deputados(as) e senadores(as)', 'Políticos', 'Busque qualquer um(a) e veja quanto custa por mês, com os alertas.')}
     <div id="citizen-politician-summary" class="citizen-roster-summary" role="status">${politicianCoverageHTML(p.coverage)}</div>
     <label class="search" for="citizen-search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="citizen-search" type="search" placeholder="Nome, partido ou estado" value="${esc(p.query)}" autocomplete="off"></label>
     <div class="citizen-filters">
       <div class="chips" role="group" aria-label="Cargo">${[['', 'Todos'], ['deputado', 'Deputados(as)'], ['senador', 'Senadores(as)']].map(([k, n]) => `<button type="button" class="fchip" data-politician-role="${k}" aria-pressed="${p.role === k}">${n}</button>`).join('')}</div>
-      <div class="chips" role="group" aria-label="Ordenar">${[['nome', 'A–Z'], ['gasto', 'Quem mais gastou'], ['alertas', 'Valor das despesas nos alertas']].map(([k, n]) => `<button type="button" class="fchip" data-politician-order="${k}" aria-pressed="${p.order === k}">${n}</button>`).join('')}</div>
+      <div class="chips" role="group" aria-label="Ordenar">${[['nome', 'A–Z'], ['gasto', 'Quem mais custa'], ['alertas', 'Valor das despesas nos alertas']].map(([k, n]) => `<button type="button" class="fchip" data-politician-order="${k}" aria-pressed="${p.order === k}">${n}</button>`).join('')}</div>
     </div>
     <div class="citizen-actions"><button type="button" class="fchip" data-cmp-start="">Comparar dois(duas) lado a lado →</button><button type="button" class="fchip" data-go="parties">Comparar partidos →</button><button type="button" class="fchip" data-go="attendance">Presença dos deputados →</button></div>
     <div id="citizen-politician-list" class="citizen-stack" aria-live="polite">${politicianListHTML()}</div>
     <div id="citizen-politician-notes">${politicianCoverageNotesHTML(p.coverage)}</div>
-    <span class="src">Valor: média mensal da cota pelas notas publicadas, nos meses com notas. Deputados(as) e senadores(as): desde fev/2023, início da legislatura atual. Valores da época, sem correção pela inflação. Não é salário. A barra roxa mais forte indica gasto acima da média.</span>`;
+    <span class="src">Valor: custo médio por mês, o mesmo do “Quanto custa?” da ficha, desde fev/2023, início da legislatura atual; a linha diz quantos meses entram na média. Embaixo, a média da cota parlamentar (reembolsos). Câmara e Senado não publicam as mesmas partes: a barra e o “acima da média” comparam só com a mesma Casa. Valores da época, sem correção pela inflação.</span>`;
 }
 
 /* ---------- Ficha leve (qualquer deputado ou senador) ---------- */

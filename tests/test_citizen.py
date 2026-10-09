@@ -116,6 +116,7 @@ class CitizenPoliticiansTests(unittest.TestCase):
         self.assertEqual(first['cobertura'], {
             'deputado': {'count': 3, 'withExpenses': 2},
             'senador': {'count': 1, 'withExpenses': 1},
+            'custo': {'deputado': 0, 'senador': 0},  # sem composição do custo nesta base de teste
         })
         self.assertEqual(
             [item['id'] for item in deputies_by_spend['itens']],

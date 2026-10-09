@@ -81,6 +81,7 @@
 .citizen-rowtxt { display: flex; flex-direction: column; min-width: 0; }
 .citizen-rowtxt b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .citizen-rowval { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.citizen-rowdetail { line-height: 1.35; }
 .citizen-dot { display: inline-block; width: 7px; height: 7px; border-radius: 4px; background: var(--warn); margin-right: 5px; }
 .citizen-faces { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .citizen-faces .face img { border-color: var(--surface); box-shadow: 0 0 0 2px var(--line); }

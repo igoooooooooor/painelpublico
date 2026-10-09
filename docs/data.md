@@ -594,6 +594,13 @@ partir de fev/2023.
   coluna Documento fica vazia.
 - **Alertas:** picos e concentração avaliam o mandato inteiro, nas duas Casas (regra,
   cobertura e prazos em [Alertas](alerts.md)); lançamentos de valor alto seguem só em 2026.
+- **Lista de políticos:** o valor principal é o custo médio por mês da própria Casa, o mesmo do "Quanto
+  custa?" da ficha (`backend/costs.py`): na Câmara, salário bruto, auxílios, cota e verba de gabinete nos
+  meses com as quatro partes; no Senado, remuneração, equipe do gabinete e cota nos meses com as três. A
+  linha diz quantos meses entram na média e mostra a cota à parte. As Casas não publicam as mesmas partes:
+  "Quem mais custa" com "Todos" mostra dois blocos (Câmara e Senado), cada um ordenado por dentro, e a
+  barra e o "acima da média" comparam só com a mesma Casa. Sem mês com todas as partes, "Sem custo", sem
+  estimativa; quem está nessa situação vai para o fim da ordem, pela cota.
 - **No cargo desde:** o cabeçalho da ficha diz "Na Câmara desde 2007" ou "No Senado desde 2019", o início
   da sequência ininterrupta de legislaturas (Câmara) ou mandatos (Senado) com exercício até o atual; um
   mandato anterior separado por um intervalo não entra. `make collect-tenure` gera `tenure.json` a partir do

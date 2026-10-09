@@ -12,6 +12,7 @@ import re
 from statistics import median
 
 from . import public_store as store
+from . import costs
 from .alert_rules import MANDATE_START, NOT_EVALUATED as NOT_EVALUATED_TEXT
 from .config import HOUSING_COMPLEMENT_KIND
 
@@ -442,7 +443,12 @@ def summary(db):
 
 
 def politicians(db, params):
-    """Lista de deputados(as) e senadores(as) em exercício, com gasto médio mensal da cota e nº de alertas."""
+    """Lista de deputados(as) e senadores(as) em exercício, com custo médio mensal, cota e nº de alertas.
+
+    O custo é o da ficha de cada Casa (``backend/costs.py``); como as Casas não publicam as mesmas partes,
+    a ordem por custo (``ordem=gasto``) só faz sentido dentro de uma Casa: sem ``cargo``, ordena por Casa
+    primeiro. Quem não tem custo identificado vai para o fim, sem valor estimado.
+    """
     clauses, args = ["a.role IN ('deputado','senador')", "a.id IN (SELECT authorityId FROM roster WHERE sourceId IN (?,?))"], [CURRENT['deputado'], CURRENT['senador']]
     if params.get('cargo') in ROLES:
         clauses.append('a.role=?'); args.append(params['cargo'])
@@ -458,6 +464,8 @@ def politicians(db, params):
     page, size, offset = store.page_args(params)
     where = ' AND '.join(clauses)
     total = db.execute(f'SELECT COUNT(*) FROM authorities a WHERE {where}', args).fetchone()[0]
+    by_cost = params.get('ordem') == 'gasto'
+    monthly = costs.monthly_costs(db)
     items = rows(db, f'''SELECT a.id,a.name,a.role,a.party,a.uf,a.position,a.employmentStatus,a.sourceUrl,
         CASE WHEN t.authorityId IS NULL THEN NULL ELSE t.amountCents/100.0 END gasto,
         CASE WHEN t.authorityId IS NULL THEN NULL ELSE {MONTHLY}/100.0 END gastoMensal,t.periodStart inicio,t.periodEnd fim,
@@ -466,9 +474,32 @@ def politicians(db, params):
         COALESCE(v.amountCents,0)/100.0 valorAlertas,COALESCE(v.partial,0) valorAlertasParcial
         FROM authorities a LEFT JOIN authority_totals t ON t.authorityId=a.id AND t.kind='reembolso'
         LEFT JOIN alert_totals v ON v.authorityId=a.id
-        WHERE {where} ORDER BY {sort_order},a.id LIMIT ? OFFSET ?''', [*args, size, offset])
+        WHERE {where} ORDER BY {'a.name' if by_cost else sort_order},a.id {'' if by_cost else 'LIMIT ? OFFSET ?'}''',
+        args if by_cost else [*args, size, offset])
+    for item in items:
+        cost = monthly.get(item['id'])
+        item['custoMensal'] = cost['cents'] / 100 if cost else None
+        item['custoMeses'] = cost['months'] if cost else None
+    cost_averages = _cost_averages(db, monthly)
+    if by_cost:
+        house = {'deputado': 0, 'senador': 1}
+        # Sem custo identificado: no fim da Casa, pela cota (sem cota, por último).
+        items.sort(key=lambda item: (house.get(item['role'], 2), item['custoMensal'] is None, -(item['custoMensal'] or 0),
+                                     item['gastoMensal'] is None, -(item['gastoMensal'] or 0), item['name']))
+        items = items[offset:offset + size]
     return {'itens': items, 'total': total, 'page': page, 'pageSize': size,
-            'cobertura': _politician_coverage(db), 'medias': _averages(db), 'snapshotAt': _snapshot(db)}
+            'cobertura': {**_politician_coverage(db), 'custo': {role: value['n'] for role, value in cost_averages.items()}},
+            'medias': _averages(db), 'custoMedias': cost_averages,
+            'snapshotAt': _snapshot(db)}
+
+
+def _cost_averages(db, monthly):
+    """Custo médio mensal por Casa, entre quem está na lista atual e tem custo identificado (para "acima da média")."""
+    out = {}
+    for role in ROLES:
+        values = [monthly[i]['cents'] for (i,) in db.execute('SELECT authorityId FROM roster WHERE sourceId=?', (CURRENT[role],)) if i in monthly]
+        out[role] = {'media': sum(values) / len(values) / 100 if values else None, 'n': len(values)}
+    return out
 
 
 def politician(db, identifier):
