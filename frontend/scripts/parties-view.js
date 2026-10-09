@@ -50,7 +50,7 @@ const PARTY_UNAVAILABLE_LABEL = '<span class="muted">Sem dados</span>';
 function registeredAttendanceRow(a, b, pending, source) {
   const show = p => pending ? '<i class="sk" style="display:inline-block;width:48px;height:12px"></i>' : p
     ? `<b>${p.media.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</b><small> sessões em média · ${p.n} ${p.n === 1 ? 'senador(a)' : 'senadores(as)'} com registro</small>` : PARTY_UNAVAILABLE_LABEL;
-  const sourceHtml = !source ? '' : typeof profileSource === 'function' ? profileSource(source, 'Fonte e período') : source.period ? `<span class="src">${esc(source.period)}</span>` : '';
+  const sourceHtml = !source ? '' : typeof profileSource === 'function' ? profileSource(source, 'Fonte e período') : source.period ? `<span class="src">${esc(datesInTextBR(source.period))}</span>` : '';
   const sessionCount = Number.isFinite(source?.sessionCount) ? source.sessionCount : null;
   const detail = 'Média somente de parlamentares com presença registrada, pela legenda do cadastro atual. Faltas e justificativas não apuradas; ausência de linha não equivale a zero.';
   return `<div class="cmp-row"><span class="cmp-l">Presenças registradas por senador(a) · Senado</span><div class="cmp-v">${show(a)}</div><div class="cmp-v">${show(b)}</div></div>
@@ -107,7 +107,7 @@ function partyComparisonTable(a, b) {
     if (!section) return '';
     if (typeof profileSource === 'function') return profileSource(section, 'Fonte e período');
     const url = /^https?:\/\//i.test(section.sourceUrl || '') ? section.sourceUrl : '';
-    return `<span class="src">${section.period ? `${esc(section.period)}. ` : ''}${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">Fonte e período ↗</a>` : ''}</span>`;
+    return `<span class="src">${section.period ? `${esc(datesInTextBR(section.period))}. ` : ''}${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">Fonte e período ↗</a>` : ''}</span>`;
   };
   const senateVoteRows = sa.slice(0, partyState.senateVoteLimit).map((record, index) => {
     const pair = sb[index];
@@ -137,7 +137,7 @@ function partyComparisonTable(a, b) {
     ${isSenateLoading ? (typeof skel === 'function' ? skel('linhas', 3) : '<i class="sk" style="display:block;width:100%;height:14px"></i>') : senateVoteSource ? `<h2 class="h" style="font-size:21px">${senateComparableVotes.length ? `${esc(a.sigla)} e ${esc(b.sigla)} ficaram do mesmo lado em ${senateMatchingVoteCount} de ${senateComparableVotes.length} votações nominais comparáveis.` : 'Sem votações com escolhas nominais registradas para ambos os partidos.'}</h2>
       ${sa.length ? senateVoteRows : '<p class="muted">Sem votações nominais do Senado com registro neste recorte.</p>'}
       ${sa.length > partyState.senateVoteLimit ? `<button type="button" class="opt citizen-more" data-party-senate-votes-more>Mostrar mais (${sa.length - partyState.senateVoteLimit})</button>` : ''}
-      ${senateVoteSource.detail ? `<p class="muted">${esc(senateVoteSource.detail)}</p>` : ''}${sourceMeta(senateVoteSource)}`
+      ${senateVoteSource.detail ? `<p class="muted">${esc(datesInTextBR(senateVoteSource.detail))}</p>` : ''}${sourceMeta(senateVoteSource)}`
       : `<p class="muted">Votações nominais do Senado ainda não importadas.</p>${sourceMeta(senateVoteSource)}`}
   </section>
   <section class="card wide"><span class="k">Maior gasto médio mensal da cota em cada partido</span>

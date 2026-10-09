@@ -24,7 +24,7 @@ const PROFILE_PROJECT_FILTERS = new Set(['todos', ...PROFILE_PROJECT_GROUPS, 'se
 const PROFILE_PROJECT_FILTER_STATE = new Map();
 function profileProjectDate(value) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value)) return null;
-  return Number.isFinite(Date.parse(value)) ? value.slice(0, 10) : null;
+  return Number.isFinite(Date.parse(value)) ? dateBR(value) : null;
 }
 function profileProjectConsulted(item) {
   return !!profileProjectDate(item?.situacaoAtual?.consultadoEm);
@@ -91,7 +91,7 @@ function profileAttendanceSources(id) {
     && s.presentIds.includes(profileId(id)) && profileSafeUrl(s.sourceUrl));
   if (!records.length) return '';
   return `<p class="muted">Sessões com presença registrada no Diário:</p><div class="chips">${records.map(s =>
-    `<a class="fchip" href="${esc(profileSafeUrl(s.sourceUrl))}" target="_blank" rel="noopener">${esc(s.date)} ↗</a>`).join('')}</div>`;
+    `<a class="fchip" href="${esc(profileSafeUrl(s.sourceUrl))}" target="_blank" rel="noopener">${esc(dateBR(s.date))} ↗</a>`).join('')}</div>`;
 }
 function profilePresenceRows(chamber = 'camara') {
   if (chamber === 'senado') profileSenateEnsure();
@@ -202,9 +202,9 @@ function profileElection(profile) {
 }
 function profileSource(section, label = 'Conferir na fonte', dateLabel = 'Fotografia') {
   const url = profileSafeUrl(section?.sourceUrl);
-  const date = typeof section?.fetchedAt === 'string' ? section.fetchedAt.slice(0, 10) : null;
+  const date = typeof section?.fetchedAt === 'string' ? dateBR(section.fetchedAt) : null;
   if (!url && !date && !section?.period) return '';
-  return `<span class="src">${section?.period ? `${esc(section.period)}. ` : ''}${date ? `${esc(dateLabel)}: ${esc(date)}. ` : ''}
+  return `<span class="src">${section?.period ? `${esc(datesInTextBR(section.period))}. ` : ''}${date ? `${esc(dateLabel)}: ${esc(date)}. ` : ''}
     ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(label)} ↗</a>` : ''}</span>`;
 }
 const PROFILE_SECTION_STATE = new Map();
@@ -302,7 +302,7 @@ function profileSectionsHTML(value, slots = {}) {
       : `Nenhuma consulta de situação registrada: 0 de ${items.length} consultados; ${items.length} sem confirmação.`}${total !== null && !projectTotalMatchesItems ? ` A lista mostra ${items.length} ${items.length === 1 ? 'projeto' : 'projetos'} de ${total} no total; as situações contam apenas os itens listados.` : ''}</p>` : ''}
     ${confirmedAmendmentCount ? '<p class="muted citizen-project-explanation">PEC aprovada e promulgada é emenda constitucional; por isso não entra na contagem de leis.</p>' : ''}
     ${unclassifiedProjectCount ? '<p class="muted citizen-project-explanation">“Outras / sem classificação” reúne situações que não confirmam um dos resultados acima e projetos ainda sem consulta. A descrição da fonte permanece visível.</p>' : ''}
-    ${projects?.detail ? `<p class="muted">${esc(projects.detail)}</p>` : ''}
+    ${projects?.detail ? `<p class="muted">${esc(datesInTextBR(projects.detail))}</p>` : ''}
     ${items.length ? `<div class="citizen-projects" data-project-filter-root data-project-profile="${esc(profile.id)}">
       <div class="citizen-project-filters" aria-label="Filtrar projetos por situação">
         ${[['todos', 'Todos'], ['lei', 'Viraram lei'], ['tramitando', 'Tramitando'], ['arquivado', 'Arquivados/rejeitados'],
@@ -329,7 +329,7 @@ function profileSectionsHTML(value, slots = {}) {
       const meta = [consulted ? `<span>Consulta da situação: ${esc(consulted)}</span>` : '',
         source ? `<a href="${esc(source)}" target="_blank" rel="noopener">Fonte da situação ↗</a>` : '', ...norms].filter(Boolean).join(' · ');
       const detail = typeof situation?.detail === 'string' && situation.detail.trim()
-        ? `<p class="citizen-project-detail muted">${esc(situation.detail)}</p>` : '';
+        ? `<p class="citizen-project-detail muted">${esc(datesInTextBR(situation.detail))}</p>` : '';
       const show = selectedProjectFilter === 'todos' || selectedProjectFilter === group;
       return `<article class="proj" data-project-item data-project-group="${group}"${show ? '' : ' hidden'}>${main}${status}${meta ? `<div class="citizen-project-meta">${meta}</div>` : ''}${detail}</article>`;
     }).join('')}</div>
@@ -340,29 +340,29 @@ function profileSectionsHTML(value, slots = {}) {
       : '<p class="muted">Gastos com a equipe ainda não importados para este perfil. Ausência de dado não significa gasto zero.</p>'}
     ${Number.isFinite(office?.staffActive) ? `<p>${esc(office.staffActive)} pessoas ativas na fotografia da fonte.</p>` : '<p class="muted">Quantidade de assessores não importada.</p>'}
     ${months.length ? `<p class="muted">Meses informados: ${months.map(m => monthNames[m]).join(', ')}.</p>` : ''}
-    ${office?.sourceUpdatedAt ? `<p class="muted">Gastos atualizados pela fonte em ${esc(office.sourceUpdatedAt)}.</p>` : ''}
-    ${office?.detail ? `<p class="muted">${esc(office.detail)}</p>` : ''}${profileSource(office)}`;
+    ${office?.sourceUpdatedAt ? `<p class="muted">Gastos atualizados pela fonte em ${esc(dateBR(office.sourceUpdatedAt))}.</p>` : ''}
+    ${office?.detail ? `<p class="muted">${esc(datesInTextBR(office.detail))}</p>` : ''}${profileSource(office)}`;
   const contactContent = profile.loading ? loading() : `${contactRows.map(([label, text]) => `<div class="contact"><span class="muted">${label}</span><span class="cv">${esc(text || 'Não informado no recorte')}</span>
       ${text && label !== 'Endereço do gabinete' ? `<button type="button" class="fchip" data-copy="${esc(text)}">Copiar</button>` : ''}</div>`).join('')}
     ${networks.length ? `<div class="chips">${networks.map(network => `<a class="fchip" href="${esc(profileSafeUrl(network.url))}" target="_blank" rel="noopener">${esc(network.nome || 'Rede social')} ↗</a>`).join('')}</div>` : ''}
-    ${contactInfo?.detail ? `<p class="muted">${esc(contactInfo.detail)}</p>` : ''}${profileSource(contactInfo)}`;
+    ${contactInfo?.detail ? `<p class="muted">${esc(datesInTextBR(contactInfo.detail))}</p>` : ''}${profileSource(contactInfo)}`;
   const senateParticipation = mandate?.participacao || person.position;
   const senateExercise = mandate?.exercicio || person.employmentStatus;
   const senateMandateContent = profile.loading && !senateParticipation && !senateExercise ? loading() : `${senateParticipation || senateExercise ? '<span class="k">Na fotografia da fonte</span>' : ''}
     <p>${senateParticipation ? `<b>Participação no mandato:</b> ${esc(senateParticipation)}` : 'Participação no mandato sem informação importada.'}</p>
     <p>${senateExercise ? `<b>Situação publicada:</b> ${esc(senateExercise)}` : 'Situação publicada sem informação importada.'}</p>
-    ${mandate?.detail ? `<p class="muted">${esc(mandate.detail)}</p>` : ''}
+    ${mandate?.detail ? `<p class="muted">${esc(datesInTextBR(mandate.detail))}</p>` : ''}
     ${profileSource({ ...mandate, sourceUrl: mandate?.sourceUrl || person.sourceUrl, fetchedAt: mandate?.fetchedAt || person.fetchedAt }, 'Fonte do Senado')}`;
   const hasMandateSource = mandate?.sourceUrl || person.sourceUrl || mandate?.participacao || mandate?.exercicio || mandate?.detail;
   const mandateSource = hasMandateSource ? `<article class="citizen-source"><b>${profile.person.role === 'deputado' ? 'Na fotografia da fonte' : 'Mandato e situação'}</b>
       ${profile.person.role === 'deputado' && mandate?.participacao ? `<p><b>Condição eleitoral:</b> ${esc(mandate.participacao)}</p>` : ''}
       ${profile.person.role === 'deputado' && mandate?.exercicio ? `<p><b>Situação publicada:</b> ${esc(mandate.exercicio)}</p>` : ''}
-      ${profile.person.role === 'deputado' && mandate?.detail ? `<p class="muted">${esc(mandate.detail)}</p>` : ''}
+      ${profile.person.role === 'deputado' && mandate?.detail ? `<p class="muted">${esc(datesInTextBR(mandate.detail))}</p>` : ''}
       ${profileSource({ ...mandate, sourceUrl: mandate?.sourceUrl || person.sourceUrl, fetchedAt: mandate?.fetchedAt || person.fetchedAt }, profile.person.role === 'senador' ? 'Fonte do Senado' : 'Fonte do mandato')}</article>` : '';
   const salarySource = salary ? `<article class="citizen-source"><b>Subsídio parlamentar</b>
     <p><span class="big">${money(salary.amount)}</span> · subsídio bruto mensal de referência do cargo.</p>
-    <p class="muted">Valor previsto desde ${esc(salary.since)}. Fonte conferida em ${esc(salary.checkedAt)}. ${profile.cost || profile.senateCost ? 'Este é o valor de referência do cargo; o valor bruto pago mês a mês, pela folha da Casa, está em “Quanto custa?” e em “Gastos em detalhe”.' : 'Pagamento individual, descontos e outras verbas não foram importados nesta ficha.'}</p>
-    ${profileSource({ sourceUrl: salary.sourceUrl, fetchedAt: salary.checkedAt, period: `${money(salary.amount)} mensais desde ${salary.since}` }, 'Fonte do subsídio', 'Fonte consultada')}</article>` : '<p class="muted">Sem remuneração importada.</p>';
+    <p class="muted">Valor previsto desde ${esc(dateBR(salary.since))}. Fonte conferida em ${esc(dateBR(salary.checkedAt))}. ${profile.cost || profile.senateCost ? 'Este é o valor de referência do cargo; o valor bruto pago mês a mês, pela folha da Casa, está em “Quanto custa?” e em “Gastos em detalhe”.' : 'Pagamento individual, descontos e outras verbas não foram importados nesta ficha.'}</p>
+    ${profileSource({ sourceUrl: salary.sourceUrl, fetchedAt: salary.checkedAt, period: `${money(salary.amount)} mensais desde ${dateBR(salary.since)}` }, 'Fonte do subsídio', 'Fonte consultada')}</article>` : '<p class="muted">Sem remuneração importada.</p>';
   const election = profileElection(profile);
   const electionSource = election ? `<article class="citizen-source"><b>Eleição de 2026</b><p>${esc(election.sentence)}</p>
     ${profileSource({ sourceUrl: election.source?.sourceUrl, fetchedAt: election.source?.fetchedAt,
@@ -372,9 +372,9 @@ function profileSectionsHTML(value, slots = {}) {
     ${mandateSource}
     ${electionSource}
     ${profile.loading ? loading() : `<div class="citizen-source-list">
-      <article class="citizen-source"><b>Contato e gabinete</b>${contactInfo?.detail ? `<p class="muted">${esc(contactInfo.detail)}</p>` : ''}${profileSource(contactInfo, 'Fonte do contato')}</article>
-      <article class="citizen-source"><b>Projetos apresentados</b>${projects?.detail ? `<p class="muted">${esc(projects.detail)}</p>` : ''}${profileSource(projects, 'Fonte dos projetos')}</article>
-      <article class="citizen-source"><b>Equipe e verba de gabinete</b>${office?.detail ? `<p class="muted">${esc(office.detail)}</p>` : ''}${profileSource(office, 'Fonte do gabinete')}</article>
+      <article class="citizen-source"><b>Contato e gabinete</b>${contactInfo?.detail ? `<p class="muted">${esc(datesInTextBR(contactInfo.detail))}</p>` : ''}${profileSource(contactInfo, 'Fonte do contato')}</article>
+      <article class="citizen-source"><b>Projetos apresentados</b>${projects?.detail ? `<p class="muted">${esc(datesInTextBR(projects.detail))}</p>` : ''}${profileSource(projects, 'Fonte dos projetos')}</article>
+      <article class="citizen-source"><b>Equipe e verba de gabinete</b>${office?.detail ? `<p class="muted">${esc(datesInTextBR(office.detail))}</p>` : ''}${profileSource(office, 'Fonte do gabinete')}</article>
     </div>`}
     ${typeof slots?.sources === 'string' ? slots.sources : ''}`;
   const sections = [

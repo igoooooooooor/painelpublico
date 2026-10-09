@@ -16,7 +16,7 @@ function load(presence = [], request = async () => ({})) {
     skel: () => 'Carregando', CATS_H: ['--cat1', '--cat2'],
   };
   vm.createContext(context);
-  for (const file of ['profile-data.js', 'home-view.js']) {
+  for (const file of ['dates.js', 'profile-data.js', 'home-view.js']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../frontend/scripts', file), 'utf8'), context);
   }
   return context;

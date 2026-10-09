@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
-const source = fs.readFileSync(path.join(__dirname, '../frontend/scripts/profile-data.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '../frontend/scripts/dates.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '../frontend/scripts/profile-data.js'), 'utf8');
 
 function load(data = {}, { width = 390 } = {}) {
   const elements = new Map();
@@ -295,7 +295,7 @@ test('project situation groups need an explicit dated imported enum and counts e
   assert.equal((html.match(/data-project-item data-project-group="sem-situacao"/g) || []).length, 2);
   assert.match(html, /Descrição lei/);
   assert.doesNotMatch(html, /Aprovado e convertido/);
-  assert.match(html, /Consulta da situação: 2026-10-01/);
+  assert.match(html, /Consulta da situação: 01\/10\/2026/);
   assert.match(html, /href="https:\/\/fonte\.example\.test\/projeto"[^>]*>Fonte da situação/);
   assert.match(html, /data-project-filter="arquivado"[^>]*>Arquivados\/rejeitados/);
   assert.match(html, /data-project-filter="sem-situacao"[^>]*>Outras \/ sem classificação/);
@@ -343,7 +343,7 @@ test('an imported consultation with no group stays unclassified, not unconsulted
   assert.match(html, /data-project-item data-project-group="sem-situacao"/);
   assert.match(html, /Proposição retirada da tramitação/);
   assert.doesNotMatch(html, /Texto legado de tramitação/);
-  assert.match(html, /Consulta da situação: 2026-10-02/);
+  assert.match(html, /Consulta da situação: 02\/10\/2026/);
   assert.match(html, /href="https:\/\/fonte\.example\.test\/retirada"/);
   assert.match(html, /&lt;script&gt;Consulta antiga preservada&lt;\/script&gt;/);
   assert.doesNotMatch(html, /<script>/);
@@ -507,4 +507,16 @@ test('profiles outside the old sample load on demand once and keep detail headin
   const offline = load({ perfis: { profiles: {} } });
   offline.fetch = () => { throw new Error('não deveria buscar'); };
   assert.equal(offline.profileData('camara:8').loading, false);
+});
+
+test('dates on screen are day/month/year, including dates inside source texts', () => {
+  const context = {};
+  vm.createContext(context);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../frontend/scripts/dates.js'), 'utf8') + '\nthis.__api = { dateBR, datesInTextBR };', context);
+  const { dateBR, datesInTextBR } = context.__api;
+  assert.equal(dateBR('2026-10-07'), '07/10/2026');
+  assert.equal(dateBR('2026-10-07T21:01:53+00:00'), '07/10/2026');
+  assert.equal(dateBR('07/10/2026'), '07/10/2026');
+  assert.equal(dateBR(null), '');
+  assert.equal(datesInTextBR('PL, PLP e PEC apresentados de 2026-01-01 a 2026-10-07'), 'PL, PLP e PEC apresentados de 01/01/2026 a 07/10/2026');
 });

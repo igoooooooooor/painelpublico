@@ -15,7 +15,7 @@ function load(data, senate = { presenca: null, votacoes: null, loading: false })
       && p.presente + p.falta + p.justificadas === p.dias); },
   };
   vm.createContext(context);
-  vm.runInContext(fs.readFileSync(path.join(__dirname, '../frontend/scripts/parties-view.js'), 'utf8'), context);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../frontend/scripts/dates.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '../frontend/scripts/parties-view.js'), 'utf8'), context);
   context.senate = senate;
   context.profileSenateEnsure = () => {};
   context.profileSenateLoading = () => senate.loading;

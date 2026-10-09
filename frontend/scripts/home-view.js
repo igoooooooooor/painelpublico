@@ -95,5 +95,5 @@ function homeView() {
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px"><h2 class="h">Placar da Câmara</h2><button class="more" data-go="votes">Ver tudo</button></div>
     <div class="carousel">${DATA.votacoes.map(voteCard).join('') || '<p class="note">Sem votações disponíveis neste recorte.</p>'}</div>
     ${homeCoverageCard(data)}${homeTopCard(data)}
-    <span class="src">Listas e reembolsos: Câmara dos Deputados e Senado Federal. ${data?.snapshotAt ? 'Fotografia da base: ' + esc(data.snapshotAt.slice(0, 10)) + '.' : ''} Presença e votações têm a cobertura indicada em suas telas.</span>`;
+    <span class="src">Listas e reembolsos: Câmara dos Deputados e Senado Federal. ${data?.snapshotAt ? 'Fotografia da base: ' + esc(dateBR(data.snapshotAt)) + '.' : ''} Presença e votações têm a cobertura indicada em suas telas.</span>`;
 }

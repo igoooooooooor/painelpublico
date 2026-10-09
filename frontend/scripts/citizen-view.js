@@ -476,11 +476,11 @@ function profileVoteDetails(shared) {
   return `<span class="k">${senate ? 'Votações nominais do Senado · 2026' : 'Votações selecionadas do Placar'} · ${votes.length || 'sem registros'}</span>
     ${votes.length ? `<div class="votes">${votes.slice(0, limit).map(({ vote, recordedVote }) => {
       const voteLabel = recordedVote == null ? 'Sem registro importado' : vote.secreta ? 'Presença registrada · voto secreto' : senate && recordedVote === 'Presente' ? 'Presença registrada · sem voto' : String(recordedVote).toLowerCase();
-      return profileVoteButton(vote, `<b>${esc(voteLabel)}</b><span>${esc(vote.titulo)}</span>${senate ? `<small>${esc(vote.data?.slice(0, 10) || '')} · fonte oficial ↗</small>` : ''}`);
+      return profileVoteButton(vote, `<b>${esc(voteLabel)}</b><span>${esc(vote.titulo)}</span>${senate ? `<small>${esc(dateBR(vote.data))} · fonte oficial ↗</small>` : ''}`);
     }).join('')}</div>` : `<p class="muted">${senate ? 'Votos nominais do Senado ainda não disponíveis neste recorte.' : 'Nenhuma votação selecionada do Placar em 2026.'}</p>`}
     ${votes.length > limit ? `<button type="button" class="more" data-profile-votes-more="${esc(shared.id)}">Mostrar mais votações (${votes.length - limit})</button>` : ''}
     <p class="muted">O resumo conta votos identificados na fonte. ${senate ? 'Presença sem voto, atividade parlamentar, licenças e presidência não contam como voto nominal.' : 'Presença em voto secreto e quem presidiu aparecem à parte.'} Ausência de registro não significa que a pessoa não votou.</p>
-    ${source ? `${profileSource(source, 'Fonte das votações do Senado')}${source.detail ? `<p class="muted">${esc(source.detail)}</p>` : ''}` : ''}
+    ${source ? `${profileSource(source, 'Fonte das votações do Senado')}${source.detail ? `<p class="muted">${esc(datesInTextBR(source.detail))}</p>` : ''}` : ''}
     ${presence?.motivos?.length ? `<p class="note">Justificativas de presença: ${presence.motivos.map(([reason, count]) => `${esc(reason.toLowerCase())} (${count})`).join(', ')}.</p>` : ''}
     ${senate ? '' : '<button type="button" class="more" data-go="attendance">Ver a presença de todos(as)</button>'}`;
 }
@@ -548,7 +548,7 @@ function profileShareCard(f, shared, alerts, hasExpenseData) {
     kicker: `Ficha · ${senate ? 'Senado' : 'Câmara'}`, title: citizenName(person.name),
     subtitle: [ROLE_LABELS[person.role], person.party, person.uf].filter(Boolean).join(' · '),
     rows: [costRow, workRow, alertRow], fileName: citizenName(person.name),
-    footnote: `Fontes: ${senate ? 'Senado Federal' : 'Câmara dos Deputados'} (notas da cota${average !== null ? ', remuneração, gabinete' : ''} e presença). Retrato de ${f.snapshotAt ? f.snapshotAt.slice(0, 10) : 'data não informada'}.`,
+    footnote: `Fontes: ${senate ? 'Senado Federal' : 'Câmara dos Deputados'} (notas da cota${average !== null ? ', remuneração, gabinete' : ''} e presença). Retrato de ${f.snapshotAt ? dateBR(f.snapshotAt) : 'data não informada'}.`,
   };
 }
 function profileView() {
@@ -568,11 +568,11 @@ function profileView() {
   const personNumber = String(person.id).split(':')[1];
   const presenceUrl = isChamberPerson && /^\d+$/.test(personNumber || '') ? `https://www.camara.leg.br/deputados/${personNumber}/presenca-plenario/2026` : null;
   const sourcesHtml = `<p>Cota é reembolso de gastos com o trabalho: escritório, divulgação, carro e viagens.</p>
-    <p class="src">Fonte: notas da cota publicadas ${isChamberPerson ? 'pela Câmara (sem as passagens aéreas, que ficam fora do arquivo aberto)' : 'pelo Senado'}. Retrato de ${f.snapshotAt ? esc(f.snapshotAt.slice(0, 10)) : 'data não informada'}.</p>
+    <p class="src">Fonte: notas da cota publicadas ${isChamberPerson ? 'pela Câmara (sem as passagens aéreas, que ficam fora do arquivo aberto)' : 'pelo Senado'}. Retrato de ${f.snapshotAt ? esc(dateBR(f.snapshotAt)) : 'data não informada'}.</p>
     ${isChamberPerson ? `<p class="muted">Presença em sessões deliberativas do mandato atual, desde fev/2023. Média da Câmara: média das proporções individuais entre registros válidos. O selo compara os percentuais arredondados. Os dias observados podem variar entre mandatos.</p>
     ${presenceUrl ? `<a class="src" href="${esc(presenceUrl)}" target="_blank" rel="noopener">Fonte da presença no Plenário ↗</a>` : ''}
     <p class="muted">Os votos cobrem apenas a seleção do Placar em 2026. Cada votação abre seu resumo e fontes oficiais.</p>` : ''}
-    ${!isChamberPerson ? ['presenca', 'votacoes'].map(key => { const source = profileSenateSource(key); return source ? `<p><b>${key === 'presenca' ? 'Presença' : 'Votações'} do Senado</b></p>${profileSource(source)}<p class="muted">${esc(source.detail || '')}</p>` : ''; }).join('') : ''}
+    ${!isChamberPerson ? ['presenca', 'votacoes'].map(key => { const source = profileSenateSource(key); return source ? `<p><b>${key === 'presenca' ? 'Presença' : 'Votações'} do Senado</b></p>${profileSource(source)}<p class="muted">${esc(datesInTextBR(source.detail))}</p>` : ''; }).join('') : ''}
     ${!isChamberPerson ? profileAttendanceSources(shared.id) : ''}
     <p class="muted">Alertas indicam registros para conferir, não conclusões de irregularidade. “Parecido com a média” mantém a faixa de diferença inferior a 10% na cota.</p>
     ${citizenSourceUrl(person) ? `<a class="fchip" href="${esc(citizenSourceUrl(person))}" target="_blank" rel="noopener">Página oficial ↗</a>` : ''}

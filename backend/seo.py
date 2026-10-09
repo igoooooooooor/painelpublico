@@ -115,7 +115,9 @@ def profile_facts(db, identifier):
     if record is None:
         return None
     person = record['pessoa']
-    facts = {'person': person, 'snapshotAt': (record.get('snapshotAt') or '')[:10], 'lines': []}
+    stamp = (record.get('snapshotAt') or '')[:10]
+    # Na página, a data vai em dia/mês/ano, como no app.
+    facts = {'person': person, 'snapshotAt': '/'.join(reversed(stamp.split('-'))) if stamp else '', 'lines': []}
     cost = (profiles.profile(identifier) or {}).get('mandateCost') or {}
     if isinstance(cost.get('monthlyAverageCents'), int) and cost.get('usedMonths'):
         facts['lines'].append(('Quanto custa', f'Custa em média {money_cents(cost["monthlyAverageCents"])} por mês '

@@ -47,7 +47,7 @@ function comparison(a, b) {
     ? `<a class="${className}" href="${vote.sourceUrl || ''}">${content}</a>`
     : `<button type="button" class="${className}" data-vote="${vote.id}">${content}</button>`;
   context.profileData = value => ({ id: value.id, person: value, contact: null, projects: null, compensation: null, mandate: null });
-  vm.runInContext(fs.readFileSync(path.join(__dirname, '../frontend/scripts/extras-view.js'), 'utf8') +
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../frontend/scripts/dates.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '../frontend/scripts/extras-view.js'), 'utf8') +
     '\nthis.__api = { extrasState, comparisonTable, searchComparisonPeople, comparisonPickerList, comparisonView, taxCard, voteRowsForItem, votesForPerson, attendanceForPerson, attendanceRows, attendanceBar, profileExtras };', context);
   return { html: context.__api.comparisonTable([a, b]), api: context.__api, context, senate };
 }

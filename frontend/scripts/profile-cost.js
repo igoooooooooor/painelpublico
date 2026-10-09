@@ -84,7 +84,7 @@ function profileCostNotesHTML(data, personId) {
   const rows = notes.map(note => {
     const url = typeof profileSafeUrl === 'function' ? profileSafeUrl(note.documentUrl) : null;
     return `<li><span class="citizen-cost-note-who">${esc(note.fornecedor || 'Fornecedor não informado')}</span><b class="mono">${esc(money(note.valor))}</b>
-      <small>${esc(note.data ? note.data.split('-').reverse().join('/') : 'sem data')} · ${esc(note.categoria || '')}</small>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">Nota ↗</a>` : '<span class="muted">Sem link</span>'}</li>`;
+      <small>${esc(note.data ? dateBR(note.data) : 'sem data')} · ${esc(note.categoria || '')}</small>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">Nota ↗</a>` : '<span class="muted">Sem link</span>'}</li>`;
   }).join('');
   const complement = data.complemento ? `<p class="muted">À parte, fora desse total: complemento do auxílio-moradia, ${esc(money(data.complemento.valor))} em ${data.complemento.notas} ${data.complemento.notas === 1 ? 'nota' : 'notas'}.</p>` : '';
   const fileUrl = typeof profileSafeUrl === 'function' ? profileSafeUrl(data.fonte?.url) : null;

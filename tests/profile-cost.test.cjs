@@ -13,7 +13,7 @@ function load() {
     esc: value => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;'),
   };
   vm.createContext(context);
-  vm.runInContext(read('profile-data.js') + '\n' + read('profile-cost.js'), context);
+  vm.runInContext(read('dates.js') + '\n' + read('profile-data.js') + '\n' + read('profile-cost.js'), context);
   return context;
 }
 

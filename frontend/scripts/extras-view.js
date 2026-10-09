@@ -137,7 +137,7 @@ function activitySource(section, label = 'Conferir na fonte do Senado') {
   if (typeof profileSource === 'function') return profileSource(section, label);
   const url = typeof section.sourceUrl === 'string' ? section.sourceUrl : '';
   const href = /^https?:\/\//i.test(url) ? url : '';
-  return `<span class="src">${section.period ? `${esc(section.period)}. ` : ''}${section.fetchedAt ? `Fotografia: ${esc(String(section.fetchedAt).slice(0, 10))}. ` : ''}${href ? `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(label)} ↗</a>` : ''}</span>`;
+  return `<span class="src">${section.period ? `${esc(datesInTextBR(section.period))}. ` : ''}${section.fetchedAt ? `Fotografia: ${esc(dateBR(section.fetchedAt))}. ` : ''}${href ? `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(label)} ↗</a>` : ''}</span>`;
 }
 function senateLoading() {
   return typeof profileSenateLoading === 'function' && profileSenateLoading();
@@ -164,19 +164,19 @@ function profileExtras(id) {
       <div><span class="big">${presenceRecord.presente}</span> <span class="muted">sessões com presença registrada</span></div>
       ${sessionCount === null ? '' : `<p class="muted">${sessionCount} listas de sessões consultadas no recorte.</p>`}
       <p class="muted">A fonte deste recorte registra presenças; ausência de linha não confirma falta.</p>
-      ${presenceSource?.detail ? `<p class="muted">${esc(presenceSource.detail)}</p>` : ''}
+      ${presenceSource?.detail ? `<p class="muted">${esc(datesInTextBR(presenceSource.detail))}</p>` : ''}
       ${activitySource(presenceSource)}
-    </section>` : `<section class="card"><span class="k">Presença registrada · Senado</span>${loading ? (typeof skel === 'function' ? skel('linhas', 2) : '<i class="sk" style="display:block;width:100%;height:14px"></i>') : '<p class="muted">Sem dados de presença do Senado importados para este perfil. Ausência de registro não significa zero presença nem falta.</p>'}${presenceSource?.detail ? `<p class="muted">${esc(presenceSource.detail)}</p>` : ''}${activitySource(presenceSource)}</section>`;
+    </section>` : `<section class="card"><span class="k">Presença registrada · Senado</span>${loading ? (typeof skel === 'function' ? skel('linhas', 2) : '<i class="sk" style="display:block;width:100%;height:14px"></i>') : '<p class="muted">Sem dados de presença do Senado importados para este perfil. Ausência de registro não significa zero presença nem falta.</p>'}${presenceSource?.detail ? `<p class="muted">${esc(datesInTextBR(presenceSource.detail))}</p>` : ''}${activitySource(presenceSource)}</section>`;
     const voteList = votes.slice(0, extrasState.senateVoteLimit).map(({ vote, recordedVote }) => {
       const voteLabel = recordedVote === 'Presente' ? 'Presença registrada · sem voto' : recordedVote == null ? 'Sem registro importado' : String(recordedVote).toLowerCase();
-      const content = `<b>${esc(voteLabel)}</b><span>${esc(vote.titulo || vote.proposicao || 'Votação nominal')}</span>${vote.data ? `<small>${esc(vote.data)}</small>` : ''}`;
+      const content = `<b>${esc(voteLabel)}</b><span>${esc(vote.titulo || vote.proposicao || 'Votação nominal')}</span>${vote.data ? `<small>${esc(dateBR(vote.data))}</small>` : ''}`;
       return typeof profileVoteButton === 'function' ? profileVoteButton(vote, content, 'vt') : `<a class="vt" href="${esc(vote.sourceUrl || '')}" target="_blank" rel="noopener">${content}</a>`;
     }).join('');
     return `${presence}
     <section class="card"><span class="k">Votações nominais do Senado${votes.length ? ` · ${votes.length}` : ''}</span>
       ${loading && !voteSource ? (typeof skel === 'function' ? skel('linhas', 3) : '<i class="sk" style="display:block;width:100%;height:14px"></i>') : votes.length ? `<div class="votes">${voteList}</div>${votes.length > extrasState.senateVoteLimit ? `<button type="button" class="opt citizen-more" data-senate-votes-more>Mostrar mais (${votes.length - extrasState.senateVoteLimit})</button>` : ''}` : `<p class="muted">${voteSource ? 'Sem registros individuais de votação do Senado para este perfil.' : 'Votações nominais do Senado ainda não importadas.'}</p>`}
       <p class="muted">Votações secretas foram excluídas; a lista mostra somente votações nominais abertas e seus registros individuais.</p>
-      ${voteSource?.detail ? `<p class="muted">${esc(voteSource.detail)}</p>` : ''}
+      ${voteSource?.detail ? `<p class="muted">${esc(datesInTextBR(voteSource.detail))}</p>` : ''}
       ${activitySource(voteSource)}
       ${official ? `<a class="fchip" href="${esc(official)}" target="_blank" rel="noopener">Conferir perfil no Senado ↗</a>` : ''}
     </section>`;
@@ -317,7 +317,7 @@ function comparisonOffice(profile) {
   const months = Object.keys(office.months || {}).map(Number).filter(n => n >= 1 && n <= 12).sort((a, b) => a - b);
   const observed = months.length ? ` · meses: ${months.map(m => monthNames[m]).join(', ')}` : '';
   const staff = Number.isFinite(office.staffActive) ? `${office.staffActive} pessoas ativas` : 'equipe não informada';
-  const fetched = office.fetchedAt ? `fotografia ${String(office.fetchedAt).slice(0, 10)}` : 'fotografia sem data';
+  const fetched = office.fetchedAt ? `fotografia ${dateBR(office.fetchedAt)}` : 'fotografia sem data';
   return `${value} · ${esc(period)}${observed} · ${staff} · ${esc(fetched)}`;
 }
 function comparisonInfoRow(label, a, b) {
@@ -429,7 +429,7 @@ function comparisonTable([a, b]) {
     ${isSenateLoading ? (typeof skel === 'function' ? skel('linhas', 3) : '<i class="sk" style="display:block;width:100%;height:14px"></i>') : `<h2 class="h" style="font-size:21px">${voteSummary}</h2>
     ${voteRows || (voteChamber === 'senado' ? '<p class="muted">Sem votações nominais do Senado com registro para ambos neste recorte.</p>' : '')}
     ${votes.length > (extrasState.comparisonVoteLimit || 20) ? `<button type="button" class="opt citizen-more" data-cmp-votes-more>Mostrar mais (${votes.length - (extrasState.comparisonVoteLimit || 20)})</button>` : ''}`}
-    ${voteChamber === 'senado' ? `${senateVoteSource?.detail ? `<p class="muted">${esc(senateVoteSource.detail)}</p>` : ''}${activitySource(senateVoteSource, 'Fonte e período')}` : '<span class="muted">A comparação considera apenas votos registrados por ambos; ausência de registro não significa que a pessoa não votou.</span>'}
+    ${voteChamber === 'senado' ? `${senateVoteSource?.detail ? `<p class="muted">${esc(datesInTextBR(senateVoteSource.detail))}</p>` : ''}${activitySource(senateVoteSource, 'Fonte e período')}` : '<span class="muted">A comparação considera apenas votos registrados por ambos; ausência de registro não significa que a pessoa não votou.</span>'}
   </section>` : String(personA.id).split(':')[0] !== String(personB.id).split(':')[0] ? '<section class="card wide"><span class="k">Votações</span><p class="muted">Votações de casas diferentes não são comparadas.</p></section>' : ''}
   <span class="src">Destaque em roxo: quem gastou menos, teve menos alertas ou teve maior presença na Câmara. O Senado aparece como contagem de presenças registradas, sem ranking; votações entre casas não são comparadas. Gastos pelas notas da cota publicadas pela Câmara e pelo Senado (sem as passagens aéreas da Câmara).</span>`;
 }

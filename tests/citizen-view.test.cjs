@@ -12,7 +12,7 @@ const appSource = fs.readFileSync(
   path.join(__dirname, '..', 'frontend', 'scripts', 'app.script.js'),
   'utf8',
 );
-const profileSource = fs.readFileSync(
+const profileSource = fs.readFileSync(path.join(__dirname, '..', 'frontend', 'scripts', 'dates.js'), 'utf8') + '\n' + fs.readFileSync(
   path.join(__dirname, '..', 'frontend', 'scripts', 'profile-data.js'),
   'utf8',
 );
@@ -298,7 +298,7 @@ test('profile offers sharing with the same three answers on the card', () => {
   const card = vm.runInContext('SHARE_STATE.card', context);
   assert.deepEqual(Array.from(card.rows, row => row.label), ['Cota parlamentar por mês', 'Presença no Plenário em 2026', 'Gastos incomuns na cota']);
   assert.equal(card.rows[2].values[0], '1 alerta');
-  assert.match(card.footnote, /Retrato de 2026-10-07/);
+  assert.match(card.footnote, /Retrato de 07\/10\/2026/);
 });
 
 test('profile distinguishes missing cota from an observed zero and treats a difference under ten percent as similar', () => {
