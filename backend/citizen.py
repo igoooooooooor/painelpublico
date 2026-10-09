@@ -215,10 +215,18 @@ def _alert(db, signal, people, totals_cache):
                  else f'Meses acima da referência: {MONTHS[first["month"]]} a {MONTHS[marked[-1]["month"]]} de {year}')
         # Base publicada: 12 meses anteriores; resultados antigos (base anual) mantêm o texto da época.
         window = 'dos 12 meses anteriores' if detail.get('baseline', 'year') != 'year' else 'dos meses anteriores'
-        sentence = ' '.join(
-            f'Em {MONTHS[m["month"]]}, a cota somou {store_money(m["valueCents"] / 100)}; a referência {window} '
-            f'era {store_money(m["referenceCents"] / 100)} ({f"{m['multiple']:.1f}".replace(".", ",")} vezes).'
-            for m in marked)
+        times = lambda value: f'{value:.1f}'.replace('.', ',')
+        if len(marked) >= 3:
+            # Sequência longa: uma frase só; o valor e a referência de cada mês ficam no gráfico do cartão.
+            low, high = min(m['multiple'] for m in marked), max(m['multiple'] for m in marked)
+            sentence = (f'De {MONTHS[first["month"]]} a {MONTHS[marked[-1]["month"]]} de {year}, a cota ficou acima da referência '
+                        f'em {len(marked)} meses seguidos, de {times(low)} a {times(high)} vezes a mediana {window} de cada mês. '
+                        f'Nesses meses, somou {store_money(sum(m["valueCents"] for m in marked) / 100)}.')
+        else:
+            sentence = ' '.join(
+                f'Em {MONTHS[m["month"]]}, a cota somou {store_money(m["valueCents"] / 100)}; a referência {window} '
+                f'era {store_money(m["referenceCents"] / 100)} ({times(m["multiple"])} vezes).'
+                for m in marked)
         base.update({'referencia': first['referenceCents'] / 100, 'vezes': first['multiple'], 'mes': first['month'], 'ano': year,
                      'base': detail.get('baseline', 'year'),
                      'meses': [{'ano': year, 'mes': m['month'], 'valor': m['valueCents'] / 100, 'referencia': m['referenceCents'] / 100,

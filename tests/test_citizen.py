@@ -301,6 +301,17 @@ class PeakRuleTests(unittest.TestCase):
         self.assertEqual(radar['anos'], [{'ano': 2026, 'total': 1}])
         self.assertEqual(radar['periodo'], {'inicio': '2025-01', 'fim': '2026-06'})
 
+    def test_long_run_gets_one_summary_sentence(self):
+        months = [{'month': m, 'valueCents': v * 100, 'referenceCents': 4_000_000, 'multiple': v / 40000}
+                  for m, v in ((7, 80000), (8, 90000), (9, 100000))]
+        signal = {'id': 'pico:x', 'authorityId': 'camara:30', 'sourceId': 'camara_ceap', 'type': 'pico', 'amountCents': 27_000_000,
+                  'period': '2026-07', 'description': '', 'detail': json.dumps({'ruleVersion': 'cota-alertas-v3', 'baseline': 'rolling12',
+                  'year': 2026, 'months': months, 'floorCents': 0, 'series': [], 'partial': False})}
+        with closing(store.connect(self.db_path)) as db, db:
+            alert = citizen._alert(db, signal, {}, {})
+        self.assertEqual(alert['frase'], 'De julho a setembro de 2026, a cota ficou acima da referência em 3 meses seguidos, '
+                         'de 2,0 a 2,5 vezes a mediana dos 12 meses anteriores de cada mês. Nesses meses, somou R$ 270.000.')
+
     def test_history_notes_enter_the_alert_value_once_and_radar_filters_by_year(self):
         with closing(store.connect(self.db_path)) as db, db:
             hist = db.execute("SELECT COUNT(*) FROM signals WHERE type='fornecedor' AND period='2025'").fetchone()[0]

@@ -613,6 +613,10 @@ test('rolling peak chart shows the twelve-month window across years with year la
   assert.match(html, /referência: mediana dos 12 meses anteriores/);
   assert.match(html, /não avaliado: prazo das notas aberto \(mai\)/);
   assert.match(html, /mediana\) dos 12 meses anteriores, atravessando o ano/);
+  // A janela antes do primeiro mês marcado fica recolhida numa linha, com a mediana; os demais meses aparecem.
+  const [windowPart, rest] = html.split('</details>');
+  assert.match(windowPart, /<details class="citizen-peak-window">[\s\S]*12 meses anteriores <small>mar\/24–fev\/25<\/small>[\s\S]*mediana R\$ 5 mil/);
+  assert.equal((rest.match(/citizen-peak-month-name/g) || []).length, 3);
 });
 
 test('quota-only card says it is not comparable with the deputy mandate cost', () => {

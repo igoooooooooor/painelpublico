@@ -58,8 +58,10 @@ referência e múltiplo, piso, série do cartão com ano, mês e situação de c
 ou o motivo de não avaliação), data da coleta e se é parcial. A série é a janela usada como referência
 (os 12 meses antes do primeiro mês marcado, atravessando o ano), os meses marcados e até 3 meses
 seguintes com notas, para a linha de referência bater com a regra. O cartão só lê esses campos; nada é
-recalculado. O gráfico mostra uma linha por mês com o valor escrito (e o ano quando é outro, como
-"dez/23"): os meses deste alerta em destaque, com a própria referência na barra e o múltiplo ao lado;
+recalculado. A janela de referência aparece recolhida numa linha (período, miniatura e mediana), que abre
+mês a mês na mesma escala; assim os cartões de pico não ficam muito mais altos que os de concentração. O
+gráfico mostra uma linha por mês com o valor escrito (e o ano quando é outro, como "dez/23"): os meses
+deste alerta em destaque, com a própria referência na barra e o múltiplo ao lado;
 meses avaliados sem alerta em cinza (um mês marcado por outro alerta também); meses não avaliados
 esmaecidos, com o motivo na legenda.
 
@@ -215,4 +217,5 @@ Pendências antes de ampliar para o mandato:
 | 8/10/2026 | `cota-alertas-v3`: picos e concentração no mandato inteiro, Câmara e Senado, com a base de 12 meses; concentração segue por ano; lançamento de valor alto segue só no ano corrente | Implementa a decisão anterior; números iguais aos da simulação |
 | 8/10/2026 | Cartão de pico mostra a janela de 12 meses usada, os meses marcados e até 3 seguintes; alerta não atravessa o ano | A linha de referência precisa bater com a regra; a cota é anual |
 | 8/10/2026 | Alertas dos mais recentes aos mais antigos, com filtro por ano | Mais de mil alertas no mandato |
+| 8/10/2026 | Janela de referência recolhida no cartão; sequência de 3 meses ou mais com uma frase só | Cartões da mesma linha têm a mesma altura e o pico ocupava o dobro |
 | Em aberto | Pedido de acesso aos documentos do Senado | Investigação posterior |

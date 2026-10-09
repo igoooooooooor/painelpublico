@@ -144,18 +144,34 @@ function alertVisualization(a) {
       return `${MONTH_NAMES_LONG[s.mes]} de ${s.ano}: ${value}${note}`;
     }).join('; ');
     const rolling = a.base && a.base !== 'year';
-    return `<figure class="citizen-peak" role="img" aria-label="Gasto na cota por mês. ${esc(spoken)}.">
-      ${points.map(s => {
-        const m = marked.get(keyOf(s)), st = state(s), missing = s.valor == null;
-        const cls = st === 'flagged' ? ' hot' : st === 'evaluated' ? '' : ' skipped';
-        return `<div class="citizen-peak-month${cls}${missing ? ' missing' : ''}" aria-hidden="true">
+    const row = s => {
+      const m = marked.get(keyOf(s)), st = state(s), missing = s.valor == null;
+      const cls = st === 'flagged' ? ' hot' : st === 'evaluated' ? '' : ' skipped';
+      return `<div class="citizen-peak-month${cls}${missing ? ' missing' : ''}">
           <span class="citizen-peak-month-name">${label(s)}</span>
           <span class="citizen-peak-month-track">${missing ? '' : `<i style="width:${pct(s.valor)}"></i>`}${m && Number.isFinite(m.referencia) ? `<b class="citizen-peak-month-ref" style="left:${pct(m.referencia)}"></b>` : ''}</span>
           <span class="citizen-peak-month-value">${missing ? 'sem notas' : formatMonthAmount(s.valor)}</span>
           <span class="citizen-peak-month-times">${m && Number.isFinite(m.referencia) ? times(m.vezes ?? s.valor / m.referencia) : ''}</span>
         </div>`;
-      }).join('')}
-      <figcaption class="citizen-peak-key" aria-hidden="true"><span><i class="key-hot"></i>acima da referência</span><span><i class="key-ref"></i>${rolling ? 'referência: mediana dos 12 meses anteriores' : 'referência do mês'}</span>${skippedText ? `<span><i class="key-skipped"></i>não avaliado: ${esc(skippedText)}</span>` : ''}</figcaption>
+    };
+    /* Os meses antes do primeiro marcado formam a referência dele: ficam recolhidos numa linha com a mediana e
+       uma miniatura, para o cartão não crescer 12 linhas; abrindo, aparecem mês a mês na mesma escala. */
+    const firstMarked = points.findIndex(s => marked.has(keyOf(s)));
+    const windowPoints = firstMarked > 0 ? points.slice(0, firstMarked) : [];
+    const shown = firstMarked > 0 ? points.slice(firstMarked) : points;
+    const firstReference = firstMarked >= 0 ? marked.get(keyOf(points[firstMarked]))?.referencia : null;
+    const windowMax = Math.max(...windowPoints.map(s => s.valor || 0), 1);
+    const windowSummary = windowPoints.length ? `<details class="citizen-peak-window">
+        <summary><span class="citizen-peak-window-label">${windowPoints.length} ${windowPoints.length === 1 ? 'mês anterior' : 'meses anteriores'} <small>${[windowPoints[0], windowPoints[windowPoints.length - 1]].map(p => `${SHORT_MONTHS[p.mes]}/${String(p.ano).slice(2)}`).filter((v, i, all) => all.indexOf(v) === i).join('–')}</small></span>
+          <span class="citizen-peak-spark" aria-hidden="true">${windowPoints.map(s => `<i style="height:${s.valor == null ? 0 : Math.max(8, s.valor / windowMax * 100)}%"></i>`).join('')}</span>
+          ${Number.isFinite(firstReference) ? `<span class="citizen-peak-window-value">mediana ${formatMonthAmount(firstReference)}</span>` : ''}</summary>
+        <div aria-hidden="true">${windowPoints.map(row).join('')}</div>
+      </details>` : '';
+    return `<figure class="citizen-peak">
+      <figcaption class="sr-only">Gasto na cota por mês. ${esc(spoken)}.</figcaption>
+      ${windowSummary}
+      <div aria-hidden="true">${shown.map(row).join('')}</div>
+      <div class="citizen-peak-key" aria-hidden="true"><span><i class="key-hot"></i>acima da referência</span><span><i class="key-ref"></i>${rolling ? 'referência: mediana dos 12 meses anteriores' : 'referência do mês'}</span>${skippedText ? `<span><i class="key-skipped"></i>não avaliado: ${esc(skippedText)}</span>` : ''}</div>
     </figure>`;
   }
   if (a.tipo === 'fornecedor' && a.parte) {
