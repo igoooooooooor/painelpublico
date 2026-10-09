@@ -85,11 +85,43 @@ function scoreboardLegacyVisibleVotes() {
 function scoreboardCoverage(data) {
   const period = data?.period || {};
   const coverage = data?.coverage || {};
-  const range = period.start || period.end ? ` · ${scoreboardPeriodDate(period.start)} a ${scoreboardPeriodDate(period.end)}` : '';
+  const range = period.start || period.end ? `<p>Período consultado: ${scoreboardPeriodDate(period.start)} a ${scoreboardPeriodDate(period.end)}.</p>` : '';
+  const year = /^\d{4}-/.test(period.start || '') && period.start?.slice(0, 4) === period.end?.slice(0, 4) ? period.start.slice(0, 4) : '';
+  const timeframe = year ? `em ${year}` : 'no período consultado';
   const reviewed = scoreboardCount(coverage.reviewedCount);
+  const published = scoreboardCount(coverage.publishedCount);
   const pending = scoreboardCount(coverage.pendingCount);
+  const candidates = scoreboardCount(coverage.candidateCount);
+  const excluded = Number.isInteger(coverage.excludedCount) && coverage.excludedCount >= 0
+    ? `${scoreboardCount(coverage.excludedCount)} foram excluídos, cada um com o motivo e a fonte, e ` : '';
+  const inventory = scoreboardCount(coverage.inventoryCount);
+  const review = Number.isInteger(coverage.reviewedCount) && coverage.reviewedCount === coverage.candidateCount ? 'Revisamos todos' : `Revisamos ${reviewed}`;
+  const pendingNote = coverage.pendingCount === 0 ? 'Nenhum ficou pendente.' : `${pending} ainda estão pendentes.`;
+  const gapFields = ['missingTextCount', 'missingAbstentionCount', 'missingThemeCount'];
+  const hasGapCounts = gapFields.every(field => Number.isInteger(coverage[field]) && coverage[field] >= 0);
+  const gaps = [
+    [coverage.missingTextCount, 'votação não tem link seguro para o texto exato votado.', 'votações não têm link seguro para o texto exato votado.'],
+    [coverage.missingAbstentionCount, 'votação não tem a contagem de abstenções nas fontes que usamos.', 'votações não têm a contagem de abstenções nas fontes que usamos.'],
+    [coverage.missingThemeCount, 'votação não tem tema oficial.', 'votações não têm tema oficial.'],
+  ].filter(([count]) => Number.isInteger(count) && count >= 0)
+    .map(([count, singular, plural]) => `<li>${scoreboardCount(count)} ${count === 1 ? singular : plural}</li>`).join('');
   const detail = scoreboardText(coverage.detail);
-  return `<div class="scoreboard-coverage"><p>Cobertura nominal do Plenário${range} · ${reviewed} revisadas · ${pending} pendentes.</p>${detail ? `<details><summary>Sobre esta cobertura</summary><p>${scoreboardEscape(detail)}</p></details>` : ''}</div>`;
+  return `<div class="scoreboard-coverage"><h2 class="h">O que é o Placar</h2>
+    <p>Aqui estão votações da Câmara ${timeframe} em que os deputados votaram o texto principal de um projeto de lei ou de uma mudança na Constituição, com o voto de cada um registrado.</p>
+    <p>Escolhemos <strong>${published} votações</strong>, conferidas uma a uma. Elas não são tudo o que a Câmara votou ${year ? 'no ano' : 'no período'}. Um projeto aprovado aqui ainda pode não ter virado lei.</p>
+    ${range}
+    <details><summary>Como montamos este Placar</summary>
+      <p><strong>De onde vêm as votações.</strong> A Câmara publicou ${inventory} registros de votação ${timeframe}. Muitos são etapas do mesmo projeto: urgência, emendas, destaques, procedimentos e redação final. Ficamos só com as votações do texto principal de PL, PLP e PEC no Plenário. Votações simbólicas (sem registro de voto de cada deputado) e outros tipos de proposta ficam de fora.</p>
+      <p><strong>Como escolhemos.</strong> Dos ${inventory} registros, ${candidates} pareciam votações do texto principal. ${review}: ${excluded}${published} entraram no Placar. ${pendingNote}</p>
+      <p><strong>Limites.</strong></p>
+      <ul>${gaps}
+        <li>O Placar ainda não cobre todo o mandato${year ? `, só ${year}` : ''}.</li>
+        <li>O tema é o que a Câmara atribui ao projeto.</li>
+        <li>Dado ausente não significa zero.</li>
+        <li>O resultado mostrado é o daquela votação, não a situação atual do projeto.</li>
+      </ul>
+      ${!hasGapCounts && detail ? `<p>${scoreboardEscape(detail)}</p>` : ''}
+    </details></div>`;
 }
 function scoreboardLegacyCard(vote) {
   const id = scoreboardText(vote.id);
@@ -155,7 +187,7 @@ function scoreboardVotesView() {
   const empty = list.status === 'ready' && !fallback && items.length === 0 || fallback && legacyVotes.length === 0
     ? '<p class="card scoreboard-empty">Nenhuma votação encontrada com esses filtros.</p>' : '';
   const paginationData = fallback ? null : data;
-  return `${pageHead('Câmara · Plenário', 'Placar', fallback ? 'Consulte as votações selecionadas e suas fontes oficiais.' : 'Consulte decisões nominais sobre propostas e veja o registro de cada voto.')}
+  return `${pageHead('Câmara · Plenário', 'Placar', fallback ? 'Consulte as votações selecionadas e suas fontes oficiais.' : 'Veja o que foi decidido sobre o texto principal dos projetos e como cada deputado votou.')}
     ${data ? scoreboardCoverage(data) : ''}
     ${unavailableNote}
     ${scoreboardFilterForm(data, fallback)}
@@ -164,7 +196,7 @@ function scoreboardVotesView() {
     ${result ? scoreboardPagination(paginationData, fallback ? legacyVotes.length : Number(data?.total) || 0) : ''}
     <span class="src">Fonte: Câmara dos Deputados · dados abertos do Plenário.</span>`;
 }
-function scoreboardDetailSources(sources) {
+function scoreboardDetailSources(sources, dataNotes) {
   const source = sources || {};
   const links = [
     scoreboardSourceLink(source.vote, 'Registro da votação'),
@@ -173,7 +205,9 @@ function scoreboardDetailSources(sources) {
     scoreboardSourceLink(source.decision, 'Decisão na Câmara'),
     scoreboardSourceLink(source.proposition, 'Ficha da proposição'),
   ].filter(Boolean);
-  return links.length ? `<section class="card"><span class="k">Fontes oficiais</span><div class="scoreboard-source-links">${links.join('')}</div></section>` : '<section class="card"><span class="k">Fontes oficiais</span><p class="muted">Links oficiais não informados para esta votação.</p></section>';
+  const notes = Array.isArray(dataNotes) ? dataNotes.filter(note => typeof note === 'string').map(note => `<p class="muted">${scoreboardEscape(note)}</p>`).join('') : '';
+  const missingText = source.text === null ? '<p class="muted">O link seguro para o texto exato votado ainda não está disponível. O relatório e o registro da decisão permanecem nas fontes.</p>' : '';
+  return `<section class="card"><span class="k">Fontes oficiais</span>${links.length ? `<div class="scoreboard-source-links">${links.join('')}</div>` : '<p class="muted">Links oficiais não informados para esta votação.</p>'}${missingText}${notes}</section>`;
 }
 function scoreboardParticipants(participants) {
   const search = typeof document !== 'undefined' ? document.querySelector('[data-scoreboard-participant-search]')?.value || '' : '';
@@ -225,7 +259,7 @@ function scoreboardDetailView() {
     <section class="card"><span class="k">O que foi decidido</span><h2 class="h">${scoreboardEscape(vote.decisionLabel || 'Decisão não informada')}</h2>${vote.summary ? `<p>${scoreboardEscape(vote.summary)}</p>` : '<p class="muted">Resumo não informado para esta versão.</p>'}<p class="scoreboard-outcome">${scoreboardEscape(outcome)}</p></section>
     <section class="card scoreboard-meaning"><div><span class="k">Sim significava</span><p>${scoreboardEscape(vote.yesMeaning || 'Informação não disponível neste registro.')}</p></div><div><span class="k">Não significava</span><p>${scoreboardEscape(vote.noMeaning || 'Informação não disponível neste registro.')}</p></div></section>
     <section class="card"><span class="k">Resultado desta votação</span><dl class="scoreboard-tally"><div><dt>Sim</dt><dd>${scoreboardCount(tally.yes)}</dd></div><div><dt>Não</dt><dd>${scoreboardCount(tally.no)}</dd></div><div><dt>Abstenção</dt><dd>${scoreboardCount(tally.abstention)}</dd></div><div><dt>Total</dt><dd>${scoreboardCount(tally.total)}</dd></div></dl><p class="muted">${scoreboardEscape(outcome)}. O resultado se refere a esta decisão registrada.</p></section>
-    ${scoreboardDetailSources(vote.sources)}
+    ${scoreboardDetailSources(vote.sources, vote.dataNotes)}
     ${hasParticipants ? scoreboardParticipants(payload.participants) : '<section class="card scoreboard-voters"><span class="k">Votos individuais</span><p class="muted">A lista individual não está disponível para esta votação.</p></section>'}
     ${scoreboardPartyTotals(payload.partyTotals)}
     <span class="src">Fonte: Câmara dos Deputados · revisão em ${scoreboardEscape(scoreboardPeriodDate(vote.reviewedAt))}. O resultado descreve esta votação, sem indicar a situação atual da proposta.</span>`;

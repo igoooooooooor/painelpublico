@@ -59,7 +59,7 @@ test('the home makes no Placar request; entering the view loads the catalogue', 
   await flush();
   assert.equal(calls.length, 1);
   assert.match(calls[0], /^\/api\/c\/votes\?/);
-  assert.match(app.innerHTML, /Cobertura nominal do Plenário/);
+  assert.match(app.innerHTML, /O que é o Placar/);
 });
 
 test('filter parameters, coverage counts and page navigation follow the API result', async () => {
@@ -75,12 +75,36 @@ test('filter parameters, coverage counts and page navigation follow the API resu
   assert.match(calls.at(-1), /q=benef%C3%ADcio/);
   assert.match(calls.at(-1), /type=PL/);
   assert.match(calls.at(-1), /theme=tributos/);
-  assert.match(app.innerHTML, /40 revisadas · 155 pendentes/);
+  assert.match(app.innerHTML, /7 votações/);
+  assert.match(app.innerHTML, /Revisamos 40/);
+  assert.match(app.innerHTML, /155 ainda estão pendentes/);
   assert.match(app.innerHTML, /Página 1 de 3 · 25 votações/);
   await vm.runInContext('scoreboardHandlePage(2)', context);
   assert.match(calls.at(-1), /page=2/);
   assert.match(app.innerHTML, /Votação da página 2/);
   assert.match(app.innerHTML, /Página 2 de 3 · 25 votações/);
+});
+
+test('coverage distinguishes exclusions from pending decisions without inventing missing counts', async () => {
+  const { context } = loadApp();
+  const legacy = vm.runInContext(`scoreboardCoverage(${JSON.stringify(listPayload())})`, context);
+  assert.doesNotMatch(legacy, /foram excluídos/);
+  const data = listPayload();
+  data.coverage = { ...data.coverage, reviewedCount: 162, excludedCount: 150, pendingCount: 5 };
+  const current = vm.runInContext(`scoreboardCoverage(${JSON.stringify(data)})`, context);
+  assert.match(current, /7 votações/);
+  assert.match(current, /Revisamos todos: 150 foram excluídos, cada um com o motivo e a fonte, e 7 entraram no Placar/);
+  assert.match(current, /5 ainda estão pendentes/);
+});
+
+test('official source notes preserve report fallback provenance and escape external text', () => {
+  const { context } = loadApp();
+  const html = vm.runInContext(`scoreboardDetailSources({}, ${JSON.stringify([
+    'Votos conferidos no relatório nominal; Dados Abertos sem linhas.', '<script>alert(1)</script>'
+  ])})`, context);
+  assert.match(html, /Votos conferidos no relatório nominal; Dados Abertos sem linhas/);
+  assert.match(html, /&lt;script&gt;/);
+  assert.doesNotMatch(html, /<script>/);
 });
 
 test('stale catalogue responses cannot replace the newest filter result', async () => {

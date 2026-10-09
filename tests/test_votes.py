@@ -87,6 +87,49 @@ class VoteSnapshotTests(unittest.TestCase):
         self.assertNotIn('participants', serialized)
         self.assertNotIn('partyTotals', serialized)
 
+    def test_optional_exclusion_count_preserves_old_snapshots_and_validates_new_coverage(self):
+        self.assertNotIn('excludedCount', votes.listing({}, self.index)['coverage'])
+        data = snapshot(self.items)
+        data['coverage'].update(candidateCount=160, reviewedCount=150,
+                                excludedCount=147, pendingCount=10)
+        self.write(self.index, data)
+        result = votes.listing({}, self.index)
+        self.assertTrue(result['available'])
+        self.assertEqual(result['coverage']['excludedCount'], 147)
+
+        for value in (None, -1, True, '147', 146, 148):
+            with self.subTest(excludedCount=value):
+                data['coverage']['excludedCount'] = value
+                self.write(self.index, data)
+                self.assertFalse(votes.listing({}, self.index)['available'])
+
+        data['coverage'].update(excludedCount=147, reviewedCount=149)
+        self.write(self.index, data)
+        self.assertFalse(votes.listing({}, self.index)['available'])
+
+    def test_optional_missing_coverage_counts_preserve_old_snapshots_and_validate_new_coverage(self):
+        keys = ('missingTextCount', 'missingAbstentionCount', 'missingThemeCount')
+        coverage = votes.listing({}, self.index)['coverage']
+        for key in keys:
+            self.assertNotIn(key, coverage)
+
+        data = snapshot(self.items)
+        data['coverage'].update(missingTextCount=3, missingAbstentionCount=2, missingThemeCount=1)
+        self.write(self.index, data)
+        result = votes.listing({}, self.index)
+        self.assertTrue(result['available'])
+        for key, value in zip(keys, (3, 2, 1)):
+            with self.subTest(key=key):
+                self.assertEqual(result['coverage'][key], value)
+
+        for key in keys:
+            for value in (None, -1, True, '1', 4):
+                with self.subTest(key=key, value=value):
+                    data['coverage'][key] = value
+                    self.write(self.index, data)
+                    self.assertFalse(votes.listing({}, self.index)['available'])
+            data['coverage'][key] = 0
+
     def test_text_source_may_be_null_and_optional_decision_source_is_preserved(self):
         item = dict(self.items[0])
         item['sources'] = {**item['sources'], 'text': None,
@@ -109,6 +152,15 @@ class VoteSnapshotTests(unittest.TestCase):
         del item['sources']['text']
         self.write(self.index, snapshot([item]))
         self.assertFalse(votes.listing({}, self.index)['available'])
+
+    def test_optional_source_notes_are_preserved_and_invalid_notes_reject_the_snapshot(self):
+        item = {**self.items[0], 'dataNotes': ['Votos conferidos no relatório nominal oficial.']}
+        self.write(self.index, snapshot([item]))
+        self.assertEqual(votes.listing({}, self.index)['items'][0]['dataNotes'], item['dataNotes'])
+        for notes in (None, 'note', [''], [42], ['x' * 501], ['note'] * 5):
+            with self.subTest(notes=notes):
+                self.write(self.index, snapshot([{**item, 'dataNotes': notes}]))
+                self.assertFalse(votes.listing({}, self.index)['available'])
 
     def test_detail_reads_per_vote_file_only_when_requested_and_handles_unavailable_details(self):
         details_path = self.root / votes.DETAILS_DIRECTORY / '2611313-31.json'

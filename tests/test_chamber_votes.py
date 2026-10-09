@@ -83,6 +83,20 @@ def review(*, identifier=VOTE_ID, proposition_id=42):
     }
 
 
+def roll_call_html(*, day="09/10/2026", number=1, choices=("Sim", "Sim", "Não")):
+    rows = "".join(f"<tr><td>Deputado {index}</td><td>SP</td><td>{choice}</td></tr>"
+                   for index, choice in enumerate(choices, 1))
+    return (f"<p>SESSÃO EXTRAORDINÁRIA Nº 1 - {day}</p>"
+            f"<p>Abertura da sessão: {day} 11:00<br>Encerramento da sessão: {day} 13:00</p>"
+            f"<p>Proposição: PL Nº {number}/2026 - SUBEMENDA SUBSTITUTIVA - Nominal Eletrônica</p>"
+            f"<p>Início da votação: {day} 12:00<br>Encerramento da votação: {day} 12:10</p>"
+            '<div id="listaVotacao"><table><tr><th>Sim:</th><td>2</td></tr>'
+            '<tr><th>Não:</th><td>1</td></tr><tr><th>Total da Votação:</th><td>3</td></tr></table></div>'
+            '<div id="listagem"><table><thead><tr><th>Parlamentar</th><th>UF</th><th>Voto</th></tr></thead>'
+            f'<tbody><tr><th colspan="3">ABC</th></tr>{rows}'
+            f'<tr><td colspan="3">Total ABC: {len(choices)}</td></tr></tbody></table></div>').encode("utf-8")
+
+
 class FakeChamberAPI:
     """Small offline fixture for the API and HTML routes used by the builder."""
 
@@ -120,6 +134,8 @@ class FakeChamberAPI:
             return encoded(self.participant_pages[page])
         if parsed.path.startswith("/api/v2/proposicoes/") and parsed.path.endswith("/temas"):
             return encoded({"dados": self.themes, "links": []})
+        if parsed.path == "/api/v2/deputados":
+            return encoded({"dados": [participant(i, "Sim")["deputado_"] for i in (1, 2, 3)], "links": []})
         raise AssertionError(f"Consulta inesperada: {url}")
 
 
@@ -177,6 +193,51 @@ class ChamberVotesTests(unittest.TestCase):
         unsafe["sources"]["decision"] = "https://example.org/decision"
         with self.assertRaisesRegex(CollectionError, "link oficial da Câmara"):
             self.build([unsafe])
+
+    def test_excluded_candidates_require_an_auditable_review_and_are_not_pending(self):
+        excluded = {
+            "id": VOTE_ID, "status": "excluded", "reviewedAt": THROUGH,
+            "reason": "Decisão simbólica, fora do recorte nominal.",
+            "sources": {"decision": "https://www.camara.leg.br/atividade-legislativa/plenario"},
+            "evidence": {"method": "O registro da sessão identifica votação simbólica."},
+        }
+        snapshot, details = self.build([excluded])
+        self.assertEqual(snapshot["items"], [])
+        self.assertEqual(details, {})
+        self.assertEqual(snapshot["coverage"]["reviewedCount"], 1)
+        self.assertEqual(snapshot["coverage"]["excludedCount"], 1)
+        self.assertEqual(snapshot["coverage"]["pendingCount"], 0)
+        self.assertEqual(self.api.calls, [])
+
+        for field in ("reason", "reviewedAt", "sources", "evidence"):
+            invalid = {key: value for key, value in excluded.items() if key != field}
+            with self.subTest(field=field), self.assertRaisesRegex(CollectionError, "exclusão sem"):
+                self.build([invalid])
+        excluded["sources"]["decision"] = "https://example.org/report"
+        with self.assertRaisesRegex(CollectionError, "link oficial da Câmara"):
+            self.build([excluded])
+
+    def test_coverage_separates_published_excluded_and_unresolved_candidates(self):
+        vote_inventory = inventory()
+        vote_inventory["candidateCount"] = 4
+        vote_inventory["voteCount"] = 4
+        vote_inventory["entries"].extend([
+            {"id": "123-2", "date": THROUGH, "candidate": True},
+            {"id": "123-3", "date": THROUGH, "candidate": True},
+            {"id": "123-4", "date": THROUGH, "candidate": True},
+        ])
+        excluded = {
+            "id": "123-2", "status": "excluded", "reviewedAt": THROUGH,
+            "reason": "Votação simbólica.", "sources": {"decision": ROLL_CALL_URL},
+            "evidence": {"method": "Simbólica no registro da sessão."},
+        }
+        pending = {"id": "123-3", "status": "pending", "reason": "Método sem confirmação."}
+        snapshot, _ = self.build([review(), excluded, pending], vote_inventory=vote_inventory)
+        coverage = snapshot["coverage"]
+        self.assertEqual(coverage["publishedCount"], 1)
+        self.assertEqual(coverage["excludedCount"], 1)
+        self.assertEqual(coverage["pendingCount"], 2)
+        self.assertEqual(coverage["reviewedCount"], 3)
 
     def test_confirmed_main_decisions_for_pl_plp_and_pec_build_a_summary_and_separate_detail(self):
         for proposition_type in ("PL", "PLP", "PEC"):
@@ -241,6 +302,63 @@ class ChamberVotesTests(unittest.TestCase):
         report_path.write_bytes(b"tampered report")
         with self.assertRaisesRegex(CollectionError, "fonte nominal ainda não coletada"):
             self.build(collect=False, api=lambda _: self.fail("cache adulterado tentou acessar a rede"))
+
+    def test_reviewed_report_fills_missing_api_tally_and_empty_voters_with_source_notes(self):
+        vote_detail = detail(description="Aprovada a Subemenda Substitutiva ao Projeto de Lei nº 1, de 2026.")
+        vote_detail["dataHoraRegistro"] = f"{THROUGH}T12:10:20"
+        api = FakeChamberAPI(vote_detail=vote_detail, report=roll_call_html(),
+                             participant_pages={1: {"dados": [], "links": []}})
+        reviewed = {**review(), "tallySource": "rollCall", "participantsSource": "rollCall",
+                    "reportObject": "SUBEMENDA SUBSTITUTIVA"}
+        snapshot, details = self.build([reviewed], api=api)
+        item = snapshot["items"][0]
+        self.assertEqual(item["tally"], {"yes": 2, "no": 1, "abstention": None, "total": 3})
+        self.assertEqual(len(details[VOTE_ID]["participants"]), 3)
+        self.assertEqual(details[VOTE_ID]["participants"][0]["id"], "camara:1")
+        metadata = details[VOTE_ID]["sourceMetadata"]
+        self.assertEqual(metadata["participantsOrigin"], "rollCall")
+        self.assertTrue(metadata["identities"])
+        self.assertEqual(len(item["dataNotes"]), 2)
+        self.build([reviewed], collect=False, api=lambda _: self.fail("fallback offline tentou a rede"))
+
+    def test_report_fallback_requires_explicit_review_and_matching_decision(self):
+        vote_detail = detail(description="Aprovada a Subemenda Substitutiva ao Projeto de Lei nº 1, de 2026.")
+        vote_detail["dataHoraRegistro"] = f"{THROUGH}T12:10:20"
+        api = FakeChamberAPI(vote_detail=vote_detail, report=roll_call_html(),
+                             participant_pages={1: {"dados": [], "links": []}})
+        with self.assertRaisesRegex(CollectionError, "placar nominal não conferido"):
+            self.build(api=api)
+        reviewed = {**review(), "tallySource": "rollCall", "participantsSource": "rollCall",
+                    "reportObject": "SUBEMENDA SUBSTITUTIVA"}
+        for changes in ({"reportObject": "DESTAQUE"}, {"tallySource": "other"}):
+            with self.subTest(changes=changes), self.assertRaises(CollectionError):
+                self.build([{**reviewed, **changes}], api=api)
+        for report in (roll_call_html(day="08/10/2026"), roll_call_html(number=2)):
+            api.report = report
+            with self.assertRaisesRegex(CollectionError, "relatório não corresponde"):
+                self.build([reviewed], api=api, refresh=True)
+
+    def test_report_fallback_rejects_disagreement_with_available_api_counts(self):
+        vote_detail = detail(description="Aprovada a Subemenda Substitutiva ao Projeto de Lei nº 1. "
+                             "Sim: 3; Não: 0; Total: 3.")
+        vote_detail["dataHoraRegistro"] = f"{THROUGH}T12:10:20"
+        api = FakeChamberAPI(vote_detail=vote_detail, report=roll_call_html())
+        reviewed = {**review(), "tallySource": "rollCall", "reportObject": "SUBEMENDA SUBSTITUTIVA"}
+        with self.assertRaisesRegex(CollectionError, "placar da API diverge"):
+            self.build([reviewed], api=api)
+
+    def test_report_fallback_preserves_known_api_abstention_when_the_report_omits_it(self):
+        vote_detail = detail(description=DESCRIPTION + " Abstenção: 0.")
+        vote_detail["dataHoraRegistro"] = f"{THROUGH}T12:10:20"
+        api = FakeChamberAPI(vote_detail=vote_detail, report=roll_call_html(),
+                             participant_pages={1: {"dados": [], "links": []}})
+        reviewed = {**review(), "tallySource": "rollCall", "participantsSource": "rollCall",
+                    "reportObject": "SUBEMENDA SUBSTITUTIVA"}
+        snapshot, _ = self.build([reviewed], api=api)
+        self.assertEqual(snapshot["items"][0]["tally"]["abstention"], 0)
+        vote_detail["descricao"] = "Aprovada a Subemenda Substitutiva ao Projeto. Não: 2."
+        with self.assertRaisesRegex(CollectionError, "placar da API diverge"):
+            self.build([reviewed], api=api, refresh=True)
 
     def test_failed_refresh_preserves_previous_roll_call_source_and_metadata(self):
         self.build()

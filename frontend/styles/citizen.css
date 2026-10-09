@@ -651,6 +651,8 @@ nav.tabs button svg { flex: none; }
 /* Placar nominal ampliado */
 .scoreboard-coverage { color: var(--muted); font-size: 13px; }
 .scoreboard-coverage > p { margin: 0; }
+.scoreboard-coverage > p + p { margin-top: var(--space-2); }
+.scoreboard-coverage ul { padding-left: 20px; line-height: 1.45; }
 .scoreboard-coverage details { margin-top: 4px; }
 .scoreboard-coverage summary { width: fit-content; min-height: 32px; display: flex; align-items: center; cursor: pointer; color: var(--ink-2); font-weight: 600; }
 .scoreboard-coverage details p { margin: 4px 0 0; line-height: 1.45; }

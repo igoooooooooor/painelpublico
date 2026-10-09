@@ -20,6 +20,14 @@ separados; emendas e destaques também. Redação final é outra etapa, não um
 sinônimo de aprovação do mérito. MPV, PLV, PDL e PRC ficam fora deste primeiro
 recorte; essa limitação deve aparecer na página de cobertura.
 
+A interface mantém “O que é o Placar” sempre visível, com a quantidade de votações
+conferidas uma a uma e o período consultado. “Como montamos este Placar” fica
+recolhido e explica os registros de várias etapas e matérias, os critérios,
+as exclusões, pendências e lacunas. O inventário não é só de votações nominais,
+e a seleção não classifica as decisões por importância. Não chamar os itens de “decisões finais”:
+uma votação do texto principal pode ser uma etapa da tramitação e não comprova
+que o projeto virou lei. A quantidade do Placar não mede toda a produção da Câmara.
+
 ## O que a fonte permite afirmar
 
 A [documentação da Câmara](https://dadosabertos.camara.leg.br/howtouse/2020-02-07-dados-votacoes.html)
@@ -72,6 +80,15 @@ candidatos com placar explícito, dos mais recentes aos mais antigos; depois,
 os demais candidatos. Esses limites escolhem a conferência, não o catálogo
 final. `--detail-limit` e `--participant-limit` permitem ampliar a amostra.
 Contagens não publicadas continuam ausentes, inclusive abstenções.
+
+Para incluir descrições desconhecidas na conferência de detalhes, use
+`--audit-unknown` e ajuste `--detail-limit`. A opção não publica registros nem
+transforma descrições genéricas em votos do texto principal. A revisão adicional
+de 9/10 usa a regra `chamber-vote-inventory-v2`: requerimentos e recursos
+explicitamente nomeados são procedimentos; resultados genéricos de manutenção,
+supressão ou empate só viram destaques quando a abertura identifica o DTQ.
+Preferência entre textos continua sendo procedimento. A ressalva “com exceção
+dos dispositivos rejeitados” não oculta a aprovação de um substitutivo inteiro.
 
 Nos votos individuais, todas as páginas são lidas. IDs duplicados com escolhas
 conflitantes são recusados; Sim, Não e Abstenção são comparados separadamente
@@ -168,7 +185,7 @@ e [ficha e tramitação](https://www.camara.leg.br/proposicoesWeb/fichadetramita
 O rascunho não repete a regra de 10% ligada ao Propag do cartão antigo: esse
 efeito precisa ser conferido no substitutivo antes de reaproveitar o resumo.
 
-## Catálogo local de 2026
+## Primeiro lote do catálogo local de 2026
 
 Os 19 candidatos com placar explícito passaram por conferência do relatório
 nominal, da data, do resultado e da versão identificada na decisão oficial.
@@ -179,7 +196,16 @@ não recebem um voto inventado.
 A revisão fica em `data/reviews/chamber-vote-reviews-2026-10-09.json`, fora do
 Git, com ID, status, data da revisão, título, resumo, significados de Sim/Não,
 links oficiais e evidências do método e da versão. Status `pending` exige um
-motivo e não publica o item. Confirmar o objeto pelo relatório e pela sessão
+motivo e não publica o item. Status `excluded` exige motivo, data, fonte oficial
+e evidência; também não publica o item. A cobertura separa publicadas, excluídas
+e pendentes, incluindo candidatos ainda não revisados entre as pendências.
+`reviewedCount` conta candidatos com revisão registrada, inclusive pendências;
+não é uma quantidade de decisões nominais. O novo campo `excludedCount` é
+opcional para manter a leitura dos snapshots anteriores, sem tratar sua ausência
+como uma contagem zero. `missingTextCount`, `missingAbstentionCount` e
+`missingThemeCount` também são contagens opcionais, calculadas sobre os resumos
+publicados e usadas na lista de limites. Cada contagem fica entre zero e
+`publishedCount`; ausência do campo não vira zero. Confirmar o objeto pelo relatório e pela sessão
 não autoriza atribuir efeitos específicos de uma ementa anterior. Quando não
 há link seguro para o texto daquela versão, `sources.text` fica ausente como
 valor (`null`); a página mantém o relatório e o registro da decisão.
@@ -220,13 +246,124 @@ presentes; não é um total de votos de mérito. Quatro decisões não têm link
 para o texto exato, nove não publicam a contagem de abstenções na descrição da
 API e uma não tem tema oficial. Essas lacunas permanecem explícitas, sem zeros
 ou links inferidos.
-Os outros **143 candidatos provisórios** aguardam revisão; podem incluir decisões
+Nesse primeiro lote, os outros **143 candidatos provisórios** aguardavam revisão; podiam incluir decisões
 simbólicas e itens que serão excluídos após conferir o método e o objeto.
 O fato de as 19 decisões deste lote terem sido aprovadas é uma observação das
 fontes, não um critério de inclusão. A regra também admite não aprovações.
 
+## Conferência de método e objeto na continuação
+
+A revisão adicional consulta o [portal de votação nominal e simbólica](https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82956)
+de cada sessão e, quando necessário, as [notas taquigráficas oficiais](https://escriba.camara.leg.br/escriba-servicosweb/html/82956).
+A opção do portal precisa corresponder à proposição, ao objeto e à sessão;
+um destaque nominal não torna nominal a votação adjacente do substitutivo.
+A ausência de opção ou relatório não comprova votação simbólica e mantém a
+pendência quando nenhuma outra fonte resolve o método.
+
+Nas notas, a chamada para os favoráveis permanecerem como se acham seguida da
+proclamação do resultado identifica o processo simbólico descrito no
+[art. 185 do Regimento Interno](https://www2.camara.leg.br/legin/fed/rescad/1989/resolucaodacamaradosdeputados-17-21-setembro-1989-320110-normaatualizada-pl.html).
+É preciso conferir o trecho do objeto correto e eventual verificação nominal
+posterior. Por exemplo, na sessão de 2/9/2026 o presidente iniciou a chamada
+para registrar votos do substitutivo ao PL 3.904/2023, mas em seguida mudou
+explicitamente para votação simbólica. O registro dessa decisão não entra no
+catálogo nominal.
+
+Os 157 registros inicialmente desconhecidos receberam revisão individual:
+105 eram procedimentos, 51 eram destaques ou uma subemenda ao substitutivo,
+e um era a votação simbólica do substitutivo do Senado ao PL 3.780/2023.
+Esse último passa a candidato provisório na regra v2 e é excluído pelo método
+confirmado nas notas; a votação nominal do DTQ 7 permanece separada.
+Os relatórios locais preservam a coorte inicial para que os números de etapas
+diferentes não sejam confundidos.
+
+Uma decisão adicional foi confirmada como nominal eletrônica: a subemenda
+substitutiva ao PL 1.625/2026, de 20/5/2026. O
+[relatório nominal](https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13735)
+publica 268 Sim, 113 Não e total de 381. A descrição dos Dados Abertos não traz
+o placar e a consulta individual devolve uma lista vazia. Isso não foi tratado
+como zero votos: os 381 registros foram lidos do relatório e ligados, sem
+aproximação de nomes, a IDs únicos na lista oficial de deputados da mesma data,
+usando nome e UF. Abstenções não publicadas continuam como `null`.
+
+Esse caminho exige revisão explícita com `tallySource: "rollCall"`,
+`participantsSource: "rollCall"` e `reportObject`. O parser confere método,
+proposição, objeto, data, horário final, placar e cada registro; identidade
+ausente ou ambígua interrompe a geração. Uma lista parcial ou uma consulta
+que falhou não é substituída silenciosamente. Os caches preservam também a
+resposta vazia da API e a lista de identidade; não alteram o conteúdo original
+da fonte. O novo campo opcional `dataNotes` informa essa origem ao abrir a
+decisão, mantendo a compatibilidade com os resumos anteriores.
+
+## Resultado consolidado de 9/10/2026
+
+Os 143 candidatos restantes do primeiro lote foram revisados: 142 excluídos e
+uma nova decisão nominal confirmada. Somados aos 157 registros inicialmente
+desconhecidos, são 300 revisões adicionais, com fontes e motivos locais.
+A regra v2 retira quatro requerimentos de dispensa de interstício da lista de
+candidatos e acrescenta provisoriamente o substitutivo do Senado ao PL 3.780,
+depois excluído como simbólico. Por isso o denominador atualizado é **159**,
+em vez dos 162 da triagem inicial.
+
+| Triagem v2 após os detalhes | Registros |
+| --- | ---: |
+| Texto principal, incluindo tipos fora da v1 | 204 |
+| Emenda ou destaque | 129 |
+| Procedimento | 814 |
+| Redação final | 192 |
+| Descrição ainda sem classificação segura | 0 |
+| Total retornado pela lista | 1.339 |
+
+Dos 159 candidatos, **20 decisões nominais estão no catálogo local**, 139 foram
+excluídas com fonte e nenhuma segue pendente de método ou objeto. O catálogo tem
+**8.240 registros individuais**, incluindo presidência e obstrução quando
+presentes. Isso não é uma quantidade de votos de mérito nem prova de completude
+dos registros oficiais do ano.
+
+Três links exatos antes pendentes foram recuperados: o substitutivo ao PLP 80/2026
+e a subemenda ao PLP 337/2017 estão anexados a pareceres; o PLP 262/2019 teve o
+projeto principal votado antes de sua emenda separada. Seus resumos agora usam
+conteúdo verificado dessas versões.
+
+A conferência seguinte também resolveu o SBT 1 do PL 4.133/2023. A
+[ficha do SBT 1, ID 2633548](https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2633548)
+e sua API vinculam explicitamente o objeto ao [PDF codteor 3148936](https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3148936#page=11),
+com o substitutivo completo nas páginas 11–28. As [notas da sessão 120, evento 82555](https://escriba.camara.leg.br/escriba-servicosweb/html/82555)
+identificam esse substitutivo como objeto da votação e confirmam o resultado
+308 Sim, 129 Não e uma abstenção. O registro do parecer às 17:26 e do SBT às
+18:15 não demonstra versões diferentes: os registros oficiais ligam ambos ao
+mesmo arquivo antes da votação das 18:37–18:53.
+
+A auditoria anterior errou ao tratar o artigo sobre defesa do mercado interno
+como novo na redação final: ele já está na página 22 do substitutivo, conferida
+visualmente. A redação final tem diferenças e não foi usada como texto votado;
+o vínculo seguro é com o SBT registrado. As fontes, a correção e os insumos
+anteriores ficam em `data/reviews/pl4133-exact-text-followup/`, fora do Git.
+
+Há **zero decisões sem texto exato ligado**, **dez sem contagem publicada de
+abstenções** nas fontes do placar e **uma sem tema oficial**.
+
+A reprodução offline da triagem usa 215 detalhes selecionados pelas regras
+atuais e 19 consultas de votos individuais, sem falhas; os caches e as auditorias
+guardam também os detalhes dos 319 registros das coortes originalmente revistas.
+O vigésimo conjunto individual é o relatório nominal do PL 1.625, com a resposta
+vazia da API preservada e a lista oficial de identidade em seis páginas.
+
+```sh
+python3 -m ingest.chamber_vote_inventory --year 2026 --through 2026-10-09 \
+  --detail-limit 400 --participant-limit 19 --audit-unknown
+python3 -m ingest.chamber_votes --through 2026-10-09
+```
+
+As auditorias das coortes iniciais ficam em `data/reviews/scoreboard-candidate-audit-{recent,older}.json`
+e `data/reviews/scoreboard-unknown-audit-2026-10-09.json`; a revisão consolidada
+continua em `chamber-vote-reviews-2026-10-09.json`. Os insumos do primeiro lote
+foram preservados em `data/reviews/scoreboard-audit-initial-2026-10-09/`.
+Todos esses arquivos, fontes e snapshots continuam fora do Git.
+
 ## Próxima etapa
 
-Conferir os candidatos sem placar explícito em 2026, resolver pendências de texto
-e aplicar a mesma metodologia desde fevereiro de 2023. Só depois dessa coleta
-e conciliação será possível declarar cobertura do mandato inteiro.
+Conferir decisões de mérito eventualmente não detectadas pela lista da API e
+planejar o índice multi-ano antes de aplicar
+a mesma metodologia desde fevereiro de 2023. A conferência deste inventário não
+autoriza declarar cobertura completa do ano ou do mandato.

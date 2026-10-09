@@ -279,6 +279,24 @@ class ChamberVoteInventoryTests(unittest.TestCase):
         self.assertEqual(bounded["participantLimit"], 0)
         self.assertEqual(bounded["participantAttemptCount"], 0)
 
+    def test_unknown_details_are_opt_in_bounded_and_do_not_promote_vague_results(self):
+        rows = [vote(f"{identifier}-1", description="Aprovada a matéria.") for identifier in (123, 124)]
+        self.set_list(*rows)
+        for row in rows:
+            self.api.details[row["id"]] = detail(row["id"], description=row["descricao"])
+
+        initial = self.collect(participant_limit=0)
+        self.assertEqual(initial["detailAttemptCount"], 0)
+        self.assertFalse(initial["auditUnknown"])
+
+        audited = self.collect(audit_unknown=True, detail_limit=1, participant_limit=0)
+        self.assertEqual(audited["detailAttemptCount"], 1)
+        self.assertEqual(audited["detailCount"], 1)
+        self.assertTrue(audited["auditUnknown"])
+        self.assertEqual(audited["candidateCount"], 0)
+        self.assertTrue(all(entry["category"] == "unknown" for entry in audited["entries"]))
+        self.assertFalse(any(url.endswith("/votos") for url in self.api.calls))
+
     def test_report_keeps_candidate_provisional_and_does_not_infer_nominal_method(self):
         self.set_list(vote())
         self.api.details["123-1"] = detail()

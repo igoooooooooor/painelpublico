@@ -6,7 +6,7 @@ import unicodedata
 from typing import Any
 
 
-RULE_VERSION = "chamber-vote-inventory-v1"
+RULE_VERSION = "chamber-vote-inventory-v2"
 
 
 def _normalized(value: Any) -> str:
@@ -66,7 +66,7 @@ def _method(description: str, opening_description: str) -> str:
     return found.pop() if len(found) == 1 else "unknown"
 
 
-def _recorded_tally(description: str) -> dict[str, int | None] | None:
+def _recorded_partial_tally(description: str) -> dict[str, int | None]:
     text = _normalized(description)
     labels = {
         "yes": r"sim",
@@ -85,6 +85,11 @@ def _recorded_tally(description: str) -> dict[str, int | None] | None:
             tally[key] = int(matches[0].replace(".", ""))
         else:
             tally[key] = None
+    return tally
+
+
+def _recorded_tally(description: str) -> dict[str, int | None] | None:
+    tally = _recorded_partial_tally(description)
     if tally["yes"] is None or tally["no"] is None:
         return None
     return tally
@@ -128,8 +133,13 @@ def _category(description: str) -> str:
     text = _normalized(description)
     if re.search(r"\bredacao\s+final\b", text):
         return "final_wording"
-    if _PROCEDURE_RE.search(text):
+    if (_PROCEDURE_RE.search(text)
+            or re.match(r"^(?:aprovad[oa]|rejeitad[oa])\s+(?:o|a)\s+(?:requerimento|recurso)\b", text)):
         return "procedure"
+
+    # A recorded exception about previously rejected devices is not a second
+    # outcome of the main Senate substitute (PL 3780/2023, 18/03/2026).
+    text = re.sub(r"\bcom excecao dos dispositivos rejeitados\b", "", text)
 
     # “Ressalvados os destaques” is a caveat attached to the main vote, not a
     # record of voting on a highlight itself.
@@ -153,6 +163,26 @@ def _category(description: str) -> str:
     return "unknown"
 
 
+def _opening_category(description: str, opening_description: str) -> str:
+    """Resolve only generic dispositions with an explicitly named separate object."""
+    text, opening = _normalized(description), _normalized(opening_description)
+    if (re.match(r"^(?:(?:aprovada|rejeitada) a )?preferencia(?:\.|$)", text)
+            and re.match(r"^votacao d[oa]s? (?:dtq|destaque)\b", opening)
+            and "destaque de preferencia" in opening):
+        return "procedure"
+    if (re.match(r"^(?:(?:mantido|suprimido) o texto|resultado)(?:\.|$)", text)
+            and re.match(r"^votacao d[oa]s? (?:dtq|destaque)\b", opening)):
+        return "amendment"
+    # The real result of PL 2736/2019 misspells “Subemenda” as “Submenda”.
+    # The opening names an amendment to the substitute, not a global substitute.
+    if (re.match(r"^aprovada a submenda\b", text)
+            and re.match(r"^votacao da subemenda\b", opening)
+            and " ao substitutivo " in f"{opening} "
+            and not re.search(r"\bsubemenda substitutiva\b", opening)):
+        return "amendment"
+    return "unknown"
+
+
 def classify_vote(record: dict[str, Any]) -> dict[str, Any]:
     """Classify a single official Chamber vote row for provisional auditing."""
     if not isinstance(record, dict):
@@ -168,6 +198,8 @@ def classify_vote(record: dict[str, Any]) -> dict[str, Any]:
     targets = _target_propositions(record)
     has_valid_affected_propositions = _has_valid_affected_propositions(record)
     category = _category(description)
+    if category == "unknown":
+        category = _opening_category(description, opening_description)
     method = _method(description, opening_description)
     tally = _recorded_tally(description)
     candidate = False

@@ -21,6 +21,7 @@ _OUTCOMES = {'approved', 'rejected', 'not_approved'}
 _ITEM_FIELDS = ('id', 'date', 'proposition', 'type', 'title', 'summary', 'decisionLabel',
                 'yesMeaning', 'noMeaning', 'outcome', 'tally', 'themes', 'sources', 'reviewedAt')
 _COVERAGE_FIELDS = ('inventoryCount', 'candidateCount', 'reviewedCount', 'publishedCount', 'pendingCount')
+_OPTIONAL_COVERAGE_FIELDS = ('excludedCount', 'missingTextCount', 'missingAbstentionCount', 'missingThemeCount')
 
 _cache_lock = threading.Lock()
 _snapshot_cache: dict[Path, tuple[tuple[int, int], object]] = {}
@@ -125,6 +126,10 @@ def _summary_item(value):
                                             or not decision_source.startswith('https://')):
             return None
         safe_sources['decision'] = decision_source
+    notes = value.get('dataNotes')
+    if 'dataNotes' in value and (not isinstance(notes, list) or len(notes) > 4
+                                or any(not _text(note, limit=500) for note in notes)):
+        return None
 
     return {
         'id': value['id'], 'date': value['date'], 'proposition': value['proposition'], 'type': value['type'],
@@ -132,6 +137,7 @@ def _summary_item(value):
         'yesMeaning': value['yesMeaning'], 'noMeaning': value['noMeaning'], 'outcome': value['outcome'],
         'tally': {key: tally[key] for key in ('yes', 'no', 'abstention', 'total')},
         'themes': safe_themes, 'sources': safe_sources, 'reviewedAt': value['reviewedAt'],
+        **({'dataNotes': notes} if 'dataNotes' in value else {}),
     }
 
 
@@ -158,6 +164,17 @@ def _index(path=None):
     coverage = data.get('coverage')
     if not isinstance(coverage, dict) or any(not _count(coverage.get(key)) for key in _COVERAGE_FIELDS):
         return None
+    if any(key in coverage and not _count(coverage[key]) for key in _OPTIONAL_COVERAGE_FIELDS):
+        return None
+    if any(key in coverage and coverage[key] > coverage['publishedCount']
+           for key in ('missingTextCount', 'missingAbstentionCount', 'missingThemeCount')):
+        return None
+    if ('excludedCount' in coverage
+            and (coverage['publishedCount'] + coverage['excludedCount'] + coverage['pendingCount']
+                 != coverage['candidateCount']
+                 or coverage['publishedCount'] + coverage['excludedCount'] > coverage['reviewedCount']
+                 or coverage['reviewedCount'] > coverage['candidateCount'])):
+        return None
     if not _text(coverage.get('detail'), limit=3000, required=False):
         return None
     items = data.get('items')
@@ -178,7 +195,8 @@ def _index(path=None):
     safe_items.sort(key=lambda item: item['date'], reverse=True)
     return {
         'generatedAt': data['generatedAt'], 'period': {'start': period['start'], 'end': period['end']},
-        'coverage': {**{key: coverage[key] for key in _COVERAGE_FIELDS}, 'detail': coverage['detail']},
+        'coverage': {**{key: coverage[key] for key in (*_COVERAGE_FIELDS, *_OPTIONAL_COVERAGE_FIELDS)
+                       if key in coverage}, 'detail': coverage['detail']},
         'items': safe_items, 'detailsVersion': details_version,
     }
 

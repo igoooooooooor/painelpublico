@@ -13,7 +13,7 @@ class ChamberVoteRulesTests(unittest.TestCase):
     def test_rule_version_and_result_shape_are_stable(self):
         result = self.classify("Aprovado o Projeto de Lei nº 10, de 2026.")
 
-        self.assertEqual(rules.RULE_VERSION, "chamber-vote-inventory-v1")
+        self.assertEqual(rules.RULE_VERSION, "chamber-vote-inventory-v2")
         self.assertEqual(
             set(result),
             {"category", "candidate", "reason", "method", "recordedTally", "targetPropositions"},
@@ -55,6 +55,66 @@ class ChamberVoteRulesTests(unittest.TestCase):
                 result = self.classify(description)
                 self.assertEqual(result["category"], "amendment")
                 self.assertFalse(result["candidate"])
+
+    def test_senate_substitute_exception_does_not_hide_a_main_text_candidate(self):
+        result = self.classify(
+            "Aprovado o Substitutivo do Senado Federal ao Projeto de Lei nº 3.780, "
+            "de 2023, com exceção dos dispositivos rejeitados.",
+            descUltimaAberturaVotacao=(
+                "Votação do Substitutivo do Senado Federal ao Projeto de Lei nº 3.780, "
+                "de 2023, com parecer pela aprovação, com exceção dos dispositivos rejeitados."
+            ),
+            proposicoesAfetadas=[{"id": 2376169, "siglaTipo": "PL", "numero": 3780, "ano": 2023}],
+        )
+        self.assertEqual(result["category"], "main_text")
+        self.assertTrue(result["candidate"])
+        self.assertEqual(result["method"], "unknown")
+        self.assertIsNone(result["recordedTally"])
+
+    def test_generic_dispositions_need_an_explicit_highlight_opening(self):
+        for description in ("Mantido o texto. Sim: 335; Não: 117; Total: 452.",
+                            "Suprimido o texto.", "Resultado. Sim: 182; Não: 182; Total: 364."):
+            with self.subTest(description=description):
+                result = self.classify(description, descUltimaAberturaVotacao=(
+                    "Votação do DTQ 4: Destaque para Votação em Separado da expressão do art. 1º."
+                ))
+                self.assertEqual(result["category"], "amendment")
+                self.assertFalse(result["candidate"])
+                self.assertEqual(result["method"], "unknown")
+                self.assertEqual(self.classify(description)["category"], "unknown")
+                self.assertEqual(self.classify(description, descUltimaAberturaVotacao=(
+                    "Votação em turno único do Projeto de Lei nº 10."
+                ))["category"], "unknown")
+
+    def test_requests_appeals_and_highlight_preference_are_procedural(self):
+        for description in ("Rejeitado o Requerimento.", "Aprovado o Requerimento.",
+                            "Rejeitado o Recurso nº 2, de 2026, contra parecer terminativo "
+                            "à Emenda de Plenário nº 3 oferecida ao Projeto de Lei nº 1.743, de 2024."):
+            with self.subTest(description=description):
+                result = self.classify(description)
+                self.assertEqual(result["category"], "procedure")
+                self.assertFalse(result["candidate"])
+        for description in ("Preferência.", "Aprovada a Preferência.", "Rejeitada a preferência.",
+                            "Aprovada a preferência. Sim: 467; Não: 4; Abstenção: 1; Total: 472."):
+            with self.subTest(description=description):
+                preference = self.classify(description, descUltimaAberturaVotacao=(
+                    "Votação do DTQ 2: Destaque de Preferência para o Projeto de Lei."
+                ))
+                self.assertEqual(preference["category"], "procedure")
+                self.assertEqual(self.classify(description)["category"], "unknown")
+
+    def test_misspelled_subamendment_is_resolved_only_by_the_specific_opening(self):
+        description = "Aprovada a Submenda da Comissão de Constituição e Justiça e de Cidadania."
+        result = self.classify(description, descUltimaAberturaVotacao=(
+            "Votação da Subemenda da Comissão de Constituição e Justiça e de Cidadania "
+            "ao Substitutivo da Comissão de Viação e Transportes."
+        ))
+        self.assertEqual(result["category"], "amendment")
+        self.assertFalse(result["candidate"])
+        self.assertEqual(self.classify(description)["category"], "unknown")
+        self.assertEqual(self.classify(description, descUltimaAberturaVotacao=(
+            "Votação da Subemenda Substitutiva global ao Projeto."
+        ))["category"], "unknown")
 
     def test_reserved_single_highlight_is_not_the_decision_being_voted(self):
         result = self.classify(

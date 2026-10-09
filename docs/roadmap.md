@@ -26,7 +26,7 @@ As entregas acima registram a implementação integrada à `main`. Publicação 
 
 ## Agora, nesta ordem
 
-1. **Placar mais amplo.** Em desenvolvimento na branch `codex/broader-voting-scoreboard`: inventário de 2026 e catálogo local com 19 decisões nominais conferidas, resumos da versão votada, temas oficiais, busca, paginação e votos individuais carregados ao abrir a decisão. [Metodologia e cobertura](voting-scoreboard.md). Continuam pendentes a revisão dos outros 143 candidatos de 2026, a cobertura desde fevereiro de 2023, a integração à `main` e a publicação. Home, fichas e comparações mantêm as quatro seleções originais.
+1. **Placar mais amplo.** Em desenvolvimento na branch `codex/broader-voting-scoreboard`: inventário de 2026 com 159 candidatos revisados, 20 decisões nominais no catálogo local e 139 exclusões documentadas. Todas as 20 decisões têm link confirmado ao texto votado. Há resumos da versão votada, temas oficiais, busca, paginação e votos individuais carregados ao abrir a decisão, inclusive uma lista recuperada do relatório oficial após retorno vazio da API. [Metodologia e cobertura](voting-scoreboard.md). Continuam pendentes a conferência de possíveis omissões da fonte, a cobertura desde fevereiro de 2023, a integração à `main` e a publicação. Home, fichas e comparações mantêm as quatro seleções originais.
 2. **Antes de divulgar o site:**
    - Atualização automática das cotas da Câmara e do Senado, com data da coleta, validação e registro das falhas. Hoje as coletas são manuais e o app não agenda downloads.
    - Backup externo com teste de restauração. O backup local consistente já existe.

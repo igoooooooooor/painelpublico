@@ -149,7 +149,8 @@ def _participant_audit(rows, tally):
 
 
 def collect_inventory(*, root=ROOT, start=date(2026, 1, 1), through=None, collect=False,
-                      refresh=False, detail_limit=40, participant_limit=10, request=request_bytes):
+                      refresh=False, detail_limit=40, participant_limit=10, audit_unknown=False,
+                      request=request_bytes):
     through = through or date.today()
     if (start.year != through.year or start > through or detail_limit < 0 or participant_limit < 0):
         raise ValueError('Período ou limites inválidos para o inventário anual.')
@@ -169,7 +170,7 @@ def collect_inventory(*, root=ROOT, start=date(2026, 1, 1), through=None, collec
         detail, detail_source, participant_source, audit = None, None, None, None
         errors = []
         inspect = classification['candidate'] or (classification['category'] == 'unknown'
-                                                  and classification['recordedTally'] is not None)
+                                                  and (audit_unknown or classification['recordedTally'] is not None))
         if inspect and detail_count < detail_limit:
             detail_count += 1
             detail_url = f'{API_BASE}/votacoes/{identifier}'
@@ -221,6 +222,7 @@ def collect_inventory(*, root=ROOT, start=date(2026, 1, 1), through=None, collec
             'listComplete': True, 'listPageCount': len(list_sources), 'voteCount': len(entries),
             'duplicateCount': duplicate_count, 'categoryCounts': dict(sorted(counts.items())),
             'candidateCount': sum(entry['candidate'] for entry in entries),
+            'auditUnknown': audit_unknown,
             'detailLimit': detail_limit, 'detailAttemptCount': detail_count,
             'sampleOrder': 'placar explícito primeiro; dentro de cada grupo, data mais recente primeiro',
             'detailCount': sum(entry['detailCollected'] for entry in entries),
@@ -247,6 +249,7 @@ def render_report(inventory):
     lines.extend(f'| {category} | {count} |' for category, count in inventory['categoryCounts'].items())
     lines.extend(['', f'Candidatos provisórios: {inventory["candidateCount"]}.',
                   f'Detalhes coletados: {inventory["detailCount"]} (limite {inventory["detailLimit"]}).',
+                  f'Conferência de descrições desconhecidas: {"incluída" if inventory.get("auditUnknown") else "somente casos com placar explícito"}.',
                   f'Votações com votos individuais conferidos: {inventory["participantAuditCount"]} '
                   f'(limite {inventory["participantLimit"]}).', f'Registros com falha: {inventory["errorCount"]}.', '',
                   'O método fica desconhecido quando a fonte não o declara explicitamente. '
@@ -269,12 +272,14 @@ def main(argv=None):
     parser.add_argument('--refresh', action='store_true')
     parser.add_argument('--detail-limit', type=int, default=40)
     parser.add_argument('--participant-limit', type=int, default=10)
+    parser.add_argument('--audit-unknown', action='store_true',
+                        help='Inclui descrições desconhecidas na conferência de detalhes, respeitando --detail-limit.')
     parser.add_argument('--root', type=Path, default=ROOT)
     args = parser.parse_args(argv)
     try:
         inventory = collect_inventory(root=args.root, start=date(args.year, 1, 1), through=args.through,
                                       collect=args.collect, refresh=args.refresh, detail_limit=args.detail_limit,
-                                      participant_limit=args.participant_limit)
+                                      participant_limit=args.participant_limit, audit_unknown=args.audit_unknown)
     except (CollectionError, ValueError) as error:
         parser.exit(1, f'Inventário não gravado; relatório anterior preservado: {error}\n')
     output = args.root / 'data' / 'reviews' / f'chamber-vote-inventory-{args.through}.json'

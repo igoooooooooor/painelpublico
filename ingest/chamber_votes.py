@@ -19,7 +19,8 @@ import unicodedata
 from urllib.parse import urlsplit
 
 from ingest.chamber_vote_inventory import API_BASE, ROOT, CollectionError, _load, _paged
-from ingest.chamber_vote_rules import classify_vote
+from ingest.chamber_vote_rules import _recorded_partial_tally, classify_vote
+from ingest.chamber_vote_report import identify_participants, parse_roll_call
 from ingest.project_status import _atomic_bytes, _json_bytes, _valid_date, request_bytes, utc_now
 
 VOTE_ID = re.compile(r'[0-9]+-[0-9]+')
@@ -28,12 +29,22 @@ CHOICES = {'Sim': 'Sim', 'Não': 'Não', 'Abstenção': 'Abstenção',
 REVIEW_FIELDS = ('title', 'summary', 'decisionLabel', 'yesMeaning', 'noMeaning')
 
 
+def _valid_review_date(value):
+    if _valid_date(value):
+        return True
+    try:
+        return isinstance(value, str) and date.fromisoformat(value).isoformat() == value
+    except ValueError:
+        return False
+
+
 def _official_source(value, *, nullable=False):
     if nullable and value is None:
         return None
     parts = urlsplit(value) if isinstance(value, str) else None
     if (parts is None or parts.scheme != 'https' or parts.hostname not in
-            {'www.camara.leg.br', 'camara.leg.br', 'dadosabertos.camara.leg.br'}
+            {'www.camara.leg.br', 'www2.camara.leg.br', 'camara.leg.br',
+             'dadosabertos.camara.leg.br', 'escriba.camara.leg.br'}
             or parts.username or parts.password or parts.port not in (None, 443)):
         raise CollectionError('A revisão precisa de um link oficial da Câmara.')
     return value
@@ -122,7 +133,7 @@ def build_catalogue(inventory, reviews, *, root=ROOT, collect=False, refresh=Fal
     start, end = date.fromisoformat(period['start']), date.fromisoformat(period['end'])
     cache = root / 'data' / 'raw' / 'chamber-vote-inventory' / f'{start}_{end}'
     entries = {entry['id']: entry for entry in inventory['entries']}
-    items, details, reviewed_ids = [], {}, set()
+    items, details, reviewed_ids, excluded_ids = [], {}, set(), set()
     for review in reviews:
         identifier = review.get('id') if isinstance(review, dict) else None
         if not isinstance(identifier, str) or not VOTE_ID.fullmatch(identifier) or identifier in reviewed_ids:
@@ -134,6 +145,18 @@ def build_catalogue(inventory, reviews, *, root=ROOT, collect=False, refresh=Fal
         if review.get('status') == 'pending':
             if not review.get('reason'):
                 raise CollectionError(f'{identifier}: pendência sem motivo.')
+            continue
+        if review.get('status') == 'excluded':
+            sources, evidence = review.get('sources'), review.get('evidence')
+            if (not isinstance(review.get('reason'), str) or not review['reason'].strip()
+                    or not _valid_review_date(review.get('reviewedAt'))
+                    or not isinstance(sources, dict) or not sources
+                    or not isinstance(evidence, dict)
+                    or not any(isinstance(value, str) and value.strip() for value in evidence.values())):
+                raise CollectionError(f'{identifier}: exclusão sem motivo, data, fonte e evidência.')
+            for source in sources.values():
+                _official_source(source)
+            excluded_ids.add(identifier)
             continue
         if (review.get('status') != 'confirmed' or not review.get('reviewedAt')
                 or any(not isinstance(review.get(field), str) or not review[field].strip() for field in REVIEW_FIELDS)
@@ -150,8 +173,7 @@ def build_catalogue(inventory, reviews, *, root=ROOT, collect=False, refresh=Fal
         classification = classify_vote(record)
         targets, tally = classification['targetPropositions'], classification['recordedTally']
         if (record.get('id') != identifier or record.get('data') != entry['date']
-                or not classification['candidate'] or len(targets) != 1 or not tally
-                or tally['yes'] is None or tally['no'] is None):
+                or not classification['candidate'] or len(targets) != 1):
             raise CollectionError(f'{identifier}: detalhe não confirma decisão, objeto de referência e placar.')
         target = targets[0]
         expected_proposition = f'https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao={target["id"]}'
@@ -161,8 +183,42 @@ def build_catalogue(inventory, reviews, *, root=ROOT, collect=False, refresh=Fal
                                                collect=collect, refresh=refresh, request=request)
         if not _nominal_report(content):
             raise CollectionError(f'{identifier}: relatório não confirma método nominal eletrônico.')
+        tally_source = review.get('tallySource', 'api')
+        participants_source = review.get('participantsSource', 'api')
+        if tally_source not in ('api', 'rollCall') or participants_source not in ('api', 'rollCall'):
+            raise CollectionError(f'{identifier}: origem do placar ou dos votos individuais inválida.')
+        report = None
+        if 'rollCall' in (tally_source, participants_source):
+            report = parse_roll_call(content)
+            if (report['date'] != entry['date']
+                    or report['proposition'] != {'type': target['siglaTipo'], 'number': target['numero'],
+                                                 'year': target['ano']}
+                    or report['object'] != review.get('reportObject')
+                    or report['endedAt'] != str(record.get('dataHoraRegistro', ''))[:16]):
+                raise CollectionError(f'{identifier}: relatório não corresponde à data, objeto e horário da decisão.')
+        if tally_source == 'rollCall':
+            api_tally = _recorded_partial_tally(record.get('descricao'))
+            for key, value in api_tally.items():
+                if value is not None and report['tally'].get(key) is not None and value != report['tally'][key]:
+                    raise CollectionError(f'{identifier}: placar da API diverge do relatório nominal.')
+            tally = {key: value if value is not None else report['tally'][key]
+                     for key, value in api_tally.items()}
+        if not tally or tally['yes'] is None or tally['no'] is None:
+            raise CollectionError(f'{identifier}: placar nominal não conferido.')
         rows, participant_sources = _paged(f'{url}/votos', cache / 'participants' / identifier,
                                            collect=collect, refresh=refresh, request=request)
+        identity_sources, data_notes = [], []
+        participants_origin = 'api'
+        if not rows and participants_source == 'rollCall':
+            deputies, identity_sources = _paged(
+                f'{API_BASE}/deputados?dataInicio={entry["date"]}&dataFim={entry["date"]}&itens=100',
+                cache / 'deputies' / entry['date'], collect=collect, refresh=refresh, request=request)
+            rows = identify_participants(report['participants'], deputies)
+            participants_origin = 'rollCall'
+            data_notes.append('Os votos individuais vêm do relatório nominal oficial. A lista '
+                              'disponibilizada pelos Dados Abertos está vazia nesta decisão.')
+        if tally_source == 'rollCall':
+            data_notes.append('O placar foi conferido no relatório nominal oficial.')
         participants, party_totals = normalize_participants(rows, tally)
         theme_rows, theme_sources = _paged(f'{API_BASE}/proposicoes/{target["id"]}/temas',
                                            cache / 'themes' / str(target['id']),
@@ -184,19 +240,33 @@ def build_catalogue(inventory, reviews, *, root=ROOT, collect=False, refresh=Fal
                       'proposition': f'{target["siglaTipo"]} {target["numero"]}/{target["ano"]}',
                       'type': target['siglaTipo'], **{field: review[field] for field in REVIEW_FIELDS},
                       'outcome': outcome, 'tally': tally, 'themes': list(themes.values()),
-                      'sources': {'vote': url, **safe_sources}, 'reviewedAt': review['reviewedAt']})
+                      'sources': {'vote': url, **safe_sources}, 'reviewedAt': review['reviewedAt'],
+                      **({'dataNotes': data_notes} if data_notes else {})})
         details[identifier] = {'id': identifier, 'participants': participants, 'partyTotals': party_totals,
                                'sourceMetadata': {'vote': detail_source, 'rollCall': report_source,
-                                                  'participants': participant_sources, 'themes': theme_sources}}
+                                                  'participants': participant_sources, 'themes': theme_sources,
+                                                  **({'participantsOrigin': participants_origin,
+                                                      'identities': identity_sources}
+                                                     if participants_origin == 'rollCall' else {})}}
     items.sort(key=lambda item: (item['date'], item['id']), reverse=True)
     published = len(items)
+    excluded = len(excluded_ids)
+    pending = inventory['candidateCount'] - published - excluded
+    missing_text = sum(item['sources']['text'] is None for item in items)
+    missing_abstention = sum(item['tally']['abstention'] is None for item in items)
+    missing_theme = sum(not item['themes'] for item in items)
     coverage = {'inventoryCount': inventory['voteCount'], 'candidateCount': inventory['candidateCount'],
                 'reviewedCount': len(reviewed_ids), 'publishedCount': published,
-                'pendingCount': inventory['candidateCount'] - published,
+                'excludedCount': excluded, 'pendingCount': pending,
+                'missingTextCount': missing_text, 'missingAbstentionCount': missing_abstention,
+                'missingThemeCount': missing_theme,
                 'detail': f'{published} decisões nominais conferidas de {inventory["candidateCount"]} candidatos '
                           f'provisórios em {inventory["voteCount"]} registros da API. Recorte de {start.year}: texto principal '
-                          'de PL, PLP e PEC no Plenário da Câmara. Os demais candidatos aguardam conferência; '
-                          'o catálogo ainda não cobre todo o mandato. Temas da Câmara descrevem a proposição '
+                          f'de PL, PLP e PEC no Plenário da Câmara. {excluded} candidatos excluídos após revisão '
+                          f'com motivo e fonte; {pending} ainda pendentes, incluindo os não revisados. '
+                          f'Decisões com lacunas: {missing_text} sem link seguro ao texto exato; {missing_abstention} sem '
+                          f'contagem publicada de abstenções nas fontes usadas; {missing_theme} sem tema oficial. '
+                          'O catálogo ainda não cobre todo o mandato. Temas da Câmara descrevem a proposição '
                           'de referência. Campo ausente não significa zero. O resultado é o desta decisão, '
                           'não a situação legal atual do projeto.'}
     details_version = hashlib.sha256(_json_bytes(details)).hexdigest()

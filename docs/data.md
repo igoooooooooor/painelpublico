@@ -75,8 +75,14 @@ descrevem o levantamento inicial.
 
 Na etapa seguinte, os 19 candidatos com placar explícito tiveram relatório
 nominal e versão decidida conferidos, com todos os votos individuais conciliados.
-O catálogo local tem 19 decisões de 2026; 143 candidatos provisórios continuam
-pendentes. Não é cobertura completa do ano nem do mandato. Campo não publicado,
+O catálogo inicial tinha 19 decisões. A revisão dos 143 candidatos restantes e
+dos 157 registros desconhecidos confirmou mais uma decisão nominal. A triagem
+v2 tem 159 candidatos: 20 publicados, 139 excluídos com evidência e nenhum
+pendente de método ou objeto. O catálogo local tem 8.240 registros individuais.
+Os quatro links de texto inicialmente pendentes foram recuperados. O último,
+do PL 4.133/2023, foi confirmado pelo vínculo oficial do SBT 1 ao anexo do parecer
+e pela identificação do objeto nas notas da sessão. Não é cobertura completa
+do ano nem do mandato. Campo não publicado,
 inclusive abstenção ou tema, permanece ausente.
 
 `make collect-votes THROUGH=2026-10-09` lê as revisões locais em
@@ -84,6 +90,13 @@ inclusive abstenção ou tema, permanece ausente.
 `data/snapshots/chamber-votes.json` e `data/snapshots/chamber-vote-details/`.
 `python3 -m ingest.chamber_votes --through 2026-10-09` reconstrói sem rede.
 Revisões, fontes e snapshots ficam fora do Git; falhas preservam a saída anterior.
+A triagem ampliada é reconstruída com `--detail-limit 400 --participant-limit 19 --audit-unknown`.
+Uma revisão pode ser confirmada, pendente ou excluída com motivo e fonte.
+No PL 1.625/2026, a API omite o placar e retorna votos individuais vazios: a
+revisão explícita permite usar o relatório nominal, com 381 pessoas ligadas
+sem ambiguidades a IDs da lista oficial da mesma data. As contagens disponíveis
+da API são preservadas e comparadas com o relatório; ausência de linha não
+vira zero. A origem complementar aparece em `dataNotes` na decisão.
 A API pagina os resumos e carrega os votos individuais por decisão. A home,
 fichas, partidos e comparações mantêm as quatro seleções originais. Um clone
 sem catálogo mostra essas seleções com a limitação explícita.
