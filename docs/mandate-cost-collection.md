@@ -76,6 +76,34 @@ rejeita uma linha de dados no lugar do cabeçalho, sem gravar cache.
 Fonte: [CSV mensal do Senado](https://www.senado.leg.br/transparencia/LAI/secrh/SF_ConsultaRemuneracaoServidoresParlamentares_202609.csv)
 e [orientação de consulta individual](https://www12.senado.leg.br/perguntas-frequentes/canais-de-atendimento/senadores/posso-consultar-o-contracheque-de-um-senador).
 
+### Piloto pela lotação (9/10/2026)
+
+Decisão 3 de [até onde vai cada fonte](mandate-period-sources.md) autorizada pelo mantenedor em 9/10/2026:
+ligar senador(a) e gabinete pela lotação "Gabinete do(a) Senador(a) {nome}" do mesmo CSV mensal, para os
+10 primeiros IDs da lista em ordem numérica, de janeiro a setembro de 2026.
+Coletor: `ingest/senate_office_pilot.py`; correspondência conferida à mão em `ingest/senate_office_map.json`;
+saída só local em `data/snapshots/senate-office-pilot.json` (fora do `make deploy-data`).
+
+- **Ligação:** 80 das 81 lotações de gabinete têm o nome parlamentar do roster, só com acentos diferentes em
+  alguns ("Jáder", "Márcio"). Os 10 do piloto têm uma linha PARLAMENTAR de folha normal no próprio gabinete
+  em todos os 9 meses, inclusive o líder do governo.
+- **Subsídio:** R$ 46.366,19 brutos nos 90 meses (10 × 9), igual à referência do cargo. É a conferência de
+  que a ligação está certa. Auxílios e indenizações ficam fora do bruto, em campo próprio.
+- **Gabinete:** soma bruta das linhas COMISSIONADO da lotação, folha normal: de R$ 170 mil a R$ 569 mil por
+  mês, com 9 a 42 pessoas. A folha suplementar (13º, férias, acertos) repete as mesmas pessoas e fica em
+  total à parte. Na Câmara, a verba de gabinete de 2026 tem mediana de R$ 150 mil por mês (máximo de
+  R$ 166 mil, no `mandate-cost.json`): o gabinete do Senado custa de 1,1 a 3,8 vezes essa mediana. Não são
+  partes iguais e a ficha precisa dizer isso.
+- **Servidores efetivos lotados no gabinete:** à parte (o salário não depende do gabinete), de 0 a 6 por
+  gabinete. Com menos de 3 pessoas, só a contagem é guardada.
+- **Privacidade:** cada arquivo é lido em memória; nenhuma linha de servidor é gravada nem impressa (teste
+  com sentinela). Ficam só agregados por gabinete e mês.
+
+Pendências antes de ampliar: os 2 gabinetes com duas linhas PARLAMENTAR no mesmo mês (titular e suplente
+em transição) ficam sem subsídio atribuído; 1 lotação sem nome igual ao roster precisa de conferência à
+mão; senador(a) lotado(a) fora do gabinete (liderança, Mesa) fica sem subsídio, com o motivo. Ampliar
+para os 81 gabinetes e para o mandato (fev/2023) exige decisão do mantenedor.
+
 ## Inventário de folhas do grupo parlamentar
 
 Contagens de linhas nos CSVs oficiais, **não** contagens de pessoas do roster

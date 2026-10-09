@@ -1,0 +1,85 @@
+{
+  "note": "Correspondência conferida à mão entre o ID do Senado (roster) e a lotação do gabinete no CSV mensal de remuneração. Piloto de até 10 senadores(as), os 10 primeiros IDs da lista em ordem numérica. Sem correspondência aproximada: o coletor usa só esta tabela.",
+  "offices": [
+    {
+      "id": "senado:22",
+      "name": "Esperidião Amin",
+      "office": "Esperidião Amin",
+      "lotacao": "Gabinete do Senador Esperidião Amin",
+      "checkedAt": "2026-10-09",
+      "evidence": "Lotação com o nome parlamentar do roster (só acentos diferentes quando há); uma linha PARLAMENTAR de folha normal por mês em jan–set/2026."
+    },
+    {
+      "id": "senado:35",
+      "name": "Jader Barbalho",
+      "office": "Jáder Barbalho",
+      "lotacao": "Gabinete do Senador Jáder Barbalho",
+      "checkedAt": "2026-10-09",
+      "evidence": "Lotação com o nome parlamentar do roster (só acentos diferentes quando há); uma linha PARLAMENTAR de folha normal por mês em jan–set/2026."
+    },
+    {
+      "id": "senado:70",
+      "name": "Renan Calheiros",
+      "office": "Renan Calheiros",
+      "lotacao": "Gabinete do Senador Renan Calheiros",
+      "checkedAt": "2026-10-09",
+      "evidence": "Lotação com o nome parlamentar do roster (só acentos diferentes quando há); uma linha PARLAMENTAR de folha normal por mês em jan–set/2026."
+    },
+    {
+      "id": "senado:285",
+      "name": "Marcio Bittar",
+      "office": "Márcio Bittar",
+      "lotacao": "Gabinete do Senador Márcio Bittar",
+      "checkedAt": "2026-10-09",
+      "evidence": "Lotação com o nome parlamentar do roster (só acentos diferentes quando há); uma linha PARLAMENTAR de folha normal por mês em jan–set/2026."
+    },
+    {
+      "id": "senado:345",
+      "name": "Flávio Arns",
+      "office": "Flávio Arns",
+      "lotacao": "Gabinete do Senador Flávio Arns",
+      "checkedAt": "2026-10-09",
+      "evidence": "Lotação com o nome parlamentar do roster (só acentos diferentes quando há); uma linha PARLAMENTAR de folha normal por mês em jan–set/2026."
+    },
+    {
+      "id": "senado:470",
+      "name": "Chico Rodrigues",
+      "office": "Chico Rodrigues",
+      "lotacao": "Gabinete do Senador Chico Rodrigues",
+      "checkedAt": "2026-10-09",
+      "evidence": "Lotação com o nome parlamentar do roster (só acentos diferentes quando há); uma linha PARLAMENTAR de folha normal por mês em jan–set/2026."
+    },
+    {
+      "id": "senado:475",
+      "name": "Confúcio Moura",
+      "office": "Confúcio Moura",
+      "lotacao": "Gabinete do Senador Confúcio Moura",
+      "checkedAt": "2026-10-09",
+      "evidence": "Lotação com o nome parlamentar do roster (só acentos diferentes quando há); uma linha PARLAMENTAR de folha normal por mês em jan–set/2026."
+    },
+    {
+      "id": "senado:581",
+      "name": "Jaques Wagner",
+      "office": "Jaques Wagner",
+      "lotacao": "Gabinete do Senador Jaques Wagner",
+      "checkedAt": "2026-10-09",
+      "evidence": "Lotação com o nome parlamentar do roster (só acentos diferentes quando há); uma linha PARLAMENTAR de folha normal por mês em jan–set/2026."
+    },
+    {
+      "id": "senado:631",
+      "name": "Magno Malta",
+      "office": "Magno Malta",
+      "lotacao": "Gabinete do Senador Magno Malta",
+      "checkedAt": "2026-10-09",
+      "evidence": "Lotação com o nome parlamentar do roster (só acentos diferentes quando há); uma linha PARLAMENTAR de folha normal por mês em jan–set/2026."
+    },
+    {
+      "id": "senado:739",
+      "name": "Ciro Nogueira",
+      "office": "Ciro Nogueira",
+      "lotacao": "Gabinete do Senador Ciro Nogueira",
+      "checkedAt": "2026-10-09",
+      "evidence": "Lotação com o nome parlamentar do roster (só acentos diferentes quando há); uma linha PARLAMENTAR de folha normal por mês em jan–set/2026."
+    }
+  ]
+}

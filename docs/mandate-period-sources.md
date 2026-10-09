@@ -98,5 +98,6 @@ porcentagem; o roadmap já põe "faltas do Senado" em "Depois".
 2. Câmara: tratar dez/2024 do gabinete como mês fora da média ou como mês com
    lacuna explícita.
 3. Senado: autorizar um piloto da ligação por lotação ("Gabinete do Senador
-   {nome}") com até 10 senadores, sem gravar linhas individuais.
+   {nome}") com até 10 senadores, sem gravar linhas individuais. **Autorizado e
+   feito em 9/10/2026:** resultado em [coleta e conferência](mandate-cost-collection.md).
 4. Senado: presença do mandato fica em "Depois" ou entra agora.
