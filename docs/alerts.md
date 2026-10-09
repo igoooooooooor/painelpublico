@@ -196,6 +196,24 @@ Pendências antes de ampliar para o mandato:
 4. **Intermediários de passagem:** tratados à parte, com critério verificável (ver "Regra em uso").
 5. **Totais baixos:** mantido o mínimo de R$ 30 mil; o cartão mostra valores absolutos e cobertura.
 
+## Triagem pela base publicada (9/10/2026)
+
+56 casos sorteados com a mesma semente, agora pela base de 12 meses (`cota-alertas-v3`): 16 concentrações,
+10 picos, 6 perto dos limites ou sem alerta e 24 que só apareceriam nas bases anual ou curta. Só com os
+registros publicados; a triagem por caso fica fora do Git em `data/reviews/`.
+
+- **Concentração:** igual à passada anterior (a regra não mudou). Um caso foge do padrão mensal: duas
+  compras grandes de divulgação.
+- **Pico:** metade dos casos toca novembro ou dezembro; em dois gabinetes do Senado, dezembro tem a
+  mensalidade de consultoria em dobro. Referências baixas (R$ 10–15 mil) geram múltiplos de 3× a 10× com
+  uma só compra grande. Dois casos têm fornecedor de ramo diferente da categoria declarada.
+- **O que a base publicada deixa de marcar:** meses moderados (1,75× a 2,6×) que a janela de 12 meses
+  absorve, 2023 inteiro e quem tem menos de 12 meses de notas (suplentes e retornos), que fica sem
+  avaliação de pico por um ano. Na lista atual, 60 pessoas da Câmara não tiveram nenhum mês de 2026 avaliado.
+
+Pendências: abrir as notas dos casos destacados e decidir se a cobertura "histórico insuficiente" basta
+para quem entrou depois.
+
 ## Decisões registradas
 
 | Data | Decisão | Motivo |
