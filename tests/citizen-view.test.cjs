@@ -583,7 +583,7 @@ test('peak chart writes each month amount and marks each marked month reference'
       { mes: 4, valor: 43997, estado: 'flagged' }, { mes: 5, valor: 137821, estado: 'flagged' }, { mes: 6, valor: 9000, estado: 'evaluated' },
       { mes: 7, valor: 52000, estado: 'prazo_aberto' }, { mes: 8, valor: 41000, estado: 'prazo_aberto' }], pessoa: {} };
   const html = api.alertCard(alert);
-  assert.match(html, /R\$ 3,1 mil/);
+  assert.match(html, /ref\.: mediana dos 12 meses anteriores|ref\.: mediana dos meses anteriores/);
   assert.match(html, /R\$ 137,8 mil/);
   assert.match(html, /sem notas/);
   assert.equal((html.match(/class="citizen-peak-month hot/g) || []).length, 2);
@@ -591,8 +591,8 @@ test('peak chart writes each month amount and marks each marked month reference'
     assert.doesNotMatch(html, /fevereiro: R\$ 0/);
   assert.match(html, />12,7×</);
   assert.match(html, /maio de 2026: R\$ 137\.821, 5,8× a referência de R\$ 23\.728/);
-  assert.equal((html.match(/class="citizen-peak-month skipped/g) || []).length, 5);
-  assert.match(html, /não avaliado: menos de 12 meses de histórico \(jan, mar\); sem notas \(fev\); prazo das notas aberto \(jul, ago\)/);
+  assert.equal((html.match(/class="citizen-peak-month skipped/g) || []).length, 2);
+  assert.match(html, /não avaliado: prazo das notas aberto \(jul, ago\)/);  // só os meses mostrados como linha
 });
 
 test('rolling peak chart shows the twelve-month window across years with year labels', () => {
@@ -606,17 +606,16 @@ test('rolling peak chart shows the twelve-month window across years with year la
   const alert = { tipo: 'pico', mes: 3, ano: 2025, periodo: '2025-03', base: 'rolling12', referencia: 5000, titulo: 'Mês acima da referência: março de 2025',
     frase: '...', meses: [{ ano: 2025, mes: 3, valor: 30000, referencia: 5000, vezes: 6 }], serie, pessoa: {} };
   const html = api.alertCard(alert);
-  assert.match(html, /citizen-peak-month-name">mar\/24</);
-  assert.match(html, /citizen-peak-month-name">dez\/24</);
   assert.match(html, /citizen-peak-month-name">mar</);
   assert.equal((html.match(/class="citizen-peak-month hot/g) || []).length, 1);  // dez/24 é de outro alerta
-  assert.match(html, /referência: mediana dos 12 meses anteriores/);
+  assert.match(html, /ref\.: mediana dos 12 meses anteriores/);
   assert.match(html, /não avaliado: prazo das notas aberto \(mai\)/);
   assert.match(html, /mediana\) dos 12 meses anteriores, atravessando o ano/);
-  // A janela antes do primeiro mês marcado fica recolhida numa linha, com a mediana; os demais meses aparecem.
-  const [windowPart, rest] = html.split('</details>');
-  assert.match(windowPart, /<details class="citizen-peak-window">[\s\S]*12 meses anteriores <small>mar\/24–fev\/25<\/small>[\s\S]*mediana R\$ 5 mil/);
-  assert.equal((rest.match(/citizen-peak-month-name/g) || []).length, 3);
+  // A janela antes do primeiro mês marcado vira a linha "ref." com a mediana; o período vai para a legenda.
+  assert.doesNotMatch(html, /<details class="citizen-peak-window"/);
+  assert.match(html, /citizen-peak-month reference[\s\S]*>ref\.<[\s\S]*R\$ 5 mil/);
+  assert.match(html, /ref\.: mediana dos 12 meses anteriores \(mar\/24–fev\/25\)/);
+  assert.equal((html.match(/citizen-peak-month-name/g) || []).length, 4);
 });
 
 test('quota-only card says it is not comparable with the deputy mandate cost', () => {

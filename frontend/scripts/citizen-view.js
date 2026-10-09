@@ -134,7 +134,9 @@ function alertVisualization(a) {
     const times = v => `${v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}×`;
     const label = s => SHORT_MONTHS[s.mes] + (s.ano !== year ? `/${String(s.ano).slice(2)}` : '');
     const skipped = {};
-    points.forEach(s => { const st = state(s); if (PEAK_SKIP_LABELS[st]) (skipped[st] ||= []).push(s); });
+    /* Só os meses que aparecem como linha (do primeiro marcado em diante) entram na legenda. */
+    const firstShown = Math.max(0, points.findIndex(s => marked.has(keyOf(s))));
+    points.slice(firstShown).forEach(s => { const st = state(s); if (PEAK_SKIP_LABELS[st]) (skipped[st] ||= []).push(s); });
     const skippedText = Object.entries(skipped).map(([st, months]) => `${PEAK_SKIP_LABELS[st]} (${monthSpan(months, label)})`).join('; ');
     const spoken = points.map(s => {
       const m = marked.get(keyOf(s)), st = state(s);
@@ -154,24 +156,23 @@ function alertVisualization(a) {
           <span class="citizen-peak-month-times">${m && Number.isFinite(m.referencia) ? times(m.vezes ?? s.valor / m.referencia) : ''}</span>
         </div>`;
     };
-    /* Os meses antes do primeiro marcado formam a referência dele: ficam recolhidos numa linha com a mediana e
-       uma miniatura, para o cartão não crescer 12 linhas; abrindo, aparecem mês a mês na mesma escala. */
+    /* Os meses antes do primeiro marcado formam a referência dele. No cartão viram uma linha só, "ref.", com a
+       mediana desenhada na mesma escala das barras; o período fica na legenda. Cada mês continua no texto para
+       leitores de tela. */
     const firstMarked = points.findIndex(s => marked.has(keyOf(s)));
     const windowPoints = firstMarked > 0 ? points.slice(0, firstMarked) : [];
     const shown = firstMarked > 0 ? points.slice(firstMarked) : points;
     const firstReference = firstMarked >= 0 ? marked.get(keyOf(points[firstMarked]))?.referencia : null;
-    const windowMax = Math.max(...windowPoints.map(s => s.valor || 0), 1);
-    const windowSummary = windowPoints.length ? `<details class="citizen-peak-window">
-        <summary><span class="citizen-peak-window-label">${windowPoints.length} ${windowPoints.length === 1 ? 'mês anterior' : 'meses anteriores'} <small>${[windowPoints[0], windowPoints[windowPoints.length - 1]].map(p => `${SHORT_MONTHS[p.mes]}/${String(p.ano).slice(2)}`).filter((v, i, all) => all.indexOf(v) === i).join('–')}</small></span>
-          <span class="citizen-peak-spark" aria-hidden="true">${windowPoints.map(s => `<i style="height:${s.valor == null ? 0 : Math.max(8, s.valor / windowMax * 100)}%"></i>`).join('')}</span>
-          ${Number.isFinite(firstReference) ? `<span class="citizen-peak-window-value">mediana ${formatMonthAmount(firstReference)}</span>` : ''}</summary>
-        <div aria-hidden="true">${windowPoints.map(row).join('')}</div>
-      </details>` : '';
+    const span = windowPoints.length ? [windowPoints[0], windowPoints[windowPoints.length - 1]].map(p => `${SHORT_MONTHS[p.mes]}/${String(p.ano).slice(2)}`).filter((v, i, all) => all.indexOf(v) === i).join('–') : '';
+    const referenceRow = windowPoints.length && Number.isFinite(firstReference) ? `<div class="citizen-peak-month reference">
+          <span class="citizen-peak-month-name">ref.</span>
+          <span class="citizen-peak-month-track"><i style="width:${pct(firstReference)}"></i></span>
+          <span class="citizen-peak-month-value">${formatMonthAmount(firstReference)}</span><span></span>
+        </div>` : '';
     return `<figure class="citizen-peak">
       <figcaption class="sr-only">Gasto na cota por mês. ${esc(spoken)}.</figcaption>
-      ${windowSummary}
-      <div aria-hidden="true">${shown.map(row).join('')}</div>
-      <div class="citizen-peak-key" aria-hidden="true"><span><i class="key-hot"></i>acima da referência</span><span><i class="key-ref"></i>${rolling ? 'referência: mediana dos 12 meses anteriores' : 'referência do mês'}</span>${skippedText ? `<span><i class="key-skipped"></i>não avaliado: ${esc(skippedText)}</span>` : ''}</div>
+      <div aria-hidden="true">${referenceRow}${shown.map(row).join('')}</div>
+      <div class="citizen-peak-key" aria-hidden="true"><span><i class="key-hot"></i>acima da referência</span><span><i class="key-ref"></i>${rolling ? 'referência de cada mês' : 'referência do mês'}</span>${referenceRow ? `<span><i class="key-reference"></i>ref.: mediana ${rolling ? 'dos 12 meses anteriores' : 'dos meses anteriores'} (${span})</span>` : ''}${skippedText ? `<span><i class="key-skipped"></i>não avaliado: ${esc(skippedText)}</span>` : ''}</div>
     </figure>`;
   }
   if (a.tipo === 'fornecedor' && a.parte) {
