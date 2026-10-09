@@ -73,10 +73,14 @@ function senateCostAnswer(cost, profileRecord) {
     const scale = Math.max(...averages);
     /* A média atravessa reajustes do subsídio: diz o valor do último mês identificado, para não parecer
        que o valor de hoje está errado. */
-    const latest = [...months].reverse().find(month => month.parts.remuneration !== null);
+    const paid = months.filter(month => month.parts.remuneration !== null);
+    const latest = paid[paid.length - 1];
     const changed = new Set(complete.map(month => month.parts.remuneration)).size > 1;
+    /* Desde quando o valor atual é pago: volta enquanto os meses com remuneração têm o mesmo valor. */
+    let since = paid.length - 1;
+    while (since > 0 && paid[since - 1].parts.remuneration === latest?.parts.remuneration) since -= 1;
     const remunerationNote = latest && changed
-      ? `Média dos meses acima; o subsídio foi reajustado no período. Em ${profileCostLabel(latest.period)}: ${profileCostMoney(latest.parts.remuneration)}`
+      ? `Média do período, que inclui reajustes do subsídio. Valor atual: ${profileCostMoney(latest.parts.remuneration)}, pago desde ${profileCostLabel(paid[since].period)}`
       : '';
     rows = SENATE_COST_PARTS.map((part, index) => row(part, averages[index], scale, index === 0 ? remunerationNote : '')).join('');
     principal = `<div class="citizen-cost-main"><span>Em média</span><b class="mono">${esc(profileCostMoney(averages.reduce((a, b) => a + b, 0)))}</b><span>por mês</span></div>
