@@ -154,6 +154,23 @@ def _mandate_cost(identifier, profile_path):
     return expand_mandate_cost(deepcopy(result), urls if isinstance(urls, list) else [])
 
 
+def _senate_cost(identifier, profile_path):
+    """Despesas identificadas do mandato no Senado (remuneração e equipe do gabinete por mês), por perfil.
+
+    Fica separado do custo da Câmara: as partes não têm a mesma definição e não são somadas nem comparadas.
+    """
+    if not re.fullmatch(r'senado:\d+', identifier):
+        return None
+    snapshot = _load(profile_path.parent / 'senate-cost.json')
+    records = snapshot.get('profiles') if snapshot else None
+    result = records.get(identifier) if isinstance(records, dict) else None
+    if not isinstance(result, dict) or result.get('id') != identifier:
+        return None
+    return {**deepcopy(result), 'periodStart': snapshot.get('periodStart'), 'periodEnd': snapshot.get('periodEnd'),
+            'sources': deepcopy(snapshot.get('sources') or []), 'exerciseSource': snapshot.get('exerciseSource'),
+            'generatedAt': snapshot.get('generatedAt')}
+
+
 def profile(identifier, path=None):
     """Perfil complementar de um parlamentar ou None se o arquivo ou o registro não existirem."""
     profile_path = Path(path) if path is not None else SNAPSHOTS_PATH / 'perfis.json'
@@ -166,8 +183,9 @@ def profile(identifier, path=None):
     projects, projects_generated_at = _senate_projects(identifier, profile_path)
     election_result = _election_result(identifier, profile_path)
     mandate_cost = _mandate_cost(identifier, profile_path)
+    senate_cost = _senate_cost(identifier, profile_path)
     if profile is None:
-        if projects is None and election_result is None and mandate_cost is None:
+        if projects is None and election_result is None and mandate_cost is None and senate_cost is None:
             return None
         result = {'id': identifier, 'role': 'senador' if identifier.startswith('senado:') else 'deputado'}
         if projects is not None:
@@ -183,4 +201,6 @@ def profile(identifier, path=None):
         result['eleicao2026'] = election_result
     if mandate_cost is not None:
         result['mandateCost'] = mandate_cost
+    if senate_cost is not None:
+        result['senateCost'] = senate_cost
     return _attach_project_statuses(result, identifier, profile_path)

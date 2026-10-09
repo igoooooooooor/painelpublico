@@ -158,7 +158,7 @@ function profileData(value) {
     sourceUrl: supplied.sourceUrl || snapshot.sourceUrl, fetchedAt: supplied.fetchedAt || snapshot.fetchedAt, role };
   return { id, person, contact: snapshot.contato || null, projects: snapshot.projetos || null,
     office: snapshot.gabinete || null, mandate: snapshot.mandato || null, election: snapshot.eleicao2026 || null,
-    cost: snapshot.mandateCost || null,
+    cost: snapshot.mandateCost || null, senateCost: snapshot.senateCost || null,
     loading: PROFILE_LOAD.pending.has(id), presence: profilePresence(id),
     registeredPresence: role === 'senador' ? profileRegisteredPresence(id) : null, votes: profileVotes(id),
     compensation: PROFILE_SALARY[role] ? { ...PROFILE_SALARY[role], individual: null } : null };

@@ -6,7 +6,7 @@ HOST ?= 127.0.0.1
 
 
 .PHONY: ci deploy-data remote-build
-.PHONY: help build dev prod test check db-init db-check db-backup import collect-legislative collect-profiles collect-senate collect-project-status collect-elections collect-cities collect-amendments collect-accounts collect-mandate-cost audit-mandate-cost collect-mandate-history deploy deploy-db deploy-status
+.PHONY: help build dev prod test check db-init db-check db-backup import collect-legislative collect-profiles collect-senate collect-project-status collect-elections collect-cities collect-amendments collect-accounts collect-mandate-cost audit-mandate-cost collect-mandate-history collect-senate-cost deploy deploy-db deploy-status
 help:
 	@echo "make dev                Gera o app e inicia em localhost:8000"
 	@echo "make check              Build, sintaxe e testes (sem downloads)"
@@ -23,6 +23,7 @@ help:
 	@echo "make collect-mandate-cost  Coleta manual e retomável de folha e moradia da Câmara"
 	@echo "make audit-mandate-cost    Reconstrói os novos snapshots sem rede"
 	@echo "make collect-mandate-history  Coleta 2023–2025 da Câmara e recompõe a média do mandato"
+	@echo "make collect-senate-cost  Remuneração e equipe dos gabinetes do Senado no mandato (só agregados)"
 	@echo "make prod               Roda como em produção (cache, só localhost)"
 	@echo "make deploy SERVER=...  Testa e publica o código no servidor"
 	@echo "make deploy-data SERVER=...  Envia banco e snapshots (alias: deploy-db)"
@@ -102,6 +103,10 @@ audit-mandate-cost:
 
 # Mandato desde fev/2023: coleta por ano, recompõe a média da ficha, gera presenca.json e importa no SQLite
 # as notas enxutas da cota de 2023–2025, Câmara e Senado (faça make db-backup antes).
+collect-senate-cost:
+	$(PYTHON) ingest/senate_office_pilot.py
+	$(PYTHON) ingest/senate_cost.py --collect
+
 collect-mandate-history:
 	@for year in 2023 2024 2025; do $(PYTHON) ingest/legislative.py --year $$year --output data/raw/legislative/history/legislative-$$year.json || exit 1; done
 	$(PYTHON) ingest/chamber_housing.py --collect --year 2023 --months 2,3,4,5,6,7,8,9,10,11,12

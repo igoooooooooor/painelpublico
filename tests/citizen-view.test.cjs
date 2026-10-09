@@ -20,6 +20,10 @@ const profileCostSource = fs.readFileSync(
   path.join(__dirname, '..', 'frontend', 'scripts', 'profile-cost.js'),
   'utf8',
 );
+const senateCostSource = fs.readFileSync(
+  path.join(__dirname, '..', 'frontend', 'scripts', 'profile-senate-cost.js'),
+  'utf8',
+);
 const shareSource = fs.readFileSync(
   path.join(__dirname, '..', 'frontend', 'scripts', 'share-card.js'),
   'utf8',
@@ -57,7 +61,7 @@ function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'
     state,
   };
   vm.createContext(context);
-  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileView, profileQuotaDifferenceNote, profileMandateStartNote, alertCard, skel };', context);
+  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + senateCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { senateCostAnswer, senateCostDetails, senateCostMonths, citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileView, profileQuotaDifferenceNote, profileMandateStartNote, alertCard, skel };', context);
   context.votesForPerson = id => context.profileVotes(id).filter(record => String(record.vote.data || '').startsWith('2026'));
   context.attendanceBar = presence => presence
     ? `<span class="pbar" data-presence-days="${presence.dias}"></span>` : '';
@@ -610,6 +614,56 @@ test('multi-month peak lists each month against its own reference', () => {
   assert.match(html, /Referência de abril/);
   assert.match(html, /Maio de 2026[\s\S]*R\$ 114,1 mil acima \(\+481%\) sobre a referência de R\$ 23,7 mil/);
   assert.equal((html.match(/citizen-peak-bar flagged/g) || []).length, 2);
+});
+
+function senateFixture() {
+  const month = (remuneration, office, extra = {}) => ({ exercise: 'em_exercicio', remunerationCents: remuneration, remunerationReason: remuneration === null ? 'outra_lotacao' : null,
+    officeCents: office, officeReason: office === null ? 'nao_identificado' : null, officePeople: office === null ? null : 20, ...extra });
+  return {
+    id: 'senado:1', office: 'Fulano', periodStart: '2026-06', periodEnd: '2026-09', exerciseSource: 'https://legis.senado.leg.br/dadosabertos/senador/{codigo}/mandatos.json',
+    sources: [{ competence: '2026-07', url: 'https://www.senado.leg.br/transparencia/LAI/secrh/x_202607.csv' }],
+    months: {
+      '2026-06': { exercise: 'fora', remunerationCents: null, remunerationReason: 'fora_do_exercicio', officeCents: null, officeReason: 'fora_do_exercicio', officePeople: null },
+      '2026-07': month(4636619, 30000000),
+      '2026-08': month(4636619, 20000000),
+      '2026-09': month(null, 25000000),
+    },
+  };
+}
+const senateQuota = { meses: [{ year: 2026, month: 7, valor: 40000 }, { year: 2026, month: 8, valor: 20000 }, { year: 2026, month: 9, valor: 30000 }] };
+
+test('senate cost card averages only months with all three parts and never compares with deputies', () => {
+  const { api } = makeView();
+  const html = api.senateCostAnswer(senateFixture(), senateQuota);
+  assert.match(html, /Senado · despesas identificadas do mandato/);
+  // jul e ago completos: (46.366,19 + 300.000 + 40.000 + 46.366,19 + 200.000 + 20.000) / 2
+  assert.match(html, /Em média<\/span><b class="mono">R\$\s?326\.366,19<\/b>/);
+  assert.match(html, /2 meses com as três partes identificadas, de 3 no recorte/);
+  assert.match(html, /Não compare com o custo de deputados\(as\)/);
+  assert.doesNotMatch(html, /Custa em média|custo do mandato/);
+});
+
+test('senate monthly history shows partial totals and the reason for each gap', () => {
+  const { api } = makeView();
+  const html = api.senateCostDetails(senateFixture(), senateQuota);
+  assert.match(html, /data-cost-month="2026-09"[\s\S]*Total parcial: <b class="mono">R\$\s?280\.000,00<\/b> — remuneração do\(a\) senador\(a\) não identificada/);
+  assert.match(html, /Não identificada no próprio gabinete \(pode estar na Mesa ou numa liderança\)/);
+  assert.match(html, /data-cost-month="2026-07"[\s\S]*Total do mês: <b class="mono">R\$\s?386\.366,19<\/b>/);
+  assert.match(html, /\(20 pessoas\)/);
+  assert.doesNotMatch(html, /data-cost-month="2026-06"/);  // fora do exercício e sem dado: fora do histórico
+});
+
+test('senate absence says "not identified" unless the exercise history confirms it', () => {
+  const { api } = makeView();
+  const cost = senateFixture();
+  cost.months['2026-09'] = { exercise: 'em_exercicio', remunerationCents: null, remunerationReason: 'nao_identificado', officeCents: null, officeReason: 'nao_identificado', officePeople: null };
+  const html = api.senateCostDetails(cost, senateQuota);
+  const september = html.split('data-cost-month="2026-09"')[1].split('data-cost-month=')[0];
+  assert.match(september, /Não identificado nesta fonte/);
+  assert.doesNotMatch(september, /Fora do exercício/);
+  const noOffice = api.senateCostAnswer({ ...cost, office: null, months: { '2026-09': { exercise: 'em_exercicio', remunerationCents: null, remunerationReason: 'sem_lotacao_propria', officeCents: null, officeReason: 'sem_lotacao_propria' } } }, senateQuota);
+  assert.match(noOffice, /Sem gabinete com o próprio nome no arquivo de remuneração do Senado: remuneração e equipe não identificadas/);
+  assert.doesNotMatch(noOffice, /Em média/);
 });
 
 test('quota-only card says it is not comparable with the deputy mandate cost', () => {

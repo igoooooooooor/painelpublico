@@ -120,8 +120,32 @@ conferência; nenhuma entra por aproximação.
   lotação compartilhada com o titular licenciado e 2 sem a lotação nos últimos meses (conferido com
   `--suggest`: não houve troca de nome).
 
-A saída continua local (`data/snapshots/senate-office-pilot.json`). Ficha, banco e API não mudam até a
-decisão de como mostrar o gabinete do Senado.
+### Na ficha: despesas identificadas do mandato (9/10/2026)
+
+Decisão do mantenedor: o Senado aparece à parte, sem somar partes de definição diferente sob "custo do
+mandato" e sem comparação com deputados(as). A comparação de custo total Câmara × Senado fica indisponível
+até reconciliar o que cada fonte inclui.
+
+- `make collect-senate-cost` roda o coletor dos gabinetes (saída local) e `ingest/senate_cost.py --collect`,
+  que junta o histórico de exercício de cada senador(a) na API do Senado (cache em
+  `data/raw/senado-exercicios/`) e grava `data/snapshots/senate-cost.json`, publicado com `make deploy-data`.
+- **Cartão "Quanto custa?":** "Senado · despesas identificadas do mandato", com remuneração do(a)
+  senador(a), equipe do gabinete e cota parlamentar. A média só usa os meses com as três partes e diz
+  quantos foram; as três partes são calculadas sobre os mesmos meses. Sem mês completo, cada parte aparece
+  com os próprios meses e não há total.
+- **Mês a mês (Ver mais):** cada parte com valor ou motivo; "Total parcial — remuneração não identificada"
+  quando falta uma parte, sem trocar pelo subsídio tabelado.
+- **Motivos:** "Fora do exercício" só quando o histórico de exercício do Senado confirma; ausência no arquivo
+  sem essa confirmação diz "Não identificado nesta fonte". Outros: linha do(a) senador(a) fora do próprio
+  gabinete (Mesa, liderança), gabinete compartilhado com titular licenciado(a), sem gabinete com o próprio
+  nome, equipe com menos de 3 pessoas. Remuneração paga num mês fora do exercício (licença, ministério
+  com opção pelo subsídio) é mantida e marcada; são 11 senador-mês.
+- **Cobertura em set/2026, lista atual (81):** 72 com remuneração identificada e 9 sem: 4 com a linha fora
+  do próprio gabinete, 1 com gabinete compartilhado, 2 fora do exercício segundo o histórico, 1 não
+  identificado nesta fonte e 1 sem gabinete com o próprio nome. Das 2 pessoas sem gabinete próprio na
+  tabela (Leany Lemos e Renzo Braz), uma está fora do exercício em set/2026 segundo o histórico.
+- Folha suplementar (13º, férias), auxílios e servidores efetivos lotados no gabinete ficam fora das
+  partes mostradas.
 
 ## Inventário de folhas do grupo parlamentar
 

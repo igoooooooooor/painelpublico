@@ -164,7 +164,7 @@ function profileCostAnswer(cost) {
     ${principal}
     ${rows ? `<div class="citizen-cost-parts">${rows}</div>` : ''}
     ${profileCostChristmasLine(cost)}
-    ${rows ? `<p class="citizen-cost-note">Soma salário bruto, auxílios, cota parlamentar e verba do gabinete. Fichas de senadores(as) mostram só a cota, porque salário e gabinete do Senado não estão nesta base; os dois números não são comparáveis. Valores da época, sem correção pela inflação.${profileCostGapNote(cost)} Fora da conta: encargos do gabinete e apartamento funcional. Detalhes e fontes de cada mês em “Ver mais”.</p>` : ''}
+    ${rows ? `<p class="citizen-cost-note">Soma salário bruto, auxílios, cota parlamentar e verba do gabinete. Fichas de senadores(as) mostram as despesas do Senado à parte, com partes diferentes; os números não são comparáveis. Valores da época, sem correção pela inflação.${profileCostGapNote(cost)} Fora da conta: encargos do gabinete e apartamento funcional. Detalhes e fontes de cada mês em “Ver mais”.</p>` : ''}
   </section>`;
 }
 

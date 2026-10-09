@@ -368,6 +368,8 @@ b.warn { color: var(--warn); }
 .citizen-cost-month-parts { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; grid-column: 1 / -1; }
 .citizen-cost-month-parts li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: baseline; font-size: 13px; }
 .citizen-cost-month-parts li span { min-width: 0; overflow-wrap: anywhere; }
+.citizen-cost-month-parts li.citizen-cost-gap { grid-template-columns: 1fr; gap: 1px; }
+.citizen-cost-month-parts li.citizen-cost-gap small { color: var(--muted); font-size: 12px; line-height: 1.35; }
 .citizen-cost-month p { margin: 0; }
 .citizen-cost-footnote { margin-top: 8px; font-size: 12px; }
 .citizen-details { display: grid; gap: var(--space-3); min-width: 0; align-items: start; }
