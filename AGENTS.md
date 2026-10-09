@@ -10,7 +10,11 @@ Treat official API field names and URLs, existing public API contracts, database
 
 ## Changes and verification
 
-Keep changes focused, tests proportional, and commits clear. Run make check and git diff --check before finishing. Never commit databases, downloads, caches, backups, or secrets. Do not include agent session links (such as `Claude-Session:`) in commit or PR messages. Do not change stated coverage without evidence from the sources.
+Keep changes focused, tests proportional, and commits clear. Always run `git diff --check` before finishing. For small, localized changes, run only the checks and tests for the affected scope, including directly affected callers and contracts. Documentation-only changes need review and a whitespace check; do not run the full suite for each documentation or text adjustment.
+
+Run `make check` for cross-cutting changes, before integration or deployment, or when there is uncertainty about effects outside the tested scope. Broaden testing when failures, new changes, or unresolved concerns justify it. Once appropriate checks pass, do not repeat or expand them without a new reason. Report what was checked and any material verification limits.
+
+Never commit databases, downloads, caches, backups, or secrets. Do not include agent session links (such as `Claude-Session:`) in commit or PR messages. Do not change stated coverage without evidence from the sources.
 
 Delegate independent work when it saves time: use luna_max_worker with fork_turns none and explicit responsibilities and paths. Do not clone the root agent. Workers must not revert other contributors' changes or commit without coordination.
 
