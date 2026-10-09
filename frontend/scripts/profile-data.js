@@ -200,12 +200,69 @@ function profileElection(profile) {
   }
   return { ...base, summary: `Candidato(a) a ${roleLabel} em 2026`, sentence: `Candidatura a ${roleLabel}${locationLabel} em 2026. O arquivo do TSE não traz resultado para ela.` };
 }
+function profileSectionPeriod(section) {
+  const start = typeof section?.startDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(section.startDate) ? section.startDate : null;
+  const end = typeof section?.endDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(section.endDate) ? section.endDate : null;
+  if (start && end) return `de ${dateBR(start)} a ${dateBR(end)}`;
+  if (start) return `desde ${dateBR(start)}`;
+  if (end) return `até ${dateBR(end)}`;
+  if (typeof section?.period === 'string' && section.period.trim()) return datesInTextBR(section.period);
+  return '';
+}
+function profileSourceStatus(status) {
+  if (['imported', 'complete', 'completed', 'success', 'ok'].includes(status)) return 'consultado';
+  if (status === 'partial') return 'parcial';
+  if (['unavailable', 'missing', 'failed', 'error'].includes(status)) return 'indisponível';
+  return 'indisponível';
+}
+function profileAnnualSources(section) {
+  const years = new Map();
+  for (const row of [...(Array.isArray(section?.sources) ? section.sources : []),
+    ...(Array.isArray(section?.yearlyCoverage) ? section.yearlyCoverage : [])]) {
+    const year = Number(row?.year);
+    if (!Number.isInteger(year) || year < 1900 || year > 9999) continue;
+    const current = years.get(year) || {};
+    years.set(year, { ...current, ...row,
+      sourceUrl: row?.sourceUrl || row?.url || current.sourceUrl,
+      status: row?.status || current.status,
+      fetchedAt: row?.fetchedAt || current.fetchedAt,
+      startDate: row?.startDate || current.startDate,
+      endDate: row?.endDate || current.endDate,
+    });
+  }
+  return [...years.entries()].sort(([first], [second]) => first - second).map(([year, row]) => {
+    const url = profileSafeUrl(row.sourceUrl);
+    const status = profileSourceStatus(row.status);
+    const date = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) ? dateBR(value) : null;
+    const requestedStart = date(row.requestedStartDate || row.requested?.startDate);
+    const requestedEnd = date(row.requestedEndDate || row.requested?.endDate);
+    const observedStart = date(row.observedStartDate || row.observed?.startDate || row.startDate);
+    const observedEnd = date(row.observedEndDate || row.observed?.endDate || row.endDate);
+    const requestedRange = requestedStart && requestedEnd ? `${requestedStart} a ${requestedEnd}` : '';
+    const observedRange = observedStart && observedEnd ? `${observedStart} a ${observedEnd}` : '';
+    const rangesMatch = requestedRange && observedRange && requestedRange === observedRange;
+    const coverageRange = rangesMatch ? `de ${observedRange}` : [
+      requestedRange ? `solicitado ${requestedRange}` : '',
+      observedRange ? `com dados ${observedRange}` : '',
+    ].filter(Boolean).join(' · ');
+    const fetchedAt = typeof row.fetchedAt === 'string' ? date(row.fetchedAt.slice(0, 10)) : null;
+    const count = Number.isInteger(row.total) && row.total >= 0 ? `${row.total} itens` : '';
+    const freshness = row.stale === true ? `fotografia desatualizada${fetchedAt ? ` · ${fetchedAt}` : ''}`
+      : fetchedAt ? `fotografia ${fetchedAt}` : '';
+    const details = [status, coverageRange, freshness, count].filter(Boolean).join(' · ');
+    const label = `${year}${details ? ` · ${details}` : ''}`;
+    return url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(label)} ↗</a>` : `<span>${esc(label)}</span>`;
+  });
+}
 function profileSource(section, label = 'Conferir na fonte', dateLabel = 'Fotografia') {
   const url = profileSafeUrl(section?.sourceUrl);
   const date = typeof section?.fetchedAt === 'string' ? dateBR(section.fetchedAt) : null;
-  if (!url && !date && !section?.period) return '';
-  return `<span class="src">${section?.period ? `${esc(datesInTextBR(section.period))}. ` : ''}${date ? `${esc(dateLabel)}: ${esc(date)}. ` : ''}
-    ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(label)} ↗</a>` : ''}</span>`;
+  const period = profileSectionPeriod(section);
+  const annualSources = profileAnnualSources(section);
+  if (!url && !date && !period && !annualSources.length) return '';
+  return `<span class="src">${period ? `${esc(period)}. ` : ''}${date ? `${esc(dateLabel)}: ${esc(date)}. ` : ''}
+    ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(label)} ↗</a>` : ''}
+    ${annualSources.length ? `Fontes por ano: ${annualSources.join(' · ')}` : ''}</span>`;
 }
 const PROFILE_SECTION_STATE = new Map();
 function profileAccordionHTML(id, key, title, content, { desktopOpen = false, mobileOpen = false } = {}) {
@@ -275,6 +332,7 @@ function profileSectionsHTML(value, slots = {}) {
     && (unclassifiedProjectCount > 0 || !projectTotalMatchesItems);
   const projectCountLabel = projectCount === null ? 'total não confirmado'
     : `${projectCount} ${projectCount === 1 ? 'projeto' : 'projetos'}`;
+  const projectPeriod = profileSectionPeriod(projects);
   const amendmentLabel = confirmedAmendmentCount
     ? ` · ${confirmedAmendmentCount} ${confirmedAmendmentCount === 1 ? 'emenda' : 'emendas'}` : '';
   const projectSituationLabel = partialSituationCoverage
@@ -284,8 +342,10 @@ function profileSectionsHTML(value, slots = {}) {
     : confirmedProjectCount
       ? `${confirmedLawCount} ${confirmedLawCount === 1 ? 'virou' : 'viraram'} lei${amendmentLabel}`
       : consultedProjectCount ? 'situação consultada · classificação não confirmada' : 'situação não consultada';
+  const projectCollectionLabel = projects?.status === 'partial' ? ' · cobertura parcial'
+    : projects?.status === 'unavailable' ? ' · indisponível' : '';
   const projectTitle = profile.loading ? 'Projetos apresentados · carregando'
-    : `Projetos apresentados · ${projectCountLabel} · ${projectSituationLabel}`;
+    : `Projetos apresentados · ${projectCountLabel} · ${projectSituationLabel}${projectCollectionLabel}`;
   const savedProjectFilter = PROFILE_PROJECT_FILTER_STATE.get(profile.id) || 'todos';
   const selectedProjectFilter = savedProjectFilter === 'emenda' && !confirmedAmendmentCount ? 'todos' : savedProjectFilter;
   if (selectedProjectFilter !== savedProjectFilter) PROFILE_PROJECT_FILTER_STATE.set(profile.id, selectedProjectFilter);
@@ -296,7 +356,8 @@ function profileSectionsHTML(value, slots = {}) {
   const loading = () => typeof skel === 'function' ? skel('linhas', 3) : '<p class="muted">Carregando complemento…</p>';
   const slot = key => typeof slots?.[key] === 'string' && slots[key].trim() ? slots[key] : null;
   const projectContent = profile.loading ? loading() : `<p>${total !== null ? `${total} ${total === 1 ? 'projeto no recorte consultado' : 'projetos no recorte consultado'}.`
-      : items.length ? `${items.length} projetos disponíveis neste recorte parcial.` : projects?.status === 'partial' || projects?.status === 'unavailable' ? 'Consulta de projetos incompleta ou indisponível; total não confirmado.' : 'Projetos ainda não importados para este perfil.'}</p>
+      : items.length ? `${items.length} ${items.length === 1 ? 'projeto disponível' : 'projetos disponíveis'} neste recorte parcial.` : projects?.status === 'partial' || projects?.status === 'unavailable' ? 'Consulta de projetos incompleta ou indisponível; total não confirmado.' : 'Projetos ainda não importados para este perfil.'}${projectPeriod ? ` Período consultado: ${esc(projectPeriod)}.` : ''}</p>
+    ${profile.person.role === 'senador' ? '<p class="muted">Recorte: PL, PLP e PEC apresentados neste período.</p>' : ''}
     ${items.length ? `<p class="muted citizen-project-coverage">${consultedProjectCount
       ? `Consulta registrada em ${consultedProjectCount} de ${items.length} projetos; grupo confirmado em ${confirmedProjectCount}; ${unclassifiedProjectCount} sem grupo confirmado${items.length - consultedProjectCount ? ` (${items.length - consultedProjectCount} sem consulta)` : ''}.`
       : `Nenhuma consulta de situação registrada: 0 de ${items.length} consultados; ${items.length} sem confirmação.`}${total !== null && !projectTotalMatchesItems ? ` A lista mostra ${items.length} ${items.length === 1 ? 'projeto' : 'projetos'} de ${total} no total; as situações contam apenas os itens listados.` : ''}</p>` : ''}
@@ -321,12 +382,15 @@ function profileSectionsHTML(value, slots = {}) {
       const main = url ? `<a class="citizen-project-main" href="${esc(url)}" target="_blank" rel="noopener">${title}</a>` : `<div class="citizen-project-main">${title}</div>`;
       const consulted = profileProjectDate(situation?.consultadoEm);
       const source = profileSafeUrl(situation?.sourceUrl);
+      const presentationDate = typeof item.dataApresentacao === 'string' && /^\d{4}-\d{2}-\d{2}(?:$|T)/.test(item.dataApresentacao)
+        ? dateBR(item.dataApresentacao) : null;
       const norms = Array.isArray(situation?.normas) ? situation.normas.map(norm => {
         const normUrl = profileSafeUrl(norm?.url);
         const label = [norm?.tipo, norm?.numero, norm?.ano].filter(value => value != null && String(value).trim()).map(esc).join(' ');
         return label ? normUrl ? `<a href="${esc(normUrl)}" target="_blank" rel="noopener">${label} ↗</a>` : `<span>${label}</span>` : '';
       }).filter(Boolean) : [];
-      const meta = [consulted ? `<span>Consulta da situação: ${esc(consulted)}</span>` : '',
+      const meta = [presentationDate ? `<span>Apresentado em ${esc(presentationDate)}</span>` : '',
+        consulted ? `<span>Consulta da situação: ${esc(consulted)}</span>` : '',
         source ? `<a href="${esc(source)}" target="_blank" rel="noopener">Fonte da situação ↗</a>` : '', ...norms].filter(Boolean).join(' · ');
       const detail = typeof situation?.detail === 'string' && situation.detail.trim()
         ? `<p class="citizen-project-detail muted">${esc(datesInTextBR(situation.detail))}</p>` : '';

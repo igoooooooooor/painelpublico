@@ -61,8 +61,8 @@ function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'
     state,
   };
   vm.createContext(context);
-  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + senateCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { senateCostAnswer, senateCostDetails, senateCostMonths, citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileView, profileQuotaDifferenceNote, profileMandateStartNote, alertCard, skel };', context);
-  context.votesForPerson = id => context.profileVotes(id).filter(record => String(record.vote.data || '').startsWith('2026'));
+  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + senateCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { senateCostAnswer, senateCostDetails, senateCostMonths, citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileWorkAnswer, profileView, profileQuotaDifferenceNote, profileMandateStartNote, alertCard, skel };', context);
+  context.votesForPerson = id => context.profileVotes(id).filter(record => String(id).startsWith('senado:') || String(record.vote.data || '').startsWith('2026'));
   context.attendanceBar = presence => presence
     ? `<span class="pbar" data-presence-days="${presence.dias}"></span>` : '';
   return { api: context.__api, elements, state, events, context };
@@ -264,6 +264,33 @@ test('profile starts with three ordered answers and keeps the complementary deta
   assert.match(html, /Alerta preservado/);
 });
 
+test('Senate work answer keeps attendance in 2026 and labels votes from their collected range', () => {
+  const { api, context } = makeView();
+  const endDate = '2026-10-08';
+  context.profileSenateEnsure = () => {};
+  context.profileSenateLoading = () => false;
+  context.profilePresenceRows = () => [];
+  context.profileSenateSource = section => section === 'votacoes' ? ({
+    status: 'partial', startDate: '2023-02-01', endDate,
+    sources: [
+      { year: 2023, status: 'imported', sourceUrl: 'https://senado.example.test/votes/2023', startDate: '2023-02-01', endDate: '2023-12-31' },
+      { year: 2024, status: 'unavailable', sourceUrl: null, startDate: null, endDate: null },
+      { year: 2026, status: 'imported', sourceUrl: 'https://senado.example.test/votes/2026', startDate: '2026-01-01', endDate },
+    ],
+  }) : null;
+  context.profileVotes = () => [{ vote: { id: 'senado:V1', data: '2023-02-01' }, recordedVote: 'Sim' }];
+  context.votesForPerson = context.profileVotes;
+  const html = api.profileWorkAnswer({ id: 'senado:9', person: { role: 'senador', name: 'Senadora' }, presence: null, registeredPresence: null });
+  assert.match(html, /Presença no Plenário · 2026/);
+  assert.match(html, /Voto identificado em <b>1 de 1<\/b> votações do Senado com registro individual · de 01\/02\/2023 a 08\/10\/2026/);
+  assert.doesNotMatch(html, /Presença no Plenário · 2023|Presença no Plenário ·.*10\/2026/);
+
+  context.profileSenateSource = section => section === 'votacoes' ? ({ status: 'unavailable' }) : null;
+  const unavailable = api.profileWorkAnswer({ id: 'senado:9', person: { role: 'senador', name: 'Senadora' }, presence: null, registeredPresence: null });
+  assert.match(unavailable, /Dados de votações nominais do Senado indisponíveis neste recorte/);
+  assert.doesNotMatch(unavailable, /Voto identificado em <b>0|0 de 0/);
+});
+
 test('profile without alerts explains which rules were checked and keeps neutral contact wording', () => {
   const { api, state } = makeView();
   setProfileFixture(api, state, 'camara:56', {
@@ -401,8 +428,13 @@ test('Senate profile shows fetched votes with skeletons and never counts parliam
   assert.match(api.profileView(), /data-profile-answer="work"[\s\S]*?Carregando/);
   release({ ok: true, json: async () => ({
     presenca: { status: 'unavailable', items: [] },
-    votacoes: { status: 'imported', items: ['Sim', 'Atividade parlamentar', 'Presente – Não registrou voto', null].map((vote, n) => ({
-      id: `senado:${n}`, titulo: `Votação ${n}`, data: '2026-09-01', sourceUrl: 'https://legis.senado.leg.br/voto/' + n,
+    votacoes: { status: 'partial', startDate: '2023-02-01', endDate: '2026-10-08', sources: [
+      { year: 2023, status: 'imported', sourceUrl: 'https://senado.example.test/votos/2023', startDate: '2023-02-01', endDate: '2023-12-31' },
+      { year: 2024, status: 'imported', sourceUrl: 'https://senado.example.test/votos/2024', startDate: '2024-01-01', endDate: '2024-12-31' },
+      { year: 2025, status: 'unavailable', sourceUrl: null, startDate: null, endDate: null },
+      { year: 2026, status: 'imported', sourceUrl: 'https://senado.example.test/votos/2026', startDate: '2026-01-01', endDate: '2026-10-08' },
+    ], items: ['Sim', 'Atividade parlamentar', 'Presente – Não registrou voto', null].map((vote, n) => ({
+      id: `senado:${n}`, titulo: `Votação ${n}`, data: ['2023-02-01', '2024-06-15', '2026-01-03', '2026-10-08'][n], sourceUrl: 'https://legis.senado.leg.br/voto/' + n,
       rows: vote === null ? [] : [['senado:77', 'Senador', 'PT', 'SP', vote]],
     })) },
   }) });
@@ -412,6 +444,12 @@ test('Senate profile shows fetched votes with skeletons and never counts parliam
   assert.match(work, /Voto identificado em <b>1 de 3<\/b> votações do Senado com registro individual/);
   assert.match(work, /Presença do Senado sem registro importado/);
   assert.doesNotMatch(work, /class="huge"|0%|média da Câmara/);
+  assert.match(work, /Voto identificado em <b>1 de 3<\/b> votações do Senado com registro individual · de 01\/02\/2023 a 08\/10\/2026/);
+  const voteDetails = html.match(/<section[^>]*data-profile-section="votes"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(voteDetails, /Votações nominais do Senado · de 01\/02\/2023 a 08\/10\/2026 · 4/);
+  assert.match(voteDetails, /Votação 0/);
+  assert.match(voteDetails, /Votação 3/);
+  assert.doesNotMatch(voteDetails, /Votações nominais do Senado · 2026/);
   assert.match(html, /href="https:\/\/legis.senado.leg.br\/voto\/0"/);
   assert.match(html, /atividade parlamentar/);
   assert.match(html, /Sem registro importado/);

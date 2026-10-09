@@ -25,7 +25,12 @@ function load(data, senate = { presenca: null, votacoes: null, loading: false })
     && p.presente >= 0 && p.falta >= 0 && p.justificadas >= 0
     && p.presente + p.falta + p.justificadas === p.dias);
   context.profileRegisteredPresenceRows = () => (senate.presenca?.items || []).filter(p => Number.isFinite(p.presente) && p.presente > 0);
-  context.profileSource = section => `<span class="src">${section.period || ''}${section.sourceUrl ? `<a href="${section.sourceUrl}">Fonte e período</a>` : ''}</span>`;
+  context.profileSource = section => {
+    const period = section.period || (section.startDate && section.endDate ? `de ${section.startDate} a ${section.endDate}` : '');
+    const annual = (section.sources || []).map(source => source.sourceUrl
+      ? `<a href="${source.sourceUrl}">${source.year} · ${source.status}</a>` : `${source.year} · ${source.status}`).join(' · ');
+    return `<span class="src">${period}${section.sourceUrl ? `<a href="${section.sourceUrl}">Fonte e período</a>` : ''}${annual ? `Fontes por ano: ${annual}` : ''}</span>`;
+  };
   context.profileVoteButton = (vote, content, className = 'vt') => String(vote.id).startsWith('senado:')
     ? `<a class="${className}" href="${vote.sourceUrl || ''}">${content}</a>`
     : `<button type="button" class="${className}" data-vote="${vote.id}">${content}</button>`;
@@ -137,4 +142,34 @@ test('missing Senate activity stays unavailable and loading uses skeletons', () 
   const pending = loading.partyComparisonTable(party('AAA', { membros: 3, comDados: 2, media: 100, alertas: 1 }),
     party('BBB', { membros: 3, comDados: 0, media: null, alertas: 0 }));
   assert.match(pending, /loading/);
+});
+
+test('party vote comparison labels Senate source bounds and does not infer missing data as no votes', () => {
+  const senate = {
+    loading: false, presenca: null,
+    votacoes: {
+      status: 'partial', startDate: '2023-02-01', endDate: '2026-10-08',
+      sources: [
+        { year: 2023, status: 'imported', sourceUrl: 'https://senado.example.test/votos/2023' },
+        { year: 2024, status: 'unavailable', sourceUrl: null },
+        { year: 2026, status: 'partial', sourceUrl: 'https://senado.example.test/votos/2026' },
+      ],
+      items: [{ id: 'senado:V1', titulo: 'Votação do Senado', secreta: false, rows: [
+        ['senado:1', 'Senadora 1', 'AAA', 'SP', 'Sim'], ['senado:2', 'Senador 2', 'BBB', 'RJ', 'Não'],
+      ] }],
+    },
+  };
+  const ctx = load(DATA, senate);
+  const html = ctx.partyComparisonTable(party('AAA', { membros: 3 }), party('BBB', { membros: 3 }));
+  assert.match(html, /de 2023-02-01 a 2026-10-08/);
+  assert.match(html, /2023 · imported/);
+  assert.match(html, /2024 · unavailable/);
+  assert.match(html, /2026 · partial/);
+  assert.match(html, /href="https:\/\/senado\.example\.test\/votos\/2023"/);
+  assert.match(html, /Votação do Senado/);
+
+  senate.votacoes = { status: 'unavailable', startDate: '2023-02-01', endDate: '2026-10-08', sources: [], items: [] };
+  const unavailable = ctx.partyComparisonTable(party('AAA', { membros: 3 }), party('BBB', { membros: 3 }));
+  assert.match(unavailable, /Dados de votações nominais do Senado indisponíveis neste recorte/);
+  assert.doesNotMatch(unavailable, /Sem votações com escolhas nominais registradas para ambos os partidos neste recorte/);
 });

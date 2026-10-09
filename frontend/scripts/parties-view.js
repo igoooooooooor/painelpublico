@@ -107,7 +107,16 @@ function partyComparisonTable(a, b) {
     if (!section) return '';
     if (typeof profileSource === 'function') return profileSource(section, 'Fonte e período');
     const url = /^https?:\/\//i.test(section.sourceUrl || '') ? section.sourceUrl : '';
-    return `<span class="src">${section.period ? `${esc(datesInTextBR(section.period))}. ` : ''}${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">Fonte e período ↗</a>` : ''}</span>`;
+    const period = typeof profileSectionPeriod === 'function' ? profileSectionPeriod(section)
+      : section.startDate && section.endDate ? `de ${dateBR(section.startDate)} a ${dateBR(section.endDate)}` : section.period || '';
+    const annual = (Array.isArray(section.sources) ? section.sources : []).map(source => {
+      const href = /^https?:\/\//i.test(source?.sourceUrl || '') ? source.sourceUrl : '';
+      const status = source?.status === 'partial' ? 'parcial' : ['imported', 'complete', 'completed', 'success', 'ok'].includes(source?.status) ? 'consultado' : 'indisponível';
+      const fetchedAt = source?.fetchedAt ? ` · fotografia ${dateBR(source.fetchedAt)}` : '';
+      const label = `${source?.year || ''} · ${status}${fetchedAt}`;
+      return href ? `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(label)} ↗</a>` : `<span>${esc(label)}</span>`;
+    });
+    return `<span class="src">${period ? `${esc(datesInTextBR(period))}. ` : ''}${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">Fonte e período ↗</a>` : ''}${annual.length ? `Fontes por ano: ${annual.join(' · ')}` : ''}</span>`;
   };
   const senateVoteRows = sa.slice(0, partyState.senateVoteLimit).map((record, index) => {
     const pair = sb[index];
@@ -115,6 +124,7 @@ function partyComparisonTable(a, b) {
     const content = `<span>${esc(record.vote.titulo || record.vote.proposicao || 'Votação nominal')}</span><span class="party-v">${partyVoteChip(record)}</span><span class="party-v">${partyVoteChip(pair)}</span><em>${record.majority && pair.majority ? (record.majority === pair.majority ? 'mesmo lado' : 'lados opostos') : 'sem votos registrados de um dos partidos'}</em>`;
     return typeof profileVoteButton === 'function' ? profileVoteButton(record.vote, content, 'cmp-vote party-vote') : `<button type="button" class="cmp-vote party-vote" data-vote="${esc(record.vote.id)}">${content}</button>`;
   }).join('');
+  const senateVotesUnavailable = senateVoteSource?.status === 'unavailable';
   const chamberVoteRows = va.slice(0, partyState.chamberVoteLimit).map((record, index) => `<button type="button" class="cmp-vote party-vote" data-vote="${esc(record.vote.id)}"><span>${esc(record.vote.titulo)}</span><span class="party-v">${partyVoteChip(record)}</span><span class="party-v">${partyVoteChip(vb[index])}</span><em>${record.majority && vb[index]?.majority ? (record.majority === vb[index].majority ? 'mesmo lado' : 'lados opostos') : 'sem votos registrados de um dos partidos'}</em></button>`).join('');
   const recordSummary = party => `<b>${party.membros}</b><small>${[party.deputado ? `${party.deputado.membros} dep.` : '', party.senador ? `${party.senador.membros} sen.` : ''].filter(Boolean).join(' · ')}</small>`;
   return `<section class="card cmp wide party-cmp">
@@ -134,8 +144,8 @@ function partyComparisonTable(a, b) {
     <span class="muted">Placar dentro de cada partido: votos sim–não dos(as) deputados(as) da legenda. Votações secretas ficam de fora.</span>
   </section>` : ''}
   <section class="card wide"><span class="k">Como votaram · Senado</span>
-    ${isSenateLoading ? (typeof skel === 'function' ? skel('linhas', 3) : '<i class="sk" style="display:block;width:100%;height:14px"></i>') : senateVoteSource ? `<h2 class="h" style="font-size:21px">${senateComparableVotes.length ? `${esc(a.sigla)} e ${esc(b.sigla)} ficaram do mesmo lado em ${senateMatchingVoteCount} de ${senateComparableVotes.length} votações nominais comparáveis.` : 'Sem votações com escolhas nominais registradas para ambos os partidos.'}</h2>
-      ${sa.length ? senateVoteRows : '<p class="muted">Sem votações nominais do Senado com registro neste recorte.</p>'}
+    ${isSenateLoading ? (typeof skel === 'function' ? skel('linhas', 3) : '<i class="sk" style="display:block;width:100%;height:14px"></i>') : senateVoteSource ? `<h2 class="h" style="font-size:21px">${senateVotesUnavailable ? 'Dados de votações nominais do Senado indisponíveis neste recorte.' : senateComparableVotes.length ? `${esc(a.sigla)} e ${esc(b.sigla)} ficaram do mesmo lado em ${senateMatchingVoteCount} de ${senateComparableVotes.length} votações nominais comparáveis.` : 'Sem votações com escolhas nominais registradas para ambos os partidos neste recorte.'}</h2>
+      ${sa.length ? senateVoteRows : `<p class="muted">${senateVotesUnavailable ? 'Dados de votações nominais indisponíveis neste recorte.' : 'Sem votações nominais do Senado com registro neste recorte.'}</p>`}
       ${sa.length > partyState.senateVoteLimit ? `<button type="button" class="opt citizen-more" data-party-senate-votes-more>Mostrar mais (${sa.length - partyState.senateVoteLimit})</button>` : ''}
       ${senateVoteSource.detail ? `<p class="muted">${esc(datesInTextBR(senateVoteSource.detail))}</p>` : ''}${sourceMeta(senateVoteSource)}`
       : `<p class="muted">Votações nominais do Senado ainda não importadas.</p>${sourceMeta(senateVoteSource)}`}

@@ -137,7 +137,20 @@ function activitySource(section, label = 'Conferir na fonte do Senado') {
   if (typeof profileSource === 'function') return profileSource(section, label);
   const url = typeof section.sourceUrl === 'string' ? section.sourceUrl : '';
   const href = /^https?:\/\//i.test(url) ? url : '';
-  return `<span class="src">${section.period ? `${esc(datesInTextBR(section.period))}. ` : ''}${section.fetchedAt ? `Fotografia: ${esc(dateBR(section.fetchedAt))}. ` : ''}${href ? `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(label)} ↗</a>` : ''}</span>`;
+  const period = activityPeriod(section);
+  const annualSources = (Array.isArray(section.sources) ? section.sources : []).map(source => {
+    const sourceUrl = typeof source?.sourceUrl === 'string' && /^https?:\/\//i.test(source.sourceUrl) ? source.sourceUrl : '';
+    const status = source?.status === 'partial' ? 'parcial' : ['imported', 'complete', 'completed', 'success', 'ok'].includes(source?.status) ? 'consultado' : 'indisponível';
+    const annualRange = source?.startDate && source?.endDate ? ` · ${dateBR(source.startDate)} a ${dateBR(source.endDate)}` : '';
+    const fetchedAt = source?.fetchedAt ? ` · fotografia ${dateBR(source.fetchedAt)}` : '';
+    const caption = `${source?.year || ''} · ${status}${annualRange}${fetchedAt}`;
+    return sourceUrl ? `<a href="${esc(sourceUrl)}" target="_blank" rel="noopener">${esc(caption)} ↗</a>` : `<span>${esc(caption)}</span>`;
+  }).filter(Boolean);
+  return `<span class="src">${period ? `${esc(datesInTextBR(period))}. ` : ''}${section.fetchedAt ? `Fotografia: ${esc(dateBR(section.fetchedAt))}. ` : ''}${href ? `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(label)} ↗</a>` : ''}${annualSources.length ? `Fontes por ano: ${annualSources.join(' · ')}` : ''}</span>`;
+}
+function activityPeriod(section) {
+  return typeof profileSectionPeriod === 'function' ? profileSectionPeriod(section)
+    : section?.startDate && section?.endDate ? `de ${dateBR(section.startDate)} a ${dateBR(section.endDate)}` : section?.period ? datesInTextBR(section.period) : '';
 }
 function senateLoading() {
   return typeof profileSenateLoading === 'function' && profileSenateLoading();
@@ -157,6 +170,7 @@ function profileExtras(id) {
     const presenceRecord = senateRegisteredPresence(id);
     const sessionCount = Number.isFinite(presenceSource?.sessionCount) ? presenceSource.sessionCount : null;
     const votes = votesForPerson(id);
+    const votePeriod = activityPeriod(voteSource);
     const official = typeof citizenSourceUrl === 'function' ? citizenSourceUrl({ id })
       : /^\d+$/.test(personNumber || '') ? `https://www25.senado.leg.br/web/senadores/senador/-/perfil/${encodeURIComponent(personNumber)}` : null;
     const presence = presenceRecord ? `<section class="card">
@@ -173,8 +187,8 @@ function profileExtras(id) {
       return typeof profileVoteButton === 'function' ? profileVoteButton(vote, content, 'vt') : `<a class="vt" href="${esc(vote.sourceUrl || '')}" target="_blank" rel="noopener">${content}</a>`;
     }).join('');
     return `${presence}
-    <section class="card"><span class="k">Votações nominais do Senado${votes.length ? ` · ${votes.length}` : ''}</span>
-      ${loading && !voteSource ? (typeof skel === 'function' ? skel('linhas', 3) : '<i class="sk" style="display:block;width:100%;height:14px"></i>') : votes.length ? `<div class="votes">${voteList}</div>${votes.length > extrasState.senateVoteLimit ? `<button type="button" class="opt citizen-more" data-senate-votes-more>Mostrar mais (${votes.length - extrasState.senateVoteLimit})</button>` : ''}` : `<p class="muted">${voteSource ? 'Sem registros individuais de votação do Senado para este perfil.' : 'Votações nominais do Senado ainda não importadas.'}</p>`}
+    <section class="card"><span class="k">Votações nominais do Senado${votePeriod ? ` · ${esc(votePeriod)}` : ''}${votes.length ? ` · ${votes.length}` : ''}</span>
+      ${loading && !voteSource ? (typeof skel === 'function' ? skel('linhas', 3) : '<i class="sk" style="display:block;width:100%;height:14px"></i>') : votes.length ? `<div class="votes">${voteList}</div>${votes.length > extrasState.senateVoteLimit ? `<button type="button" class="opt citizen-more" data-senate-votes-more>Mostrar mais (${votes.length - extrasState.senateVoteLimit})</button>` : ''}` : `<p class="muted">${!voteSource ? 'Votações nominais do Senado ainda não importadas.' : voteSource.status === 'unavailable' ? 'Dados de votações nominais do Senado indisponíveis neste recorte.' : voteSource.status === 'partial' ? 'Sem registros individuais disponíveis neste recorte parcial.' : 'Sem registros individuais de votação do Senado para este perfil neste recorte.'}</p>`}
       <p class="muted">Votações secretas foram excluídas; a lista mostra somente votações nominais abertas e seus registros individuais.</p>
       ${voteSource?.detail ? `<p class="muted">${esc(datesInTextBR(voteSource.detail))}</p>` : ''}
       ${activitySource(voteSource)}
@@ -297,9 +311,15 @@ function comparisonContact(profile) {
 function comparisonProjects(profile) {
   const projects = profile.projects;
   if (!projects) return 'Sem dados importados';
-  if (projects.status === 'partial') return 'Disponíveis em recorte parcial';
-  if (projects.status === 'imported' || Number.isInteger(projects.total)) return 'Dados disponíveis';
-  return projects.items?.length ? 'Disponíveis neste recorte' : 'Sem dados importados';
+  const period = activityPeriod(projects);
+  const periodLabel = period ? ` · ${esc(period)}` : '';
+  if (projects.status === 'partial' || projects.status === 'unavailable' || projects.total == null && Array.isArray(projects.items)) {
+    const count = projects.items?.length;
+    const listed = count ? `${count} ${count === 1 ? 'projeto listado' : 'projetos listados'}` : 'Total não confirmado';
+    return `${listed} · recorte parcial${periodLabel}`;
+  }
+  if (projects.status === 'imported' || Number.isInteger(projects.total)) return `Dados disponíveis${periodLabel}`;
+  return projects.items?.length ? `Disponíveis neste recorte${periodLabel}` : 'Sem dados importados';
 }
 function comparisonCompensation(profile) {
   const salary = profile.compensation;
@@ -397,9 +417,11 @@ function comparisonTable([a, b]) {
   const matchingVoteCount = comparableVotes.filter(record => record.voteA === record.voteB).length;
   const senateVoteSource = voteChamber === 'senado' && typeof profileSenateSource === 'function' ? profileSenateSource('votacoes') : null;
   const isSenateLoading = voteChamber === 'senado' && senateLoading();
+  const senateVotesUnavailable = senateVoteSource?.status === 'unavailable';
   const voteLabel = voteChamber === 'senado' ? 'Como votaram · Senado' : 'Como votaram';
   const voteSummary = voteChamber === 'senado'
-    ? (comparableVotes.length ? `${firstName(personA)} e ${firstName(personB)} registraram o mesmo voto em ${matchingVoteCount} de ${comparableVotes.length} votações nominais comparáveis no Senado.` : 'Sem votos nominais comparáveis para estes(as) senadores(as) neste recorte.')
+    ? (senateVotesUnavailable ? 'Dados de votações nominais do Senado indisponíveis neste recorte.'
+      : comparableVotes.length ? `${firstName(personA)} e ${firstName(personB)} registraram o mesmo voto em ${matchingVoteCount} de ${comparableVotes.length} votações nominais comparáveis no Senado.` : 'Sem votos nominais comparáveis para estes(as) senadores(as) neste recorte.')
     : `${firstName(personA)} e ${firstName(personB)} registraram o mesmo voto em ${matchingVoteCount} de ${comparableVotes.length} votações comparáveis.`;
   const voteRows = votes.slice(0, extrasState.comparisonVoteLimit || 20).map(record => {
     const voteAClass = record.voteA === 'Sim' ? 'yes' : record.voteA === 'Não' ? 'no' : '';
@@ -427,7 +449,7 @@ function comparisonTable([a, b]) {
   </section>
   ${voteChamber === 'senado' || comparableVotes.length ? `<section class="card wide"><span class="k">${voteLabel}</span>
     ${isSenateLoading ? (typeof skel === 'function' ? skel('linhas', 3) : '<i class="sk" style="display:block;width:100%;height:14px"></i>') : `<h2 class="h" style="font-size:21px">${voteSummary}</h2>
-    ${voteRows || (voteChamber === 'senado' ? '<p class="muted">Sem votações nominais do Senado com registro para ambos neste recorte.</p>' : '')}
+    ${voteRows || (voteChamber === 'senado' ? `<p class="muted">${senateVotesUnavailable ? 'Dados de votações nominais indisponíveis neste recorte.' : 'Sem votações nominais do Senado com registro para ambos neste recorte.'}</p>` : '')}
     ${votes.length > (extrasState.comparisonVoteLimit || 20) ? `<button type="button" class="opt citizen-more" data-cmp-votes-more>Mostrar mais (${votes.length - (extrasState.comparisonVoteLimit || 20)})</button>` : ''}`}
     ${voteChamber === 'senado' ? `${senateVoteSource?.detail ? `<p class="muted">${esc(datesInTextBR(senateVoteSource.detail))}</p>` : ''}${activitySource(senateVoteSource, 'Fonte e período')}` : '<span class="muted">A comparação considera apenas votos registrados por ambos; ausência de registro não significa que a pessoa não votou.</span>'}
   </section>` : String(personA.id).split(':')[0] !== String(personB.id).split(':')[0] ? '<section class="card wide"><span class="k">Votações</span><p class="muted">Votações de casas diferentes não são comparadas.</p></section>' : ''}

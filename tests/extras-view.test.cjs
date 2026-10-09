@@ -117,14 +117,14 @@ test('profile comparison adds neutral availability and mandate details without r
   const { api, context } = comparison(profile('camara:1', 100), profile('camara:2', 200));
   context.profileData = value => value.id.endsWith(':1') ? ({
     id: value.id, person: value, mandate: { participacao: 'Titular', exercicio: 'Em exercício' },
-    contact: { email: 'a@example.test', status: 'partial' }, projects: { status: 'partial', items: [{}] },
+    contact: { email: 'a@example.test', status: 'partial' }, projects: { status: 'partial', total: null, startDate: '2023-02-01', endDate: '2026-10-08', items: [{}] },
     office: { amount: 125000, staffActive: 4, period: 'Jan–Jun/2026', months: 6, fetchedAt: '2026-10-07' },
     compensation: { amount: 46366.19 },
   }) : ({ id: value.id, person: value, mandate: null, contact: null, projects: null, office: null, compensation: null });
   const html = api.comparisonTable([profile('camara:1', 100), profile('camara:2', 200)]);
   assert.match(html, /Participação e exercício/);
   assert.match(html, /Disponível em recorte parcial/);
-  assert.match(html, /Disponíveis em recorte parcial/);
+  assert.match(html, /1 projeto listado · recorte parcial · de 01\/02\/2023 a 08\/10\/2026/);
   assert.match(html, /125\.000,00/);
   assert.match(html, /Jan–Jun\/2026/);
   assert.match(html, /4 pessoas ativas/);
@@ -172,6 +172,58 @@ test('Senate profile comparison keeps presence and registered nominal votes with
   const profileHtml = api.profileExtras('senado:55');
   assert.match(profileHtml, /Presença registrada · sem voto/);
   assert.match(profileHtml, /Votações secretas foram excluídas/);
+});
+
+test('Senate vote views show the collected mandate bounds and annual source coverage', () => {
+  const { api, senate } = comparison(profile('senado:55', 100), profile('senado:56', 200));
+  senate.votacoes = {
+    status: 'partial', startDate: '2023-02-01', endDate: '2026-10-08',
+    detail: 'A cobertura de 2024 está incompleta.',
+    sources: [
+      { year: 2023, status: 'imported', sourceUrl: 'https://senado.example.test/votos/2023', startDate: '2023-02-01', endDate: '2023-12-31' },
+      { year: 2024, status: 'partial', sourceUrl: 'https://senado.example.test/votos/2024', startDate: '2024-01-01', endDate: '2024-06-30' },
+      { year: 2025, status: 'unavailable', sourceUrl: null, startDate: null, endDate: null },
+      { year: 2026, status: 'imported', sourceUrl: 'https://senado.example.test/votos/2026', startDate: '2026-01-01', endDate: '2026-10-08' },
+    ],
+    items: [
+      { id: 'senado:oldest', data: '2023-02-01', titulo: 'Voto no início do recorte', secreta: false, sourceUrl: 'https://senado.example.test/voto/oldest', rows: [
+        ['senado:55', 'Senadora A', 'AAA', 'SP', 'Sim'], ['senado:56', 'Senador B', 'BBB', 'RJ', 'Não'],
+      ] },
+      { id: 'senado:latest', data: '2026-10-08', titulo: 'Voto no fim do recorte', secreta: false, sourceUrl: 'https://senado.example.test/voto/latest', rows: [
+        ['senado:55', 'Senadora A', 'AAA', 'SP', 'Não'], ['senado:56', 'Senador B', 'BBB', 'RJ', 'Não'],
+      ] },
+    ],
+  };
+  const comparisonHtml = api.comparisonTable([profile('senado:55', 100), profile('senado:56', 200)]);
+  assert.match(comparisonHtml, /Voto no início do recorte/);
+  assert.match(comparisonHtml, /Voto no fim do recorte/);
+  assert.match(comparisonHtml, /de 01\/02\/2023 a 08\/10\/2026/);
+  assert.match(comparisonHtml, /2024 · parcial/);
+  assert.match(comparisonHtml, /2025 · indisponível/);
+  assert.match(comparisonHtml, /href="https:\/\/senado\.example\.test\/votos\/2023"/);
+  assert.match(comparisonHtml, /href="https:\/\/senado\.example\.test\/votos\/2026"/);
+
+  const profileHtml = api.profileExtras('senado:55');
+  assert.match(profileHtml, /Votações nominais do Senado · de 01\/02\/2023 a 08\/10\/2026 · 2/);
+  assert.match(profileHtml, /Voto no início do recorte/);
+  assert.match(profileHtml, /Voto no fim do recorte/);
+  assert.match(profileHtml, /Presença registrada · Senado/);
+});
+
+test('unavailable Senate vote coverage does not read as an empty comparison or zero votes', () => {
+  const { api, senate } = comparison(profile('senado:55', 100), profile('senado:56', 200));
+  senate.votacoes = { status: 'unavailable', startDate: '2023-02-01', endDate: '2026-10-08', sources: [
+    { year: 2025, sourceUrl: null },
+  ], items: [] };
+  const profileHtml = api.profileExtras('senado:55');
+  assert.match(profileHtml, /Dados de votações nominais do Senado indisponíveis neste recorte/);
+  assert.match(profileHtml, /Votações nominais do Senado · de 01\/02\/2023 a 08\/10\/2026/);
+  assert.match(profileHtml, /2025 · indisponível/);
+  assert.doesNotMatch(profileHtml, /Votações nominais do Senado · 0/);
+
+  const comparisonHtml = api.comparisonTable([profile('senado:55', 100), profile('senado:56', 200)]);
+  assert.match(comparisonHtml, /Dados de votações nominais do Senado indisponíveis neste recorte/);
+  assert.doesNotMatch(comparisonHtml, /Sem votos nominais comparáveis para estes\(as\) senadores\(as\)/);
 });
 
 test('cross-house profile comparison leaves presence methods unranked and omits vote agreement', () => {

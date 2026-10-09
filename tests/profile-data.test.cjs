@@ -261,6 +261,37 @@ test('only a complete project collection supports an observed zero', () => {
   assert.doesNotMatch(ctx.profileSectionsHTML('camara:2'), /0 projetos/);
 });
 
+test('Senate authored-project coverage shows collected bounds and yearly partial or unavailable sources', () => {
+  const ctx = load({ perfis: { profiles: { 'senado:1': { projetos: {
+    status: 'partial', total: null, startDate: '2023-02-01', endDate: '2026-10-08', items: [
+      { titulo: 'PL 1/2023', tipo: 'PL', dataApresentacao: '2023-02-01', url: 'https://legis.senado.example.test/pl-1' },
+    ],
+    sources: [
+      { year: 2023, sourceUrl: 'https://dados.senado.example.test/projetos/2023', status: 'imported', startDate: '2023-02-01', endDate: '2023-12-31', fetchedAt: '2026-10-08T22:31:00+00:00' },
+      { year: 2024, sourceUrl: 'https://dados.senado.example.test/projetos/2024', status: 'partial', startDate: '2024-01-01', endDate: '2024-06-30' },
+      { year: 2025, sourceUrl: null, startDate: null, endDate: null },
+      { year: 2026, sourceUrl: 'https://dados.senado.example.test/projetos/2026', status: 'imported', startDate: '2026-01-01', endDate: '2026-10-08' },
+    ],
+    yearlyCoverage: [
+      { year: 2023, status: 'imported', requestedStartDate: '2023-02-01', requestedEndDate: '2023-12-31', observedStartDate: '2023-02-01', observedEndDate: '2023-12-31', total: 3 },
+      { year: 2024, status: 'partial', requestedStartDate: '2024-01-01', requestedEndDate: '2024-12-31', observedStartDate: '2024-01-01', observedEndDate: '2024-06-30', fetchedAt: '2025-02-01', total: 2, stale: true },
+      { year: 2025, requestedStartDate: '2025-01-01', requestedEndDate: '2025-12-31', observedStartDate: null, observedEndDate: null, total: null },
+      { year: 2026, status: 'imported', requestedStartDate: '2026-01-01', requestedEndDate: '2026-10-08', observedStartDate: '2026-01-01', observedEndDate: '2026-10-08', total: 1 },
+    ],
+  } } } } });
+  const html = ctx.profileSectionsHTML('senado:1');
+  assert.match(html, /1 projeto · situação não consultada · cobertura parcial/);
+  assert.match(html, /Período consultado: de 01\/02\/2023 a 08\/10\/2026/);
+  assert.match(html, /Recorte: PL, PLP e PEC apresentados neste período/);
+  assert.match(html, /Apresentado em 01\/02\/2023/);
+  assert.match(html, /Fontes por ano:[\s\S]*2023 · consultado · de 01\/02\/2023 a 31\/12\/2023 · fotografia 08\/10\/2026 · 3 itens/);
+  assert.match(html, /2024 · parcial · solicitado 01\/01\/2024 a 31\/12\/2024 · com dados 01\/01\/2024 a 30\/06\/2024 · fotografia desatualizada · 01\/02\/2025 · 2 itens/);
+  assert.match(html, /2025 · indisponível · solicitado 01\/01\/2025 a 31\/12\/2025/);
+  assert.match(html, /href="https:\/\/dados\.senado\.example\.test\/projetos\/2023"/);
+  assert.match(html, /href="https:\/\/dados\.senado\.example\.test\/projetos\/2024"/);
+  assert.doesNotMatch(html, /0 projetos no recorte consultado|2027/);
+});
+
 test('missing project snapshot never presents a zero law count', () => {
   const html = load().profileSectionsHTML({ id: 'camara:99', role: 'deputado' });
   assert.match(html, /Projetos apresentados · total não confirmado · situação não consultada/);

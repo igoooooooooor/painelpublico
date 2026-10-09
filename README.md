@@ -40,7 +40,8 @@ python3 -m backend.server --port 8000
 | `make import` | Importar arquivos locais de `data/imports/` |
 | `make collect-legislative YEAR=2026` | Baixar dados da Câmara e do Senado |
 | `make collect-profiles` | Coletar manualmente os complementos das fichas; depois rode `make build` |
-| `make collect-senate YEAR=2026` | Coletar presença registrada, votos nominais e autoria do Senado; depois rode `make build` |
+| `make collect-senate YEAR=2026` | Coletar presença registrada de 2026 e votos/autoria do mandato; depois rode `make build` |
+| `make collect-senate-mandate` | Coletar votos nominais e autoria desde fev/2023, sem baixar PDFs de presença |
 | `make collect-project-status` | Consultar a situação dos projetos já listados, com fontes e datas; atualização e modo offline em [Dados e SQLite](docs/data.md) |
 | `make collect-accounts YEAR=2025` | Coletar contas anuais municipais do SICONFI, com cache e reconstrução offline |
 | `make collect-amendments YEAR=2026` | Coletar emendas por município e ano da proposta; valores empenhados e pagos separados |

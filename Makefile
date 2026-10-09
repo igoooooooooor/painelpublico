@@ -6,7 +6,7 @@ HOST ?= 127.0.0.1
 
 
 .PHONY: ci deploy-data remote-build
-.PHONY: help build dev prod test check db-init db-check db-backup import collect-legislative collect-profiles collect-senate collect-project-status collect-elections collect-cities collect-amendments collect-accounts collect-mandate-cost audit-mandate-cost collect-mandate-history collect-senate-cost deploy deploy-db deploy-status
+.PHONY: help build dev prod test check db-init db-check db-backup import collect-legislative collect-profiles collect-senate collect-senate-mandate collect-project-status collect-elections collect-cities collect-amendments collect-accounts collect-mandate-cost audit-mandate-cost collect-mandate-history collect-senate-cost deploy deploy-db deploy-status
 help:
 	@echo "make dev                Gera o app e inicia em localhost:8000"
 	@echo "make check              Build, sintaxe e testes (sem downloads)"
@@ -14,7 +14,8 @@ help:
 	@echo "make import             Importa snapshots normalizados locais"
 	@echo "make collect-legislative YEAR=2026  Coleta Câmara e Senado"
 	@echo "make collect-profiles   Coleta manual de contatos, projetos e gabinete"
-	@echo "make collect-senate     Coleta manual de atividade e autoria do Senado"
+	@echo "make collect-senate     Presença de 2026 e votos/autoria do Senado no mandato"
+	@echo "make collect-senate-mandate  Votos e autoria desde fev/2023, sem coletar PDFs"
 	@echo "make collect-project-status  Consulta a situação dos projetos já listados"
 	@echo "make collect-elections  Liga a lista atual às candidaturas de 2026 no TSE"
 	@echo "make collect-accounts YEAR=2025  Coleta contas municipais do SICONFI"
@@ -70,8 +71,11 @@ collect-profiles:
 
 collect-senate:
 	$(PYTHON) ingest/senate_attendance.py --collect --year $(or $(YEAR),2026)
-	$(PYTHON) ingest/senate_activity.py --collect --year $(or $(YEAR),2026)
-	$(PYTHON) ingest/senate_projects.py --collect --year $(or $(YEAR),2026)
+	$(MAKE) collect-senate-mandate
+
+collect-senate-mandate:
+	$(PYTHON) ingest/senate_activity.py --collect --mandate $(if $(THROUGH),--through $(THROUGH))
+	$(PYTHON) ingest/senate_projects.py --collect --mandate $(if $(THROUGH),--through $(THROUGH))
 
 collect-project-status:
 	$(PYTHON) ingest/project_status.py --collect

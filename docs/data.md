@@ -132,23 +132,24 @@ O salário nas fichas e comparações é o subsídio bruto de referência do car
 
 A presença complementar cobre 512 dos 513 deputados; Gilmar Machado não tem dias extraídos no snapshot. Somente denominadores positivos e contagens consistentes entram nas porcentagens. As votações complementares cobrem quatro votações escolhidas para o Placar. Linha ausente significa registro não importado, nunca a inferência de que a pessoa não votou; votação secreta informa somente participação. As comparações de concordância usam apenas votações com registro para ambos. Cadastro completo não significa histórico de presença, votações e remunerações completo.
 
-### Atividade e autoria do Senado — consulta de 7/10/2026
+### Atividade e autoria do Senado — mandato desde fevereiro de 2023
 
 ```sh
 # Só a coleta de PDFs de presença requer esta dependência opcional:
 python3 -m pip install -r ingest/senate-requirements.txt
-make collect-senate YEAR=2026
+make collect-senate-mandate THROUGH=2026-10-09
+# Presença continua separada, em 2026:
 python3 ingest/senate_attendance.py --collect --refresh --year 2026
-python3 ingest/senate_projects.py --collect --refresh --year 2026
-python3 ingest/senate_activity.py --collect --refresh --year 2026
+python3 ingest/senate_projects.py --collect --refresh --mandate --through 2026-10-09
+python3 ingest/senate_activity.py --collect --refresh --mandate --through 2026-10-09
 # Reconstrução dos snapshots sem acessar a rede:
 python3 ingest/senate_attendance.py --year 2026
-python3 ingest/senate_projects.py --year 2026
-python3 ingest/senate_activity.py --year 2026
+python3 ingest/senate_projects.py --mandate --through 2026-10-09
+python3 ingest/senate_activity.py --mandate --through 2026-10-09
 make build
 ```
 
-Os novos coletores são manuais. Caches ficam em `data/raw/senado-projetos/` e
+Os coletores são manuais. `--mandate` consulta fatias anuais desde 1/2/2023 até a data de corte; sem `--through`, usa a data da execução. `--year` mantém o modo anual para diagnóstico e escreve o mesmo destino: use `--output` no coletor de votos ou uma raiz isolada nos testes para não substituir o snapshot de mandato. `make collect-senate` preserva a coleta de presença de 2026 e chama a coleta de votos/autoria do mandato. Caches ficam em `data/raw/senado-projetos/` e
 `data/raw/senado-atividade/` e `data/raw/senado-presenca/`; os snapshots correspondentes, em `data/snapshots/`.
 Autoria é mesclada na resposta individual `/api/c/perfil/<id>`, preservando contato e
 mandato. Votos e presença chegam por `/api/c/senado/atividade`, somente quando uma
@@ -157,19 +158,25 @@ Nenhum dado novo é embutido na home ou importado no SQLite.
 
 **Autoria:** [API oficial de processos](https://legis.senado.leg.br/dadosabertos/v3/api-docs),
 endpoint `/processo`, filtros `codigoParlamentarAutor`, `sigla=PL,PLP,PEC`,
-`dataInicioApresentacao=2026-01-01` e `dataFimApresentacao=2026-10-07`.
-As 82 consultas do cadastro local responderam com arrays válidos: 788 associações
-senador–projeto, 462 IDs distintos e três respostas vazias confirmadas. Inclui coautorias,
+datas anuais limitadas a 1/2/2023–9/10/2026. Na coleta local de 9/10, as 324 consultas
+(81 senadores da lista atual × quatro anos) responderam com arrays válidos:
+5.996 associações senador–projeto, 2.527 IDs distintos e dois perfis com total zero confirmado.
+A seleção respeita o roster atual importado; não promete autoria de todos os ex-senadores do período.
+Inclui coautorias,
 portanto a soma por senador não é uma contagem de projetos distintos. Mantém somente
 processos `objetivo=Iniciadora`: substitutivos posteriores podem herdar o autor do projeto
 original e não são novos projetos de sua autoria. O serviço não documenta paginação
 nem publica total independente; a cobertura se refere aos arrays retornados pelos
 filtros oficiais, não a uma auditoria da completude interna da fonte. O serviço legado
-anunciava descontinuação em 1/2/2026 e não é usado. Situação atual vem da coleta separada da Etapa 3, descrita abaixo, sem inferência a partir da autoria. O recorte do Senado começa em 2026; o da Câmara, em fevereiro de 2023.
+anunciava descontinuação em 1/2/2026 e não é usado. Situação atual vem da coleta separada da Etapa 3, descrita abaixo, sem inferência a partir da autoria. As duas Casas agora começam em fevereiro de 2023. Cada item do Senado conserva a data de apresentação. IDs repetidos são contados uma vez por pessoa; o total só é confirmado se todas as fatias anuais forem importadas. `sources` e `yearlyCoverage` guardam fontes, datas pedidas/observadas e falhas por ano; a ficha e as comparações mostram esses períodos. Falha de atualização preserva os itens e a data anterior, com cobertura parcial.
 
-**Votos:** [API oficial de votações](https://legis.senado.leg.br/dadosabertos/votacao?dataInicio=2026-01-01&dataFim=2026-10-07),
-consulta de 1/1 a 7/10/2026. A resposta contém 59 votações do Plenário do Senado:
-19 abertas nominais com 1.539 linhas individuais e 40 secretas. As secretas ficam
+**Votos:** [API oficial de votações](https://legis.senado.leg.br/dadosabertos/v3/api-docs),
+consultas anuais de 1/2/2023 a 9/10/2026, respeitando o limite de um ano por chamada.
+Foram importadas 183 votações públicas nominais, com 14.823 linhas individuais, e excluídas
+240 secretas. A classificação exige `votacaoSecreta=N` e escolhas nominais explícitas;
+cinco registros sem a expressão “Votação nominal” na descrição têm escolhas individuais
+Sim/Não e foram incluídos após conferência. Uma lista só de presença não comprova votação nominal.
+Nenhum ano ficou parcial na coleta local. As secretas ficam
 fora dos itens e de todos os denominadores de escolha nominal. Registros sem escolha
 (presença sem voto, atividade parlamentar, licenças, missão, não comparecimento e
 presidência) são mantidos como registros, sem virar votos nem faltas. A comparação de
@@ -181,6 +188,23 @@ A lista completa deste recorte é distinta das quatro votações editoriais do P
 Cada item aponta para a consulta oficial da sessão; os títulos vêm da descrição e da
 identificação da matéria, sem resumo editorial novo. Falha de atualização preserva a
 fotografia anterior e sua data, com status parcial.
+
+Resultado da coleta local (9/10/2026), ainda sem publicação:
+
+| Ano | Votações públicas nominais | Vínculos de autoria/coautoria | Projetos distintos |
+| --- | ---: | ---: | ---: |
+| 2023, desde fevereiro | 50 | 2.254 | 835 |
+| 2024 | 58 | 1.501 | 595 |
+| 2025 | 56 | 1.456 | 638 |
+| 2026, até 9/10 | 19 | 785 | 459 |
+
+`senado-atividade.json` e `senado-projetos.json` mantêm os nomes e contratos existentes,
+com metadados de período adicionais. A presença incorporada em `senado-atividade.json`
+permaneceu idêntica à fotografia anterior de 2026; nenhum PDF histórico foi coletado.
+A situação dos 2.527 projetos distintos também foi consultada: 66 leis, duas emendas
+constitucionais, 2.119 em tramitação e um arquivado/rejeitado segundo as regras existentes.
+Outros 339 não confirmam um desses quatro grupos; a descrição oficial continua visível,
+sem inferir aprovação ou rejeição. Caches da Câmara foram reaproveitados.
 
 **Presença registrada:** a [agenda mensal oficial](https://legis.senado.leg.br/dadosabertos/plenario/agenda/mes/20260401)
 é consultada desde o primeiro dia de cada mês; a API lista eventos da data informada
@@ -536,7 +560,7 @@ contra 31 MB e ~180 MB sem compactar.
 
 A cota e a presença da Câmara nas telas (lista, ficha, comparação, home, partidos
 e presença) cobrem o mandato, desde fev/2023. A cota do Senado segue o mesmo recorte
-(desde 8/10, fontes `senado_ceaps_{ano}`); o resto do Senado continua em 2026. Para quem
+(desde 8/10, fontes `senado_ceaps_{ano}`). Votações nominais e autoria do Senado também cobrem desde fev/2023 na implementação local de 9/10; a presença segue em 2026. Para quem
 tem mandato iniciado antes (senadores eleitos em 2018), a ficha avisa que a cota conta a
 partir de fev/2023.
 
@@ -570,8 +594,7 @@ partir de fev/2023.
   coluna Documento fica vazia.
 - **Alertas:** picos e concentração avaliam o mandato inteiro, nas duas Casas (regra,
   cobertura e prazos em [Alertas](alerts.md)); lançamentos de valor alto seguem só em 2026.
-- **O que segue em 2026:** fornecedores globais (`supplier_totals`) e, no Senado,
-  presença, votações, atividade e projetos.
+- **O que segue em 2026:** fornecedores globais (`supplier_totals`) e a presença do Senado.
 - **Presença:** `presenca.json` agora soma o mandato (fev/2023 até o mês corrente),
   com `inicio` e `fim` por deputado, e vem de `ingest/chamber_mandate_history.py`
   (que reconsulta o ano corrente a cada `--collect`). Conferência em 8/10: a parte de

@@ -412,6 +412,8 @@ function profileWorkAnswer(shared) {
   const identifiedVotes = knownVotes.filter(record => senate ? ['Sim', 'Não', 'Abstenção', 'Obstrução', 'Não votou'].includes(record.recordedVote) : !['Presente', 'Presidiu'].includes(record.recordedVote));
   const recordedVoteCount = identifiedVotes.filter(record => record.recordedVote !== 'Não votou').length;
   const presencePeriod = !senate && presence ? citizenQuotaPeriod(presence.inicio, presence.fim) : '';
+  const voteSource = senate ? profileSenateSource('votacoes') : null;
+  const votePeriod = senate && typeof profileSectionPeriod === 'function' ? profileSectionPeriod(voteSource) : '';
   return `${head}<span class="k">Presença no Plenário · ${senate ? '2026' : presencePeriod || 'mandato'}</span>
     ${presence ? `<div class="huge">${presencePercent}<small>%</small></div>
       <p>${presence.presente} de ${presence.dias} ${unit}${averagePresence !== null ? ` · média ${senate ? 'do' : 'da'} ${house}: ${averagePresence}%` : ''}</p>
@@ -420,7 +422,10 @@ function profileWorkAnswer(shared) {
       : registeredPresence ? `<div class="huge">${registeredPresence.presente}<small> sessões</small></div><p>Com presença registrada no Diário do Senado.</p>
         <p class="muted">${profileSenateSource('presenca')?.sessionCount || ''} listas de sessões consultadas em 2026. Faltas e justificativas não apuradas; sem percentual de assiduidade.</p>`
         : `<p class="citizen-empty">Presença ${senate ? 'do Senado ' : ''}sem registro importado.</p><p class="muted">Ausência de dado não significa zero presença.</p>`}
-    <p class="citizen-vote-count">${identifiedVotes.length ? `${senate ? 'Voto identificado em' : 'Votou em'} <b>${recordedVoteCount} de ${senate ? knownVotes.length : votes.length}</b> ${senate ? 'votações do Senado com registro individual' : 'votações do Placar'}` : presenceOnlyCount || (senate && knownVotes.length) ? 'Sem voto nominal identificado neste recorte.' : `Sem registros individuais ${senate ? 'nas votações nominais do Senado' : 'nas votações do Placar'}.`}</p>
+    <p class="citizen-vote-count">${senate && voteSource?.status === 'unavailable' ? 'Dados de votações nominais do Senado indisponíveis neste recorte.'
+      : identifiedVotes.length ? `${senate ? 'Voto identificado em' : 'Votou em'} <b>${recordedVoteCount} de ${senate ? knownVotes.length : votes.length}</b> ${senate ? `votações do Senado com registro individual${votePeriod ? ` · ${esc(votePeriod)}` : ''}` : 'votações do Placar'}`
+        : presenceOnlyCount || (senate && knownVotes.length) ? `Sem voto nominal identificado neste recorte${votePeriod ? ` · ${esc(votePeriod)}` : ''}.`
+          : `Sem registros individuais ${senate ? 'nas votações nominais do Senado' : 'nas votações do Placar'}${votePeriod ? ` · ${esc(votePeriod)}` : ''}.`}</p>
     ${presenceOnlyCount ? `<p class="muted">${presenceOnlyCount} ${presenceOnlyCount === 1 ? 'registro só de presença ou presidência' : 'registros só de presença ou presidência'}.</p>` : ''}
     ${senate ? '<p class="muted">Sem linha individual não significa falta. Atividade parlamentar e registro de presença não contam como voto.</p>' : ''}
     ${senate && profileSenateSource('presenca')?.status !== 'imported' ? `<p class="muted">${registeredPresence ? 'Cobertura parcial de presença' : 'Presença indisponível para este perfil'}; veja Fontes e datas.</p>` : ''}
@@ -473,7 +478,8 @@ function profileVoteDetails(shared) {
   if (senate && profileSenateLoading()) return skel('linhas', 3);
   const votes = votesForPerson(shared.id), presence = shared.presence, limit = PROFILE_VOTE_LIMIT.get(shared.id) || 20;
   const source = senate ? profileSenateSource('votacoes') : null;
-  return `<span class="k">${senate ? 'Votações nominais do Senado · 2026' : 'Votações selecionadas do Placar'} · ${votes.length || 'sem registros'}</span>
+  const votePeriod = senate ? profileSectionPeriod(source) || (source ? 'período não informado' : 'recorte indisponível') : '';
+  return `<span class="k">${senate ? `Votações nominais do Senado · ${esc(votePeriod)}` : 'Votações selecionadas do Placar'} · ${votes.length || 'sem registros'}</span>
     ${votes.length ? `<div class="votes">${votes.slice(0, limit).map(({ vote, recordedVote }) => {
       const voteLabel = recordedVote == null ? 'Sem registro importado' : vote.secreta ? 'Presença registrada · voto secreto' : senate && recordedVote === 'Presente' ? 'Presença registrada · sem voto' : String(recordedVote).toLowerCase();
       return profileVoteButton(vote, `<b>${esc(voteLabel)}</b><span>${esc(vote.titulo)}</span>${senate ? `<small>${esc(dateBR(vote.data))} · fonte oficial ↗</small>` : ''}`);
