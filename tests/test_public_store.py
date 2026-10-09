@@ -96,6 +96,12 @@ class PublicStoreTests(unittest.TestCase):
             self.assertEqual(db.execute("SELECT documentId FROM expenses WHERE id='e:0:1'").fetchone()[0], '')
 
     def test_peak_signal_uses_closed_months_only(self):
+        # A referência é a mediana dos 12 meses anteriores: 2025 completo para todos.
+        for i in range(7):
+            for month in range(1, 13):
+                self.payload['expenses'].append({**self.payload['expenses'][0], 'id': f'h:{i}:{month}', 'authorityId': f'p:{i}',
+                                                 'year': 2025, 'month': month, 'date': f'2025-{month:02d}-15', 'amount': 10000 + i})
+        self.import_data()
         with closing(store.connect(self.db_path)) as db, db:
             peaks = [row[0] for row in db.execute("SELECT period FROM signals WHERE authorityId='p:0' AND type='pico'")]
             self.assertEqual(peaks, ['2026-04'])
@@ -104,9 +110,9 @@ class PublicStoreTests(unittest.TestCase):
         self.import_data()
         with closing(store.connect(self.db_path)) as db, db:
             self.assertEqual(db.execute("SELECT COUNT(*) FROM signals WHERE type='pico'").fetchone()[0], 0)
-            coverage = json.loads(db.execute("SELECT detail FROM alert_coverage WHERE authorityId='p:0' AND rule='pico'").fetchone()[0])
+            coverage = json.loads(db.execute("SELECT detail FROM alert_coverage WHERE authorityId='p:0' AND rule='pico' AND year=2026").fetchone()[0])
             self.assertEqual(coverage['notEvaluated']['prazo_aberto'], [4, 5])
-            self.assertEqual(coverage['evaluated'], [])
+            self.assertEqual(coverage['evaluated'], [1, 2, 3])
 
     def test_failed_collection_does_not_move_the_eligibility_date(self):
         self.payload['sources'][0]['fetchedAt'] = '2026-07-15T12:00:00+00:00'  # abril ainda aberto

@@ -5,6 +5,7 @@ from contextlib import closing
 from pathlib import Path
 
 from backend import citizen, public_store as store
+from backend.quota_history import import_history
 
 
 class CitizenPoliticiansTests(unittest.TestCase):
@@ -228,7 +229,11 @@ if __name__ == '__main__':
 
 
 class PeakRuleTests(unittest.TestCase):
-    """Pico: piso pelos colegas, meses seguidos como um alerta só e escala do ano no cartão."""
+    """Pico: piso pelos colegas, meses seguidos como um alerta só e escala do ano no cartão.
+
+    2025 entra pelo histórico do mandato (quota_history), como na base real: a referência de 2026 usa
+    os 12 meses anteriores, atravessando o ano.
+    """
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -251,6 +256,14 @@ class PeakRuleTests(unittest.TestCase):
                                                   for signal in ('camara_deputies_current', 'camara_ceap')],
                                       'authorities': authorities, 'expenses': expenses}), encoding='utf-8')
         store.import_documents([source], self.db_path)
+        history = Path(self.temp.name) / 'camara-ceap-2025.json'
+        history.write_text(json.dumps({
+            'house': 'camara', 'year': 2025,
+            'source': {'id': 'camara_ceap_2025', 'label': 'Cota 2025', 'status': 'imported', 'fetchedAt': '2026-10-06T00:00:00+00:00'},
+            'notes': [{'authorityId': ident, 'month': month, 'date': f'2025-{month:02d}-10', 'category': 'Escritório', 'kind': 'reembolso',
+                       'amountCents': monthly_totals[0] * 100, 'supplier': {'key': f'h{ident}:{month}', 'name': 'Empresa'}}
+                      for ident, monthly_totals in profiles.items() for month in range(1, 13)]}), encoding='utf-8')
+        import_history([history], self.db_path)
 
     def tearDown(self):
         self.temp.cleanup()
@@ -263,12 +276,15 @@ class PeakRuleTests(unittest.TestCase):
             people = {'camara:30': {'id': 'camara:30', 'name': 'Pessoa 30', 'role': 'deputado'}}
             alert = citizen._alert(db, peaks[0], people, {})
             ranking = citizen.politicians(db, {'ordem': 'alertas', 'pageSize': 3})['itens']
-        self.assertEqual(alert['titulo'], 'Meses acima da referência: abril a maio')
+        self.assertEqual(alert['titulo'], 'Meses acima da referência: abril a maio de 2026')
+        self.assertIn('a referência dos 12 meses anteriores era R$ 40.000', alert['frase'])
+        self.assertEqual((alert['serie'][0]['ano'], alert['serie'][0]['mes']), (2025, 4))  # a janela atravessa o ano
+        self.assertEqual(alert['serie'][0]['estado'], 'historico_insuficiente')
         self.assertEqual([m['mes'] for m in alert['meses']], [4, 5])  # só os meses marcados pela regra
         self.assertIn('Em maio, a cota somou R$ 100.000', alert['frase'])
         self.assertNotIn('junho', alert['frase'])
         self.assertNotIn('nivel', alert)
-        self.assertIn('No ano, gastou', alert['contexto']['frase'])
+        self.assertIn('Em 2026, gastou', alert['contexto']['frase'])
         self.assertIn('por mês em média', alert['contexto']['frase'])  # mensal contra mensal
         self.assertGreater(alert['contexto']['diferenca'], 0)
         self.assertEqual(ranking[0]['id'], 'camara:30')
@@ -282,6 +298,18 @@ class PeakRuleTests(unittest.TestCase):
         self.assertEqual(alert['mes'], 4)
         self.assertEqual([a['pessoa']['id'] for a in radar['itens']], ['camara:30'])
         self.assertEqual(radar['contagem']['pico'], 1)
+        self.assertEqual(radar['anos'], [{'ano': 2026, 'total': 1}])
+        self.assertEqual(radar['periodo'], {'inicio': '2025-01', 'fim': '2026-06'})
+
+    def test_history_notes_enter_the_alert_value_once_and_radar_filters_by_year(self):
+        with closing(store.connect(self.db_path)) as db, db:
+            hist = db.execute("SELECT COUNT(*) FROM signals WHERE type='fornecedor' AND period='2025'").fetchone()[0]
+            radar_2025 = citizen.radar(db, {'pageSize': 50, 'ano': '2025', 'tipo': 'pico,fornecedor'})
+            coverage = citizen.alert_coverage(db, 'camara:30')
+        self.assertEqual(hist, 0)  # cada mês num fornecedor diferente: sem concentração
+        self.assertEqual(radar_2025['total'], 0)
+        self.assertEqual([(c['regra'], c['ano']) for c in coverage], [('pico', 2026), ('fornecedor', 2026), ('pico', 2025), ('fornecedor', 2025)])
+        self.assertEqual(coverage[2]['naoAvaliados'][0]['motivo'], 'historico_insuficiente')
 
 
 class CategoryNameTests(unittest.TestCase):

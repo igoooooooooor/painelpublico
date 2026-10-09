@@ -20,7 +20,13 @@ import unicodedata
 from datetime import date, datetime, timedelta
 from statistics import median
 
-RULE_VERSION = 'cota-alertas-v2'
+RULE_VERSION = 'cota-alertas-v3'
+# Base publicada: mediana dos 12 meses anteriores completos, atravessando o ano (decisão de 8/10/2026).
+PUBLISHED_BASELINE = 'rolling12'
+# Início do mandato nas duas Casas: meses anteriores não entram nem contam como "sem notas".
+MANDATE_START = (2023, 2)
+# O cartão de pico mostra a janela usada, os meses marcados e até 3 meses seguintes.
+SERIES_MONTHS_AFTER = 3
 PEAK_MULTIPLE = 1.75
 PEAK_MIN_DIFFERENCE_CENTS = 1_000_000
 PEAK_MIN_PRIOR_MONTHS = 3
@@ -35,7 +41,8 @@ YEAR_END_MONTHS = (11, 12)
 # Motivos de mês não avaliado na regra de pico.
 NOT_EVALUATED = {
     'prazo_aberto': 'prazo de apresentação das notas ainda aberto na data da coleta',
-    'sem_base': 'menos de 3 meses anteriores com notas no mesmo ano',
+    'historico_insuficiente': 'menos de 12 meses com notas antes deste mês (o mandato começa em fev/2023)',
+    'sem_base': 'algum dos 12 meses anteriores sem notas ou com saldo negativo',
     'sem_referencia_colegas': 'sem meses fechados suficientes dos colegas para o piso',
     'sem_notas': 'sem notas publicadas no mês',
 }
@@ -78,20 +85,25 @@ def month_closed(source_id: str, year: int, month: int, fetched_at) -> bool:
     return fetched is not None and fetched >= closes_on(source_id, year, month)
 
 
-def _peak_runs(series, closed, floor):
-    """Avalia cada mês e devolve (meses avaliados, motivos de não avaliação, meses marcados com base)."""
+def first_month(year: int) -> int:
+    """Primeiro mês do ano dentro do mandato (fev em 2023, jan nos demais)."""
+    return MANDATE_START[1] if year == MANDATE_START[0] else 1
+
+
+def _peak_runs(series, closed, floor, first=1):
+    """Base anual: avalia cada mês e devolve (meses avaliados, motivos de não avaliação, meses marcados com base)."""
     evaluated, skipped, flagged = [], {}, {}
     last = max(series) if series else 0
-    for month in range(1, last + 1):
+    for month in range(first, last + 1):
         value = series.get(month)
         if value is None:
             reason = 'sem_notas'
         elif not closed(month):
             reason = 'prazo_aberto'
-        elif month <= PEAK_MIN_PRIOR_MONTHS:
-            reason = 'sem_base'
+        elif month - first < PEAK_MIN_PRIOR_MONTHS:
+            reason = 'historico_insuficiente'
         else:
-            before = [series.get(m) for m in range(1, month)]
+            before = [series.get(m) for m in range(first, month)]
             if any(v is None or v < 0 for v in before) or median(before) <= 0:
                 reason = 'sem_base'
             elif floor is None:
@@ -107,8 +119,8 @@ def _peak_runs(series, closed, floor):
     return evaluated, skipped, flagged
 
 
-# year: regra em uso. rolling12: 12 meses anteriores completos (variante recomendada para estudo).
-# rolling-short: de 3 a 12 meses, conforme o histórico disponível (só para comparação na simulação).
+# rolling12: 12 meses anteriores completos (base publicada). year: meses anteriores do mesmo ano (regra até a v2)
+# e rolling-short: de 3 a 12 meses, conforme o histórico disponível; as duas só para comparação na simulação.
 BASELINES = ('year', 'rolling12', 'rolling-short')
 ROLLING_MONTHS = 12
 
@@ -123,12 +135,13 @@ def _rolling_series(series):
 
 
 def _rolling_peaks(series, floors, fetched_at_by_source, min_prior=ROLLING_MONTHS):
-    """Variante em estudo: referência = mediana dos 12 meses anteriores, atravessando o ano.
+    """Referência = mediana dos 12 meses anteriores, atravessando o ano.
 
-    Com min_prior=12, exige os 12 meses anteriores completos (todos com notas); com o histórico
-    começando em fev/2023, isso só ocorre a partir de fev/2024. Com min_prior=3 (base curta), aceita de
-    3 a 12 meses conforme o histórico disponível. Em ambos, meses sem notas na janela impedem. O piso
-    continua sendo o dos colegas no ano do mês avaliado. Só usada pela simulação.
+    Com min_prior=12 (base publicada), exige os 12 meses anteriores completos (todos com notas); com o
+    histórico começando em fev/2023, isso só ocorre a partir de fev/2024, e antes disso o mês fica como
+    histórico insuficiente. Com min_prior=3 (base curta, só na simulação), aceita de 3 a 12 meses
+    conforme o histórico disponível. Em ambos, meses sem notas na janela impedem. O piso continua sendo
+    o dos colegas no ano do mês avaliado.
     """
     out = {}
     for (authority, house), points in _rolling_series(series).items():
@@ -141,7 +154,9 @@ def _rolling_peaks(series, floors, fetched_at_by_source, min_prior=ROLLING_MONTH
             before = [points.get(s, (None, None))[1] for s in window]
             if not month_closed(source, year, month, fetched_at_by_source.get(source)):
                 reason = 'prazo_aberto'
-            elif len(before) < min_prior or any(v is None or v < 0 for v in before) or median(before) <= 0:
+            elif len(before) < min_prior:
+                reason = 'historico_insuficiente'
+            elif any(v is None or v < 0 for v in before) or median(before) <= 0:
                 reason = 'sem_base'
             elif floors.get((source, year)) is None:
                 reason = 'sem_referencia_colegas'
@@ -156,17 +171,17 @@ def _rolling_peaks(series, floors, fetched_at_by_source, min_prior=ROLLING_MONTH
                 out.setdefault(key, ([], {}, {}))[1].setdefault(reason, []).append(month)
     for (authority, source, year), months in series.items():
         skipped = out.setdefault((authority, source, year), ([], {}, {}))[1]
-        for month in range(1, max(months) + 1):
+        for month in range(first_month(year), max(months) + 1):
             if month not in months:
                 skipped.setdefault('sem_notas', []).append(month)
     return out
 
 
-def evaluate(records, fetched_at_by_source, baseline='year'):
+def evaluate(records, fetched_at_by_source, baseline=PUBLISHED_BASELINE):
     """Calcula sinais, cobertura e valor sem duplicidade a partir das notas de reembolso.
 
     records: dicts com id, authorityId, sourceId, year, month, supplierKey, supplierName, amountCents.
-    baseline: 'year' (regra em uso), 'rolling12' ou 'rolling-short' (variantes em estudo, só na simulação).
+    baseline: 'rolling12' (publicada, PUBLISHED_BASELINE), 'year' ou 'rolling-short' (só na simulação).
     Devolve {'signals', 'coverage', 'totals'}; nenhum valor ausente vira zero.
     """
     if baseline not in BASELINES:
@@ -199,29 +214,57 @@ def evaluate(records, fetched_at_by_source, baseline='year'):
                 peer_values.setdefault((source, year), []).append(value)
     floors = {k: median(v) for k, v in peer_values.items() if len(v) >= PEER_MIN_VALUES}
 
-    rolling = (None if baseline == 'year' else
-               _rolling_peaks(series, floors, fetched_at_by_source, ROLLING_MONTHS if baseline == 'rolling12' else PEAK_MIN_PRIOR_MONTHS))
+    min_prior = {'year': PEAK_MIN_PRIOR_MONTHS, 'rolling12': ROLLING_MONTHS, 'rolling-short': PEAK_MIN_PRIOR_MONTHS}[baseline]
+    rolling = None if baseline == 'year' else _rolling_peaks(series, floors, fetched_at_by_source, min_prior)
+    peaks = {}
+    for (authority, source, year), months in series.items():
+        if rolling is None:
+            peaks[(authority, source, year)] = _peak_runs(months, closed_for(source, year), floors.get((source, year)), first_month(year))
+        else:
+            evaluated, skipped, flagged = rolling.get((authority, source, year), ([], {}, {}))
+            peaks[(authority, source, year)] = (evaluated, {k: sorted(v) for k, v in skipped.items()}, flagged)
+
+    # Situação de cada mês (marcado, avaliado sem alerta ou o motivo de não avaliação) e valores por pessoa e
+    # Casa numa linha do tempo contínua, para o cartão mostrar a janela usada, atravessando o ano.
+    status, timeline = {}, {}
+    for (authority, source, year), (evaluated, skipped, flagged) in peaks.items():
+        house = house_of(source)
+        for m in evaluated:
+            status[(authority, house, year, m)] = 'flagged' if m in flagged else 'evaluated'
+        for reason, skipped_months in skipped.items():
+            for m in skipped_months:
+                status.setdefault((authority, house, year, m), reason)
+        for m, value in series[(authority, source, year)].items():
+            timeline.setdefault((authority, house), {})[year * 12 + m - 1] = value
+
+    def card_series(authority, source, year, run):
+        """Série gravada no cartão. Base anual: o ano todo. Bases móveis: a janela de referência do primeiro
+        mês marcado, os meses marcados e até SERIES_MONTHS_AFTER meses seguintes com notas observadas."""
+        house = house_of(source)
+        points = timeline[(authority, house)]
+        if rolling is None:
+            serials = range(year * 12 + first_month(year) - 1, year * 12 + max(series[(authority, source, year)]))
+        else:
+            start = max(min(points), year * 12 + run[0] - 1 - ROLLING_MONTHS)
+            end = min(max(points), year * 12 + run[-1] - 1 + SERIES_MONTHS_AFTER)
+            serials = range(start, end + 1)
+        out = []
+        for serial in serials:
+            y, m = divmod(serial, 12)
+            out.append({'year': y, 'month': m + 1, 'valueCents': points.get(serial),
+                        'status': status.get((authority, house, y, m + 1), 'sem_notas')})
+        return out
+
     signals, coverage, alert_records = [], [], {}
     for (authority, source, year), months in sorted(series.items()):
         fetched = fetched_at_by_source.get(source)
         floor = floors.get((source, year))
-        if rolling is None:
-            evaluated, skipped, flagged = _peak_runs(months, closed_for(source, year), floor)
-        else:
-            evaluated, skipped, flagged = rolling.get((authority, source, year), ([], {}, {}))
-            skipped = {k: sorted(v) for k, v in skipped.items()}
+        evaluated, skipped, flagged = peaks[(authority, source, year)]
         coverage.append({'authorityId': authority, 'sourceId': source, 'year': year, 'rule': 'pico', 'detail': {
             'ruleVersion': RULE_VERSION, 'baseline': baseline, 'fetchedAt': fetched, 'evaluated': sorted(evaluated), 'flagged': sorted(flagged),
             'notEvaluated': skipped, 'floorCents': floor}})
-        # Situação de cada mês do ano, para o cartão mostrar o ano inteiro: marcado, avaliado sem alerta
-        # ou o motivo de não ter sido avaliado. Mês sem notas fica sem valor, nunca zero.
-        status = {m: 'flagged' if m in flagged else 'evaluated' for m in evaluated}
-        for reason, skipped_months in skipped.items():
-            for m in skipped_months:
-                status.setdefault(m, reason)
-        year_series = [{'month': m, 'valueCents': months.get(m), 'status': status.get(m, 'sem_notas')}
-                       for m in range(1, max(months) + 1)]
-        # Meses seguidos marcados viram um alerta só, com todos os meses efetivamente marcados.
+        # Meses seguidos marcados viram um alerta só, com todos os meses efetivamente marcados. Cada alerta
+        # fica dentro de um ano, como a cota, cujo saldo expira em 31/12.
         for month in sorted(flagged):
             if month - 1 in flagged:
                 continue
@@ -235,12 +278,13 @@ def evaluate(records, fetched_at_by_source, baseline='year'):
                 'id': signal_id, 'authorityId': authority, 'sourceId': source, 'type': 'pico',
                 'title': 'Mês acima da referência', 'amountCents': sum(m['valueCents'] for m in marked),
                 'period': f'{year}-{month:02d}', 'detail': {
-                    'ruleVersion': RULE_VERSION, 'year': year, 'months': marked, 'floorCents': floor,
-                    'series': year_series,
+                    'ruleVersion': RULE_VERSION, 'baseline': baseline, 'year': year, 'months': marked, 'floorCents': floor,
+                    # Mês sem notas fica sem valor, nunca zero.
+                    'series': card_series(authority, source, year, run),
                     'fetchedAt': fetched, 'partial': False,
                     'yearEndMonths': [m for m in run if m in YEAR_END_MONTHS],
                     'criteria': {'multiple': PEAK_MULTIPLE, 'minDifferenceCents': PEAK_MIN_DIFFERENCE_CENTS,
-                                 'minPriorMonths': PEAK_MIN_PRIOR_MONTHS}}})
+                                 'minPriorMonths': min_prior}}})
             alert_records[signal_id] = [rec for m in run for rec in record_ids[(authority, source, year, m)]]
 
         total = totals[(authority, source, year)]
@@ -281,6 +325,13 @@ def evaluate(records, fetched_at_by_source, baseline='year'):
     return {'signals': signals, 'coverage': coverage, 'totals': totals_out}
 
 
+BASELINE_TEXT = {
+    'year': 'mediana dos meses anteriores do mesmo ano, com ao menos 3 meses e sem lacunas',
+    'rolling12': 'mediana dos 12 meses anteriores, todos com notas, atravessando o ano',
+    'rolling-short': 'mediana de 3 a 12 meses anteriores, conforme o histórico, sem lacunas',
+}
+
+
 def describe(signal) -> str:
     """Critério em texto técnico, a partir do que foi gravado (sem recalcular)."""
     detail = signal['detail']
@@ -290,7 +341,8 @@ def describe(signal) -> str:
     if signal['type'] == 'pico':
         months = '; '.join(f'mês {m["month"]}: {money(m["valueCents"])}, {m["multiple"]:.2f} vez(es) a referência de '
                            f'{money(m["referenceCents"])}' for m in detail['months'])
-        return (f'{months}. Referência: mediana dos meses anteriores do mesmo ano, com ao menos 3 meses e sem lacunas. '
+        reference = BASELINE_TEXT.get(detail.get('baseline', 'year'))
+        return (f'{months}. Referência: {reference}. '
                 f'Critério: 1,75 vez a referência, diferença de R$ 10.000 e acima do piso dos colegas '
                 f'({money(detail["floorCents"])}). Só meses com prazo de apresentação encerrado na coleta.'
                 f'{" Fim do exercício: o saldo não usado da cota se acumula no ano e expira em 31/12." if detail.get("yearEndMonths") else ""}'

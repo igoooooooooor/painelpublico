@@ -3,7 +3,8 @@
 
 Usa o mesmo cálculo dos alertas publicados (backend/alert_rules.py), sobre uma fotografia fixa
 do banco: notas detalhadas do ano corrente mais as notas de anos anteriores (visão quota_history).
-Compara a base anual (regra em uso) com a de 12 meses (variante em estudo), por Casa, regra e ano,
+Compara a base publicada (12 meses anteriores completos) com a anual (regra até a v2) e a curta, por Casa,
+regra e ano,
 mostrando também quantos meses e pessoas ficaram sem avaliação: menos alertas pode ser só menos cobertura.
 
 Grava ``data/reviews/alert-simulation.json`` e, com ``--sample``, uma amostra sorteada com semente
@@ -24,10 +25,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from backend import alert_rules  # noqa: E402
+from backend import alert_rules, public_store  # noqa: E402
 
 OUTPUT_DIR = ROOT / 'data' / 'reviews'
-MANDATE_START = (2023, 2)
 
 
 def sha256(path: Path) -> str:
@@ -41,15 +41,8 @@ def sha256(path: Path) -> str:
 def load(db_path: Path):
     db = sqlite3.connect(f'{db_path.resolve().as_uri()}?mode=ro', uri=True)
     db.row_factory = sqlite3.Row
-    records = [dict(r) for r in db.execute('''
-        SELECT e.id,e.authorityId,e.sourceId,e.year,e.month,e.supplierKey,s.name supplierName,e.amountCents,e.airline
-          FROM expenses e LEFT JOIN suppliers s ON s.key=e.supplierKey WHERE e.kind='reembolso'
-        UNION ALL
-        SELECT 'hist:'||h.authorityId||':'||h.year||':'||h.month||':'||h.seq,h.authorityId,h.sourceId,h.year,h.month,
-               h.supplierKey,s.name,h.amountCents,h.airline
-          FROM quota_history h LEFT JOIN suppliers s ON s.key=h.supplierKey WHERE h.kind='reembolso' ''')]
-    records = [r for r in records if (int(r['year']), int(r['month'])) >= MANDATE_START]
-    fetched = {r['id']: r['fetchedAt'] for r in db.execute('SELECT id,fetchedAt FROM sources')}
+    # Mesma entrada dos alertas gravados: notas do mandato e data da última coleta com notas.
+    records, fetched = public_store.alert_inputs(db)
     roster = {r[0] for r in db.execute('SELECT authorityId FROM roster')}
     people = {r['id'] for r in db.execute("SELECT id FROM authorities WHERE role IN ('deputado','senador')")}
     snapshot = db.execute("SELECT value FROM meta WHERE key='snapshotAt'").fetchone()
@@ -91,25 +84,28 @@ def summarize(result, population):
 
 
 def near_threshold(records, fetched, population, rng, limit):
-    """Meses avaliados que quase passaram (1,5× a 1,75× da referência) e concentrações de 40% a 50%."""
-    by_year = alert_rules.evaluate(records, fetched)
-    flagged = {(s['authorityId'], s['period'][:4]) for s in by_year['signals']}
-    series = {}
+    """Meses avaliados pela base publicada que quase passaram (1,5× a 1,75× da referência dos 12 meses
+    anteriores) e concentrações de 40% a 50%."""
+    published = alert_rules.evaluate(records, fetched, alert_rules.PUBLISHED_BASELINE)
+    flagged = {(s['authorityId'], s['period'][:4]) for s in published['signals']}
+    timeline = {}
     for r in records:
-        key = (r['authorityId'], r['sourceId'], int(r['year']))
-        series.setdefault(key, {})[int(r['month'])] = series.get(key, {}).get(int(r['month']), 0) + r['amountCents']
+        key = (r['authorityId'], alert_rules.house_of(r['sourceId']), int(r['year']) * 12 + int(r['month']) - 1)
+        timeline[key] = timeline.get(key, 0) + r['amountCents']
     peaks, suppliers = [], []
     from statistics import median
-    for c in by_year['coverage']:
+    for c in published['coverage']:
         if c['authorityId'] not in population:
             continue
-        months = series[(c['authorityId'], c['sourceId'], c['year'])]
+        house = alert_rules.house_of(c['sourceId'])
         if c['rule'] == 'pico':
             for m in c['detail']['evaluated']:
-                base = median([months[x] for x in range(1, m)])
-                if base > 0 and 1.5 <= months[m] / base < alert_rules.PEAK_MULTIPLE:
+                serial = c['year'] * 12 + m - 1
+                value = timeline[(c['authorityId'], house, serial)]
+                base = median([timeline[(c['authorityId'], house, x)] for x in range(serial - alert_rules.ROLLING_MONTHS, serial)])
+                if base > 0 and 1.5 <= value / base < alert_rules.PEAK_MULTIPLE:
                     peaks.append({'tipo': 'perto-pico', 'authorityId': c['authorityId'], 'sourceId': c['sourceId'],
-                                  'ano': c['year'], 'mes': m, 'valorCents': months[m], 'referenciaCents': base})
+                                  'ano': c['year'], 'mes': m, 'valorCents': value, 'referenciaCents': base})
     totals, per_supplier = {}, {}
     for r in records:
         key = (r['authorityId'], r['sourceId'], int(r['year']))
@@ -121,7 +117,7 @@ def near_threshold(records, fetched, population, rng, limit):
         if a in population and total > 0 and 0.4 <= cents / total < alert_rules.SUPPLIER_MIN_SHARE and cents >= alert_rules.SUPPLIER_MIN_CENTS:
             suppliers.append({'tipo': 'perto-fornecedor', 'authorityId': a, 'sourceId': s, 'ano': y, 'fornecedor': name,
                               'fornecedorKey': k, 'valorCents': cents, 'totalCents': total, 'parte': round(cents / total, 4)})
-    no_alert = sorted({(c['authorityId'], c['sourceId'], c['year']) for c in by_year['coverage']
+    no_alert = sorted({(c['authorityId'], c['sourceId'], c['year']) for c in published['coverage']
                        if c['authorityId'] in population and c['rule'] == 'pico' and c['detail']['evaluated']
                        and (c['authorityId'], str(c['year'])) not in flagged})
     pick = lambda items, n: rng.sample(items, min(n, len(items)))
@@ -145,7 +141,8 @@ def main(argv=None):
                        'coletas': {k: v for k, v in sorted(fetched.items()) if 'ceap' in k}, 'notas': len(records)},
         'parametros': {'regra': alert_rules.RULE_VERSION, 'multiplo': alert_rules.PEAK_MULTIPLE,
                        'diferencaMinimaCents': alert_rules.PEAK_MIN_DIFFERENCE_CENTS,
-                       'mesesAnterioresMinimos': alert_rules.PEAK_MIN_PRIOR_MONTHS, 'parteFornecedor': alert_rules.SUPPLIER_MIN_SHARE,
+                       'basePublicada': alert_rules.PUBLISHED_BASELINE, 'mesesAnterioresBasePublicada': alert_rules.ROLLING_MONTHS,
+                       'mesesAnterioresMinimosBaseAnual': alert_rules.PEAK_MIN_PRIOR_MONTHS, 'parteFornecedor': alert_rules.SUPPLIER_MIN_SHARE,
                        'valorFornecedorCents': alert_rules.SUPPLIER_MIN_CENTS, 'diasCamara': alert_rules.CHAMBER_DAYS,
                        'senado': 'meses elegíveis só depois de 30/abr do ano seguinte', 'inicio': '2023-02'},
         'populacoes': {'listaAtual': len(roster), 'todosParlamentares': len(people)},
@@ -155,7 +152,7 @@ def main(argv=None):
     if args.sample:
         rng = random.Random(args.seed)
         strata = {}
-        for s in results['year']['signals']:
+        for s in results[alert_rules.PUBLISHED_BASELINE]['signals']:
             if s['authorityId'] in roster:
                 strata.setdefault((alert_rules.house_of(s['sourceId']), s['type'], s['period'][:4]), []).append(s)
         sample = []
@@ -164,24 +161,24 @@ def main(argv=None):
                 sample.append({'tipo': s['type'], 'id': s['id'], 'authorityId': s['authorityId'], 'sourceId': s['sourceId'],
                                'periodo': s['period'], 'valorCents': s['amountCents'], 'detalhe': s['detail']})
         sample += near_threshold(records, fetched, roster, rng, args.sample)
-        # Casos que só aparecem nas bases móveis (sobretudo 2023 e base curta): a revisão precisa vê-los,
-        # porque a amostra pela regra anual não diz nada sobre o que as variantes acrescentam.
-        year_months = {(c['authorityId'], c['sourceId'], c['year'], m) for c in results['year']['coverage']
-                       if c['rule'] == 'pico' for m in c['detail']['flagged']}
-        for baseline in ('rolling12', 'rolling-short'):
+        # Casos que só aparecem nas bases de comparação (anual e curta): a revisão precisa vê-los, porque a
+        # amostra pela base publicada não diz nada sobre o que as outras acrescentariam.
+        published_months = {(c['authorityId'], c['sourceId'], c['year'], m) for c in results[alert_rules.PUBLISHED_BASELINE]['coverage']
+                            if c['rule'] == 'pico' for m in c['detail']['flagged']}
+        for baseline in (b for b in alert_rules.BASELINES if b != alert_rules.PUBLISHED_BASELINE):
             only = {}
             for s in results[baseline]['signals']:
                 if s['type'] != 'pico' or s['authorityId'] not in roster:
                     continue
                 marked = [m['month'] for m in s['detail']['months']]
-                if all((s['authorityId'], s['sourceId'], s['detail']['year'], m) not in year_months for m in marked):
+                if all((s['authorityId'], s['sourceId'], s['detail']['year'], m) not in published_months for m in marked):
                     only.setdefault((alert_rules.house_of(s['sourceId']), s['period'][:4]), []).append(s)
             for key in sorted(only):
                 for s in rng.sample(sorted(only[key], key=lambda x: x['id']), min(args.sample, len(only[key]))):
                     sample.append({'tipo': 'pico-so-' + baseline, 'id': s['id'], 'authorityId': s['authorityId'],
                                    'sourceId': s['sourceId'], 'periodo': s['period'], 'valorCents': s['amountCents'],
                                    'detalhe': s['detail']})
-        report['amostra'] = {'semente': args.seed, 'porEstrato': args.sample, 'base': 'year', 'populacao': 'listaAtual',
+        report['amostra'] = {'semente': args.seed, 'porEstrato': args.sample, 'base': alert_rules.PUBLISHED_BASELINE, 'populacao': 'listaAtual',
                              'casos': sample}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding='utf-8')
@@ -192,7 +189,8 @@ def main(argv=None):
             rate = f"{row['taxaMesesMarcados'] * 100:5.2f}%" if row['taxaMesesMarcados'] is not None else '    —'
             print(f"{row['casa']:6} {row['ano']}  pico {row['alertas']['pico']:4}  fornecedor {row['alertas']['fornecedor']:3}  "
                   f"meses marcados/avaliados {m.get('marcado', 0):4}/{m.get('avaliado', 0):5} ({rate})  "
-                  f"sem base {m.get('sem_base', 0):5}  prazo aberto {m.get('prazo_aberto', 0):5}  "
+                  f"histórico insuficiente {m.get('historico_insuficiente', 0):5}  sem base {m.get('sem_base', 0):5}  "
+                  f"prazo aberto {m.get('prazo_aberto', 0):5}  "
                   f"sem notas {m.get('sem_notas', 0):4}  pessoas sem avaliação de pico {row['pessoas']['picoSemAvaliacao']}")
     print(f'Gravado em {args.output}' + (f" com {len(report['amostra']['casos'])} casos na amostra" if args.sample else ''))
     return 0

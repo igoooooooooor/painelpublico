@@ -202,12 +202,32 @@ def _rebuild_aggregates(db):
     rebuild_signals(db)
 
 
+def alert_inputs(db):
+    """Notas de reembolso do mandato (fev/2023 em diante) e data da última coleta com notas de cada fonte.
+
+    Junta as notas detalhadas do ano corrente (expenses) e as dos anos anteriores (visão quota_history),
+    com identificadores estáveis para o histórico. É a mesma entrada dos alertas gravados e da simulação.
+    """
+    from .alert_rules import MANDATE_START
+    records = rows(db, '''SELECT e.id,e.authorityId,e.sourceId,e.year,e.month,e.supplierKey,s.name supplierName,e.amountCents,e.airline
+          FROM expenses e LEFT JOIN suppliers s ON s.key=e.supplierKey WHERE e.kind='reembolso'
+        UNION ALL
+        SELECT 'hist:'||h.authorityId||':'||h.year||':'||h.month||':'||h.seq,h.authorityId,h.sourceId,h.year,h.month,
+               h.supplierKey,s.name,h.amountCents,h.airline
+          FROM quota_history h LEFT JOIN suppliers s ON s.key=h.supplierKey
+         WHERE h.kind='reembolso' AND (h.year>? OR (h.year=? AND h.month>=?))''', (MANDATE_START[0], *MANDATE_START))
+    records = [r for r in records if (int(r['year']), int(r['month'])) >= MANDATE_START]
+    fetched = {r['id']: r['dataFetchedAt'] for r in rows(db, 'SELECT id,dataFetchedAt FROM sources')}
+    return records, fetched
+
+
 def rebuild_signals(db):
     """Triagem exploratória em reembolsos; não classifica remuneração como fraude.
 
     Picos e concentração vêm de backend/alert_rules.py, que grava o resultado de cada alerta,
     a cobertura por regra e período e o valor das despesas nos alertas sem dupla contagem.
-    Só as notas detalhadas (ano corrente) são avaliadas.
+    Avalia as notas do mandato (fev/2023 em diante) com a base publicada (12 meses anteriores completos).
+    Lançamentos de valor alto (tipo 'nota') continuam só nas notas detalhadas do ano corrente.
     """
     from . import alert_rules
     for table in ('signals', 'alert_coverage', 'alert_totals'):
@@ -219,10 +239,8 @@ def rebuild_signals(db):
     for e in db.execute("SELECT id,authorityId,sourceId,amountCents,year,month FROM expenses WHERE kind='reembolso' AND amountCents>=1000000"):
         add('nota:' + e['id'], e['authorityId'], e['sourceId'], 'nota', 'Lançamento de valor alto', e['amountCents'],
             'Registro de pelo menos R$ 10.000 no arquivo importado. É um corte para conferência, não uma avaliação de preço ou legalidade. Créditos e estornos devem ser verificados no contexto do documento.', f'{e["year"]}-{e["month"]:02d}')
-    records = rows(db, '''SELECT e.id,e.authorityId,e.sourceId,e.year,e.month,e.supplierKey,s.name supplierName,e.amountCents,e.airline
-        FROM expenses e LEFT JOIN suppliers s ON s.key=e.supplierKey WHERE e.kind='reembolso' ''')
-    fetched = {r['id']: r['dataFetchedAt'] for r in rows(db, 'SELECT id,dataFetchedAt FROM sources')}
-    result = alert_rules.evaluate(records, fetched)
+    records, fetched = alert_inputs(db)
+    result = alert_rules.evaluate(records, fetched, alert_rules.PUBLISHED_BASELINE)
     for signal in result['signals']:
         add(signal['id'], signal['authorityId'], signal['sourceId'], signal['type'], signal['title'],
             signal['amountCents'], alert_rules.describe(signal), signal['period'], signal['detail'])

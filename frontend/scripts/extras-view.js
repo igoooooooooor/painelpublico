@@ -268,7 +268,7 @@ function comparisonShareCard([a, b]) {
   }
   rows.push({ label: 'Cota parlamentar por mês', values: [money(a.mediaMensal), money(b.mediaMensal)], notes: [quotaNote(a), quotaNote(b)] });
   rows.push({ label: 'Cota comparada à média do cargo', values: [vsAverage(a), vsAverage(b)] });
-  rows.push({ label: 'Alertas na cota (2026)', values: [a, b].map(f => alertCountOrNull(f) == null ? 'Sem avaliação' : String(f.alertas.length)) });
+  rows.push({ label: 'Alertas na cota (mandato)', values: [a, b].map(f => alertCountOrNull(f) == null ? 'Sem avaliação' : String(f.alertas.length)) });
   rows.push({ label: chamber(a) === chamber(b) && chamber(a) === 'senado' ? 'Presença registrada no Senado' : chamber(a) === chamber(b) ? 'Presença no Plenário · Câmara' : 'Presença (casas com métodos diferentes)',
     values: [presence(a), presence(b)] });
   return {
@@ -415,7 +415,7 @@ function comparisonTable([a, b]) {
     <div class="cmp-row cmp-bars"><span class="cmp-l"></span><div><i style="width:${a.mediaMensal == null ? 0 : a.mediaMensal / maxMonthly * 100}%"></i></div><div><i style="width:${b.mediaMensal == null ? 0 : b.mediaMensal / maxMonthly * 100}%"></i></div></div>
     <div class="cmp-row"><span class="cmp-l"></span><div class="cmp-v muted cmp-source">${esc(quotaPeriod(a))}</div><div class="cmp-v muted cmp-source">${esc(quotaPeriod(b))}</div></div>
     <div class="cmp-row"><span class="cmp-l">Comparado à média do cargo</span>${sideHtml(vsAverage(a), vsAverage(b), value => `<b>${value > 0 ? '+' : ''}${value}%</b>`)}</div>
-    <div class="cmp-row"><span class="cmp-l">Alertas na cota (2026)</span>${sideHtml(alertCountOrNull(a), alertCountOrNull(b), value => `<b>${value}</b>`, null)}</div>
+    <div class="cmp-row"><span class="cmp-l">Alertas na cota (mandato)</span>${sideHtml(alertCountOrNull(a), alertCountOrNull(b), value => `<b>${value}</b>`, null)}</div>
     ${comparisonAttendanceRows(a, b, pA, pB)}
     ${comparisonInfoRow('Participação e exercício', comparisonParticipation(profileA), comparisonParticipation(profileB))}
     ${comparisonInfoRow('Contato institucional', esc(comparisonContact(profileA)), esc(comparisonContact(profileB)))}

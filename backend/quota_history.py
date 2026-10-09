@@ -3,7 +3,8 @@
 Lê ``data/imports-history/{camara-ceap,senado-ceaps}-{ano}.json`` (gerados por
 ``ingest/quota_history.py``). Cada arquivo substitui só as notas da sua Casa e ano
 (fonte ``camara_ceap_{ano}`` ou ``senado_ceaps_{ano}``), numa transação; as notas
-detalhadas de 2026 e os alertas não são tocados. Cadastros que já existem não são alterados.
+detalhadas de 2026 não são tocadas. Os alertas são recalculados, porque avaliam o mandato inteiro.
+Cadastros que já existem não são alterados.
 """
 import json
 import re

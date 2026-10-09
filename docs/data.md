@@ -81,16 +81,18 @@ Cada ficha com notas importadas oferece o download de todas as notas da cota da 
 separador `;`): competência, data de emissão, categoria, valor, fornecedor, CNPJ, documento e fonte. Células de texto que começam
 com `=`, `+`, `-` ou `@` recebem um apóstrofo para não virarem fórmulas na planilha. Não há outra exportação nem busca avançada.
 
-O radar aplica três cortes a reembolsos: lançamento de pelo menos R$ 10.000; concentração de pelo menos 50% do total anual com
-um fornecedor na mesma fonte, com soma mínima de R$ 30.000; e mês pelo menos 1,75 vez a mediana anterior, com diferença mínima
-de R$ 10.000, três meses anteriores observados sem lacuna e valor acima da mediana dos meses positivos de todos os parlamentares
-da mesma fonte e ano (piso pelos colegas, exigido a partir de cinco meses observados). O piso evita que quem gasta pouco o ano todo
-vire alerta por um mês ainda abaixo do que os colegas gastam normalmente. Meses seguidos acima do critério contam como um único alerta,
-registrado no primeiro mês da sequência. O último mês observado pela fonte é excluído. São critérios de
-triagem, não conclusões sobre conduta. Valores negativos são preservados e podem ser créditos ou estornos; documentos repetidos
+O radar aplica três cortes a reembolsos, com a regra, os prazos e a cobertura descritos em [Alertas](alerts.md):
+lançamento de pelo menos R$ 10.000 (só nas notas detalhadas do ano corrente); concentração de pelo menos 50% do total anual
+com um fornecedor na mesma fonte, com soma mínima de R$ 30.000, em cada ano do mandato; e mês pelo menos 1,75 vez a mediana
+dos 12 meses anteriores completos (atravessando o ano, a partir de fev/2024), com diferença mínima de R$ 10.000 e valor acima
+da mediana dos meses positivos de todos os parlamentares da mesma fonte e ano (piso pelos colegas, exigido a partir de cinco
+meses observados). O piso evita que quem gasta pouco o ano todo vire alerta por um mês ainda abaixo do que os colegas gastam
+normalmente. Meses seguidos acima do critério, no mesmo ano, contam como um único alerta, registrado no primeiro mês da
+sequência. Só entram meses com o prazo de apresentação das notas encerrado. São critérios de triagem, não conclusões sobre conduta. Valores negativos são preservados e podem ser créditos ou estornos; documentos repetidos
 exigem conferência na fonte. Referências idênticas não são deduplicadas como se fossem pagamentos repetidos.
 
-Cada alerta da visão cidadã traz uma linha de contexto com o total do ano na cota e a diferença para a média do cargo
+Os alertas aparecem dos mais recentes aos mais antigos, com filtro por ano (`/api/c/radar?ano=AAAA`). Cada alerta da visão
+cidadã traz uma linha de contexto com o total do ano na cota e a diferença para a média do cargo
 (deputados ou senadores com notas importadas); diferenças menores que 10% aparecem como “parecido com a média”. A ordem
 “Maior valor em alerta” soma os valores dos alertas `pico` e `fornecedor` de cada pessoa, em vez de contar alertas. O radar
 da visão cidadã lista só deputados e senadores; contas institucionais (lideranças) continuam na base, mas não aparecem nas telas.
@@ -566,9 +568,10 @@ partir de fev/2023.
   serve de fonte: o gráfico dela inclui passagens aéreas, que ficam fora do arquivo
   aberto. O CSV da ficha traz todas as notas desde fev/2023; nas de 2023–2025 a
   coluna Documento fica vazia.
-- **O que segue em 2026:** alertas (regra, cobertura e prazos em [Alertas](alerts.md)),
-  fornecedores globais (`supplier_totals`) e, no Senado, presença, votações,
-  atividade e projetos.
+- **Alertas:** picos e concentração avaliam o mandato inteiro, nas duas Casas (regra,
+  cobertura e prazos em [Alertas](alerts.md)); lançamentos de valor alto seguem só em 2026.
+- **O que segue em 2026:** fornecedores globais (`supplier_totals`) e, no Senado,
+  presença, votações, atividade e projetos.
 - **Presença:** `presenca.json` agora soma o mandato (fev/2023 até o mês corrente),
   com `inicio` e `fim` por deputado, e vem de `ingest/chamber_mandate_history.py`
   (que reconsulta o ano corrente a cada `--collect`). Conferência em 8/10: a parte de

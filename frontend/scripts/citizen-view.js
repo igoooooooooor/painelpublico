@@ -2,7 +2,7 @@
    Tudo em linguagem simples. */
 const citizenState = {
   cache: new Map(), pending: new Set(),
-  alerts: { type: 'pico,fornecedor', role: '', page: 1, items: [], total: null, loading: false, error: null, key: '', counts: null },
+  alerts: { type: 'pico,fornecedor', role: '', year: '', years: null, page: 1, items: [], total: null, loading: false, error: null, key: '', counts: null },
   politicians: { query: '', role: '', order: 'nome', page: 1, items: [], total: null, loading: false, error: null, key: '', averageSpend: null, coverage: null },
   profile: null, profileId: null, profileLoading: false, profileError: null,
 };
@@ -107,38 +107,46 @@ function alertKind(a) {
   return ['info', 'Para conferir'];
 }
 /* Motivos de mês não avaliado, curtos, para a legenda do gráfico (o texto completo fica na cobertura). */
-const PEAK_SKIP_LABELS = { prazo_aberto: 'prazo das notas aberto', sem_base: 'poucos meses anteriores', sem_referencia_colegas: 'sem referência dos colegas', sem_notas: 'sem notas' };
-/* [7, 8, 9] → "jul–set"; [1, 3] → "jan, mar" */
-function monthSpan(months) {
+const PEAK_SKIP_LABELS = { prazo_aberto: 'prazo das notas aberto', historico_insuficiente: 'menos de 12 meses de histórico', sem_base: 'mês sem notas nos 12 anteriores', sem_referencia_colegas: 'sem referência dos colegas', sem_notas: 'sem notas' };
+/* Pontos {ano, mes} seguidos viram um trecho: "jul–set"; soltos, uma lista: "jan, mar". */
+function monthSpan(points, label) {
   const runs = [];
-  [...months].sort((x, y) => x - y).forEach(m => { const last = runs[runs.length - 1]; if (last && m === last[1] + 1) last[1] = m; else runs.push([m, m]); });
-  return runs.map(([from, to]) => from === to ? SHORT_MONTHS[from] : `${SHORT_MONTHS[from]}${to === from + 1 ? ', ' : '–'}${SHORT_MONTHS[to]}`).join(', ');
+  [...points].sort((x, y) => (x.ano * 12 + x.mes) - (y.ano * 12 + y.mes)).forEach(p => {
+    const last = runs[runs.length - 1], serial = p.ano * 12 + p.mes;
+    if (last && serial === last.end + 1) { last.end = serial; last.to = p; } else runs.push({ end: serial, from: p, to: p });
+  });
+  return runs.map(({ from, to }) => from === to ? label(from) : `${label(from)}${to.ano * 12 + to.mes === from.ano * 12 + from.mes + 1 ? ', ' : '–'}${label(to)}`).join(', ');
 }
 function alertVisualization(a) {
   if (a.tipo === 'pico' && a.serie?.length) {
-    /* Só a série e as referências gravadas pela regra: uma linha por mês do ano, com o valor escrito.
-       Cada mês marcado tem a própria referência (mediana dos meses anteriores), marcada na barra, e o
-       múltiplo ao lado. Meses que a regra não avaliou ficam esmaecidos, com o motivo na legenda.
-       Mês sem notas fica "sem notas", nunca zero. */
-    const marked = new Map((a.meses || [{ mes: a.mes, referencia: a.referencia, vezes: a.vezes }]).map(m => [m.mes, m]));
-    const state = s => marked.has(s.mes) ? 'flagged' : s.valor == null ? 'sem_notas' : s.estado || 'evaluated';
-    const max = Math.max(...a.serie.map(s => s.valor || 0), ...[...marked.values()].map(m => m.referencia || 0), 1);
+    /* Só a série e as referências gravadas pela regra: uma linha por mês, com o valor escrito.
+       Base de 12 meses: a janela usada como referência (atravessando o ano), os meses marcados e alguns
+       meses seguintes. Cada mês marcado tem a própria referência na barra e o múltiplo ao lado. Meses que
+       a regra não avaliou ficam esmaecidos, com o motivo na legenda. Mês sem notas fica "sem notas", nunca zero. */
+    const year = Number(a.ano || String(a.periodo).slice(0, 4));
+    const points = a.serie.map(s => ({ ...s, ano: Number(s.ano || year) }));
+    const keyOf = p => `${p.ano}-${p.mes}`;
+    const marked = new Map((a.meses || [{ mes: a.mes, referencia: a.referencia, vezes: a.vezes }]).map(m => [keyOf({ ano: Number(m.ano || year), mes: m.mes }), m]));
+    /* Um mês marcado por outro alerta aparece como avaliado: só os meses deste alerta ficam em destaque. */
+    const state = s => marked.has(keyOf(s)) ? 'flagged' : s.valor == null ? 'sem_notas' : s.estado === 'flagged' || !s.estado ? 'evaluated' : s.estado;
+    const max = Math.max(...points.map(s => s.valor || 0), ...[...marked.values()].map(m => m.referencia || 0), 1);
     const pct = v => `${Math.min(100, Math.max(0, v / max * 100)).toFixed(1)}%`;
     const times = v => `${v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}×`;
-    const label = s => SHORT_MONTHS[s.mes] + (s.ano && String(s.ano) !== String(a.periodo).slice(0, 4) ? `/${String(s.ano).slice(2)}` : '');
+    const label = s => SHORT_MONTHS[s.mes] + (s.ano !== year ? `/${String(s.ano).slice(2)}` : '');
     const skipped = {};
-    a.serie.forEach(s => { const st = state(s); if (PEAK_SKIP_LABELS[st]) (skipped[st] ||= []).push(s.mes); });
-    const skippedText = Object.entries(skipped).map(([st, months]) => `${PEAK_SKIP_LABELS[st]} (${monthSpan(months)})`).join('; ');
-    const spoken = a.serie.map(s => {
-      const m = marked.get(s.mes), st = state(s);
+    points.forEach(s => { const st = state(s); if (PEAK_SKIP_LABELS[st]) (skipped[st] ||= []).push(s); });
+    const skippedText = Object.entries(skipped).map(([st, months]) => `${PEAK_SKIP_LABELS[st]} (${monthSpan(months, label)})`).join('; ');
+    const spoken = points.map(s => {
+      const m = marked.get(keyOf(s)), st = state(s);
       const value = s.valor == null ? 'sem notas' : brl(s.valor);
       const note = m && Number.isFinite(m.referencia) ? `, ${times(m.vezes ?? s.valor / m.referencia)} a referência de ${brl(m.referencia)}`
         : PEAK_SKIP_LABELS[st] && st !== 'sem_notas' ? `, não avaliado: ${PEAK_SKIP_LABELS[st]}` : '';
-      return `${MONTH_NAMES_LONG[s.mes]}: ${value}${note}`;
+      return `${MONTH_NAMES_LONG[s.mes]} de ${s.ano}: ${value}${note}`;
     }).join('; ');
+    const rolling = a.base && a.base !== 'year';
     return `<figure class="citizen-peak" role="img" aria-label="Gasto na cota por mês. ${esc(spoken)}.">
-      ${a.serie.map(s => {
-        const m = marked.get(s.mes), st = state(s), missing = s.valor == null;
+      ${points.map(s => {
+        const m = marked.get(keyOf(s)), st = state(s), missing = s.valor == null;
         const cls = st === 'flagged' ? ' hot' : st === 'evaluated' ? '' : ' skipped';
         return `<div class="citizen-peak-month${cls}${missing ? ' missing' : ''}" aria-hidden="true">
           <span class="citizen-peak-month-name">${label(s)}</span>
@@ -147,7 +155,7 @@ function alertVisualization(a) {
           <span class="citizen-peak-month-times">${m && Number.isFinite(m.referencia) ? times(m.vezes ?? s.valor / m.referencia) : ''}</span>
         </div>`;
       }).join('')}
-      <figcaption class="citizen-peak-key" aria-hidden="true"><span><i class="key-hot"></i>acima da referência</span><span><i class="key-ref"></i>referência do mês</span>${skippedText ? `<span><i class="key-skipped"></i>não avaliado: ${esc(skippedText)}</span>` : ''}</figcaption>
+      <figcaption class="citizen-peak-key" aria-hidden="true"><span><i class="key-hot"></i>acima da referência</span><span><i class="key-ref"></i>${rolling ? 'referência: mediana dos 12 meses anteriores' : 'referência do mês'}</span>${skippedText ? `<span><i class="key-skipped"></i>não avaliado: ${esc(skippedText)}</span>` : ''}</figcaption>
     </figure>`;
   }
   if (a.tipo === 'fornecedor' && a.parte) {
@@ -160,7 +168,7 @@ function alertVisualization(a) {
   return '';
 }
 function alertExplanation(a) {
-  if (a.tipo === 'pico') return `Aparece quando o gasto de um mês passa de 1,75 vez a referência da própria pessoa, a diferença é de pelo menos R$ 10 mil e o mês também fica acima do gasto mensal típico dos(as) colegas${Number.isFinite(a.piso) ? ` (${formatCitizenAmount(a.piso)} neste ano)` : ''}. A referência é o valor do meio (a mediana) dos meses anteriores do mesmo ano, com pelo menos 3 meses sem lacuna. Só entram meses cujo prazo de apresentação das notas já tinha terminado na data da coleta: 90 dias na Câmara; no Senado, até o fim de abril do ano seguinte. Meses seguidos marcados contam como um alerta só. Novembro e dezembro também são avaliados; o cartão avisa que o saldo não usado da cota se acumula no ano e expira em 31 de dezembro. A mesma regra vale para todos(as).`;
+  if (a.tipo === 'pico') return `Aparece quando o gasto de um mês passa de 1,75 vez a referência da própria pessoa, a diferença é de pelo menos R$ 10 mil e o mês também fica acima do gasto mensal típico dos(as) colegas${Number.isFinite(a.piso) ? ` (${formatCitizenAmount(a.piso)} em ${esc(a.ano || String(a.periodo).slice(0, 4))})` : ''}. ${a.base && a.base !== 'year' ? 'A referência é o valor do meio (a mediana) dos 12 meses anteriores, atravessando o ano, todos com notas. Como o mandato começa em fevereiro de 2023, a avaliação começa em fevereiro de 2024.' : 'A referência é o valor do meio (a mediana) dos meses anteriores do mesmo ano, com pelo menos 3 meses sem lacuna.'} Só entram meses cujo prazo de apresentação das notas já tinha terminado na data da coleta: 90 dias na Câmara; no Senado, até o fim de abril do ano seguinte. Meses seguidos marcados contam como um alerta só. Novembro e dezembro também são avaliados; o cartão avisa que o saldo não usado da cota se acumula no ano e expira em 31 de dezembro. A mesma regra vale para todos(as).`;
   if (a.tipo === 'fornecedor') return `Aparece quando metade ou mais do dinheiro da cota no ano foi para uma mesma empresa, somando pelo menos R$ 30 mil.${a.parcial ? ` Período parcial: o cálculo usa as notas disponíveis de ${esc(a.periodoObservado || 'o ano')}, e o ano ainda pode receber notas.` : ''} ${a.intermediacao ? ' Aqui, a maioria das notas cita uma companhia aérea que não é o fornecedor pago: o fornecedor é uma agência que intermediou passagens. O critério usa a companhia citada no registro oficial do Senado; quando o registro traz o nome da própria agência, não há como saber a companhia.' : ' Pagamentos recorrentes podem ser compatíveis com um contrato; vale conferir as notas.'}`;
   return `Aparece para toda nota de R$ 10 mil ou mais. É só um corte de valor.`;
 }
@@ -197,21 +205,21 @@ function homeAlertCard() {
   if (data.error) return `<section class="citizen-home"><div class="citizen-head"><div><h2 class="h">Alertas da cota</h2><span class="muted">Os alertas da Câmara e do Senado não carregaram.</span></div></div><section class="card"><p>Não deu para carregar os alertas agora.</p><button type="button" class="more" data-home-retry>Tentar de novo</button></section></section>`;
   const alerts = data.itens;
   return `<section class="citizen-home">
-    <div class="citizen-head"><div><h2 class="h">Alertas da cota</h2><span class="muted">Meses acima da referência e concentração em fornecedor nas notas de 2026 de deputados(as) e senadores(as), pelas mesmas regras para todos(as). Não indicam irregularidade.</span></div></div>
+    <div class="citizen-head"><div><h2 class="h">Alertas da cota</h2><span class="muted">Meses acima da referência e concentração em fornecedor nas notas do mandato${data.periodo ? ` (${esc(citizenQuotaPeriod(data.periodo.inicio, data.periodo.fim))})` : ''} de deputados(as) e senadores(as), pelas mesmas regras para todos(as), dos mais recentes aos mais antigos. Não indicam irregularidade.</span></div></div>
     <div class="carousel citizen-carousel">${alerts.map(alert => alertCard(alert)).join('')}</div>
     <button type="button" class="opt citizen-cta" data-go="alerts">Ver os ${data.total} alertas</button>
   </section>`;
 }
 
 /* ---------- Aba "Alertas" ---------- */
-function alertFilterKey() { const l = citizenState.alerts; return `tipo=${l.type}&cargo=${l.role}`; }
+function alertFilterKey() { const l = citizenState.alerts; return `tipo=${l.type}&cargo=${l.role}&ano=${l.year}`; }
 function loadAlerts(more) {
   const l = citizenState.alerts, key = alertFilterKey();
   if (!more && l.key === key) return;
   if (!more) { l.key = key; l.page = 1; l.items = []; l.total = null; }
   l.loading = true; l.error = null;
-  const qs = `/api/c/radar?pageSize=12&page=${l.page}&tipo=${l.type}${l.role ? '&cargo=' + l.role : ''}`;
-  citizenGet(qs).then(d => { if (l.key !== key) return; l.items = l.items.concat(d.itens); l.total = d.total; l.counts = d.contagem; l.loading = false; if (state.view === 'alerts') rerender(); })
+  const qs = `/api/c/radar?pageSize=12&page=${l.page}&tipo=${l.type}${l.role ? '&cargo=' + l.role : ''}${l.year ? '&ano=' + l.year : ''}`;
+  citizenGet(qs).then(d => { if (l.key !== key) return; l.items = l.items.concat(d.itens); l.total = d.total; l.counts = d.contagem; l.years = d.anos || []; l.span = d.periodo; l.loading = false; if (state.view === 'alerts') rerender(); })
     .catch(e => { if (l.key !== key) return; l.loading = false; l.error = citizenErrorMessage(e); if (state.view === 'alerts') rerender(); });
 }
 const TOP_ALERTS_PATH = '/api/c/politicos?pageSize=5&page=1&ordem=alertas';
@@ -228,12 +236,12 @@ function alertSummaryCard() {
   const supplierConcentrationCount = alertCounts?.fornecedor || 0;
   const totalCount = monthlyPeakCount + supplierConcentrationCount;
   return `<section class="card hero">
-    <span class="k">Alertas em 2026</span>
+    <span class="k">${alertState.year ? `Alertas em ${esc(alertState.year)}` : `Alertas no mandato${alertState.span ? ` · ${esc(citizenQuotaPeriod(alertState.span.inicio, alertState.span.fim))}` : ''}`}</span>
     <div class="huge">${alertCounts ? totalCount.toLocaleString('pt-BR') : '—'}</div>
     <span class="muted">alertas pelas regras do painel, para conferir. Não indicam irregularidade.</span>
     ${totalCount ? `<div class="stack" role="img" aria-label="${monthlyPeakCount} picos num mês e ${supplierConcentrationCount} concentrações numa empresa"><i style="width:${monthlyPeakCount / totalCount * 100}%;background:var(--accent-2)"></i><i style="width:${supplierConcentrationCount / totalCount * 100}%;background:var(--hero-fg)"></i></div>
     <div class="legend" style="color:var(--hero-muted)"><span><i style="background:var(--accent-2)"></i>Mês acima da referência · ${monthlyPeakCount}</span><span><i style="background:var(--hero-fg)"></i>Concentração em fornecedor · ${supplierConcentrationCount}</span></div>` : ''}
-    ${topPeople.length ? `<span class="k" style="margin-top:6px">Valor das despesas nos alertas</span>
+    ${topPeople.length ? `<span class="k" style="margin-top:6px">Valor das despesas nos alertas do mandato</span>
     <div class="faces citizen-top5">${topPeople.map(person => `<button type="button" class="face" data-politician="${esc(person.id)}">${citizenAvatar(person, 54)}<span>${esc(citizenName(person.name).split(' ')[0])}</span><em>${person.valorAlertas ? esc(formatCitizenAmount(person.valorAlertas)) + (person.valorAlertasParcial ? ' · parcial' : '') : `${person.alertas} ${person.alertas === 1 ? 'ALERTA' : 'ALERTAS'}`}</em></button>`).join('')}</div>
     <span class="muted">Soma das despesas observadas nos alertas, cada nota contada uma vez. Não é estimativa de prejuízo. "Parcial": inclui concentração calculada com o ano ainda aberto.</span>` : ''}
   </section>`;
@@ -247,14 +255,15 @@ function alertsView() {
     <div class="citizen-filters">
       <div class="chips" role="group" aria-label="Tipo de alerta">${types.map(([k, n]) => `<button type="button" class="fchip" data-alert-type="${k}" aria-pressed="${l.type === k}">${n}</button>`).join('')}</div>
       <div class="chips" role="group" aria-label="Cargo">${roles.map(([k, n]) => `<button type="button" class="fchip" data-alert-role="${k}" aria-pressed="${l.role === k}">${n}</button>`).join('')}</div>
+      ${l.years?.length > 1 || l.year ? `<div class="chips" role="group" aria-label="Ano">${[['', 'Mandato'], ...(l.years || []).map(y => [String(y.ano), String(y.ano)])].map(([k, n]) => `<button type="button" class="fchip" data-alert-year="${k}" aria-pressed="${l.year === k}">${n}</button>`).join('')}</div>` : ''}
     </div>
     ${l.error ? `<section class="card"><p>Não deu para carregar os alertas agora.</p><p class="muted">${esc(l.error)}</p><button type="button" class="more" data-alert-retry>Tentar de novo</button></section>` : ''}
     ${l.total !== null ? `<span class="muted" role="status">${l.total} ${l.total === 1 ? 'alerta' : 'alertas'} neste filtro</span>` : ''}
     ${l.items.map(a => alertCard(a)).join('')}
     ${l.loading && !l.error ? skel('alerta', l.items.length ? 1 : 3) : l.total !== null && l.items.length < l.total ? `<button type="button" class="opt citizen-more" data-alert-more>Mostrar mais</button>` : ''}
     <section class="card citizen-how"><span class="k">Como funciona</span>
-      <p><b>Mês acima do habitual:</b> o gasto do mês passou de 1,75 vez o habitual dos meses anteriores.</p>
-      <p><b>Mesmo fornecedor:</b> metade ou mais do dinheiro do ano foi para a mesma empresa.</p>
+      <p><b>Mês acima da referência:</b> o gasto do mês passou de 1,75 vez a mediana dos 12 meses anteriores da própria pessoa. A avaliação começa em fevereiro de 2024, quando há 12 meses de mandato para comparar.</p>
+      <p><b>Concentração em fornecedor:</b> metade ou mais do dinheiro do ano foi para a mesma empresa, ano a ano desde 2023.</p>
       <p class="muted">Pode ter explicação, como um evento no estado ou um contrato fixo. Os dados vêm das notas que a Câmara e o Senado publicam; as passagens aéreas da Câmara não entram nessa conta.</p>
     </section>`;
 }
@@ -398,7 +407,7 @@ function profileWorkAnswer(shared) {
 }
 /* As duas regras de alerta, iguais para todos(as); detalhes na aba Alertas. */
 const ALERT_RULES_HTML = `<ul class="citizen-alert-rules">
-    <li><b>Mês acima da referência:</b> um mês com gasto 1,75 vez maior que a mediana dos meses anteriores da própria pessoa, com pelo menos R$ 10 mil de diferença e acima do gasto mensal típico dos(as) colegas. Só meses com o prazo de apresentação das notas encerrado.</li>
+    <li><b>Mês acima da referência:</b> um mês com gasto 1,75 vez maior que a mediana dos 12 meses anteriores da própria pessoa, com pelo menos R$ 10 mil de diferença e acima do gasto mensal típico dos(as) colegas. Só meses com o prazo de apresentação das notas encerrado; a avaliação começa em fev/2024.</li>
     <li><b>Concentração em fornecedor:</b> metade ou mais da cota do ano paga a uma só empresa, somando pelo menos R$ 30 mil.</li>
   </ul>`;
 const ALERT_MONTHS = ['', 'jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
@@ -432,7 +441,7 @@ function profileAlertAnswer(alerts, coverage) {
       <button type="button" class="more" data-profile-open="alerts">${alerts.length > 1 ? `Ver os demais alertas (${alerts.length - 1})` : 'Ver alerta em detalhe'} →</button>`
     : state.evaluated ? `<p class="citizen-empty">Nenhum alerta nos meses avaliados</p>
       ${state.html}<p class="muted">As regras são as mesmas para todos(as). Isso não é uma auditoria completa das notas.</p>`
-    : `<p class="citizen-empty">Dados insuficientes para avaliar</p>${state.html || '<p class="muted">Não há notas de 2026 desta pessoa para as regras de alerta.</p>'}`}
+    : `<p class="citizen-empty">Dados insuficientes para avaliar</p>${state.html || '<p class="muted">Não há notas do mandato desta pessoa para as regras de alerta.</p>'}`}
   </section>`;
 }
 const PROFILE_VOTE_LIMIT = new Map();
@@ -555,7 +564,7 @@ function profileView() {
     <h2 class="h">Ver mais</h2>
     ${profileSectionsHTML(person, {
       expenses: (person.role === 'deputado' ? profileCostDetails(shared.cost) : '') + profileExpenseDetails(f, hasExpenseData, person.role === 'deputado' ? shared.cost : null, shared.mandate),
-      alerts: (alerts.length ? alerts.map(alert => alertCard(alert, { semPessoa: true })).join('') : '') + `<p class="muted">${alerts.length ? 'O que as regras avaliaram:' : alertCoverageState(f.coberturaAlertas).evaluated ? 'Nenhum alerta nos meses avaliados:' : 'Dados insuficientes para avaliar:'}</p>${alertCoverageState(f.coberturaAlertas).html || '<p class="muted">Sem notas de 2026 desta pessoa.</p>'}${ALERT_RULES_HTML}<button type="button" class="more" data-go="alerts">Como funcionam os alertas →</button>`,
+      alerts: (alerts.length ? alerts.map(alert => alertCard(alert, { semPessoa: true })).join('') : '') + `<p class="muted">${alerts.length ? 'O que as regras avaliaram:' : alertCoverageState(f.coberturaAlertas).evaluated ? 'Nenhum alerta nos meses avaliados:' : 'Dados insuficientes para avaliar:'}</p>${alertCoverageState(f.coberturaAlertas).html || '<p class="muted">Sem notas do mandato desta pessoa.</p>'}${ALERT_RULES_HTML}<button type="button" class="more" data-go="alerts">Como funcionam os alertas →</button>`,
       votes: profileVoteDetails(shared), sources: sourcesHtml,
     })}`;
 }
@@ -568,7 +577,7 @@ function openPolitician(id) {
   navigateToView('profile');
 }
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-profile-votes-more],[data-profile-toggle],[data-profile-open],[data-politician],[data-home-retry],[data-alert-type],[data-alert-role],[data-alert-more],[data-alert-retry],[data-politician-role],[data-politician-order],[data-politician-more],[data-politician-retry]');
+  const t = e.target.closest('[data-profile-votes-more],[data-profile-toggle],[data-profile-open],[data-politician],[data-home-retry],[data-alert-type],[data-alert-role],[data-alert-year],[data-alert-more],[data-alert-retry],[data-politician-role],[data-politician-order],[data-politician-more],[data-politician-retry]');
   if (!t) return;
   if (t.dataset.profileVotesMore) { PROFILE_VOTE_LIMIT.set(t.dataset.profileVotesMore, (PROFILE_VOTE_LIMIT.get(t.dataset.profileVotesMore) || 20) + 20); return rerender(); }
   if (t.dataset.profileToggle) { profileToggle(t); return; }
@@ -582,6 +591,7 @@ document.addEventListener('click', e => {
   const l = citizenState.alerts, p = citizenState.politicians;
   if (t.dataset.alertType !== undefined) { l.type = t.dataset.alertType; return rerender(); }
   if (t.dataset.alertRole !== undefined) { l.role = t.dataset.alertRole; return rerender(); }
+  if (t.dataset.alertYear !== undefined) { l.year = t.dataset.alertYear; return rerender(); }
   if (t.hasAttribute('data-alert-more')) { l.page += 1; loadAlerts(true); return rerender(); }
   if (t.hasAttribute('data-alert-retry')) { l.key = ''; citizenState.cache.clear(); return rerender(); }
   if (t.dataset.politicianRole !== undefined) { p.role = t.dataset.politicianRole; return rerender(); }

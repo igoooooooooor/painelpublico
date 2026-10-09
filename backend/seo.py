@@ -145,9 +145,9 @@ def profile_facts(db, identifier):
     if alerts:
         facts['lines'].append(('Alertas na cota', f'{len(alerts)} {"alerta" if len(alerts) == 1 else "alertas"} pelas regras do painel, iguais para todos(as). Alertas não indicam irregularidade.'))
     elif evaluated:
-        facts['lines'].append(('Alertas na cota', 'Nenhum alerta nos meses de 2026 avaliados pelas regras do painel.'))
+        facts['lines'].append(('Alertas na cota', 'Nenhum alerta nos meses do mandato avaliados pelas regras do painel.'))
     elif record.get('hasExpenseData'):
-        facts['lines'].append(('Alertas na cota', 'Dados insuficientes para avaliar os alertas de 2026.'))
+        facts['lines'].append(('Alertas na cota', 'Dados insuficientes para avaliar os alertas da cota no mandato.'))
     facts['sourceUrl'] = (f'https://www.camara.leg.br/deputados/{number}' if house == 'camara'
                           else f'https://www25.senado.leg.br/web/senadores/senador/-/perfil/{number}')
     return facts

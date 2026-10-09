@@ -5,16 +5,25 @@ probabilidade de irregularidade: não há validação que permita ler os limites
 recorrente legítimo pode gerar concentração, e um gasto problemático pode não gerar alerta nenhum.
 O cálculo, a cobertura e a apresentação seguem essa neutralidade.
 
-## Regra em uso (`cota-alertas-v2`, desde 8/10/2026)
+## Regra em uso (`cota-alertas-v3`, desde 8/10/2026)
 
 Um só cálculo, em [`backend/alert_rules.py`](../backend/alert_rules.py), usado na geração dos alertas, na
-explicação de cada cartão e na simulação. Hoje só as notas detalhadas do ano corrente (2026) são avaliadas.
+explicação de cada cartão e na simulação. Avalia as notas do **mandato inteiro** (fev/2023 em diante), na
+Câmara e no Senado: as detalhadas do ano corrente (`expenses`) e as dos anos anteriores (visão
+`quota_history`), lidas por `public_store.alert_inputs`, a mesma entrada da simulação. O histórico usa
+identificadores estáveis (`hist:<pessoa>:<ano>:<mês>:<seq>`).
 
 - **Mês acima da referência:** o gasto do mês é pelo menos 1,75 vez a referência, com diferença de pelo
-  menos R$ 10 mil, e fica acima do piso dos colegas. Referência = mediana dos meses anteriores do mesmo
-  ano, com ao menos 3 meses e sem lacuna. Piso = mediana dos meses fechados e positivos dos parlamentares
-  da mesma fonte e ano. Meses seguidos marcados formam um alerta só, com todos os meses marcados.
-- **Concentração em fornecedor:** pelo menos 50% e R$ 30 mil das notas do ano para um mesmo fornecedor.
+  menos R$ 10 mil, e fica acima do piso dos colegas. Referência = mediana dos **12 meses anteriores
+  completos**, atravessando o ano (`PUBLISHED_BASELINE = 'rolling12'`): os 12 precisam ter notas. Com o
+  mandato começando em fev/2023, o primeiro mês avaliável é fev/2024; antes disso o mês fica como
+  "histórico insuficiente". Um mês sem notas (ou com saldo negativo) entre os 12 anteriores impede a
+  avaliação ("sem base"). Piso = mediana dos meses fechados e positivos dos parlamentares da mesma fonte e
+  ano. Meses seguidos marcados formam um alerta só, com todos os meses marcados; o alerta fica dentro de
+  um ano, como a cota, cujo saldo expira em 31/12 (dez e jan seguidos marcados são dois alertas).
+- **Concentração em fornecedor:** pelo menos 50% e R$ 30 mil das notas do ano para um mesmo fornecedor,
+  **ano a ano** desde 2023. Anos fechados não são parciais.
+- **Lançamento de valor alto** (tipo `nota`, interno): continua só nas notas detalhadas do ano corrente.
 - **Prazos (meses elegíveis):**
   - Câmara: o deputado tem até 90 dias para apresentar a nota, lançada no mês da despesa
     ([guia da Câmara](https://www2.camara.leg.br/comunicacao/assessoria-de-imprensa/guia-para-jornalistas/cota-parlamentar)).
@@ -44,31 +53,39 @@ explicação de cada cartão e na simulação. Hoje só as notas detalhadas do a
   informa que o saldo não usado da cota se acumula no ano e expira em 31 de dezembro (campo
   `yearEndMonths` no resultado gravado).
 
-O que fica gravado (`signals.detail`): versão da regra, meses marcados com valor, referência e múltiplo,
-piso, série do ano com a situação de cada mês (`flagged`, `evaluated` ou o motivo de não avaliação), data
-da coleta e se é parcial. O cartão só lê esses campos; nada é recalculado. O gráfico mostra uma linha por
-mês com o valor escrito: meses marcados em destaque, com a própria referência na barra e o múltiplo ao lado;
-meses avaliados sem alerta em cinza; meses não avaliados esmaecidos, com o motivo na legenda.
+O que fica gravado (`signals.detail`): versão da regra, base (`baseline`), meses marcados com valor,
+referência e múltiplo, piso, série do cartão com ano, mês e situação de cada mês (`flagged`, `evaluated`
+ou o motivo de não avaliação), data da coleta e se é parcial. A série é a janela usada como referência
+(os 12 meses antes do primeiro mês marcado, atravessando o ano), os meses marcados e até 3 meses
+seguintes com notas, para a linha de referência bater com a regra. O cartão só lê esses campos; nada é
+recalculado. O gráfico mostra uma linha por mês com o valor escrito (e o ano quando é outro, como
+"dez/23"): os meses deste alerta em destaque, com a própria referência na barra e o múltiplo ao lado;
+meses avaliados sem alerta em cinza (um mês marcado por outro alerta também); meses não avaliados
+esmaecidos, com o motivo na legenda.
 
 ## Cobertura
 
-`alert_coverage` registra, por pessoa, regra, fonte e ano, o que foi avaliado e o que não foi, com o
-motivo: prazo de apresentação aberto, menos de 3 meses anteriores, sem notas no mês, sem piso dos
-colegas. A ficha diz "Nenhum alerta nos meses avaliados" só quando alguma regra avaliou algo, e lista os
-meses e regras não avaliados. Sem nada avaliável, diz "Dados insuficientes para avaliar".
+`alert_coverage` registra, por pessoa, regra, fonte e ano do mandato, o que foi avaliado e o que não foi,
+com o motivo: prazo de apresentação aberto, histórico insuficiente (menos de 12 meses com notas antes do
+mês), sem base (mês sem notas entre os 12 anteriores), sem notas no mês, sem piso dos colegas. Meses antes
+de fev/2023 não são do mandato e não aparecem como "sem notas". A ficha lista a cobertura do ano mais
+recente ao mais antigo, diz "Nenhum alerta nos meses avaliados" só quando alguma regra avaliou algo, e
+lista os meses e regras não avaliados. Sem nada avaliável, diz "Dados insuficientes para avaliar".
 
 ## Valor das despesas nos alertas
 
-`alert_totals` soma, por pessoa, as notas que estão em algum alerta, **cada lançamento uma vez só** pelo
-identificador do lançamento, com estornos preservados. Num pico agrupado entram todos os meses
-marcados. É a soma de despesas observadas, não estimativa de prejuízo. Antes, uma nota podia entrar no
+`alert_totals` soma, por pessoa, as notas que estão em algum alerta do mandato, **cada lançamento uma vez
+só** pelo identificador do lançamento, com estornos preservados. Num pico agrupado entram todos os meses
+marcados. A marca "parcial" vale quando há concentração do ano corrente. É a soma de despesas observadas, não estimativa de prejuízo. Antes, uma nota podia entrar no
 pico e na concentração: para a lista atual, eram R$ 972.810,24 contados em dobro.
 
 ## Apresentação
 
-Títulos factuais ("Mês acima da referência", "Concentração em fornecedor"), sem selo de intensidade nem
-ordenação por gravidade. A cor identifica o tipo de informação. Comparações não destacam como "melhor"
-quem tem menos alertas.
+Títulos factuais ("Mês acima da referência: maio de 2024", "Concentração em fornecedor"), sem selo de
+intensidade nem ordenação por gravidade. A cor identifica o tipo de informação. Comparações não destacam
+como "melhor" quem tem menos alertas. A home, a página de Alertas e a ficha mostram os alertas dos mais
+recentes aos mais antigos; a página de Alertas filtra por ano (`/api/c/radar?ano=AAAA`) e o resumo diz o
+período do mandato ou o ano escolhido.
 
 ## Simulação reproduzível
 
@@ -82,31 +99,39 @@ por Casa e ano, os alertas, os meses-pessoa marcados, avaliados e não avaliados
 `--sample`, sorteia com semente fixa uma amostra por Casa × tipo × ano, casos perto dos limites, casos sem
 alerta e casos que só aparecem nas bases móveis.
 
-Três bases, comparadas na mesma fotografia:
+Três bases, comparadas na mesma fotografia e com a mesma entrada dos alertas gravados:
 
-- **anual** (regra em uso): meses anteriores do mesmo ano, ao menos 3.
-- **12 meses completos** (variante recomendada para estudo): os 12 meses anteriores, todos com notas,
-  atravessando o ano. Com o histórico começando em fev/2023, só existe a partir de fev/2024; antes disso,
-  o mês fica como histórico insuficiente.
-- **base curta** (só para comparação): de 3 a 12 meses, conforme o histórico disponível. É uma decisão
-  metodológica distinta, e por isso a única que gera alertas em 2023.
+- **12 meses completos** (publicada desde a v3): os 12 meses anteriores, todos com notas, atravessando o
+  ano. Com o histórico começando em fev/2023, só existe a partir de fev/2024; antes disso, o mês fica
+  como histórico insuficiente.
+- **anual** (regra até a v2, só para comparação): meses anteriores do mesmo ano, ao menos 3.
+- **base curta** (só para comparação): de 3 a 12 meses, conforme o histórico disponível.
+
+A amostra (`--sample`) sorteia pela base publicada e acrescenta casos que só apareceriam nas outras duas.
+Os números da base de 12 meses na simulação batem com os sinais e a cobertura gravados (conferido em
+8/10/2026 por Casa, tipo e ano, nas duas populações).
 
 Resultado em 8/10/2026, lista atual. Taxa = meses marcados ÷ meses avaliados (alertas agrupam meses
 seguidos, então não servem de numerador):
 
-| Casa e ano | Anual | 12 meses completos | Base curta |
+| Casa e ano | 12 meses completos (publicada) | Anual | Base curta |
 |---|---|---|---|
-| Câmara 2023 | 0 de 0 | 0 de 0 | 445 de 3.609 (12,33%) |
-| Câmara 2024 | 312 de 3.851 (8,10%) | 322 de 4.650 (6,92%) | 332 de 5.120 (6,48%) |
-| Câmara 2025 | 250 de 4.111 (6,08%) | 251 de 5.110 (4,91%) | 263 de 5.194 (5,06%) |
-| Câmara 2026 | 96 de 1.382 (6,95%) | 168 de 2.658 (6,32%) | 170 de 2.688 (6,32%) |
-| Senado 2023 | 0 de 0 | 0 de 0 | 52 de 566 (9,19%) |
-| Senado 2024 | 33 de 599 (5,51%) | 41 de 733 (5,59%) | 42 de 807 (5,20%) |
-| Senado 2025 | 50 de 623 (8,03%) | 48 de 769 (6,24%) | 48 de 777 (6,18%) |
-| Senado 2026 | 0 de 0 (prazo aberto) | 0 de 0 | 0 de 0 |
+| Câmara 2023 | 0 de 0 (histórico insuficiente) | 442 de 3.590 (12,31%) | 445 de 3.609 (12,33%) |
+| Câmara 2024 | 322 de 4.650 (6,92%) | 312 de 3.851 (8,10%) | 332 de 5.120 (6,48%) |
+| Câmara 2025 | 251 de 5.110 (4,91%) | 250 de 4.111 (6,08%) | 263 de 5.194 (5,06%) |
+| Câmara 2026 | 168 de 2.658 (6,32%) | 96 de 1.382 (6,95%) | 170 de 2.688 (6,32%) |
+| Senado 2023 | 0 de 0 (histórico insuficiente) | 52 de 562 (9,25%) | 52 de 566 (9,19%) |
+| Senado 2024 | 41 de 733 (5,59%) | 33 de 599 (5,51%) | 42 de 807 (5,20%) |
+| Senado 2025 | 48 de 769 (6,24%) | 50 de 623 (8,03%) | 48 de 777 (6,18%) |
+| Senado 2026 | 0 de 0 (prazo aberto) | 0 de 0 (prazo aberto) | 0 de 0 (prazo aberto) |
+
+Gravados na base publicada, para todos os parlamentares: 996 alertas (696 de mês acima da referência e
+300 de concentração), de fev/2024 a jun/2026 nos picos e de 2023 a 2026 nas concentrações.
 
 As bases móveis avaliam mais meses (janeiro a março) e marcam uma fração menor ou parecida. A base curta
-marca muito mais em 2023, quando a referência sai de poucos meses. Nenhuma das duas está validada.
+e a anual marcam muito mais em 2023, quando a referência sai de poucos meses. Nenhuma base está validada.
+Na v3, janeiro de 2023 deixou de contar como mês "sem notas" (não é do mandato); por isso a base anual,
+que antes não avaliava 2023 por essa falsa lacuna, agora avalia o ano a partir de maio.
 (Uma versão anterior deste documento dividia alertas por meses avaliados e trazia 5,7% e 5,0% para 2024;
 a métrica correta é a da tabela.)
 
@@ -186,5 +211,8 @@ Pendências antes de ampliar para o mandato:
 | 8/10/2026 | Passagens intermediadas por agência com critério verificável (companhia citada ≠ fornecedor), sem excluir passagens | Não apresentar como receita da agência nem como uma só companhia |
 | 8/10/2026 | Mínimo de R$ 30 mil mantido; porcentagem sempre com valores absolutos e meses com notas | Não ajustar o corte pelos casos da amostra |
 | 8/10/2026 | Cards de custo dizem a composição: deputado soma quatro partes; cota sozinha não é comparável | Evitar comparação direta entre composições diferentes |
-| 8/10/2026 | Base para ampliar ao mandato: 12 meses anteriores completos; antes de fev/2024, histórico insuficiente. A base curta fica só na simulação | Decisão do mantenedor após simulação e triagem; implementação pendente |
+| 8/10/2026 | Base para ampliar ao mandato: 12 meses anteriores completos; antes de fev/2024, histórico insuficiente. A base curta fica só na simulação | Decisão do mantenedor após simulação e triagem |
+| 8/10/2026 | `cota-alertas-v3`: picos e concentração no mandato inteiro, Câmara e Senado, com a base de 12 meses; concentração segue por ano; lançamento de valor alto segue só no ano corrente | Implementa a decisão anterior; números iguais aos da simulação |
+| 8/10/2026 | Cartão de pico mostra a janela de 12 meses usada, os meses marcados e até 3 seguintes; alerta não atravessa o ano | A linha de referência precisa bater com a regra; a cota é anual |
+| 8/10/2026 | Alertas dos mais recentes aos mais antigos, com filtro por ano | Mais de mil alertas no mandato |
 | Em aberto | Pedido de acesso aos documentos do Senado | Investigação posterior |
