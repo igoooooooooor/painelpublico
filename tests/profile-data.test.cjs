@@ -159,8 +159,9 @@ test('shared detail accordions keep their DOM order, accessible controls and res
 
   const expanded = html => Object.fromEntries([...html.matchAll(/<button[^>]*data-profile-toggle=["']([^"']+)["'][^>]*aria-expanded=["'](true|false)["']/g)]
     .map(match => [match[1], match[2] === 'true']));
-  assert.deepEqual(expanded(mobile), Object.fromEntries(keys.map(key => [key, key === 'expenses'])));
-  assert.deepEqual(expanded(desktop), Object.fromEntries(keys.map(key => [key, ['expenses', 'votes'].includes(key)])));
+  // Nenhuma seção abre sozinha, no celular nem no computador.
+  assert.deepEqual(expanded(mobile), Object.fromEntries(keys.map(key => [key, false])));
+  assert.deepEqual(expanded(desktop), Object.fromEntries(keys.map(key => [key, false])));
 });
 
 test('accordion choices update their panel and persist when the profile HTML is rendered again', () => {
@@ -213,9 +214,9 @@ test('responsive refresh applies defaults and preserves explicit accordion choic
   }
   const alerts = ctx.document._accordionButtons.find(button => button.dataset.profileToggle === 'alerts');
   const votes = ctx.document._accordionButtons.find(button => button.dataset.profileToggle === 'votes');
-  ctx.profileToggle(alerts); // Explicitly open the mobile-collapsed section.
+  ctx.profileToggle(alerts); // Explicitly open a collapsed section.
   ctx.profileToggle(votes);
-  ctx.profileToggle(votes); // Explicitly keep desktop's default-open section closed.
+  ctx.profileToggle(votes); // Opened and closed again: stays closed.
 
   ctx.__setWidth(1024);
   ctx.profileRefreshAccordions();
@@ -223,7 +224,7 @@ test('responsive refresh applies defaults and preserves explicit accordion choic
     button.dataset.profileToggle,
     button.getAttribute('aria-expanded') === 'true',
   ]));
-  assert.equal(current.expenses, true);
+  assert.equal(current.expenses, false);
   assert.equal(current.projects, false);
   assert.equal(current.alerts, true);
   assert.equal(current.votes, false);

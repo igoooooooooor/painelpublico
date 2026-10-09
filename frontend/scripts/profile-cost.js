@@ -250,7 +250,7 @@ function profileCostDetails(cost) {
   const years = [...new Set([...PROFILE_COST_PERIODS].map(period => period.slice(0, 4)))].reverse();
   const rows = years.map((year, index) => {
     const cards = [...PROFILE_COST_PERIODS].filter(period => period.startsWith(year)).map(monthCard).filter(Boolean).join('');
-    return cards ? `<details class="citizen-cost-year" data-cost-year="${year}"${index ? '' : ' open'}><summary>${year}</summary>${cards}</details>` : '';
+    return cards ? `<details class="citizen-cost-year" data-cost-year="${year}"><summary>${year}</summary>${cards}</details>` : '';
   }).join('');
   const complementMonths = profileCostPeriods(cost.complement?.months);
   const complementValue = complementMonths.length ? profileCostMoney(cost.complement?.signedAmountCents) : null;

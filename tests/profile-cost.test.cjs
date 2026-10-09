@@ -104,7 +104,7 @@ test('a confirmed source gap is shown empty, never as zero', () => {
   assert.match(profileCostAnswer(cost), /não publicou a verba do gabinete de mar\/2026/);
   const details = profileCostDetails(cost);
   assert.match(details, /data-cost-month="2026-03"[\s\S]*Não publicado pela Câmara/);
-  assert.match(details, /data-cost-year="2026" open/);
+  assert.match(details, /data-cost-year="2026"><summary>/);  // nenhum ano abre sozinho
 });
 
 test('quota source of a mandate month opens the month notes instead of the annual file', () => {
