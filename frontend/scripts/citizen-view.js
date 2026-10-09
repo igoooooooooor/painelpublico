@@ -106,73 +106,74 @@ function alertKind(a) {
   if (a.tipo === 'fornecedor') return ['type-supplier', `${a.intermediacao ? 'Passagens intermediadas' : 'Concentração em fornecedor'}${a.parcial ? ' · parcial' : ''}`];
   return ['info', 'Para conferir'];
 }
-/* Motivos de mês não avaliado, curtos, para a legenda do gráfico (o texto completo fica na cobertura). */
-const PEAK_SKIP_LABELS = { prazo_aberto: 'prazo das notas aberto', historico_insuficiente: 'menos de 12 meses de histórico', sem_base: 'mês sem notas nos 12 anteriores', sem_referencia_colegas: 'sem referência dos colegas', sem_notas: 'sem notas' };
-/* Pontos {ano, mes} seguidos viram um trecho: "jul–set"; soltos, uma lista: "jan, mar". */
-function monthSpan(points, label) {
-  const runs = [];
-  [...points].sort((x, y) => (x.ano * 12 + x.mes) - (y.ano * 12 + y.mes)).forEach(p => {
-    const last = runs[runs.length - 1], serial = p.ano * 12 + p.mes;
-    if (last && serial === last.end + 1) { last.end = serial; last.to = p; } else runs.push({ end: serial, from: p, to: p });
-  });
-  return runs.map(({ from, to }) => from === to ? label(from) : `${label(from)}${to.ano * 12 + to.mes === from.ano * 12 + from.mes + 1 ? ', ' : '–'}${label(to)}`).join(', ');
-}
+/* Motivos de mês não avaliado, curtos, para o histórico do cartão (o texto completo fica na cobertura). */
+const PEAK_SKIP_LABELS = { prazo_aberto: 'provisório: prazo das notas aberto', historico_insuficiente: 'menos de 12 meses de histórico', sem_base: 'mês sem notas nos 12 anteriores', sem_referencia_colegas: 'sem referência dos colegas', sem_notas: 'sem notas' };
+const capitalize = text => text ? text[0].toUpperCase() + text.slice(1) : text;
 function alertVisualization(a) {
   if (a.tipo === 'pico' && a.serie?.length) {
-    /* Só a série e as referências gravadas pela regra: uma linha por mês, com o valor escrito.
-       Base de 12 meses: a janela usada como referência (atravessando o ano), os meses marcados e alguns
-       meses seguintes. Cada mês marcado tem a própria referência na barra e o múltiplo ao lado. Meses que
-       a regra não avaliou ficam esmaecidos, com o motivo na legenda. Mês sem notas fica "sem notas", nunca zero. */
+    /* Só os números gravados pela regra. No cartão: a referência e cada mês marcado em barras na mesma escala,
+       com o valor e a diferença escritos ao lado (sem legenda). Em "Ver histórico": a janela de referência, os
+       meses marcados e os seguintes (provisórios quando o prazo das notas ainda está aberto), com a mediana. */
     const year = Number(a.ano || String(a.periodo).slice(0, 4));
     const points = a.serie.map(s => ({ ...s, ano: Number(s.ano || year) }));
     const keyOf = p => `${p.ano}-${p.mes}`;
-    const marked = new Map((a.meses || [{ mes: a.mes, referencia: a.referencia, vezes: a.vezes }]).map(m => [keyOf({ ano: Number(m.ano || year), mes: m.mes }), m]));
-    /* Um mês marcado por outro alerta aparece como avaliado: só os meses deste alerta ficam em destaque. */
-    const state = s => marked.has(keyOf(s)) ? 'flagged' : s.valor == null ? 'sem_notas' : s.estado === 'flagged' || !s.estado ? 'evaluated' : s.estado;
-    const max = Math.max(...points.map(s => s.valor || 0), ...[...marked.values()].map(m => m.referencia || 0), 1);
-    const pct = v => `${Math.min(100, Math.max(0, v / max * 100)).toFixed(1)}%`;
-    const times = v => `${v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}×`;
-    const label = s => SHORT_MONTHS[s.mes] + (s.ano !== year ? `/${String(s.ano).slice(2)}` : '');
-    const skipped = {};
-    /* Só os meses que aparecem como linha (do primeiro marcado em diante) entram na legenda. */
-    const firstShown = Math.max(0, points.findIndex(s => marked.has(keyOf(s))));
-    points.slice(firstShown).forEach(s => { const st = state(s); if (PEAK_SKIP_LABELS[st]) (skipped[st] ||= []).push(s); });
-    const skippedText = Object.entries(skipped).map(([st, months]) => `${PEAK_SKIP_LABELS[st]} (${monthSpan(months, label)})`).join('; ');
-    const spoken = points.map(s => {
-      const m = marked.get(keyOf(s)), st = state(s);
-      const value = s.valor == null ? 'sem notas' : brl(s.valor);
-      const note = m && Number.isFinite(m.referencia) ? `, ${times(m.vezes ?? s.valor / m.referencia)} a referência de ${brl(m.referencia)}`
-        : PEAK_SKIP_LABELS[st] && st !== 'sem_notas' ? `, não avaliado: ${PEAK_SKIP_LABELS[st]}` : '';
-      return `${MONTH_NAMES_LONG[s.mes]} de ${s.ano}: ${value}${note}`;
-    }).join('; ');
+    const months = (a.meses || [{ mes: a.mes, valor: a.valor, referencia: a.referencia, vezes: a.vezes }])
+      .map(m => ({ ...m, ano: Number(m.ano || year) }))
+      .map(m => ({ ...m, valor: Number.isFinite(m.valor) ? m.valor : points.find(p => keyOf(p) === keyOf(m))?.valor }))
+      .filter(m => Number.isFinite(m.valor) && Number.isFinite(m.referencia) && m.referencia > 0);
+    if (!months.length) return '';
+    const marked = new Set(months.map(keyOf));
+    const first = months[0], last = months[months.length - 1];
+    const monthName = m => `${MONTH_NAMES_LONG[m.mes]} de ${m.ano}`;
+    const shortLabel = p => `${SHORT_MONTHS[p.mes]}/${p.ano}`;
+    const difference = m => `${formatMonthAmount(m.valor - m.referencia)} acima (+${Math.round((m.valor / m.referencia - 1) * 100).toLocaleString('pt-BR')}%)`;
+    const max = Math.max(...months.map(m => Math.max(m.valor, m.referencia)), 1);
+    const width = v => `${Math.max(1, v / max * 100).toFixed(1)}%`;
+    const windowPoints = points.filter(p => (p.ano * 12 + p.mes) < (first.ano * 12 + first.mes));
+    const windowSpan = windowPoints.length ? `${shortLabel(windowPoints[0])}–${shortLabel(windowPoints[windowPoints.length - 1])}` : '';
     const rolling = a.base && a.base !== 'year';
-    const row = s => {
-      const m = marked.get(keyOf(s)), st = state(s), missing = s.valor == null;
-      const cls = st === 'flagged' ? ' hot' : st === 'evaluated' ? '' : ' skipped';
-      return `<div class="citizen-peak-month${cls}${missing ? ' missing' : ''}">
-          <span class="citizen-peak-month-name">${label(s)}</span>
-          <span class="citizen-peak-month-track">${missing ? '' : `<i style="width:${pct(s.valor)}"></i>`}${m && Number.isFinite(m.referencia) ? `<b class="citizen-peak-month-ref" style="left:${pct(m.referencia)}"></b>` : ''}</span>
-          <span class="citizen-peak-month-value">${missing ? 'sem notas' : formatMonthAmount(s.valor)}</span>
-          <span class="citizen-peak-month-times">${m && Number.isFinite(m.referencia) ? times(m.vezes ?? s.valor / m.referencia) : ''}</span>
+    const headline = months.length === 1
+      ? `${capitalize(MONTH_NAMES_LONG[first.mes])} ficou ${formatMonthAmount(first.valor - first.referencia)} acima da referência`
+      : `${capitalize(MONTH_NAMES_LONG[first.mes])} a ${MONTH_NAMES_LONG[last.mes]} ficaram acima da referência`;
+    const bar = (label, value, cls, note = '') => `<div class="citizen-peak-bar ${cls}">
+        <span class="citizen-peak-bar-label">${label}</span>
+        <span class="citizen-peak-bar-row"><span class="citizen-peak-bar-track"><i style="width:${width(value)}"></i></span><b>${formatMonthAmount(value)}</b></span>
+        ${note ? `<span class="citizen-peak-bar-note">${note}</span>` : ''}
+      </div>`;
+    /* Uma barra de referência por valor distinto: num alerta de vários meses, cada mês tem a sua. */
+    const bars = months.length === 1
+      ? bar(`Referência${windowSpan ? ` · ${windowSpan}` : ''}`, first.referencia, 'reference') + bar(capitalize(monthName(first)), first.valor, 'flagged', difference(first))
+      : bar(`Referência de ${MONTH_NAMES_LONG[first.mes]}${windowSpan ? ` · ${windowSpan}` : ''}`, first.referencia, 'reference')
+        + months.map(m => bar(capitalize(monthName(m)), m.valor, 'flagged', `${difference(m)} sobre a referência de ${formatMonthAmount(m.referencia)}`)).join('');
+    /* Histórico: colunas na escala do histórico, linha tracejada na referência do primeiro mês marcado. */
+    const historyMax = Math.max(...points.map(p => p.valor || 0), first.referencia, 1);
+    const height = v => `${Math.max(2, v / historyMax * 100).toFixed(1)}%`;
+    const history = points.map(p => {
+      const flagged = marked.has(keyOf(p)), after = (p.ano * 12 + p.mes) > (last.ano * 12 + last.mes);
+      const note = p.valor == null ? 'sem notas' : !flagged && after && p.estado && p.estado !== 'evaluated' && p.estado !== 'flagged' ? PEAK_SKIP_LABELS[p.estado] || '' : '';
+      const cls = flagged ? 'flagged' : note && note.startsWith('provisório') ? 'provisional' : '';
+      const showLabel = flagged || p === points[0] || p.mes === 1 || p === points[points.length - 1];
+      return `<div class="citizen-peak-col ${cls}" title="${esc(`${shortLabel(p)}: ${p.valor == null ? 'sem notas' : brl(p.valor)}${note && p.valor != null ? ` (${note})` : ''}`)}">
+          <span class="citizen-peak-col-bar">${p.valor == null ? '' : `<i style="height:${height(p.valor)}"></i>`}</span>
+          <small>${showLabel ? `${SHORT_MONTHS[p.mes]}${p.mes === 1 || p === points[0] ? `/${String(p.ano).slice(2)}` : ''}` : ''}</small>
         </div>`;
-    };
-    /* Os meses antes do primeiro marcado formam a referência dele. No cartão viram uma linha só, "ref.", com a
-       mediana desenhada na mesma escala das barras; o período fica na legenda. Cada mês continua no texto para
-       leitores de tela. */
-    const firstMarked = points.findIndex(s => marked.has(keyOf(s)));
-    const windowPoints = firstMarked > 0 ? points.slice(0, firstMarked) : [];
-    const shown = firstMarked > 0 ? points.slice(firstMarked) : points;
-    const firstReference = firstMarked >= 0 ? marked.get(keyOf(points[firstMarked]))?.referencia : null;
-    const span = windowPoints.length ? [windowPoints[0], windowPoints[windowPoints.length - 1]].map(p => `${SHORT_MONTHS[p.mes]}/${String(p.ano).slice(2)}`).filter((v, i, all) => all.indexOf(v) === i).join('–') : '';
-    const referenceRow = windowPoints.length && Number.isFinite(firstReference) ? `<div class="citizen-peak-month reference">
-          <span class="citizen-peak-month-name">ref.</span>
-          <span class="citizen-peak-month-track"><i style="width:${pct(firstReference)}"></i></span>
-          <span class="citizen-peak-month-value">${formatMonthAmount(firstReference)}</span><span></span>
-        </div>` : '';
+    }).join('');
+    const provisional = points.some(p => p.estado === 'prazo_aberto' && (p.ano * 12 + p.mes) > (last.ano * 12 + last.mes));
+    const spoken = [`${headline}.`, ...months.map(m => `${capitalize(monthName(m))}: ${brl(m.valor)}; referência ${brl(m.referencia)}; ${difference(m)}.`)].join(' ');
     return `<figure class="citizen-peak">
-      <figcaption class="sr-only">Gasto na cota por mês. ${esc(spoken)}.</figcaption>
-      <div aria-hidden="true">${referenceRow}${shown.map(row).join('')}</div>
-      <div class="citizen-peak-key" aria-hidden="true"><span><i class="key-hot"></i>acima da referência</span><span><i class="key-ref"></i>${rolling ? 'referência de cada mês' : 'referência do mês'}</span>${referenceRow ? `<span><i class="key-reference"></i>ref.: mediana ${rolling ? 'dos 12 meses anteriores' : 'dos meses anteriores'} (${span})</span>` : ''}${skippedText ? `<span><i class="key-skipped"></i>não avaliado: ${esc(skippedText)}</span>` : ''}</div>
+      <figcaption class="sr-only">${esc(spoken)}</figcaption>
+      <p class="citizen-peak-headline" aria-hidden="true">${esc(headline)}${months.length === 1 ? ` <span>(+${Math.round((first.valor / first.referencia - 1) * 100).toLocaleString('pt-BR')}%)</span>` : ''}</p>
+      <div class="citizen-peak-bars" aria-hidden="true">${bars}</div>
+      <p class="citizen-peak-foot">Referência: mediana ${rolling ? 'dos 12 meses anteriores' : 'dos meses anteriores do mesmo ano'}.</p>
+      <details class="citizen-peak-history">
+        <summary>Ver histórico e notas →</summary>
+        <div class="citizen-peak-cols" role="img" aria-label="${esc(points.map(p => `${shortLabel(p)}: ${p.valor == null ? 'sem notas' : brl(p.valor)}`).join('; '))}">
+          <span class="citizen-peak-median" style="bottom:calc(15px + (100% - 19px) * ${(first.referencia / historyMax).toFixed(3)})"><em>mediana ${formatMonthAmount(first.referencia)}</em></span>
+          ${history}
+        </div>
+        ${provisional ? '<p class="citizen-peak-foot"><i class="citizen-peak-swatch provisional"></i>Listrado: provisório, o prazo de apresentação das notas ainda está aberto.</p>' : ''}
+        ${citizenSourceUrl(a.pessoa || {}) ? `<a class="citizen-peak-notes" href="${esc(citizenSourceUrl(a.pessoa || {}))}" target="_blank" rel="noopener">Ver as notas na fonte oficial ↗</a>` : ''}
+      </details>
     </figure>`;
   }
   if (a.tipo === 'fornecedor' && a.parte) {
@@ -183,6 +184,10 @@ function alertVisualization(a) {
     </div>`;
   }
   return '';
+}
+/* No pico com gráfico, as barras já dizem valor, referência e diferença: a frase só repetiria. */
+function alertStatement(a) {
+  return a.tipo === 'pico' && alertVisualization(a) ? '' : `<p class="citizen-statement">${esc(a.frase)}</p>`;
 }
 function alertExplanation(a) {
   if (a.tipo === 'pico') return `Aparece quando o gasto de um mês passa de 1,75 vez a referência da própria pessoa, a diferença é de pelo menos R$ 10 mil e o mês também fica acima do gasto mensal típico dos(as) colegas${Number.isFinite(a.piso) ? ` (${formatCitizenAmount(a.piso)} em ${esc(a.ano || String(a.periodo).slice(0, 4))})` : ''}. ${a.base && a.base !== 'year' ? 'A referência é o valor do meio (a mediana) dos 12 meses anteriores, atravessando o ano, todos com notas. Como o mandato começa em fevereiro de 2023, a avaliação começa em fevereiro de 2024.' : 'A referência é o valor do meio (a mediana) dos meses anteriores do mesmo ano, com pelo menos 3 meses sem lacuna.'} Só entram meses cujo prazo de apresentação das notas já tinha terminado na data da coleta: 90 dias na Câmara; no Senado, até o fim de abril do ano seguinte. Meses seguidos marcados contam como um alerta só. Novembro e dezembro também são avaliados; o cartão avisa que o saldo não usado da cota se acumula no ano e expira em 31 de dezembro. A mesma regra vale para todos(as).`;
@@ -202,7 +207,7 @@ function alertCard(a, opts = {}) {
     ${opts.semPessoa ? '' : `<button type="button" class="citizen-who" data-politician="${esc(p.id)}">${citizenAvatar(p, 40)}<span><b>${esc(citizenName(p.name))}</b><small>${citizenRoleDescription(p)}</small></span></button>`}
     <h3 class="citizen-title">${esc(a.titulo)}</h3>
     ${alertVisualization(a)}
-    <p class="citizen-statement">${esc(a.frase)}</p>
+    ${alertStatement(a)}
     ${a.contexto?.frase ? `<p class="citizen-context">${esc(a.contexto.frase)}</p>` : ''}
     ${alertYearEndNote(a)}
     <details class="citizen-why"><summary>Por que apareceu aqui?</summary><p>${alertExplanation(a)}</p><p class="muted">A regra mostra variação de gasto ou concentração em fornecedor; não mede irregularidade. Confira as notas na fonte oficial.</p></details>
@@ -454,7 +459,7 @@ function profileAlertAnswer(alerts, coverage) {
   return `<section class="card citizen-answer citizen-answer-alert" data-profile-answer="alerts">
     <h2 class="h">Algum alerta na cota?</h2>
     ${top ? `<span class="fchip citizen-alert-count">${alerts.length} ${alerts.length === 1 ? 'alerta' : 'alertas'}</span>
-      <h3 class="citizen-title">${esc(top.titulo)}</h3>${alertVisualization(top)}<p class="citizen-statement">${esc(top.frase)}</p>${top.contexto?.frase ? `<p class="citizen-context">${esc(top.contexto.frase)}</p>` : ''}${alertYearEndNote(top)}
+      <h3 class="citizen-title">${esc(top.titulo)}</h3>${alertVisualization(top)}${alertStatement(top)}${top.contexto?.frase ? `<p class="citizen-context">${esc(top.contexto.frase)}</p>` : ''}${alertYearEndNote(top)}
       <button type="button" class="more" data-profile-open="alerts">${alerts.length > 1 ? `Ver os demais alertas (${alerts.length - 1})` : 'Ver alerta em detalhe'} →</button>`
     : state.evaluated ? `<p class="citizen-empty">Nenhum alerta nos meses avaliados</p>
       ${state.html}<p class="muted">As regras são as mesmas para todos(as). Isso não é uma auditoria completa das notas.</p>`

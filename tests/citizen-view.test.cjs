@@ -575,47 +575,41 @@ test('year-end peak keeps the alert and adds the yearly balance context', () => 
   assert.doesNotMatch(api.alertCard({ ...alert, fimDeAno: [] }), /expira em 31 de dezembro\. Dezembro/);
 });
 
-test('peak chart writes each month amount and marks each marked month reference', () => {
-  const { api } = makeView();
-  const alert = { tipo: 'pico', mes: 4, periodo: '2026-04', referencia: 3460, titulo: 'Meses acima da referência: abril a maio', frase: '...',
-    meses: [{ mes: 4, valor: 43997, referencia: 3460 }, { mes: 5, valor: 137821, referencia: 23728 }],
-    serie: [{ mes: 1, valor: 3100, estado: 'historico_insuficiente' }, { mes: 2, valor: null, estado: 'sem_notas' }, { mes: 3, valor: 12000, estado: 'historico_insuficiente' },
-      { mes: 4, valor: 43997, estado: 'flagged' }, { mes: 5, valor: 137821, estado: 'flagged' }, { mes: 6, valor: 9000, estado: 'evaluated' },
-      { mes: 7, valor: 52000, estado: 'prazo_aberto' }, { mes: 8, valor: 41000, estado: 'prazo_aberto' }], pessoa: {} };
-  const html = api.alertCard(alert);
-  assert.match(html, /ref\.: mediana dos 12 meses anteriores|ref\.: mediana dos meses anteriores/);
-  assert.match(html, /R\$ 137,8 mil/);
-  assert.match(html, /sem notas/);
-  assert.equal((html.match(/class="citizen-peak-month hot/g) || []).length, 2);
-  assert.equal((html.match(/citizen-peak-month-ref/g) || []).length, 2);
-    assert.doesNotMatch(html, /fevereiro: R\$ 0/);
-  assert.match(html, />12,7×</);
-  assert.match(html, /maio de 2026: R\$ 137\.821, 5,8× a referência de R\$ 23\.728/);
-  assert.equal((html.match(/class="citizen-peak-month skipped/g) || []).length, 2);
-  assert.match(html, /não avaliado: prazo das notas aberto \(jul, ago\)/);  // só os meses mostrados como linha
-});
-
-test('rolling peak chart shows the twelve-month window across years with year labels', () => {
+test('single-month peak shows reference and month bars with the difference written, without a legend', () => {
   const { api } = makeView();
   const serie = [
-    ...[3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(mes => ({ ano: 2024, mes, valor: 5000, estado: mes === 12 ? 'flagged' : 'evaluated' })),
-    { ano: 2025, mes: 1, valor: 5000, estado: 'evaluated' }, { ano: 2025, mes: 2, valor: 5000, estado: 'evaluated' },
-    { ano: 2025, mes: 3, valor: 30000, estado: 'flagged' }, { ano: 2025, mes: 4, valor: 6000, estado: 'evaluated' },
-    { ano: 2025, mes: 5, valor: 7000, estado: 'prazo_aberto' },
+    ...[6, 7, 8, 9, 10, 11, 12].map(mes => ({ ano: 2025, mes, valor: 36000, estado: 'evaluated' })),
+    ...[1, 2, 3, 4, 5].map(mes => ({ ano: 2026, mes, valor: 37000, estado: 'evaluated' })),
+    { ano: 2026, mes: 6, valor: 69765, estado: 'flagged' },
+    { ano: 2026, mes: 7, valor: 42100, estado: 'prazo_aberto' }, { ano: 2026, mes: 8, valor: null, estado: 'sem_notas' },
   ];
-  const alert = { tipo: 'pico', mes: 3, ano: 2025, periodo: '2025-03', base: 'rolling12', referencia: 5000, titulo: 'Mês acima da referência: março de 2025',
-    frase: '...', meses: [{ ano: 2025, mes: 3, valor: 30000, referencia: 5000, vezes: 6 }], serie, pessoa: {} };
+  const alert = { tipo: 'pico', mes: 6, ano: 2026, periodo: '2026-06', base: 'rolling12', referencia: 36719, titulo: 'Mês acima da referência: junho de 2026',
+    frase: '...', meses: [{ ano: 2026, mes: 6, valor: 69765, referencia: 36719, vezes: 1.9 }], serie, pessoa: { id: 'camara:1' } };
   const html = api.alertCard(alert);
-  assert.match(html, /citizen-peak-month-name">mar</);
-  assert.equal((html.match(/class="citizen-peak-month hot/g) || []).length, 1);  // dez/24 é de outro alerta
-  assert.match(html, /ref\.: mediana dos 12 meses anteriores/);
-  assert.match(html, /não avaliado: prazo das notas aberto \(mai\)/);
-  assert.match(html, /mediana\) dos 12 meses anteriores, atravessando o ano/);
-  // A janela antes do primeiro mês marcado vira a linha "ref." com a mediana; o período vai para a legenda.
-  assert.doesNotMatch(html, /<details class="citizen-peak-window"/);
-  assert.match(html, /citizen-peak-month reference[\s\S]*>ref\.<[\s\S]*R\$ 5 mil/);
-  assert.match(html, /ref\.: mediana dos 12 meses anteriores \(mar\/24–fev\/25\)/);
-  assert.equal((html.match(/citizen-peak-month-name/g) || []).length, 4);
+  assert.match(html, /Junho ficou R\$ 33 mil acima da referência <span>\(\+90%\)<\/span>/);
+  assert.match(html, /Referência · jun\/2025–mai\/2026[\s\S]*<b>R\$ 36,7 mil<\/b>/);
+  assert.match(html, /Junho de 2026[\s\S]*<b>R\$ 69,8 mil<\/b>[\s\S]*R\$ 33 mil acima \(\+90%\)/);
+  assert.match(html, /Referência: mediana dos 12 meses anteriores\./);
+  assert.doesNotMatch(html, /citizen-peak-key|acima da referência<\/span><span>/);  // sem legenda
+  // Meses seguintes só no histórico, marcados como provisórios; mês sem notas não vira zero.
+  const [card, history] = html.split('<details class="citizen-peak-history">');
+  assert.doesNotMatch(card, /jul\/2026|42\.100/);
+  assert.match(history, /Ver histórico e notas/);
+  assert.match(history, /citizen-peak-col provisional" title="jul\/2026: R\$ 42\.100 \(provisório: prazo das notas aberto\)"/);
+  assert.match(history, /title="ago\/2026: sem notas"/);
+  assert.match(history, /mediana R\$ 36,7 mil/);
+});
+
+test('multi-month peak lists each month against its own reference', () => {
+  const { api } = makeView();
+  const alert = { tipo: 'pico', mes: 4, ano: 2026, periodo: '2026-04', base: 'rolling12', referencia: 3460, titulo: 'Meses acima da referência: abril a maio', frase: '...',
+    meses: [{ ano: 2026, mes: 4, valor: 43997, referencia: 3460, vezes: 12.7 }, { ano: 2026, mes: 5, valor: 137821, referencia: 23728, vezes: 5.8 }],
+    serie: [{ ano: 2026, mes: 3, valor: 3000, estado: 'evaluated' }, { ano: 2026, mes: 4, valor: 43997, estado: 'flagged' }, { ano: 2026, mes: 5, valor: 137821, estado: 'flagged' }], pessoa: {} };
+  const html = api.alertCard(alert);
+  assert.match(html, /Abril a maio ficaram acima da referência/);
+  assert.match(html, /Referência de abril/);
+  assert.match(html, /Maio de 2026[\s\S]*R\$ 114,1 mil acima \(\+481%\) sobre a referência de R\$ 23,7 mil/);
+  assert.equal((html.match(/citizen-peak-bar flagged/g) || []).length, 2);
 });
 
 test('quota-only card says it is not comparable with the deputy mandate cost', () => {

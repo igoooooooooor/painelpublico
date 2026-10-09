@@ -57,14 +57,14 @@ O que fica gravado (`signals.detail`): versão da regra, base (`baseline`), mese
 referência e múltiplo, piso, série do cartão com ano, mês e situação de cada mês (`flagged`, `evaluated`
 ou o motivo de não avaliação), data da coleta e se é parcial. A série é a janela usada como referência
 (os 12 meses antes do primeiro mês marcado, atravessando o ano), os meses marcados e até 3 meses
-seguintes com notas, para a linha de referência bater com a regra. O cartão só lê esses campos; nada é
-recalculado. A janela de referência aparece como uma linha "ref." com a mediana, na mesma escala das
-barras e em listras, e o período na legenda; assim os cartões de pico não ficam muito mais altos que os de
-concentração. Meses não avaliados usam barra tracejada, não só uma cor mais fraca. O
-gráfico mostra uma linha por mês com o valor escrito (e o ano quando é outro, como "dez/23"): os meses
-deste alerta em destaque, com a própria referência na barra e o múltiplo ao lado;
-meses avaliados sem alerta em cinza (um mês marcado por outro alerta também); meses não avaliados
-esmaecidos, com o motivo na legenda.
+seguintes com notas. O cartão só lê esses campos; nada é recalculado.
+
+O cartão de pico mostra, sem legenda, a referência (com o período da janela) e o mês marcado em barras na
+mesma escala, com os valores escritos e a diferença em reais e em porcentagem ("R$ 33 mil acima (+90%)").
+Num alerta de vários meses, cada mês aparece com a diferença sobre a própria referência. Em "Ver histórico
+e notas", colunas com a janela, os meses marcados e os seguintes, com uma linha tracejada na mediana; os
+meses seguintes com prazo de notas aberto aparecem listrados, como provisórios. Os padrões (listras,
+linha tracejada) não dependem só de cor.
 
 ## Cobertura
 
@@ -218,5 +218,5 @@ Pendências antes de ampliar para o mandato:
 | 8/10/2026 | `cota-alertas-v3`: picos e concentração no mandato inteiro, Câmara e Senado, com a base de 12 meses; concentração segue por ano; lançamento de valor alto segue só no ano corrente | Implementa a decisão anterior; números iguais aos da simulação |
 | 8/10/2026 | Cartão de pico mostra a janela de 12 meses usada, os meses marcados e até 3 seguintes; alerta não atravessa o ano | A linha de referência precisa bater com a regra; a cota é anual |
 | 8/10/2026 | Alertas dos mais recentes aos mais antigos, com filtro por ano | Mais de mil alertas no mandato |
-| 8/10/2026 | Janela de referência numa linha "ref." com a mediana (sem abrir/fechar); padrões em vez de só cor; sequência de 3 meses ou mais com uma frase só | Cartões da mesma linha têm a mesma altura e o pico ocupava o dobro |
+| 8/10/2026 | Cartão de pico em duas barras (referência e mês) com a diferença escrita; histórico em "Ver histórico e notas"; padrões em vez de só cor; sequência de 3 meses ou mais com uma frase só | Cartões da mesma linha têm a mesma altura e o pico ocupava o dobro |
 | Em aberto | Pedido de acesso aos documentos do Senado | Investigação posterior |

@@ -34,31 +34,34 @@
 .citizen-why p { font-size: 13px; margin: 6px 0 0; color: var(--ink-2); line-height: 1.45; }
 .citizen-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 
-/* visual: picos (uma linha por mês, valor escrito; tique = referência daquele mês) */
-.citizen-peak { margin: 0; display: flex; flex-direction: column; gap: 5px; }
-.citizen-peak > div[aria-hidden] { display: flex; flex-direction: column; gap: 5px; }
-/* Linha "ref.": a mediana usada como referência, na mesma escala, em listras (não depende de cor). */
-.citizen-peak-month.reference .citizen-peak-month-track i { background: repeating-linear-gradient(135deg, var(--ink) 0 2px, transparent 2px 5px); opacity: .55; }
-.citizen-peak-month.reference { color: var(--ink-2); padding-bottom: 5px; margin-bottom: 1px; border-bottom: 1px dashed var(--line); }
-.citizen-peak-month { display: grid; grid-template-columns: 3.8em 1fr 7.4em 2.8em; align-items: center; gap: 8px; font-family: var(--f-data); font-size: 11px; color: var(--muted); }
-.citizen-peak-month-track { position: relative; height: 10px; border-radius: 5px; background: var(--chip); }
-.citizen-peak-month-track i { position: absolute; inset: 0 auto 0 0; min-width: 2px; border-radius: 5px; background: color-mix(in srgb, var(--ink) 30%, var(--surface)); }
-.citizen-peak-month.hot .citizen-peak-month-track i { background: var(--accent); }
-.citizen-peak-month-ref { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--ink); }
-.citizen-peak-month-value { text-align: right; white-space: nowrap; }
-.citizen-peak-month.hot { color: var(--ink); }
-.citizen-peak-month.hot .citizen-peak-month-value { font-weight: 700; }
-.citizen-peak-month.missing .citizen-peak-month-value { font-style: italic; }
-.citizen-peak-month.skipped .citizen-peak-month-track i { background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--ink) 45%, var(--surface)) 0 3px, transparent 3px 5px); }
-.citizen-peak-month.skipped { color: var(--muted); }
-.citizen-peak-month-times { text-align: right; white-space: nowrap; font-weight: 700; color: var(--accent); }
-.citizen-peak-key { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 4px; font-size: 12px; color: var(--muted); }
-.citizen-peak-key span { display: inline-flex; align-items: center; gap: 6px; }
-.citizen-peak-key i { display: inline-block; }
-.citizen-peak-key .key-hot { width: 14px; height: 10px; border-radius: 5px; background: var(--accent); }
-.citizen-peak-key .key-skipped { width: 14px; height: 10px; border-radius: 5px; background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--ink) 45%, var(--surface)) 0 3px, transparent 3px 5px); flex: none; }
-.citizen-peak-key .key-reference { width: 14px; height: 10px; border-radius: 5px; background: repeating-linear-gradient(135deg, var(--ink) 0 2px, transparent 2px 5px); opacity: .55; flex: none; }
-.citizen-peak-key .key-ref { width: 2px; height: 14px; border-radius: 1px; background: var(--ink); }
+/* visual: picos. Referência e mês marcado em barras na mesma escala, valores escritos; histórico em colunas. */
+.citizen-peak { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.citizen-peak-headline { margin: 0; font-size: 15px; font-weight: 700; color: var(--ink); line-height: 1.3; }
+.citizen-peak-headline span { font-weight: 600; color: var(--accent); }
+.citizen-peak-bars { display: flex; flex-direction: column; gap: 8px; }
+.citizen-peak-bar { display: flex; flex-direction: column; gap: 3px; }
+.citizen-peak-bar-label { font-size: 12px; color: var(--ink-2); }
+.citizen-peak-bar-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; }
+.citizen-peak-bar-row b { font-family: var(--f-data); font-size: 15px; color: var(--ink); white-space: nowrap; }
+.citizen-peak-bar-track { height: 12px; border-radius: 6px; background: var(--chip); overflow: hidden; }
+.citizen-peak-bar-track i { display: block; height: 100%; border-radius: 6px; background: color-mix(in srgb, var(--ink) 35%, var(--surface)); }
+.citizen-peak-bar.flagged .citizen-peak-bar-track i { background: var(--accent); }
+.citizen-peak-bar-note { font-size: 12px; font-weight: 600; color: var(--accent); }
+.citizen-peak-foot { margin: 0; font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.citizen-peak-history summary { cursor: pointer; list-style: none; font-size: 13px; font-weight: 600; color: var(--ink-2); min-height: 32px; display: flex; align-items: center; }
+.citizen-peak-history summary::-webkit-details-marker { display: none; }
+.citizen-peak-history[open] { display: flex; flex-direction: column; gap: 8px; }
+.citizen-peak-cols { position: relative; display: flex; align-items: stretch; gap: 2px; height: 110px; padding-top: 4px; }
+.citizen-peak-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.citizen-peak-col-bar { position: relative; flex: 1; }
+.citizen-peak-col-bar i { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 3px 3px 1px 1px; background: color-mix(in srgb, var(--ink) 35%, var(--surface)); }
+.citizen-peak-col.flagged .citizen-peak-col-bar i { background: var(--accent); }
+.citizen-peak-col.provisional .citizen-peak-col-bar i, .citizen-peak-swatch.provisional { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--ink) 45%, var(--surface)) 0 3px, transparent 3px 6px); }
+.citizen-peak-col small { height: 12px; font-family: var(--f-data); font-size: 9.5px; color: var(--muted); text-align: center; white-space: nowrap; overflow: visible; }
+.citizen-peak-median { position: absolute; left: 0; right: 0; border-top: 1.5px dashed var(--ink); pointer-events: none; z-index: 1; }
+.citizen-peak-median em { position: absolute; left: 0; bottom: 2px; font-style: normal; font-family: var(--f-data); font-size: 10px; color: var(--ink); background: var(--surface); padding: 0 4px 0 0; }
+.citizen-peak-swatch { display: inline-block; width: 14px; height: 10px; border-radius: 3px; flex: none; }
+.citizen-peak-notes { font-size: 13px; font-weight: 600; color: var(--accent); }
 
 /* visual: concentração em uma empresa */
 .citizen-share { display: flex; flex-direction: column; gap: 6px; }
