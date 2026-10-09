@@ -268,7 +268,6 @@ b.warn { color: var(--warn); }
 .party-grid { display: flex; flex-direction: column; gap: 6px; }
 /* cards de carrossel com mesma altura e ações sempre no rodapé */
 .carousel > .card > .more:last-child, .citizen-alert > .citizen-actions:last-child, .card > .citizen-actions:last-child, .card > a.src:last-child, .card > .opt:last-child { margin-top: auto; }
-.citizen-alert > .citizen-why { margin-top: auto; }
 @media (min-width: 900px) {
   .view { align-items: stretch; }
   .view > :not(.card) { align-self: start; }
