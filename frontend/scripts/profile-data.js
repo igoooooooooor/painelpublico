@@ -159,6 +159,7 @@ function profileData(value) {
   return { id, person, contact: snapshot.contato || null, projects: snapshot.projetos || null,
     office: snapshot.gabinete || null, mandate: snapshot.mandato || null, election: snapshot.eleicao2026 || null,
     cost: snapshot.mandateCost || null, senateCost: snapshot.senateCost || null, tenure: snapshot.noCargoDesde || null,
+    participation: snapshot.participacaoSenado || null,
     loading: PROFILE_LOAD.pending.has(id), presence: profilePresence(id),
     registeredPresence: role === 'senador' ? profileRegisteredPresence(id) : null, votes: profileVotes(id),
     compensation: PROFILE_SALARY[role] ? { ...PROFILE_SALARY[role], individual: null } : null };
@@ -304,6 +305,44 @@ function profileRefreshAccordions() {
     if (body) body.hidden = !open;
   });
 }
+/* Votações nominais do mandato, por sessão em exercício: o Regimento pede que o(a) presente participe delas.
+   Não é a lista de presença do Diário: "sem registro" nunca vira falta. */
+const SENATE_PARTICIPATION_LABELS = {
+  participou: 'Votou ou presidiu', presente_sem_voto: 'Presente, sem registrar voto', ausencia_com_motivo: 'Ausência com motivo registrado pelo Senado',
+  nao_compareceu: 'Não compareceu', sem_registro: 'Sem registro nas votações da sessão', outro: 'Outro rótulo do Senado',
+};
+function senateParticipationSummary(participation) {
+  const counts = participation?.counts, sessions = participation?.sessions;
+  if (!counts || !Number.isInteger(sessions) || sessions <= 0) return '';
+  const parts = [counts.ausencia_com_motivo ? `${counts.ausencia_com_motivo} ${counts.ausencia_com_motivo === 1 ? 'ausência' : 'ausências'} com motivo` : '',
+    counts.presente_sem_voto ? `${counts.presente_sem_voto} presente sem votar` : '',
+    counts.nao_compareceu ? `${counts.nao_compareceu} sem comparecer` : ''].filter(Boolean).join(' · ');
+  return `<p class="citizen-participation"><b>Votações nominais do mandato:</b> votou em ${counts.participou} de ${sessions} sessões em exercício${parts ? ` · ${esc(parts)}` : ''}.</p>`;
+}
+const profileLeaveDays = leave => {
+  const start = Date.parse(leave.start), end = Date.parse(leave.end || leave.start);
+  return Number.isFinite(start) && Number.isFinite(end) && end >= start ? Math.round((end - start) / 864e5) + 1 : null;
+};
+function senateParticipationHTML(participation) {
+  if (!participation || typeof participation !== 'object') return '';
+  const counts = participation.counts || {}, sessions = participation.sessions;
+  const breakdown = Number.isInteger(sessions) && sessions > 0 ? Object.entries(SENATE_PARTICIPATION_LABELS)
+    .filter(([key]) => counts[key]).map(([key, label]) => `<li><span>${label}</span><b class="mono">${counts[key]}</b></li>`).join('') : '';
+  const reasons = Object.entries(participation.reasons || {}).map(([reason, n]) => `${esc(reason)} (${n})`).join(', ');
+  const leaves = Array.isArray(participation.leaves) ? participation.leaves : [];
+  const byType = {};
+  leaves.forEach(leave => { const item = byType[leave.type] ||= { count: 0, days: 0 }; item.count += 1; item.days += profileLeaveDays(leave) || 0; });
+  const period = participation.period?.start ? `${dateBR(participation.period.start)} a ${dateBR(participation.period.end)}` : '';
+  return `<div class="citizen-participation-detail"><span class="k">Votações nominais do mandato</span>
+    ${breakdown ? `<p>Em ${sessions} ${sessions === 1 ? 'sessão' : 'sessões'} com votação nominal pública em que estava em exercício${period ? ` (${esc(period)})` : ''}:</p><ul class="citizen-cost-month-parts">${breakdown}</ul>` : '<p class="muted">Sem sessões com votação nominal em exercício neste recorte.</p>'}
+    ${reasons ? `<p class="muted">Motivos registrados pelo Senado: ${reasons}.</p>` : ''}
+    <p class="muted">Pelo Regimento do Senado (art. 13, § 2º), quem está presente deve participar das votações nominais da sessão. Isto não é a lista de presença do Diário: conta só sessões com votação nominal, e “sem registro” não vira falta.</p>
+    <span class="k">Licenças desde fev/2023</span>
+    ${leaves.length ? `<ul class="citizen-cost-month-parts">${Object.entries(byType).sort((a, b) => b[1].count - a[1].count).map(([type, item]) => `<li><span>${esc(type)}</span><b class="mono">${item.count}× · ${item.days} ${item.days === 1 ? 'dia' : 'dias'}</b></li>`).join('')}</ul>
+      <details class="citizen-cost-year"><summary>Ver as ${leaves.length} licenças</summary><ul class="citizen-cost-month-parts">${leaves.map(leave => `<li><span>${esc(dateBR(leave.start))}${leave.end && leave.end !== leave.start ? ` a ${esc(dateBR(leave.end))}` : ''}</span><b>${esc(leave.type || '')}</b></li>`).join('')}</ul></details>`
+      : '<p class="muted">Nenhuma licença publicada pelo Senado desde fev/2023.</p>'}
+  </div>`;
+}
 function profileSectionsHTML(value, slots = {}) {
   const profile = profileData(value);
   if (!['deputado', 'senador'].includes(profile.person.role)) return '';
@@ -416,7 +455,8 @@ function profileSectionsHTML(value, slots = {}) {
     <p>${senateParticipation ? `<b>Participação no mandato:</b> ${esc(senateParticipation)}` : 'Participação no mandato sem informação importada.'}</p>
     <p>${senateExercise ? `<b>Situação publicada:</b> ${esc(senateExercise)}` : 'Situação publicada sem informação importada.'}</p>
     ${mandate?.detail ? `<p class="muted">${esc(datesInTextBR(mandate.detail))}</p>` : ''}
-    ${profileSource({ ...mandate, sourceUrl: mandate?.sourceUrl || person.sourceUrl, fetchedAt: mandate?.fetchedAt || person.fetchedAt }, 'Fonte do Senado')}`;
+    ${profileSource({ ...mandate, sourceUrl: mandate?.sourceUrl || person.sourceUrl, fetchedAt: mandate?.fetchedAt || person.fetchedAt }, 'Fonte do Senado')}
+    ${senateParticipationHTML(profile.participation)}`;
   const hasMandateSource = mandate?.sourceUrl || person.sourceUrl || mandate?.participacao || mandate?.exercicio || mandate?.detail;
   const mandateSource = hasMandateSource ? `<article class="citizen-source"><b>${profile.person.role === 'deputado' ? 'Na fotografia da fonte' : 'Mandato e situação'}</b>
       ${profile.person.role === 'deputado' && mandate?.participacao ? `<p><b>Condição eleitoral:</b> ${esc(mandate.participacao)}</p>` : ''}

@@ -183,6 +183,20 @@ test('ordering by cost with all houses shows Câmara and Senado in separate bloc
   assert.match(html, /data-politician-role="senador">Ver todos os 81 senadores\(as\)/);
 });
 
+test('senate participation in nominal votes is summarized without calling missing rows absences', () => {
+  const { context } = makeView();
+  const participation = { sessions: 92, counts: { participou: 57, presente_sem_voto: 12, ausencia_com_motivo: 22, nao_compareceu: 1, sem_registro: 0, outro: 0 },
+    reasons: { 'Atividade parlamentar': 18, 'Licença saúde': 4 }, period: { start: '2023-02-01', end: '2026-10-09' },
+    leaves: [{ start: '2026-07-15', end: '2026-07-15', type: 'Missão política ou cultural de interesse parlamentar' },
+      { start: '2025-03-01', end: '2025-03-10', type: 'Licença Saúde (até a 120 dias)' }] };
+  const summary = vm.runInContext('senateParticipationSummary', context)(participation);
+  assert.match(summary, /votou em 57 de 92 sessões em exercício · 22 ausências com motivo · 12 presente sem votar · 1 sem comparecer/);
+  const detail = vm.runInContext('senateParticipationHTML', context)(participation);
+  assert.match(detail, /Em 92 sessões com votação nominal pública em que estava em exercício \(01\/02\/2023 a 09\/10\/2026\)/);
+  assert.match(detail, /Licença Saúde \(até a 120 dias\)<\/span><b class="mono">1× · 10 dias/);
+  assert.match(detail, /“sem registro” não vira falta/);
+});
+
 test('home alert loading failures show a retry card instead of a sample fallback', async () => {
   const { api, events } = makeView({ fetchImpl: async () => { throw new Error('offline'); } });
   const path = '/api/c/radar?pageSize=8&tipo=pico,fornecedor';

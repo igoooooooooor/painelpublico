@@ -594,6 +594,14 @@ partir de fev/2023.
   coluna Documento fica vazia.
 - **Alertas:** picos e concentração avaliam o mandato inteiro, nas duas Casas (regra,
   cobertura e prazos em [Alertas](alerts.md)); lançamentos de valor alto seguem só em 2026.
+- **Senado, participação nas votações nominais e licenças:** a presença pelo Diário do Senado segue só em
+  2026 (PDFs; ampliar custaria cerca de 10 vezes mais coleta). Para o mandato, `make collect-senate-participation`
+  usa as votações nominais públicas já coletadas e o histórico de exercício: por sessão com votação nominal
+  em que a pessoa estava em exercício, votou ou presidiu, presente sem votar, ausência com motivo registrado
+  pelo Senado (atividade parlamentar, missão, licença), não compareceu ou sem registro (que não vira falta).
+  O Regimento (art. 13, § 2º) pede que quem está presente participe das votações nominais. As licenças vêm de
+  `/senador/{codigo}/licencas`, desde fev/2023, com data e tipo. O cartão "Trabalha?" traz o resumo; a seção
+  "Mandato", o detalhe e as licenças por tipo.
 - **Lista de políticos:** o valor principal é o custo médio por mês da própria Casa, o mesmo do "Quanto
   custa?" da ficha (`backend/costs.py`): na Câmara, salário bruto, auxílios, cota e verba de gabinete nos
   meses com as quatro partes; no Senado, remuneração, equipe do gabinete e cota nos meses com as três. A

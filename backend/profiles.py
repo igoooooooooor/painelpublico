@@ -181,6 +181,17 @@ def _tenure(identifier, profile_path):
     return {'house': item.get('house'), 'since': item['since'], 'rule': snapshot.get('rule')}
 
 
+def _senate_participation(identifier, profile_path):
+    """Participação nas votações nominais do mandato e licenças (``ingest/senate_participation.py``)."""
+    if not re.fullmatch(r'senado:\d+', identifier):
+        return None
+    snapshot = _load(profile_path.parent / 'senate-participation.json')
+    item = ((snapshot or {}).get('profiles') or {}).get(identifier)
+    if not isinstance(item, dict):
+        return None
+    return {**deepcopy(item), **{key: deepcopy(snapshot.get(key)) for key in ('period', 'sessionCount', 'rule', 'votesSource', 'leavesSource', 'generatedAt')}}
+
+
 def profile(identifier, path=None):
     """Perfil complementar de um parlamentar ou None se o arquivo ou o registro não existirem."""
     profile_path = Path(path) if path is not None else SNAPSHOTS_PATH / 'perfis.json'
@@ -195,8 +206,9 @@ def profile(identifier, path=None):
     mandate_cost = _mandate_cost(identifier, profile_path)
     senate_cost = _senate_cost(identifier, profile_path)
     tenure = _tenure(identifier, profile_path)
+    participation = _senate_participation(identifier, profile_path)
     if profile is None:
-        if projects is None and election_result is None and mandate_cost is None and senate_cost is None and tenure is None:
+        if all(value is None for value in (projects, election_result, mandate_cost, senate_cost, tenure, participation)):
             return None
         result = {'id': identifier, 'role': 'senador' if identifier.startswith('senado:') else 'deputado'}
         if projects is not None:
@@ -216,4 +228,6 @@ def profile(identifier, path=None):
         result['senateCost'] = senate_cost
     if tenure is not None:
         result['noCargoDesde'] = tenure
+    if participation is not None:
+        result['participacaoSenado'] = participation
     return _attach_project_statuses(result, identifier, profile_path)
