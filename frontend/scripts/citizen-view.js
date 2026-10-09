@@ -20,7 +20,7 @@ function skel(kind = 'cards', n = 3) {
   const rowSkeletons = count => rep(count, index => `<div class="sk-row">${skO(44)}<span class="sk-col">${skL(index % 2 ? '58%' : '70%', 13)}${skL('42%', 10)}${skL('80%', 5)}</span>${skL('64px', 14)}</div>`);
   if (kind === 'alerta') return SK_MSG + rep(n, () => `<div class="card sk-card citizen-alert" aria-hidden="true"><div class="sk-between">${skL('118px', 22, 'sk-pill')}${skL('56px', 12)}</div>
     <div class="sk-row sk-flat">${skO(40)}<span class="sk-col">${skL('52%', 13)}${skL('70%', 10)}</span></div>${skL('86%', 22)}${skL('60%', 22)}
-    <div class="sk-bars">${rep(9, i => `<i class="sk" style="height:${[22, 30, 18, 40, 86, 26, 20, 34, 16][i]}%"></i>`)}</div>${skL('96%')}${skL('72%')}
+    <div class="sk-col">${rep(5, i => skL(`${[30, 38, 26, 92, 44][i]}%`, 10))}</div>${skL('96%')}${skL('72%')}
     <div class="sk-between sk-start">${skL('92px', 36, 'sk-pill')}${skL('132px', 36, 'sk-pill')}</div></div>`);
   if (kind === 'lista') return `${SK_MSG}<section class="card citizen-list sk-card" aria-hidden="true">${rowSkeletons(n)}</section>`;
   if (kind === 'linhas') return `${SK_MSG}<div aria-hidden="true">${rowSkeletons(n)}</div>`;
@@ -92,6 +92,8 @@ function senateProfileSnapshot(p) {
   </section>`;
 }
 const formatCitizenAmount = v => v >= 1e6 ? 'R$ ' + (v / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mi' : 'R$ ' + Math.round(v / 1e3).toLocaleString('pt-BR') + ' mil';
+/* Valor curto para as linhas do gráfico: uma casa decimal em milhares, para não arredondar R$ 3.460 em "R$ 3 mil". */
+const formatMonthAmount = v => v >= 1e6 ? formatCitizenAmount(v) : v >= 1e3 ? 'R$ ' + (v / 1e3).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mil' : brl(v);
 const citizenSourceUrl = person => {
   const [chamber, personNumber] = String(person.id || '').split(':');
   return chamber === 'camara' ? `https://www.camara.leg.br/deputados/${personNumber}?ano=2026` : chamber === 'senado' ? `https://www25.senado.leg.br/web/senadores/senador/-/perfil/${personNumber}` : null;
@@ -104,15 +106,49 @@ function alertKind(a) {
   if (a.tipo === 'fornecedor') return ['type-supplier', `${a.intermediacao ? 'Passagens intermediadas' : 'Concentração em fornecedor'}${a.parcial ? ' · parcial' : ''}`];
   return ['info', 'Para conferir'];
 }
+/* Motivos de mês não avaliado, curtos, para a legenda do gráfico (o texto completo fica na cobertura). */
+const PEAK_SKIP_LABELS = { prazo_aberto: 'prazo das notas aberto', sem_base: 'poucos meses anteriores', sem_referencia_colegas: 'sem referência dos colegas', sem_notas: 'sem notas' };
+/* [7, 8, 9] → "jul–set"; [1, 3] → "jan, mar" */
+function monthSpan(months) {
+  const runs = [];
+  [...months].sort((x, y) => x - y).forEach(m => { const last = runs[runs.length - 1]; if (last && m === last[1] + 1) last[1] = m; else runs.push([m, m]); });
+  return runs.map(([from, to]) => from === to ? SHORT_MONTHS[from] : `${SHORT_MONTHS[from]}${to === from + 1 ? ', ' : '–'}${SHORT_MONTHS[to]}`).join(', ');
+}
 function alertVisualization(a) {
   if (a.tipo === 'pico' && a.serie?.length) {
-    /* Só a série e a referência gravadas pela regra; os meses destacados são exatamente os marcados. */
-    const marked = new Set((a.meses || [{ mes: a.mes }]).map(m => m.mes));
-    const max = Math.max(...a.serie.map(s => s.valor || 0), 1), refH = a.referencia / max * 64;
-    return `<div class="citizen-spark" role="img" aria-label="Gasto por mês. Meses marcados: ${[...marked].map(m => MONTH_NAMES_LONG[m]).join(', ')}; a referência de ${MONTH_NAMES_LONG[a.mes]} era ${brl(a.referencia)}.">
-      <div class="citizen-ref" style="bottom:${refH + 16}px"><span>referência: ${formatCitizenAmount(a.referencia)}</span></div>
-      ${a.serie.map(s => `<div class="citizen-col ${marked.has(s.mes) ? 'hot' : ''}"><i style="height:${Math.max(2, (s.valor || 0) / max * 64)}px"></i><span>${SHORT_MONTHS[s.mes]}</span></div>`).join('')}
-    </div>`;
+    /* Só a série e as referências gravadas pela regra: uma linha por mês do ano, com o valor escrito.
+       Cada mês marcado tem a própria referência (mediana dos meses anteriores), marcada na barra, e o
+       múltiplo ao lado. Meses que a regra não avaliou ficam esmaecidos, com o motivo na legenda.
+       Mês sem notas fica "sem notas", nunca zero. */
+    const marked = new Map((a.meses || [{ mes: a.mes, referencia: a.referencia, vezes: a.vezes }]).map(m => [m.mes, m]));
+    const state = s => marked.has(s.mes) ? 'flagged' : s.valor == null ? 'sem_notas' : s.estado || 'evaluated';
+    const max = Math.max(...a.serie.map(s => s.valor || 0), ...[...marked.values()].map(m => m.referencia || 0), 1);
+    const pct = v => `${Math.min(100, Math.max(0, v / max * 100)).toFixed(1)}%`;
+    const times = v => `${v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}×`;
+    const label = s => SHORT_MONTHS[s.mes] + (s.ano && String(s.ano) !== String(a.periodo).slice(0, 4) ? `/${String(s.ano).slice(2)}` : '');
+    const skipped = {};
+    a.serie.forEach(s => { const st = state(s); if (PEAK_SKIP_LABELS[st]) (skipped[st] ||= []).push(s.mes); });
+    const skippedText = Object.entries(skipped).map(([st, months]) => `${PEAK_SKIP_LABELS[st]} (${monthSpan(months)})`).join('; ');
+    const spoken = a.serie.map(s => {
+      const m = marked.get(s.mes), st = state(s);
+      const value = s.valor == null ? 'sem notas' : brl(s.valor);
+      const note = m && Number.isFinite(m.referencia) ? `, ${times(m.vezes ?? s.valor / m.referencia)} a referência de ${brl(m.referencia)}`
+        : PEAK_SKIP_LABELS[st] && st !== 'sem_notas' ? `, não avaliado: ${PEAK_SKIP_LABELS[st]}` : '';
+      return `${MONTH_NAMES_LONG[s.mes]}: ${value}${note}`;
+    }).join('; ');
+    return `<figure class="citizen-peak" role="img" aria-label="Gasto na cota por mês. ${esc(spoken)}.">
+      ${a.serie.map(s => {
+        const m = marked.get(s.mes), st = state(s), missing = s.valor == null;
+        const cls = st === 'flagged' ? ' hot' : st === 'evaluated' ? '' : ' skipped';
+        return `<div class="citizen-peak-month${cls}${missing ? ' missing' : ''}" aria-hidden="true">
+          <span class="citizen-peak-month-name">${label(s)}</span>
+          <span class="citizen-peak-month-track">${missing ? '' : `<i style="width:${pct(s.valor)}"></i>`}${m && Number.isFinite(m.referencia) ? `<b class="citizen-peak-month-ref" style="left:${pct(m.referencia)}"></b>` : ''}</span>
+          <span class="citizen-peak-month-value">${missing ? 'sem notas' : formatMonthAmount(s.valor)}</span>
+          <span class="citizen-peak-month-times">${m && Number.isFinite(m.referencia) ? times(m.vezes ?? s.valor / m.referencia) : ''}</span>
+        </div>`;
+      }).join('')}
+      <figcaption class="citizen-peak-key" aria-hidden="true"><span><i class="key-hot"></i>acima da referência</span><span><i class="key-ref"></i>referência do mês</span>${skippedText ? `<span><i class="key-skipped"></i>não avaliado: ${esc(skippedText)}</span>` : ''}</figcaption>
+    </figure>`;
   }
   if (a.tipo === 'fornecedor' && a.parte) {
     return `<div class="citizen-share" role="img" aria-label="${Math.round(a.parte * 100)}% para ${esc(a.fornecedor)}">

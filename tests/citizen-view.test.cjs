@@ -575,6 +575,26 @@ test('year-end peak keeps the alert and adds the yearly balance context', () => 
   assert.doesNotMatch(api.alertCard({ ...alert, fimDeAno: [] }), /expira em 31 de dezembro\. Dezembro/);
 });
 
+test('peak chart writes each month amount and marks each marked month reference', () => {
+  const { api } = makeView();
+  const alert = { tipo: 'pico', mes: 4, periodo: '2026-04', referencia: 3460, titulo: 'Meses acima da referência: abril a maio', frase: '...',
+    meses: [{ mes: 4, valor: 43997, referencia: 3460 }, { mes: 5, valor: 137821, referencia: 23728 }],
+    serie: [{ mes: 1, valor: 3100, estado: 'sem_base' }, { mes: 2, valor: null, estado: 'sem_notas' }, { mes: 3, valor: 12000, estado: 'sem_base' },
+      { mes: 4, valor: 43997, estado: 'flagged' }, { mes: 5, valor: 137821, estado: 'flagged' }, { mes: 6, valor: 9000, estado: 'evaluated' },
+      { mes: 7, valor: 52000, estado: 'prazo_aberto' }, { mes: 8, valor: 41000, estado: 'prazo_aberto' }], pessoa: {} };
+  const html = api.alertCard(alert);
+  assert.match(html, /R\$ 3,1 mil/);
+  assert.match(html, /R\$ 137,8 mil/);
+  assert.match(html, /sem notas/);
+  assert.equal((html.match(/class="citizen-peak-month hot/g) || []).length, 2);
+  assert.equal((html.match(/citizen-peak-month-ref/g) || []).length, 2);
+    assert.doesNotMatch(html, /fevereiro: R\$ 0/);
+  assert.match(html, />12,7×</);
+  assert.match(html, /maio: R\$ 137\.821, 5,8× a referência de R\$ 23\.728/);
+  assert.equal((html.match(/class="citizen-peak-month skipped/g) || []).length, 5);
+  assert.match(html, /não avaliado: poucos meses anteriores \(jan, mar\); sem notas \(fev\); prazo das notas aberto \(jul, ago\)/);
+});
+
 test('quota-only card says it is not comparable with the deputy mandate cost', () => {
   const { api, state } = makeView();
   setProfileFixture(api, state, 'camara:59', {

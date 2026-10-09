@@ -41,6 +41,16 @@ class PeakTests(unittest.TestCase):
         self.assertEqual(peaks[0]['amountCents'], 8_000_000)
         self.assertEqual(peaks[0]['detail']['ruleVersion'], alert_rules.RULE_VERSION)
 
+    def test_series_covers_the_whole_year_with_each_month_status(self):
+        # O cartão mostra o ano inteiro: depois do alerta, junho volta à referência e julho ainda está no prazo.
+        person = records('camara:1', 'camara_ceap', 2026, [4000, 4000, 4000, 40000, 40000, 4000, 30000])
+        result = alert_rules.evaluate(person + peers('camara_ceap', months=7), self.FETCHED)
+        peak = next(s for s in result['signals'] if s['type'] == 'pico' and s['authorityId'] == 'camara:1')
+        self.assertEqual([(p['month'], p['status']) for p in peak['detail']['series']],
+                         [(1, 'sem_base'), (2, 'sem_base'), (3, 'sem_base'), (4, 'flagged'), (5, 'flagged'),
+                          (6, 'evaluated'), (7, 'prazo_aberto')])
+        self.assertEqual(peak['detail']['series'][6]['valueCents'], 3_000_000)
+
     def test_year_end_months_stay_flagged_and_carry_the_context(self):
         person = records('camara:1', 'camara_ceap', 2025, [4000] * 10 + [4000, 40000])
         result = alert_rules.evaluate(person + peers('camara_ceap', year=2025, months=12), {'camara_ceap': '2026-10-06T00:00:00+00:00'})

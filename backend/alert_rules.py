@@ -213,6 +213,14 @@ def evaluate(records, fetched_at_by_source, baseline='year'):
         coverage.append({'authorityId': authority, 'sourceId': source, 'year': year, 'rule': 'pico', 'detail': {
             'ruleVersion': RULE_VERSION, 'baseline': baseline, 'fetchedAt': fetched, 'evaluated': sorted(evaluated), 'flagged': sorted(flagged),
             'notEvaluated': skipped, 'floorCents': floor}})
+        # Situação de cada mês do ano, para o cartão mostrar o ano inteiro: marcado, avaliado sem alerta
+        # ou o motivo de não ter sido avaliado. Mês sem notas fica sem valor, nunca zero.
+        status = {m: 'flagged' if m in flagged else 'evaluated' for m in evaluated}
+        for reason, skipped_months in skipped.items():
+            for m in skipped_months:
+                status.setdefault(m, reason)
+        year_series = [{'month': m, 'valueCents': months.get(m), 'status': status.get(m, 'sem_notas')}
+                       for m in range(1, max(months) + 1)]
         # Meses seguidos marcados viram um alerta só, com todos os meses efetivamente marcados.
         for month in sorted(flagged):
             if month - 1 in flagged:
@@ -228,7 +236,7 @@ def evaluate(records, fetched_at_by_source, baseline='year'):
                 'title': 'Mês acima da referência', 'amountCents': sum(m['valueCents'] for m in marked),
                 'period': f'{year}-{month:02d}', 'detail': {
                     'ruleVersion': RULE_VERSION, 'year': year, 'months': marked, 'floorCents': floor,
-                    'series': [{'month': m, 'valueCents': months.get(m)} for m in range(1, run[-1] + 1)],
+                    'series': year_series,
                     'fetchedAt': fetched, 'partial': False,
                     'yearEndMonths': [m for m in run if m in YEAR_END_MONTHS],
                     'criteria': {'multiple': PEAK_MULTIPLE, 'minDifferenceCents': PEAK_MIN_DIFFERENCE_CENTS,

@@ -216,8 +216,8 @@ def _alert(db, signal, people, totals_cache):
                      'meses': [{'mes': m['month'], 'valor': m['valueCents'] / 100, 'referencia': m['referenceCents'] / 100,
                                 'vezes': m['multiple']} for m in marked],
                      'piso': detail['floorCents'] / 100 if detail.get('floorCents') is not None else None,
-                     'serie': [{'mes': p['month'], 'valor': p['valueCents'] / 100 if p['valueCents'] is not None else None}
-                               for p in detail['series']],
+                     'serie': [{'mes': p['month'], 'valor': p['valueCents'] / 100 if p['valueCents'] is not None else None,
+                                'estado': p.get('status')} for p in detail['series']],
                      'contexto': _context(db, person, authority, source, year, totals_cache),
                      'fimDeAno': detail.get('yearEndMonths') or [],
                      'titulo': title, 'frase': sentence, 'fonte': person.get('sourceUrl')})

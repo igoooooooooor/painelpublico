@@ -45,7 +45,10 @@ explicação de cada cartão e na simulação. Hoje só as notas detalhadas do a
   `yearEndMonths` no resultado gravado).
 
 O que fica gravado (`signals.detail`): versão da regra, meses marcados com valor, referência e múltiplo,
-piso, série usada, data da coleta e se é parcial. O cartão só lê esses campos; nada é recalculado.
+piso, série do ano com a situação de cada mês (`flagged`, `evaluated` ou o motivo de não avaliação), data
+da coleta e se é parcial. O cartão só lê esses campos; nada é recalculado. O gráfico mostra uma linha por
+mês com o valor escrito: meses marcados em destaque, com a própria referência na barra e o múltiplo ao lado;
+meses avaliados sem alerta em cinza; meses não avaliados esmaecidos, com o motivo na legenda.
 
 ## Cobertura
 
