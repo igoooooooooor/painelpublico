@@ -275,10 +275,11 @@ function comparisonShareCard([a, b]) {
     return p ? `${Math.round(p.presente / p.dias * 100)}%` : 'Sem dados';
   };
   const rows = [];
-  const costs = [a, b].map(f => comparisonProfile(f).cost);
-  if (costs.every(cost => cost && Number.isSafeInteger(cost.monthlyAverageCents)) && typeof profileCostMoney === 'function') {
-    rows.push({ label: `Custo médio do mandato por mês · ${PROFILE_COST_RANGE}`, values: costs.map(cost => profileCostMoney(cost.monthlyAverageCents)),
-      notes: costs.map(cost => profileCostMonthList(cost.usedMonths)) });
+  /* Custo só entre pessoas da mesma Casa: as Casas não publicam as mesmas partes. */
+  const figures = [a, b].map(comparisonCostFigures);
+  if (figures[0].house === figures[1].house && figures.every(item => item.total)) {
+    rows.push({ label: figures[0].house === 'senado' ? 'Despesas identificadas por mês · Senado' : 'Custa por mês · Câmara',
+      values: figures.map(item => formatCitizenAmount(item.total.cents / 100)), notes: figures.map(item => `média de ${item.total.months} meses`) });
   }
   rows.push({ label: 'Cota parlamentar por mês', values: [money(a.mediaMensal), money(b.mediaMensal)], notes: [quotaNote(a), quotaNote(b)] });
   rows.push({ label: 'Cota comparada à média do cargo', values: [vsAverage(a), vsAverage(b)] });
@@ -339,6 +340,45 @@ function comparisonOffice(profile) {
   const staff = Number.isFinite(office.staffActive) ? `${office.staffActive} pessoas ativas` : 'equipe não informada';
   const fetched = office.fetchedAt ? `fotografia ${dateBR(office.fetchedAt)}` : 'fotografia sem data';
   return `${value} · ${esc(period)}${observed} · ${staff} · ${esc(fetched)}`;
+}
+/* Custo e partes de cada um pela própria Casa: Câmara pela composição do mandato, Senado pelas despesas
+   identificadas. As Casas não publicam as mesmas partes; os valores não vão para a mesma régua. */
+function comparisonCostFigures(f) {
+  const profile = comparisonProfile(f), house = String(f.pessoa?.id || '').split(':')[0];
+  const money = cents => Number.isSafeInteger(cents) ? { cents } : null;
+  if (house === 'camara' && profile.cost) {
+    const part = key => profile.cost.parts?.[key];
+    /* `months` vem como lista de períodos (snapshot expandido) ou como contagem. */
+    const monthCount = value => Array.isArray(value) ? value.length : Number.isInteger(value) ? value : null;
+    const withMonths = key => money(part(key)?.averageCents) && { cents: part(key).averageCents, months: monthCount(part(key).months) };
+    return { house, total: Number.isSafeInteger(profile.cost.monthlyAverageCents) ? { cents: profile.cost.monthlyAverageCents, months: (profile.cost.usedMonths || []).length } : null,
+      remuneration: withMonths('remuneration'), office: withMonths('office'), officePeople: null };
+  }
+  if (house === 'senado' && profile.senateCost && typeof senateCostFigures === 'function') return { house, ...senateCostFigures(profile.senateCost, f) };
+  return { house, total: null, remuneration: null, office: null, officePeople: null };
+}
+const comparisonCostMoney = item => item ? `<b class="mono">${esc(formatCitizenAmount(item.cents / 100))}</b><small> /mês${Number.isInteger(item.months) ? ` · média de ${item.months} ${item.months === 1 ? 'mês' : 'meses'}` : ''}</small>` : 'Sem dados';
+function comparisonCostRows(a, b, sideHtml) {
+  const [costA, costB] = [a, b].map(comparisonCostFigures);
+  if (costA.house === costB.house) {
+    const label = costA.house === 'senado' ? 'Despesas identificadas por mês · Senado' : 'Custa por mês · Câmara';
+    return `<div class="cmp-row"><span class="cmp-l">${label}</span>${sideHtml(costA.total ? costA.total.cents : null, costB.total ? costB.total.cents : null, (value, side) => comparisonCostMoney(side === 'a' ? costA.total : costB.total))}</div>`;
+  }
+  const cell = (figures, house) => figures.house === house ? comparisonCostMoney(figures.total) : 'Não se aplica';
+  return `${comparisonInfoRow('Custo do mandato por mês · Câmara', cell(costA, 'camara'), cell(costB, 'camara'))}
+    ${comparisonInfoRow('Despesas identificadas por mês · Senado', cell(costA, 'senado'), cell(costB, 'senado'))}
+    <div class="cmp-row"><span class="cmp-l"></span><div class="cmp-v muted cmp-source" style="grid-column: 2 / -1">Casas diferentes não são comparadas no custo: a Câmara soma salário, auxílios, cota e verba de gabinete; o Senado, remuneração, equipe do gabinete e cota.</div></div>`;
+}
+function comparisonOfficeCell(f) {
+  const figures = comparisonCostFigures(f);
+  if (!figures.office) return comparisonOffice(comparisonProfile(f));
+  const what = figures.house === 'senado' ? 'equipe comissionada do gabinete (Senado)' : 'verba de gabinete (Câmara)';
+  return `${comparisonCostMoney(figures.office)}<br><small>${what}${figures.officePeople ? ` · ${figures.officePeople} pessoas no mês mais recente` : ''}</small>`;
+}
+function comparisonCompensationCell(f) {
+  const figures = comparisonCostFigures(f);
+  if (!figures.remuneration) return esc(comparisonCompensation(comparisonProfile(f)));
+  return `${comparisonCostMoney(figures.remuneration)}<br><small>bruto pago, pela folha ${figures.house === 'senado' ? 'do Senado' : 'da Câmara'}</small>`;
 }
 function comparisonInfoRow(label, a, b) {
   return `<div class="cmp-row"><span class="cmp-l">${esc(label)}</span><div class="cmp-v">${a}</div><div class="cmp-v">${b}</div></div>`;
@@ -404,7 +444,7 @@ function comparisonTable([a, b]) {
   // higherIsWorse null: só informa, sem marcar "melhor" (ex.: alertas, que não medem conduta).
   const sideHtml = (valueA, valueB, format, higherIsWorse = true) => {
     const winner = higherIsWorse === null || valueA == null || valueB == null || valueA === valueB || valueA < 0 || valueB < 0 ? '' : (valueA > valueB) === higherIsWorse ? 'b' : 'a';
-    return `<div class="cmp-v ${winner === 'a' ? 'best' : ''}">${valueA == null ? 'Sem dados' : format(valueA)}</div><div class="cmp-v ${winner === 'b' ? 'best' : ''}">${valueB == null ? 'Sem dados' : format(valueB)}</div>`;
+    return `<div class="cmp-v ${winner === 'a' ? 'best' : ''}">${valueA == null ? 'Sem dados' : format(valueA, 'a')}</div><div class="cmp-v ${winner === 'b' ? 'best' : ''}">${valueB == null ? 'Sem dados' : format(valueB, 'b')}</div>`;
   };
   const vsAverage = profile => profile.mediaMensal != null && profile.media ? Math.round((profile.mediaMensal / profile.media - 1) * 100) : null;
   const quotaPeriod = profile => typeof citizenQuotaPeriod === 'function' ? citizenQuotaPeriod(profile.periodo?.inicio, profile.periodo?.fim) : '';
@@ -433,6 +473,7 @@ function comparisonTable([a, b]) {
   }).join('');
   return `<section class="card cmp wide">
     <div class="cmp-head"><span></span>${[a, b].map(profile => `<button type="button" class="cmp-who" data-politician="${esc(profile.pessoa.id)}">${citizenAvatar(profile.pessoa, 56)}<b>${esc(citizenName(profile.pessoa.name))}</b><small>${esc([ROLE_LABELS[profile.pessoa.role], profile.pessoa.party, profile.pessoa.uf].filter(Boolean).join(' · '))}</small></button>`).join('')}</div>
+    ${comparisonCostRows(a, b, sideHtml)}
     <div class="cmp-row"><span class="cmp-l">Cota parlamentar por mês</span>${sideHtml(a.mediaMensal, b.mediaMensal, value => `<b class="mono">${formatCitizenAmount(value)}</b>`)}</div>
     <div class="cmp-row cmp-bars"><span class="cmp-l"></span><div><i style="width:${a.mediaMensal == null ? 0 : a.mediaMensal / maxMonthly * 100}%"></i></div><div><i style="width:${b.mediaMensal == null ? 0 : b.mediaMensal / maxMonthly * 100}%"></i></div></div>
     <div class="cmp-row"><span class="cmp-l"></span><div class="cmp-v muted cmp-source">${esc(quotaPeriod(a))}</div><div class="cmp-v muted cmp-source">${esc(quotaPeriod(b))}</div></div>
@@ -442,8 +483,8 @@ function comparisonTable([a, b]) {
     ${comparisonInfoRow('Participação e exercício', comparisonParticipation(profileA), comparisonParticipation(profileB))}
     ${comparisonInfoRow('Contato institucional', esc(comparisonContact(profileA)), esc(comparisonContact(profileB)))}
     ${comparisonInfoRow('Projetos', esc(comparisonProjects(profileA)), esc(comparisonProjects(profileB)))}
-    ${comparisonInfoRow('Equipe e verba de gabinete', comparisonOffice(profileA), comparisonOffice(profileB))}
-    ${comparisonInfoRow('Remuneração de referência', esc(comparisonCompensation(profileA)), esc(comparisonCompensation(profileB)))}
+    ${comparisonInfoRow('Equipe e verba de gabinete', comparisonOfficeCell(a), comparisonOfficeCell(b))}
+    ${comparisonInfoRow('Remuneração', comparisonCompensationCell(a), comparisonCompensationCell(b))}
     <div class="cmp-row"><span class="cmp-l">Onde mais gastou</span><div class="cmp-v">${topCategory(a)}</div><div class="cmp-v">${topCategory(b)}</div></div>
     <div class="cmp-row"><span class="cmp-l">Empresa que mais recebeu</span><div class="cmp-v">${topSupplier(a)}</div><div class="cmp-v">${topSupplier(b)}</div></div>
   </section>

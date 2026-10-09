@@ -130,11 +130,29 @@ test('profile comparison adds neutral availability and mandate details without r
   assert.match(html, /4 pessoas ativas/);
   assert.match(html, /referência do cargo, não pagamento individual/);
   assert.match(html, /Sem dados importados/);
-  for (const label of ['Participação e exercício', 'Contato institucional', 'Projetos', 'Equipe e verba de gabinete', 'Remuneração de referência']) {
+  for (const label of ['Participação e exercício', 'Contato institucional', 'Projetos', 'Equipe e verba de gabinete', 'Remuneração']) {
     const row = html.split('\n').find(line => line.includes(label));
     assert.ok(row, `linha ausente: ${label}`);
     assert.doesNotMatch(row, /class="cmp-v best"/);
   }
+});
+
+test('deputy and senator keep each house cost on its own row, never side by side', () => {
+  const { api, context } = comparison(profile('camara:1', 24000), profile('senado:70', 27000));
+  context.profileData = value => value.id === 'camara:1'
+    ? { id: value.id, person: value, cost: { monthlyAverageCents: 18828630, usedMonths: Array(42).fill('x'),
+        parts: { remuneration: { averageCents: 4411268, months: Array(42).fill('2026-01') }, office: { averageCents: 12636486, months: 41 } } } }
+    : { id: value.id, person: value, senateCost: { months: {} } };
+  context.senateCostFigures = () => ({ total: { cents: 37586984, months: 43 }, remuneration: { cents: 4428269, months: 44 }, office: { cents: 30413582, months: 44 }, officePeople: 21 });
+  const html = api.comparisonTable([{ ...profile('camara:1', 24000), pessoa: { id: 'camara:1', name: 'AJ', role: 'deputado' } }, profile('senado:70', 27000)]);
+  const row = label => html.split('\n').find(line => line.includes(label)) || '';
+  assert.match(row('Custo do mandato por mês · Câmara'), /R\$ 188286\.3<\/b>[\s\S]*Não se aplica/);
+  assert.match(row('Despesas identificadas por mês · Senado'), /Não se aplica[\s\S]*R\$ 375869\.84<\/b>/);
+  assert.doesNotMatch(row('Custo do mandato por mês · Câmara') + row('Despesas identificadas por mês · Senado'), /cmp-v best/);
+  assert.match(html, /Casas diferentes não são comparadas no custo/);
+  assert.match(row('Equipe e verba de gabinete'), /R\$ 126364\.86<\/b>[\s\S]*verba de gabinete \(Câmara\)[\s\S]*R\$ 304135\.82<\/b>[\s\S]*equipe comissionada do gabinete \(Senado\) · 21 pessoas/);
+  assert.match(row('Remuneração'), /média de 42 meses[\s\S]*bruto pago, pela folha da Câmara[\s\S]*bruto pago, pela folha do Senado/);
+  assert.doesNotMatch(html, /não pagamento individual/);
 });
 
 test('Senate profile comparison keeps presence and registered nominal votes within the Senate source', () => {

@@ -164,3 +164,18 @@ function senateOfficeHTML(cost) {
     <p class="muted">Soma bruta da folha normal dos comissionados lotados no gabinete com o nome da pessoa, no arquivo mensal de remuneração do Senado. 13º, férias, auxílios e servidores efetivos ficam fora. O Senado não publica uma verba de gabinete como a da Câmara; não compare os dois valores. Os nomes da equipe não são guardados.</p>
     ${url ? `<span class="src">Folha de ${esc(profileCostLabel(latestPeriod))}. <a href="${esc(url)}" target="_blank" rel="noopener">Fonte do Senado ↗</a></span>` : ''}`;
 }
+
+/* Números do Senado para o comparativo, com as mesmas regras do cartão: total só dos meses com as três partes;
+   remuneração e equipe pela média dos meses em que cada uma foi identificada. */
+function senateCostFigures(cost, profileRecord) {
+  const months = senateCostMonths(cost, profileRecord), complete = months.filter(month => month.complete);
+  const partAverage = key => {
+    const values = months.filter(month => month.parts[key] !== null).map(month => month.parts[key]);
+    return values.length ? { cents: senateCostAverage(values), months: values.length } : null;
+  };
+  const total = complete.length
+    ? { cents: SENATE_COST_PARTS.reduce((sum, [key]) => sum + senateCostAverage(complete.map(month => month.parts[key])), 0), months: complete.length }
+    : null;
+  const latestOffice = [...months].reverse().find(month => month.parts.office !== null);
+  return { total, remuneration: partAverage('remuneration'), office: partAverage('office'), officePeople: latestOffice?.officePeople || null };
+}
