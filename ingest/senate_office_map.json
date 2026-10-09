@@ -1,85 +1,719 @@
 {
-  "note": "Correspondência conferida à mão entre o ID do Senado (roster) e a lotação do gabinete no CSV mensal de remuneração. Piloto de até 10 senadores(as), os 10 primeiros IDs da lista em ordem numérica. Sem correspondência aproximada: o coletor usa só esta tabela.",
+  "note": "Correspondência entre o ID do Senado (cadastro) e a lotação do gabinete no CSV mensal de remuneração, no mandato (fev/2023 em diante). Gerada a partir de nomes iguais (sem acentos) e conferida; casos sem nome igual entram só à mão, com a evidência. O coletor usa só esta tabela.",
   "offices": [
     {
       "id": "senado:22",
       "name": "Esperidião Amin",
       "office": "Esperidião Amin",
-      "lotacao": "Gabinete do Senador Esperidião Amin",
       "checkedAt": "2026-10-09",
-      "evidence": "Lotação com o nome parlamentar do roster (só acentos diferentes quando há); uma linha PARLAMENTAR de folha normal por mês em jan–set/2026."
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
     },
     {
       "id": "senado:35",
       "name": "Jader Barbalho",
       "office": "Jáder Barbalho",
-      "lotacao": "Gabinete do Senador Jáder Barbalho",
       "checkedAt": "2026-10-09",
-      "evidence": "Lotação com o nome parlamentar do roster (só acentos diferentes quando há); uma linha PARLAMENTAR de folha normal por mês em jan–set/2026."
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 44 meses (2023-02 a 2026-09)."
     },
     {
       "id": "senado:70",
       "name": "Renan Calheiros",
       "office": "Renan Calheiros",
-      "lotacao": "Gabinete do Senador Renan Calheiros",
       "checkedAt": "2026-10-09",
-      "evidence": "Lotação com o nome parlamentar do roster (só acentos diferentes quando há); uma linha PARLAMENTAR de folha normal por mês em jan–set/2026."
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
     },
     {
       "id": "senado:285",
       "name": "Marcio Bittar",
       "office": "Márcio Bittar",
-      "lotacao": "Gabinete do Senador Márcio Bittar",
       "checkedAt": "2026-10-09",
-      "evidence": "Lotação com o nome parlamentar do roster (só acentos diferentes quando há); uma linha PARLAMENTAR de folha normal por mês em jan–set/2026."
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 44 meses (2023-02 a 2026-09)."
     },
     {
       "id": "senado:345",
       "name": "Flávio Arns",
       "office": "Flávio Arns",
-      "lotacao": "Gabinete do Senador Flávio Arns",
       "checkedAt": "2026-10-09",
-      "evidence": "Lotação com o nome parlamentar do roster (só acentos diferentes quando há); uma linha PARLAMENTAR de folha normal por mês em jan–set/2026."
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:453",
+      "name": "PEDRO CHAVES",
+      "office": "Pedro Chaves",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 4 meses (2025-07 a 2025-10)."
     },
     {
       "id": "senado:470",
       "name": "Chico Rodrigues",
       "office": "Chico Rodrigues",
-      "lotacao": "Gabinete do Senador Chico Rodrigues",
       "checkedAt": "2026-10-09",
-      "evidence": "Lotação com o nome parlamentar do roster (só acentos diferentes quando há); uma linha PARLAMENTAR de folha normal por mês em jan–set/2026."
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
     },
     {
       "id": "senado:475",
       "name": "Confúcio Moura",
       "office": "Confúcio Moura",
-      "lotacao": "Gabinete do Senador Confúcio Moura",
       "checkedAt": "2026-10-09",
-      "evidence": "Lotação com o nome parlamentar do roster (só acentos diferentes quando há); uma linha PARLAMENTAR de folha normal por mês em jan–set/2026."
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
     },
     {
       "id": "senado:581",
       "name": "Jaques Wagner",
       "office": "Jaques Wagner",
-      "lotacao": "Gabinete do Senador Jaques Wagner",
       "checkedAt": "2026-10-09",
-      "evidence": "Lotação com o nome parlamentar do roster (só acentos diferentes quando há); uma linha PARLAMENTAR de folha normal por mês em jan–set/2026."
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
     },
     {
       "id": "senado:631",
       "name": "Magno Malta",
       "office": "Magno Malta",
-      "lotacao": "Gabinete do Senador Magno Malta",
       "checkedAt": "2026-10-09",
-      "evidence": "Lotação com o nome parlamentar do roster (só acentos diferentes quando há); uma linha PARLAMENTAR de folha normal por mês em jan–set/2026."
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
     },
     {
       "id": "senado:739",
       "name": "Ciro Nogueira",
       "office": "Ciro Nogueira",
-      "lotacao": "Gabinete do Senador Ciro Nogueira",
       "checkedAt": "2026-10-09",
-      "evidence": "Lotação com o nome parlamentar do roster (só acentos diferentes quando há); uma linha PARLAMENTAR de folha normal por mês em jan–set/2026."
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:742",
+      "name": "Marcelo Castro",
+      "office": "Marcelo Castro",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:825",
+      "name": "Paulo Paim",
+      "office": "Paulo Paim",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:1173",
+      "name": "Wellington Fagundes",
+      "office": "Wellington Fagundes",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 36 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:1186",
+      "name": "Luis Carlos Heinze",
+      "office": "Luis Carlos Heinze",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 40 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:3777",
+      "name": "Eduardo Gomes",
+      "office": "Eduardo Gomes",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:3806",
+      "name": "Zequinha Marinho",
+      "office": "Zequinha Marinho",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:3830",
+      "name": "Davi Alcolumbre",
+      "office": "Davi Alcolumbre",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:4531",
+      "name": "Jayme Campos",
+      "office": "Jayme Campos",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:4560",
+      "name": "Sérgio Petecão",
+      "office": "Sérgio Petecão",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:4639",
+      "name": "Beto Faro",
+      "office": "Beto Faro",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:4642",
+      "name": "Efraim Filho",
+      "office": "Efraim Filho",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 40 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:4694",
+      "name": "Rogerio Marinho",
+      "office": "Rogério Marinho",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 42 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:4770",
+      "name": "Izalci Lucas",
+      "office": "Izalci Lucas",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:4811",
+      "name": "Laércio Oliveira",
+      "office": "Laércio Oliveira",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:4979",
+      "name": "BENE CAMACHO",
+      "office": "Bene Camacho",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 3 meses (2024-08 a 2024-10)."
+    },
+    {
+      "id": "senado:4994",
+      "name": "Eduardo Braga",
+      "office": "Eduardo Braga",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5008",
+      "name": "Humberto Costa",
+      "office": "Humberto Costa",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5012",
+      "name": "Randolfe Rodrigues",
+      "office": "Randolfe Rodrigues",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5070",
+      "name": "Wilder Morais",
+      "office": "Wilder Morais",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5207",
+      "name": "Renan Filho",
+      "office": "Renan Filho",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 17 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5322",
+      "name": "Romário",
+      "office": "Romário",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 40 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5352",
+      "name": "Rogério Carvalho",
+      "office": "Rogério Carvalho",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5376",
+      "name": "Mara Gabrilli",
+      "office": "Mara Gabrilli",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5385",
+      "name": "Irajá",
+      "office": "Irajá",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5386",
+      "name": "Professora Dorinha Seabra",
+      "office": "Professora Dorinha Seabra",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5422",
+      "name": "Marcos Rogério",
+      "office": "Marcos Rogério",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 39 meses (2023-07 a 2026-09)."
+    },
+    {
+      "id": "senado:5502",
+      "name": "Plínio Valério",
+      "office": "Plínio Valério",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5523",
+      "name": "Otto Alencar",
+      "office": "Otto Alencar",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5525",
+      "name": "Omar Aziz",
+      "office": "Omar Aziz",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5672",
+      "name": "Alan Rick",
+      "office": "Alan Rick",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5718",
+      "name": "Eliziane Gama",
+      "office": "Eliziane Gama",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 41 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5732",
+      "name": "RODRIGO PACHECO",
+      "office": "Rodrigo Pacheco",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5736",
+      "name": "Tereza Cristina",
+      "office": "Tereza Cristina",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5748",
+      "name": "Veneziano Vital do Rêgo",
+      "office": "Veneziano Vital do Rêgo",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5783",
+      "name": "Zenaide Maia",
+      "office": "Zenaide Maia",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5793",
+      "name": "Dr. Hiran",
+      "office": "Dr. Hiran",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5894",
+      "name": "Flávio Bolsonaro",
+      "office": "Flávio Bolsonaro",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5895",
+      "name": "Jorge Kajuru",
+      "office": "Jorge Kajuru",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5899",
+      "name": "Vanderlan Cardoso",
+      "office": "Vanderlan Cardoso",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 40 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5905",
+      "name": "RODRIGO CUNHA",
+      "office": "Rodrigo Cunha",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 23 meses (2023-02 a 2024-12)."
+    },
+    {
+      "id": "senado:5906",
+      "name": "Dra. Eudócia",
+      "office": "Dra. Eudócia",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 21 meses (2025-01 a 2026-09)."
+    },
+    {
+      "id": "senado:5917",
+      "name": "Fernando Dueire",
+      "office": "Fernando Dueire",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5924",
+      "name": "Oriovisto Guimarães",
+      "office": "Oriovisto Guimarães",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5926",
+      "name": "Lucas Barreto",
+      "office": "Lucas Barreto",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5936",
+      "name": "Carlos Portinho",
+      "office": "Carlos Portinho",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5942",
+      "name": "Marcos do Val",
+      "office": "Marcos do Val",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5953",
+      "name": "Fabiano Contarato",
+      "office": "Fabiano Contarato",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5959",
+      "name": "Styvenson Valentim",
+      "office": "Styvenson Valentim",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5967",
+      "name": "Angelo Coronel",
+      "office": "Angelo Coronel",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5973",
+      "name": "Cid Gomes",
+      "office": "Cid Gomes",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5974",
+      "name": "Sargento Reginauro",
+      "office": "Sargento Reginauro",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 2 meses (2026-08 a 2026-09)."
+    },
+    {
+      "id": "senado:5976",
+      "name": "EDUARDO GIRÃO",
+      "office": "Eduardo Girão",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 43 meses (2023-02 a 2026-08)."
+    },
+    {
+      "id": "senado:5979",
+      "name": "LEILA BARROS",
+      "office": "Leila Barros",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5982",
+      "name": "Alessandro Vieira",
+      "office": "Alessandro Vieira",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5985",
+      "name": "Nelsinho Trad",
+      "office": "Nelsinho Trad",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5988",
+      "name": "Soraya Thronicke",
+      "office": "Soraya Thronicke",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5990",
+      "name": "Carlos Viana",
+      "office": "Carlos Viana",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 40 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:5991",
+      "name": "CASTELLAR NETO",
+      "office": "Castellar Neto",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 4 meses (2024-08 a 2024-11)."
+    },
+    {
+      "id": "senado:5998",
+      "name": "Daniella Ribeiro",
+      "office": "Daniella Ribeiro",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:6008",
+      "name": "Giordano",
+      "office": "Giordano",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:6009",
+      "name": "Astronauta Marcos Pontes",
+      "office": "Astronauta Marcos Pontes",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:6010",
+      "name": "Ivete da Silveira",
+      "office": "Ivete da Silveira",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 41 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:6011",
+      "name": "BETO MARTINS",
+      "office": "Beto Martins",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 4 meses (2024-08 a 2024-11)."
+    },
+    {
+      "id": "senado:6015",
+      "name": "IRENEU ORTH",
+      "office": "Ireneu Orth",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 5 meses (2024-04 a 2024-08)."
+    },
+    {
+      "id": "senado:6021",
+      "name": "SAMUEL ARAUJO",
+      "office": "Samuel Araújo",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 5 meses (2023-02 a 2023-06)."
+    },
+    {
+      "id": "senado:6025",
+      "name": "Roberta Acioly",
+      "office": "Roberta Acioly",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 7 meses (2026-03 a 2026-09)."
+    },
+    {
+      "id": "senado:6027",
+      "name": "MECIAS DE JESUS",
+      "office": "Mecias de Jesus",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 38 meses (2023-02 a 2026-03)."
+    },
+    {
+      "id": "senado:6295",
+      "name": "Carlos Fávaro",
+      "office": "Carlos Fávaro",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 9 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:6304",
+      "name": "MARGARETH BUZETTI",
+      "office": "Margareth Buzetti",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 33 meses (2023-03 a 2026-03)."
+    },
+    {
+      "id": "senado:6305",
+      "name": "JOSÉ LACERDA",
+      "office": "José Lacerda",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 4 meses (2025-10 a 2026-01)."
+    },
+    {
+      "id": "senado:6331",
+      "name": "Sergio Moro",
+      "office": "Sergio Moro",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:6335",
+      "name": "Damares Alves",
+      "office": "Damares Alves",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:6336",
+      "name": "Camilo Santana",
+      "office": "Camilo Santana",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 7 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:6337",
+      "name": "Cleitinho",
+      "office": "Cleitinho",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:6338",
+      "name": "Teresa Leitão",
+      "office": "Teresa Leitão",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:6340",
+      "name": "Jaime Bagattoli",
+      "office": "Jaime Bagattoli",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:6341",
+      "name": "Hamilton Mourão",
+      "office": "Hamilton Mourão",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:6342",
+      "name": "Jorge Seif",
+      "office": "Jorge Seif",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 40 meses (2023-02 a 2026-05)."
+    },
+    {
+      "id": "senado:6345",
+      "name": "FERNANDO FARIAS",
+      "office": "Fernando Farias",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 38 meses (2023-02 a 2026-03)."
+    },
+    {
+      "id": "senado:6350",
+      "name": "AUGUSTA BRITO",
+      "office": "Augusta Brito",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 36 meses (2023-02 a 2026-04)."
+    },
+    {
+      "id": "senado:6351",
+      "name": "JANAÍNA FARIAS",
+      "office": "Janaína Farias",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 4 meses (2024-04 a 2024-07)."
+    },
+    {
+      "id": "senado:6358",
+      "name": "Ana Paula Lobato",
+      "office": "Ana Paula Lobato",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 42 meses (2023-02 a 2026-08)."
+    },
+    {
+      "id": "senado:6359",
+      "name": "LOURDINHA PEREIRA",
+      "office": "Lourdinha Pereira",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 2 meses (2026-08 a 2026-09)."
+    },
+    {
+      "id": "senado:6362",
+      "name": "MAURO CARVALHO JUNIOR",
+      "office": "Mauro Carvalho Junior",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 4 meses (2023-08 a 2023-11)."
+    },
+    {
+      "id": "senado:6363",
+      "name": "ROSANA MARTINELLI",
+      "office": "Rosana Martinelli",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 4 meses (2024-07 a 2024-10)."
+    },
+    {
+      "id": "senado:6366",
+      "name": "ANDRÉ AMARAL",
+      "office": "Andre Amaral",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 4 meses (2024-07 a 2024-10)."
+    },
+    {
+      "id": "senado:6369",
+      "name": "Jussara Lima",
+      "office": "Jussara Lima",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro; lotação presente em 44 meses (2023-02 a 2026-09)."
+    },
+    {
+      "id": "senado:6372",
+      "name": "BRUNO BONETTI",
+      "office": "Bruno Bonetti",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 5 meses (2025-12 a 2026-04)."
+    },
+    {
+      "id": "senado:6374",
+      "name": "FLÁVIO AZEVEDO",
+      "office": "Flávio Azevedo",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 4 meses (2024-07 a 2024-10)."
+    },
+    {
+      "id": "senado:6381",
+      "name": "HERMES KLANN",
+      "office": "Hermes Klann",
+      "checkedAt": "2026-10-09",
+      "evidence": "Nome da lotação igual ao nome parlamentar do cadastro (só acentos diferentes); lotação presente em 5 meses (2026-05 a 2026-09)."
+    },
+    {
+      "id": "senado:5411",
+      "name": "Weverton",
+      "office": "Weverton Rocha",
+      "checkedAt": "2026-10-09",
+      "evidence": "Conferido à mão: o cadastro usa o nome parlamentar \"Weverton\" e a lotação, o nome completo \"Weverton Rocha\"; único senador com esse nome, lotação presente em 44 meses (2023-02 a 2026-09)."
     }
   ]
 }

@@ -99,10 +99,29 @@ saída só local em `data/snapshots/senate-office-pilot.json` (fora do `make dep
 - **Privacidade:** cada arquivo é lido em memória; nenhuma linha de servidor é gravada nem impressa (teste
   com sentinela). Ficam só agregados por gabinete e mês.
 
-Pendências antes de ampliar: os 2 gabinetes com duas linhas PARLAMENTAR no mesmo mês (titular e suplente
-em transição) ficam sem subsídio atribuído; 1 lotação sem nome igual ao roster precisa de conferência à
-mão; senador(a) lotado(a) fora do gabinete (liderança, Mesa) fica sem subsídio, com o motivo. Ampliar
-para os 81 gabinetes e para o mandato (fev/2023) exige decisão do mantenedor.
+### Ampliação para os 81 gabinetes e o mandato (9/10/2026)
+
+Autorizada pelo mantenedor em 9/10/2026. O coletor lê os 44 arquivos de fev/2023 a set/2026 (todos com o
+cabeçalho conferido; leitura incompleta é repetida, nunca aceita pela metade) e a tabela passou a ter 102
+senadores(as): 101 com o nome da lotação igual ao do cadastro (sem acentos) e 1 conferido à mão
+("Weverton" no cadastro, "Weverton Rocha" na lotação). `--suggest` lista lotações fora da tabela para
+conferência; nenhuma entra por aproximação.
+
+- **Subsídio:** 3.336 de 4.488 senador-mês. Os valores achados são os degraus oficiais do subsídio:
+  R$ 39.293,32 (fev–mar/2023), R$ 41.650,92 (abr/2023 a jan/2024), R$ 44.008,52 (fev/2024 a jan/2025) e
+  R$ 46.366,19 (desde fev/2025); os demais são meses proporcionais.
+- **Sem subsídio, com o motivo:** 900 meses sem a lotação (fora do exercício: suplentes, licenças e quem
+  saiu), 162 com a linha do(a) senador(a) em outra lotação (Mesa, liderança) e 90 com duas linhas na mesma
+  lotação. Estas são de gabinetes de suplentes cujos titulares estavam licenciados como ministros e
+  optaram pelo subsídio do mandato: sem identificador, não há como separar as duas linhas.
+- **Gabinete:** 3.561 senador-mês com total; 9 com menos de 3 comissionados, só com a contagem.
+- **Lista atual (81):** 79 na tabela; Leany Lemos e Renzo Braz, suplentes, não têm lotação própria. Em
+  set/2026, 72 com subsídio e 77 com gabinete. Sem subsídio: 4 com a linha em outra lotação, 1 com
+  lotação compartilhada com o titular licenciado e 2 sem a lotação nos últimos meses (conferido com
+  `--suggest`: não houve troca de nome).
+
+A saída continua local (`data/snapshots/senate-office-pilot.json`). Ficha, banco e API não mudam até a
+decisão de como mostrar o gabinete do Senado.
 
 ## Inventário de folhas do grupo parlamentar
 

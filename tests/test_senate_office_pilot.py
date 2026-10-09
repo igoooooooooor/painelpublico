@@ -79,20 +79,26 @@ class SenateOfficePilotTests(unittest.TestCase):
         with self.assertRaises(pilot.PilotError):
             pilot.build(fetcher=lambda period: broken, map_path=self.map_path, competences=['2026-09'])
 
-    def test_map_is_limited_to_ten_checked_senators(self):
-        entries = [{'id': f'senado:{i}', 'name': 'X', 'office': 'X', 'checkedAt': '2026-10-09'} for i in range(11)]
-        self.map_path.write_text(json.dumps({'offices': entries}), encoding='utf-8')
-        with self.assertRaises(pilot.PilotError):
+    def test_map_rejects_unchecked_or_repeated_entries(self):
+        entry = {'id': 'senado:1', 'name': 'X', 'office': 'X', 'checkedAt': '2026-10-09'}
+        self.map_path.write_text(json.dumps({'offices': [entry, {**entry, 'id': 'senado:2'}]}), encoding='utf-8')
+        with self.assertRaises(pilot.PilotError):  # mesma lotação para duas pessoas
             pilot.load_map(self.map_path)
         self.map_path.write_text(json.dumps({'offices': [{'id': 'senado:1', 'name': 'X', 'office': 'X'}]}), encoding='utf-8')
         with self.assertRaises(pilot.PilotError):
             pilot.load_map(self.map_path)
 
-    def test_versioned_map_has_ten_checked_entries(self):
+    def test_versioned_map_covers_the_mandate_with_evidence(self):
         offices, entries = pilot.load_map()
-        self.assertEqual(len(entries), 10)
-        self.assertTrue(all(e['lotacao'].endswith(e['office']) for e in entries))
+        self.assertGreaterEqual(len(entries), 81)
+        self.assertTrue(all(e['evidence'] for e in entries))
+        self.assertEqual(offices['senado:5411'], 'Weverton Rocha')  # nome diferente do cadastro, conferido à mão
+        self.assertEqual(pilot.COMPETENCES[0], '2023-02')
 
+    def test_suggest_lists_only_offices_outside_the_map(self):
+        rows = month_rows() + [row('PARLAMENTAR', 'Gabinete da Senadora Nova Pessoa', '46.366,19')]
+        found = pilot.suggest({'senado:9': 'Nova Pessoa'}, fetcher=lambda period: csv_bytes(rows), map_path=self.map_path, periods=['2026-09'])
+        self.assertEqual(found, [{'office': 'Nova Pessoa', 'months': ['2026-09'], 'exactMatches': ['senado:9']}])
 
 if __name__ == '__main__':
     unittest.main()
