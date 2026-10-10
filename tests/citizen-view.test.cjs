@@ -294,11 +294,11 @@ test('profile starts with three ordered answers and keeps the complementary deta
     alertas: [{ nivel: 'medio', tipo: 'valor', titulo: 'Alerta preservado', frase: 'Conferir registro.' }],
   });
   const html = api.profileView();
-  const answers = [...html.matchAll(/data-profile-answer="([^"]+)"/g)].map(match => match[1]);
-  assert.deepEqual(answers, ['expenses', 'work', 'alerts']);
-  assert.match(html, /Em 3 respostas/);
-  assert.ok(html.indexOf('Quanto custa?') < html.indexOf('Trabalha?'));
-  assert.ok(html.indexOf('Trabalha?') < html.indexOf('Algum alerta na cota?'));
+  const answers = [...html.matchAll(/href="#profile-([^"]+)"/g)].map(match => match[1]);
+  assert.deepEqual(answers, ['cost', 'work', 'alerts']);
+  assert.match(html, /aria-label="Resumo da ficha"/);
+  assert.ok(html.indexOf('Quanto custa?') < html.indexOf('Aparece para trabalhar?'));
+  assert.ok(html.indexOf('Aparece para trabalhar?') < html.indexOf('Algum alerta na cota?'));
   assert.match(html, /class="citizen-details/);
   const detailKeys = [...html.matchAll(/data-profile-section="([^"]+)"/g)].map(match => match[1]);
   assert.deepEqual(detailKeys, ['expenses', 'alerts', 'votes', 'projects', 'staff', 'contact', 'sources']);
@@ -344,8 +344,8 @@ test('profile without alerts explains which rules were checked and keeps neutral
     ],
   });
   const html = api.profileView();
-  const answer = html.slice(html.indexOf('data-profile-answer="alerts"'));
-  assert.match(answer, /Nenhum alerta nos meses avaliados/);
+  const answer = html.slice(html.indexOf('id="profile-alerts"'));
+  assert.match(answer, /Nenhum alerta nos períodos avaliados/);
   assert.match(answer, /avaliados abr–jun\/2026/);
   assert.match(answer, /jul–set\/2026: prazo de apresentação das notas ainda aberto/);
   assert.match(answer, /período parcial/);
@@ -373,7 +373,7 @@ test('profile distinguishes missing cota from an observed zero and treats a diff
   const { api, state } = makeView();
   setProfileFixture(api, state, 'camara:55');
   const missing = api.profileView();
-  const missingAnswer = missing.match(/<section[^>]*data-profile-answer="expenses"[\s\S]*?<\/section>/)?.[0] || '';
+  const missingAnswer = missing.match(/<div[^>]*data-profile-expense-details[\s\S]*?<\/section>/)?.[0] || '';
   assert.match(missingAnswer, /Sem dados/);
   assert.match(missingAnswer, /Ausência não significa gasto zero/);
   assert.match(missingAnswer, /Salário à parte:.*46\.366/);
@@ -381,7 +381,7 @@ test('profile distinguishes missing cota from an observed zero and treats a diff
 
   setProfileFixture(api, state, 'camara:55', { total: 0, mediaMensal: 0, periodo: { inicio: '2026-01', fim: '2026-01', meses: 1 }, hasExpenseData: true });
   const zero = api.profileView();
-  const zeroAnswer = zero.match(/<section[^>]*data-profile-answer="expenses"[\s\S]*?<\/section>/)?.[0] || '';
+  const zeroAnswer = zero.match(/<div[^>]*data-profile-expense-details[\s\S]*?<\/section>/)?.[0] || '';
   assert.match(zeroAnswer, /R\$ 0/);
   assert.doesNotMatch(zeroAnswer, /Sem dados/);
 
@@ -408,7 +408,7 @@ test('work answer uses the average of individual presence rates and counts only 
   };
   setProfileFixture(api, state, 'camara:1');
   const html = api.profileView();
-  const work = html.match(/<section[^>]*data-profile-answer="work"[\s\S]*?<\/section>/)?.[0] || '';
+  const work = html.match(/<div[^>]*data-profile-work-details[\s\S]*?<\/div>\s*<span class="k">/)?.[0] || '';
   assert.match(work, /201 de 250 dias/);
   assert.match(work, /média da Câmara: 80%/);
   assert.match(work, /Perto da média/);
@@ -431,7 +431,7 @@ test('secret votes and chairing are shown as records, not nominal votes or infer
   };
   setProfileFixture(api, state, 'camara:1');
   let html = api.profileView();
-  let work = html.match(/<section[^>]*data-profile-answer="work"[\s\S]*?<\/section>/)?.[0] || '';
+  let work = html.match(/<div[^>]*data-profile-work-details[\s\S]*?<\/div>\s*<span class="k">/)?.[0] || '';
   assert.match(work, /Sem voto nominal identificado neste recorte/);
   assert.match(work, /2 registros só de presença ou presidência/);
   assert.doesNotMatch(work, /Votou em <b>0 de/);
@@ -443,7 +443,7 @@ test('secret votes and chairing are shown as records, not nominal votes or infer
   context.DATA.votacoes = [{ id: 'not-voted', data: '2026-09-04', titulo: 'Ausência publicada', secreta: false }];
   context.DATA.votosCompletos = { 'not-voted': [[1, 'Pessoa Parlamentar', 'PT', 'SP', 'Não votou']] };
   html = api.profileView();
-  work = html.match(/<section[^>]*data-profile-answer="work"[\s\S]*?<\/section>/)?.[0] || '';
+  work = html.match(/<div[^>]*data-profile-work-details[\s\S]*?<\/div>\s*<span class="k">/)?.[0] || '';
   assert.match(work, /Votou em <b>0 de 1<\/b> votações do Placar/);
   assert.match(html, /data-vote="not-voted"><b>não votou<\/b>/);
 });
@@ -455,7 +455,7 @@ test('Senate work answer stays unavailable even when a Câmara record has the sa
   context.DATA.votosCompletos = { 'camara-77': [[77, 'Homônimo numérico', 'PT', 'SP', 'Sim']] };
   setProfileFixture(api, state, 'senado:77');
   const html = api.profileView();
-  const work = html.match(/<section[^>]*data-profile-answer="work"[\s\S]*?<\/section>/)?.[0] || '';
+  const work = html.match(/<div[^>]*data-profile-work-details[\s\S]*?<\/div>\s*<span class="k">/)?.[0] || '';
   assert.match(work, /Presença do Senado sem registro importado/);
   assert.match(html, /Votos nominais do Senado ainda não disponíveis neste recorte/);
   assert.doesNotMatch(work, /8\/10|201 de 250|Votou em|votações do Placar · 1/);
@@ -466,7 +466,7 @@ test('Senate profile shows fetched votes with skeletons and never counts parliam
   const { api, state, context } = makeView({ fetchImpl: () => new Promise(resolve => { release = resolve; }) });
   context.DATA.senado = { sobDemanda: true };
   setProfileFixture(api, state, 'senado:77');
-  assert.match(api.profileView(), /data-profile-answer="work"[\s\S]*?Carregando/);
+  assert.match(api.profileView(), /data-profile-work-details[\s\S]*?Carregando/);
   release({ ok: true, json: async () => ({
     presenca: { status: 'unavailable', items: [] },
     votacoes: { status: 'partial', startDate: '2023-02-01', endDate: '2026-10-08', sources: [
@@ -481,7 +481,7 @@ test('Senate profile shows fetched votes with skeletons and never counts parliam
   }) });
   await new Promise(resolve => setImmediate(resolve));
   const html = api.profileView();
-  const work = html.match(/<section[^>]*data-profile-answer="work"[\s\S]*?<\/section>/)?.[0] || '';
+  const work = html.match(/<div[^>]*data-profile-work-details[\s\S]*?<\/div>\s*<span class="k">/)?.[0] || '';
   assert.match(work, /Voto identificado em <b>1 de 3<\/b> votações do Senado com registro individual/);
   assert.match(work, /Presença do Senado sem registro importado/);
   assert.doesNotMatch(work, /class="huge"|0%|média da Câmara/);
@@ -506,7 +506,7 @@ test('Senate registered attendance is a positive count without an inferred atten
   setProfileFixture(api, state, 'senado:77');
   api.profileView();
   await new Promise(resolve => setImmediate(resolve));
-  const work = api.profileView().match(/<section[^>]*data-profile-answer="work"[\s\S]*?<\/section>/)?.[0] || '';
+  const work = api.profileView().match(/<div[^>]*data-profile-work-details[\s\S]*?<\/div>\s*<span class="k">/)?.[0] || '';
   assert.match(work, /9<small> sessões/);
   assert.match(work, /12 listas de sessões consultadas/);
   assert.match(work, /Faltas e justificativas não apuradas/);
@@ -527,11 +527,11 @@ test('three-answer alert shows the first alert in API order, without a severity 
     ],
   });
   const html = api.profileView();
-  const answer = html.match(/<section[^>]*data-profile-answer="alerts"[\s\S]*?<\/section>/)?.[0] || '';
-  assert.match(answer, /4 alertas/);
+  const answer = html.match(/<a[^>]*href="#profile-alerts"[\s\S]*?<\/a>/)?.[0] || '';
+  assert.match(answer, /4<small> alertas/);
   assert.match(answer, /Primeiro alerta informativo/);
   assert.doesNotMatch(answer, /Primeiro alerta alto|Alerta médio|Segundo alerta alto/);
-  const details = html.slice(html.indexOf('data-profile-section="alerts"'));
+  const details = html.slice(html.indexOf('id="profile-alerts"'), html.indexOf('class="profile-detail-area"'));
   const order = ['Primeiro alerta informativo', 'Primeiro alerta alto', 'Alerta médio', 'Segundo alerta alto'];
   assert.ok(order.every(title => details.includes(title)));
   assert.deepEqual(order.map(title => details.indexOf(title)), [...order.map(title => details.indexOf(title))].sort((a, b) => a - b));
@@ -643,7 +643,7 @@ test('profile with notes but nothing evaluable says data are insufficient instea
     total: 80000, mediaMensal: 80000, periodo: { inicio: '2024-01', fim: '2024-03', meses: 3 }, hasExpenseData: true,
     meses: [], categorias: [], fornecedores: [], maiores: [], alertas: [], coberturaAlertas: [],
   });
-  const answer = api.profileView().match(/<section[^>]*data-profile-answer="alerts"[\s\S]*?<\/section>/)?.[0] || '';
+  const answer = api.profileView().match(/<a[^>]*href="#profile-alerts"[\s\S]*?<\/a>/)?.[0] || '';
   assert.match(answer, /Dados insuficientes para avaliar/);
   assert.doesNotMatch(answer, /Nenhum alerta/);
 });
@@ -714,15 +714,15 @@ const senateQuota = { meses: [{ year: 2026, month: 7, valor: 40000 }, { year: 20
 test('senate cost card averages only months with all three parts and never compares with deputies', () => {
   const { api } = makeView();
   const html = api.senateCostAnswer(senateFixture(), senateQuota);
-  assert.match(html, /Senado · despesas identificadas do mandato/);
+  assert.match(html, /Despesas identificadas · Senado/);
   // jul e ago completos: (46.366,19 + 300.000 + 40.000 + 46.366,19 + 200.000 + 20.000) / 2
-  assert.match(html, /Em média<\/span><b class="mono">R\$\s?326\.366,19<\/b>/);
+  assert.match(html, /Em média<\/span><b class="mono">R\$ 326 mil<\/b>[\s\S]*Valor exato: <span class="mono">R\$\s?326\.366,19<\/span>/);
   assert.match(html, /2 meses com as três partes identificadas, de 3 no recorte/);
   assert.doesNotMatch(html, /reajustado/);  // mesmo subsídio nos meses da média
   const raised = senateFixture();
   raised.months['2026-07'].remunerationCents = 4400852;
   assert.match(api.senateCostAnswer(raised, senateQuota), /Média do período, que inclui reajustes do subsídio\. Valor atual: R\$\s?46\.366,19, pago desde ago\/2026/);
-  assert.match(html, /Não compare com o custo de deputados\(as\)/);
+  assert.match(api.senateCostDetails(senateFixture(), senateQuota), /Não compare com o custo de deputados\(as\)/);
   assert.doesNotMatch(html, /Custa em média|custo do mandato/);
 });
 
@@ -763,7 +763,7 @@ test('quota-only card says it is not comparable with the deputy mandate cost', (
     total: 80000, mediaMensal: 40000, periodo: { inicio: '2026-01', fim: '2026-02', meses: 2 }, hasExpenseData: true,
     meses: [], categorias: [], fornecedores: [], maiores: [], alertas: [],
   });
-  const answer = api.profileView().match(/<section[^>]*data-profile-answer="expenses"[\s\S]*?<\/section>/)?.[0] || '';
+  const answer = api.profileView().match(/<div[^>]*data-profile-expense-details[\s\S]*?<\/section>/)?.[0] || '';
   assert.match(answer, /Só a cota parlamentar\./);
   assert.match(answer, /Não compare com o custo de deputados\(as\) que soma salário, auxílios, cota e gabinete/);
 });
@@ -775,4 +775,82 @@ test('senate alert cards point to the official breakdown and say the document im
     notaDocumento: 'Análise dos registros publicados; imagem do documento não disponível nesta base.' });
   assert.match(html, /Detalhamento oficial: <a href="https:\/\/www6g\.senado\.leg\.br\/transparencia\/sen\/1\/ceaps\/1\/\?ano=2025"/);
   assert.match(html, /imagem do documento não disponível nesta base/);
+});
+
+test('redesigned profile keeps real quota totals, suppliers and all alerts in the page', () => {
+  const { api, state } = makeView();
+  setProfileFixture(api, state, 'camara:55', {
+    total: 123456, mediaMensal: 61728, expenseCount: 17,
+    periodo: { inicio: '2026-01', fim: '2026-02', meses: 2 }, hasExpenseData: true,
+    categorias: [{ nome: 'Categoria da fonte', valor: 123456 }],
+    fornecedores: [{ name: 'Fornecedor da fonte', valor: 123456, notas: 17 }],
+    alertas: [
+      { tipo: 'valor', titulo: 'Registro mais recente', frase: 'Conferir registro recente.', periodo: '2026-02' },
+      { tipo: 'valor', titulo: 'Registro anterior', frase: 'Conferir registro anterior.', periodo: '2026-01' },
+    ],
+    coberturaAlertas: [{ regra: 'pico', ano: 2026, avaliados: [1, 2], marcados: [1, 2], naoAvaliados: [] }],
+  });
+  const html = api.profileView();
+  assert.match(html, /Como trabalha/);
+  assert.match(html, /Alertas na cota/);
+  assert.match(html, /O que foi avaliado/);
+  assert.match(html, /Categoria da fonte/);
+  assert.match(html, /Fornecedor da fonte/);
+  assert.match(html, /17 notas/);
+  assert.match(html, /Registro mais recente/);
+  assert.match(html, /Registro anterior/);
+  assert.match(html, /avaliados jan–fev\/2026/);
+  assert.doesNotMatch(html, /\[voto real\]|\[Confirmar|confirmar na cobertura gravada/);
+});
+
+test('profile project preview never turns unknown situations into zero laws', () => {
+  const { context } = makeView();
+  const shared = { id: 'camara:55', person: { role: 'deputado' }, projects: {
+    status: 'imported', total: 43, items: [{ titulo: 'Projeto consultado', situacaoAtual: {
+      grupo: 'tramitando', status: 'imported', consultadoEm: '2026-10-03T12:00:00Z',
+    } }],
+  } };
+  const html = context.profileProjectsCard(shared);
+  assert.match(html, /43/);
+  assert.match(html, /parcial|não.*conferida|não.*consultada/i);
+  assert.doesNotMatch(html, /0 (?:virou|viraram|leis)/);
+  const missing = context.profileProjectsCard({ ...shared, projects: null });
+  assert.doesNotMatch(missing, />0<|0 projetos/);
+});
+
+test('profile vote preview keeps actual votes, missing records and newest dates', () => {
+  const { context } = makeView();
+  context.votesForPerson = () => [
+    { vote: { id: 'old', titulo: 'Voto antigo', data: '2026-01-01' }, recordedVote: 'Sim' },
+    { vote: { id: 'new', titulo: 'Voto recente', data: '2026-10-01' }, recordedVote: 'Não' },
+    { vote: { id: 'missing', titulo: 'Sem linha individual', data: '2026-09-01' }, recordedVote: null },
+  ];
+  const html = context.profileRecentVotesCard({ id: 'camara:55', person: { role: 'deputado' } });
+  assert.ok(html.indexOf('Voto recente') < html.indexOf('Voto antigo'));
+  assert.match(html, /Não/);
+  assert.match(html, /Sim/);
+  assert.match(html, /Sem registro/);
+  assert.doesNotMatch(html, /\[voto real\]/);
+});
+
+test('profile summary does not substitute quota for an incomplete mandate cost', () => {
+  const { context } = makeView();
+  const shared = { person: { role: 'deputado' }, cost: { usedMonths: [], monthlyAverageCents: null } };
+  const html = context.profileSummaryCards(shared, { mediaMensal: 50000 }, [], true);
+  assert.match(html, /Sem total/);
+  assert.doesNotMatch(html, /R\$ 50 mil/);
+});
+
+test('visible profile alerts are chronological and keep their source and explanation', () => {
+  const { context } = makeView();
+  const alerts = [
+    { tipo: 'pico', titulo: 'Alerta antigo', periodo: '2024-07', ano: 2024, mes: 7, frase: 'Registro anterior.', pessoa: { id: 'camara:55', role: 'deputado' } },
+    { tipo: 'pico', titulo: 'Alerta recente', periodo: '2026-06', ano: 2026, mes: 6, frase: 'Registro recente.', pessoa: { id: 'camara:55', role: 'deputado' } },
+  ];
+  const html = context.profileAlertsSection(alerts, []);
+  assert.ok(html.indexOf('Alerta recente') < html.indexOf('Alerta antigo'));
+  assert.match(html, /href="https:\/\/www.camara.leg.br\/deputados\/55\?ano=2026"/);
+  assert.match(html, /Conferir na fonte/);
+  assert.match(html, /Por que apareceu aqui/);
+  assert.match(html, /não indicam irregularidade/);
 });

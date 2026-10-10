@@ -57,14 +57,17 @@ function senateCostAnswer(cost, profileRecord) {
   const months = senateCostMonths(cost, profileRecord), complete = months.filter(month => month.complete);
   const range = cost?.periodStart && cost?.periodEnd ? `${profileCostLabel(cost.periodStart)}–${profileCostLabel(cost.periodEnd)}` : '';
   const ownOffice = Boolean(cost?.office);
+  const sourceRows = (Array.isArray(cost?.sources) ? cost.sources : []).filter(source => profileSafeUrl(source?.url))
+    .sort((first, second) => String(first.competence).localeCompare(String(second.competence)));
+  const latestPayroll = sourceRows.at(-1);
   let principal, rows = '';
-  const row = ([key, label, detail], value, scale, note) => {
+  const row = ([key, label, detail], value, scale, note, sourceUrl = null, sourceLabel = '') => {
     const money = profileCostMoney(value);
     const width = money !== null && scale > 0 && value > 0 ? Math.max(1, value / scale * 100).toFixed(1) : 0;
     return `<div class="citizen-cost-part" data-cost-part="${key}">
       <div class="citizen-cost-part-label"><span>${label}</span><b class="mono">${money === null ? 'Não identificado' : `${esc(money)}<small>/mês</small>`}</b></div>
       ${money !== null ? `<span class="citizen-cost-bar" aria-hidden="true"><i style="width:${width}%"></i></span>` : ''}
-      <small>${esc(note || detail)}</small>
+      <small>${esc(note || detail)}${sourceUrl ? ` · <a href="${esc(sourceUrl)}" target="_blank" rel="noopener">${esc(sourceLabel)} ↗</a>` : ''}</small>
     </div>`;
   };
   if (complete.length) {
@@ -82,8 +85,13 @@ function senateCostAnswer(cost, profileRecord) {
     const remunerationNote = latest && changed
       ? `Média do período, que inclui reajustes do subsídio. Valor atual: ${profileCostMoney(latest.parts.remuneration)}, pago desde ${profileCostLabel(paid[since].period)}`
       : '';
-    rows = SENATE_COST_PARTS.map((part, index) => row(part, averages[index], scale, index === 0 ? remunerationNote : '')).join('');
-    principal = `<div class="citizen-cost-main"><span>Em média</span><b class="mono">${esc(profileCostMoney(averages.reduce((a, b) => a + b, 0)))}</b><span>por mês</span></div>
+    rows = SENATE_COST_PARTS.map((part, index) => row(part, averages[index], scale, index === 0 ? remunerationNote : '',
+      part[0] === 'quota' ? profileSafeUrl(profileRecord?.pessoa?.sourceUrl) : latestPayroll?.url,
+      part[0] === 'quota' ? 'Página do Senado' : latestPayroll ? `Folha de ${profileCostLabel(latestPayroll.competence)}` : '')).join('');
+    const totalCents = averages.reduce((a, b) => a + b, 0);
+    principal = `<div class="profile-cost-total"><span>Em média</span><b class="mono">${esc(profileCostShort(totalCents))}</b><span>por mês</span></div>
+      <p class="citizen-cost-exact">Valor exato: <span class="mono">${esc(profileCostMoney(totalCents))}</span> por mês</p>
+      ${profileCostStackedComposition(averages, totalCents, SENATE_COST_PARTS.map(([, label]) => label))}
       <p class="citizen-cost-period">${complete.length} ${complete.length === 1 ? 'mês' : 'meses'} com as três partes identificadas, de ${months.length} no recorte (${esc(range)}): ${esc(senateCostMonthList(complete.map(month => month.period)))}</p>`;
   } else {
     /* Sem mês completo: cada parte com os próprios meses, sem total. */
@@ -93,17 +101,18 @@ function senateCostAnswer(cost, profileRecord) {
     });
     const scale = Math.max(0, ...averages.map(item => item.value || 0));
     rows = SENATE_COST_PARTS.map((part, index) => row(part, averages[index].value, scale,
-      averages[index].periods.length ? `média de ${senateCostMonthList(averages[index].periods)} (${averages[index].periods.length} ${averages[index].periods.length === 1 ? 'mês' : 'meses'})` : '')).join('');
+      averages[index].periods.length ? `média de ${senateCostMonthList(averages[index].periods)} (${averages[index].periods.length} ${averages[index].periods.length === 1 ? 'mês' : 'meses'})` : '',
+      part[0] === 'quota' ? profileSafeUrl(profileRecord?.pessoa?.sourceUrl) : latestPayroll?.url,
+      part[0] === 'quota' ? 'Página do Senado' : latestPayroll ? `Folha de ${profileCostLabel(latestPayroll.competence)}` : '')).join('');
     principal = `<p class="citizen-cost-unavailable">Sem total mensal no recorte (${esc(range)}).</p>
       <p class="citizen-cost-period">${ownOffice ? 'Em nenhum mês as três partes foram identificadas juntas.' : esc(senateCostReason('sem_lotacao_propria')) + ': remuneração e equipe não identificadas.'} Cada parte aparece com os próprios meses.</p>`;
   }
-  return `<section class="card hero citizen-answer citizen-cost-answer" data-profile-answer="expenses">
-    <h2 class="h">Quanto custa?</h2>
-    <span class="k">Senado · despesas identificadas do mandato</span>
+  return `<article class="card profile-cost-breakdown" data-profile-cost-house="senado">
+    <span class="k">Despesas identificadas · Senado</span>
     ${principal}
     <div class="citizen-cost-parts">${rows}</div>
-    <p class="citizen-cost-note">Remuneração bruta do(a) senador(a) e da equipe comissionada do gabinete na folha do Senado, mais a cota parlamentar. Não compare com o custo de deputados(as): o Senado e a Câmara não publicam as mesmas partes. Folha suplementar (13º, férias), auxílios e servidores efetivos lotados no gabinete ficam fora. Valores da época, sem correção pela inflação. Mês a mês, com as lacunas e os motivos, em “Ver mais”.</p>
-  </section>`;
+    <div class="profile-card-links"><button type="button" class="more" data-profile-open="expenses">Como calculamos e ver mês a mês →</button><button type="button" class="more" data-profile-open="sources">Fontes e datas →</button></div>
+  </article>`;
 }
 
 function senateCostDetails(cost, profileRecord) {
@@ -139,6 +148,7 @@ function senateCostDetails(cost, profileRecord) {
   const years = [...new Set(months.map(month => month.period.slice(0, 4)))].reverse();
   const rows = years.map(year => `<details class="citizen-cost-year" data-cost-year="${year}"><summary>${year}</summary>${months.filter(month => month.period.startsWith(year)).reverse().map(monthCard).join('')}</details>`).join('');
   return `<section class="citizen-detail-part citizen-cost-details"><h3 class="k">Despesas identificadas mês a mês · Senado</h3>
+    <p class="muted">Remuneração bruta do(a) senador(a) e da equipe comissionada do gabinete na folha do Senado, mais a cota parlamentar. Não compare com o custo de deputados(as): o Senado e a Câmara não publicam as mesmas partes. Folha suplementar (13º, férias), auxílios e servidores efetivos lotados no gabinete ficam fora. Valores da época, sem correção pela inflação.</p>
     <p class="muted">Remuneração: a linha de senador(a) da folha normal no gabinete com o nome da pessoa, no arquivo mensal de remuneração do Senado, que não traz nome nem identificador; a ligação é pelo nome do gabinete, conferida. Equipe: soma bruta dos comissionados desse gabinete. Cota: notas de reembolso do mês. Mês em exercício segundo o histórico de exercício do Senado${exerciseUrl ? ` (<a href="${esc(exerciseUrl)}" target="_blank" rel="noopener">conferir ↗</a>)` : ''}. Sem dado não é zero: cada lacuna diz o motivo.</p>
     ${rows ? `<div class="citizen-cost-months">${rows}</div>` : '<p class="muted">Sem meses no recorte.</p>'}
   </section>`;

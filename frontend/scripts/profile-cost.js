@@ -12,10 +12,10 @@ const profileCostLabel = period => `${PROFILE_COST_SHORT[Number(period.slice(5))
 const PROFILE_COST_MONTHS = Object.fromEntries([...PROFILE_COST_PERIODS].map(period => [period, profileCostLabel(period)]));
 const PROFILE_COST_RANGE = `${profileCostLabel(PROFILE_COST_START)}–${profileCostLabel(PROFILE_COST_END)}`;
 const PROFILE_COST_PARTS = [
-  ['remuneration', 'Salário bruto', 'Página de remuneração'],
-  ['allowances', 'Auxílios', 'Página de remuneração'],
-  ['quota', 'Cota parlamentar', 'Notas da cota'],
   ['office', 'Verba do gabinete', 'Verba do gabinete'],
+  ['remuneration', 'Salário bruto', 'Página de remuneração'],
+  ['quota', 'Cota parlamentar', 'Notas da cota'],
+  ['allowances', 'Auxílios', 'Página de remuneração'],
 ];
 
 function profileCostInteger(value) {
@@ -132,6 +132,23 @@ function profileCostChristmasLine(cost) {
   return `<p class="citizen-cost-extra">13º salário ${esc(when)}: <b class="mono">${esc(value)}</b> <span>(fora da média)</span></p>`;
 }
 
+/* Número de destaque arredondado para mil; o valor exato fica logo abaixo. */
+function profileCostShort(cents) {
+  if (!profileCostInteger(cents)) return '—';
+  const amount = cents / 100;
+  return amount >= 1000 ? `R$ ${Math.round(amount / 1000).toLocaleString('pt-BR')} mil`
+    : `R$ ${Math.round(amount).toLocaleString('pt-BR')}`;
+}
+function profileCostStackedComposition(parts, totalCents, labels) {
+  if (!profileCostInteger(totalCents) || totalCents <= 0 || !Array.isArray(parts) || !Array.isArray(labels) || parts.length !== labels.length) return '';
+  const descriptions = parts.map((value, index) => `${labels[index]}: ${profileCostMoney(value) || 'Sem dado'}`);
+  const segments = parts.map((value, index) => {
+    if (!profileCostInteger(value) || value <= 0) return '';
+    const width = Math.min(100, value / totalCents * 100).toFixed(2);
+    return `<i style="width:${width}%;background:var(--cat${index + 1})"></i>`;
+  }).join('');
+  return `<div class="profile-cost-stack" role="img" aria-label="${esc(descriptions.join('; '))}">${segments}</div>`;
+}
 function profileCostAnswer(cost) {
   const used = profileCostPeriods(cost?.usedMonths);
   const amount = profileCostMoney(cost?.monthlyAverageCents);
@@ -144,7 +161,9 @@ function profileCostAnswer(cost) {
     const values = PROFILE_COST_PARTS.map(([key]) => partOf(key).usedMonthsAverageCents);
     const scale = Math.max(0, ...values.filter(profileCostInteger));
     rows = PROFILE_COST_PARTS.map((entry, index) => profileCostPartRow(entry, partOf(entry[0]), values[index], scale, '', cost?.id)).join('');
-    principal = `<div class="citizen-cost-main"><span>Custa em média</span><b class="mono">${esc(amount)}</b><span>por mês</span></div>
+    principal = `<div class="profile-cost-total"><span>Custa em média</span><b class="mono">${esc(profileCostShort(cost.monthlyAverageCents))}</b><span>por mês</span></div>
+      <p class="citizen-cost-exact">Valor exato: <span class="mono">${esc(amount)}</span> por mês</p>
+      ${profileCostStackedComposition(values, cost.monthlyAverageCents, PROFILE_COST_PARTS.map(([, label]) => label))}
       <p class="citizen-cost-period">${esc(profileCostMonthList(used))} em exercício</p>`;
   } else if (profileCostAllOutside(cost)) {
     principal = '<p class="citizen-cost-unavailable">Não estava no mandato entre fevereiro de 2023 e julho de 2026.</p>';
@@ -158,14 +177,12 @@ function profileCostAnswer(cost) {
     principal = `<p class="citizen-cost-unavailable">Sem média mensal para o mandato (${PROFILE_COST_RANGE}).</p>
       <p class="citizen-cost-period">Em nenhum mês do mandato as quatro partes abaixo foram publicadas juntas. Veja cada parte com seus próprios meses.</p>`;
   }
-  return `<section class="card hero citizen-answer citizen-cost-answer" data-profile-answer="expenses">
-    <h2 class="h">Quanto custa?</h2>
-    <span class="k">Câmara · mandato 2023–2027</span>
+  return `<article class="card profile-cost-breakdown" data-profile-cost-house="camara">
+    <span class="k">Média por mês · Câmara · mandato 2023–2027</span>
     ${principal}
     ${rows ? `<div class="citizen-cost-parts">${rows}</div>` : ''}
-    ${profileCostChristmasLine(cost)}
-    ${rows ? `<p class="citizen-cost-note">Soma salário bruto, auxílios, cota parlamentar e verba do gabinete. Fichas de senadores(as) mostram as despesas do Senado à parte, com partes diferentes; os números não são comparáveis. Valores da época, sem correção pela inflação.${profileCostGapNote(cost)} Fora da conta: encargos do gabinete e apartamento funcional. Detalhes e fontes de cada mês em “Ver mais”.</p>` : ''}
-  </section>`;
+    <div class="profile-card-links"><button type="button" class="more" data-profile-open="expenses">Como calculamos e ver mês a mês →</button><button type="button" class="more" data-profile-open="sources">Fontes e datas →</button></div>
+  </article>`;
 }
 
 const PROFILE_COST_GAP_LABELS = { office: 'a verba do gabinete' };
@@ -260,6 +277,8 @@ function profileCostDetails(cost) {
   const inventory = inventoryMonths.length
     ? `<p class="muted citizen-cost-footnote">Nota: em ${esc(profileCostMonthList(inventoryMonths, { count: false }))}, o inventário mensal da Câmara lista folhas complementares sem identificar a qual deputado(a) pertencem. A média usa o que a página individual de remuneração publica para esta pessoa.</p>` : '';
   return `<section class="citizen-detail-part citizen-cost-details"><h3 class="k">Custo do mandato mês a mês · ${PROFILE_COST_RANGE}</h3>
+    ${profileCostChristmasLine(cost)}
+    <p class="citizen-cost-note">Soma salário bruto, auxílios, cota parlamentar e verba do gabinete. Fichas de senadores(as) mostram as despesas do Senado à parte, com partes diferentes; os números não são comparáveis. Valores da época, sem correção pela inflação.${profileCostGapNote(cost)} Fora da conta: encargos do gabinete e apartamento funcional. Detalhes e fontes de cada mês em “Ver mais”.</p>
     <p class="muted">Como calculamos: em cada mês em exercício, somamos a remuneração bruta de todas as tabelas da página individual (normal, complementares), os auxílios dessa mesma página, a cota parlamentar sem o complemento de moradia e a verba do gabinete. A média usa só os meses com as quatro partes publicadas; meses parciais não são estimados para o mês inteiro. Se a Câmara não publicou uma parte para ninguém naquele mês, o mês entra com essa parte vazia e a média dela usa os outros meses. O 13º fica à parte. Diárias e vantagens indenizatórias não entram. Valores da época, sem correção pela inflação, arredondados para baixo ao centavo.</p>
     ${complement}
     ${rows ? `<div class="citizen-cost-months">${rows}</div>` : '<p class="muted">Sem detalhes mensais disponíveis.</p>'}

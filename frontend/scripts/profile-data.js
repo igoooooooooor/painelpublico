@@ -35,6 +35,49 @@ function profileProjectGroup(item) {
       || !profileProjectConsulted(item)) return null;
   return situation.grupo;
 }
+function profileProjectStats(profile) {
+  const projects = profile?.projects;
+  const items = Array.isArray(projects?.items) ? projects.items.filter(item => item && typeof item === 'object') : [];
+  const total = projects?.status === 'imported' && Number.isInteger(projects.total) && projects.total >= 0 ? projects.total : null;
+  const groups = items.map(profileProjectGroup);
+  const confirmed = groups.filter(Boolean).length;
+  const consulted = items.filter(profileProjectConsulted).length;
+  const laws = groups.filter(group => group === 'lei').length;
+  const amendments = groups.filter(group => group === 'emenda').length;
+  const unclassified = items.length - confirmed;
+  const count = total !== null ? total : items.length ? items.length : null;
+  const partialSituationCoverage = confirmed > 0 && (unclassified > 0 || total !== null && total !== items.length);
+  const status = partialSituationCoverage
+    ? `${laws ? `${laws} ${laws === 1 ? 'lei confirmada' : 'leis confirmadas'} · situação parcial` : 'situação parcial'}${amendments ? ` · ${amendments} ${amendments === 1 ? 'emenda' : 'emendas'}` : ''}`
+    : confirmed
+      ? `${laws} ${laws === 1 ? 'virou' : 'viraram'} lei${amendments ? ` · ${amendments} ${amendments === 1 ? 'emenda' : 'emendas'}` : ''}`
+      : consulted ? 'situação consultada · classificação não confirmada' : 'situação não consultada';
+  const collection = projects?.status === 'partial' ? 'cobertura parcial'
+    : projects?.status === 'unavailable' ? 'consulta indisponível' : null;
+  const countLabel = count === null ? 'total não confirmado' : `${count} ${count === 1 ? 'projeto' : 'projetos'}`;
+  return { projects, items, total, count, countLabel, status, collection, groups, confirmed, consulted, laws, amendments, unclassified };
+}
+function profileProjectsCard(value) {
+  const profile = value && typeof value === 'object' ? value : profileData(value);
+  const stats = profileProjectStats(profile);
+  const { projects, items, count, countLabel, status, collection } = stats;
+  const period = profileSectionPeriod(projects);
+  const statusLine = collection ? `${status} · ${collection}` : status;
+  const detail = projects?.detail ? `<p class="muted">${esc(datesInTextBR(projects.detail))}</p>` : '';
+  const source = profileSource(projects, 'Fonte dos projetos');
+  const body = profile.loading
+    ? (typeof skel === 'function' ? skel('linhas', 2) : '<p class="muted">Carregando projetos…</p>')
+    : `<p class="profile-project-count">${count === null ? `<b class="profile-project-unknown">${esc(countLabel)}</b>` : `<b class="mono">${count}</b><small>${count === 1 ? 'projeto no recorte' : 'projetos no recorte'}</small>`}${period ? `<small>${esc(period)}</small>` : ''}</p>
+      ${profile.person?.role === 'senador' ? '<p class="muted">Recorte: PL, PLP e PEC apresentados no período consultado.</p>' : ''}
+      <p class="profile-project-status">${esc(statusLine)}</p>
+      ${stats.unclassified ? `<p class="muted">${stats.unclassified} ${stats.unclassified === 1 ? 'projeto sem' : 'projetos sem'} grupo de situação confirmado; a descrição da fonte permanece nos detalhes.</p>` : ''}
+      ${!items.length && count === null ? `<p class="muted">${projects?.status === 'partial' || projects?.status === 'unavailable' ? 'Consulta incompleta ou indisponível; o total não está confirmado.' : 'Projetos ainda não importados para este perfil.'}</p>` : ''}
+      ${detail}${source}`;
+  return `<article class="card profile-work-card profile-project-card">
+    <span class="k">Projetos apresentados</span>${body}
+    <button type="button" class="more" data-profile-open="projects">Ver projetos →</button>
+  </article>`;
+}
 function profileProjectFilter(button) {
   const filter = button?.dataset?.projectFilter || button?.getAttribute?.('data-project-filter');
   const profile = button?.dataset?.projectProfile || button?.getAttribute?.('data-project-profile');
@@ -366,20 +409,19 @@ function profileSectionsHTML(value, slots = {}) {
     ['Endereço do gabinete', contactInfo?.endereco],
   ];
   const networks = (contactInfo?.redes || []).filter(network => profileSafeUrl(network.url));
-  const projects = profile.projects, items = Array.isArray(projects?.items) ? projects.items.filter(item => item && typeof item === 'object') : [];
-  const total = projects?.status === 'imported' && Number.isInteger(projects.total) && projects.total >= 0 ? projects.total : null;
-  const projectCount = total !== null ? total : items.length ? items.length : null;
-  const confirmedProjectGroups = items.map(profileProjectGroup);
-  const confirmedProjectCount = confirmedProjectGroups.filter(Boolean).length;
-  const consultedProjectCount = items.filter(profileProjectConsulted).length;
-  const confirmedLawCount = confirmedProjectGroups.filter(group => group === 'lei').length;
-  const confirmedAmendmentCount = confirmedProjectGroups.filter(group => group === 'emenda').length;
-  const unclassifiedProjectCount = items.length - confirmedProjectCount;
+  const projectStats = profileProjectStats(profile);
+  const projects = projectStats.projects, items = projectStats.items, total = projectStats.total;
+  const projectCount = projectStats.count;
+  const confirmedProjectGroups = projectStats.groups;
+  const confirmedProjectCount = projectStats.confirmed;
+  const consultedProjectCount = projectStats.consulted;
+  const confirmedLawCount = projectStats.laws;
+  const confirmedAmendmentCount = projectStats.amendments;
+  const unclassifiedProjectCount = projectStats.unclassified;
   const projectTotalMatchesItems = total === null || total === items.length;
   const partialSituationCoverage = confirmedProjectCount > 0
     && (unclassifiedProjectCount > 0 || !projectTotalMatchesItems);
-  const projectCountLabel = projectCount === null ? 'total não confirmado'
-    : `${projectCount} ${projectCount === 1 ? 'projeto' : 'projetos'}`;
+  const projectCountLabel = projectStats.countLabel;
   const projectPeriod = profileSectionPeriod(projects);
   const amendmentLabel = confirmedAmendmentCount
     ? ` · ${confirmedAmendmentCount} ${confirmedAmendmentCount === 1 ? 'emenda' : 'emendas'}` : '';

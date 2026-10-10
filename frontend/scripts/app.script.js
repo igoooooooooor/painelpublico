@@ -166,7 +166,21 @@ function navigateToView(view, keep) {
   state.view = view; render(); syncLocation(); window.scrollTo(0, 0);
 }
 function navigateBack() { const h = navigationHistory.pop() || { view: state.view === 'vote' ? 'votes' : 'home', y: 0 }; Object.assign(state, { view: h.view, deputyId: h.deputyId, voteId: h.voteId, politicianId: h.politicianId }); render(); syncLocation('replace'); window.scrollTo(0, h.y || 0); }
-const rerender = () => { const y = window.scrollY; render(); window.scrollTo(0, y); };
+// A ficha chega pela API: guardamos a âncora até a seção existir no DOM.
+let pendingProfileAnchor = null;
+function scrollToProfileAnchor(fromLocation = false) {
+  if (fromLocation) pendingProfileAnchor = typeof location !== 'undefined' ? location.hash : null;
+  if (state.view !== 'profile' || !/^#profile-(cost|work|alerts)$/.test(pendingProfileAnchor || '')) {
+    pendingProfileAnchor = null;
+    return false;
+  }
+  const target = document.getElementById(pendingProfileAnchor.slice(1));
+  if (!target) return false;
+  target.scrollIntoView({ block: 'start', behavior: 'instant' });
+  pendingProfileAnchor = null;
+  return true;
+}
+const rerender = () => { const y = window.scrollY; render(); if (!scrollToProfileAnchor()) window.scrollTo(0, y); };
 
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-copy],[data-go],[data-deputy],[data-quiz],[data-vote],[data-back],[data-summary-retry],[data-city-select],[data-city-search],[data-city-search-submit],[data-city-retry-search],[data-city-retry-detail],[data-scoreboard-page],[data-scoreboard-retry],[data-scoreboard-more]');
@@ -227,7 +241,8 @@ document.addEventListener('click', event => { if (event.target.closest('[data-th
 applyLocation();
 render();
 syncLocation('replace');
+scrollToProfileAnchor(true);
 syncThemeToggles();
 if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
-  window.addEventListener('popstate', () => { applyLocation(); render(); window.scrollTo(0, 0); });
+  window.addEventListener('popstate', () => { applyLocation(); render(); if (!scrollToProfileAnchor(true)) window.scrollTo(0, 0); });
 }

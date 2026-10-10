@@ -202,6 +202,14 @@ function alertYearEndNote(a) {
 }
 function alertCard(a, opts = {}) {
   const [cls, label] = alertKind(a), p = a.pessoa || {};
+  const year = Number(a.ano || String(a.periodo || '').slice(0, 4));
+  const profileSourceUrl = opts.profile && String(p.id || '').startsWith('camara:') && Number.isInteger(year)
+    ? `https://www.camara.leg.br/deputados/${String(p.id).slice(7)}?ano=${year}` : citizenSourceUrl(p);
+  const profileSupplierHistory = opts.profile && a.tipo === 'fornecedor'
+    ? `<details class="citizen-peak-history profile-supplier-history"><summary>Ver histórico e notas →</summary>
+      <p>${esc(citizenName(a.fornecedor || 'Fornecedor não informado'))} recebeu ${Number.isFinite(a.valor) ? formatCitizenAmount(a.valor) : 'valor não informado'} de ${Number.isFinite(a.total) ? formatCitizenAmount(a.total) : 'total não informado'} nas notas observadas de ${esc(a.periodoObservado || String(a.periodo || year))}${Number.isInteger(a.mesesComNotas) ? `, em ${a.mesesComNotas} ${a.mesesComNotas === 1 ? 'mês' : 'meses'} com notas` : ''}.${a.parcial ? ' O período é parcial; o ano ainda pode receber notas.' : ''}</p>
+      ${Array.isArray(a.fontesOficiais) && a.fontesOficiais.length ? `<p>Detalhamento oficial: ${a.fontesOficiais.map(source => `<a href="${esc(source.url)}" target="_blank" rel="noopener">${esc(source.label)} ↗</a>`).join(', ')}.${a.notaDocumento ? ` ${esc(a.notaDocumento)}` : ''}</p>` : profileSourceUrl ? `<a href="${esc(profileSourceUrl)}" target="_blank" rel="noopener">Ver as notas na fonte oficial ↗</a>` : ''}
+    </details>` : '';
   return `<article class="card citizen-alert" data-kind="${cls}">
     <div class="citizen-top"><span class="citizen-chip ${cls}"><i></i>${label}</span><span class="muted">${a.tipo === 'pico' ? SHORT_MONTHS[a.mes] + '/' + String(a.periodo).slice(0, 4) : 'em ' + String(a.periodo).slice(0, 4)}</span></div>
     ${opts.semPessoa ? '' : `<button type="button" class="citizen-who" data-politician="${esc(p.id)}">${citizenAvatar(p, 40)}<span><b>${esc(citizenName(p.name))}</b><small>${citizenRoleDescription(p)}</small></span></button>`}
@@ -210,9 +218,10 @@ function alertCard(a, opts = {}) {
     ${alertStatement(a)}
     ${a.contexto?.frase ? `<p class="citizen-context">${esc(a.contexto.frase)}</p>` : ''}
     ${alertYearEndNote(a)}
+    ${profileSupplierHistory}
     <details class="citizen-why"><summary>Por que apareceu aqui?</summary><p>${alertExplanation(a)}</p><p class="muted">A regra mostra variação de gasto ou concentração em fornecedor; não mede irregularidade. Confira as notas na fonte oficial.</p></details>
     ${Array.isArray(a.fontesOficiais) && a.fontesOficiais.length ? `<p class="muted">Detalhamento oficial: ${a.fontesOficiais.map(f => `<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.label)} ↗</a>`).join(', ')}.${a.notaDocumento ? ` ${esc(a.notaDocumento)}` : ''}</p>` : ''}
-    <div class="citizen-actions">${opts.semPessoa ? '' : `<button type="button" class="fchip" data-politician="${esc(p.id)}">Ver a ficha</button>`}${citizenSourceUrl(p) ? `<a class="fchip" href="${esc(citizenSourceUrl(p))}" target="_blank" rel="noopener">Conferir na fonte ↗</a>` : ''}</div>
+    <div class="citizen-actions">${opts.semPessoa ? '' : `<button type="button" class="fchip" data-politician="${esc(p.id)}">Ver a ficha</button>`}${profileSourceUrl ? `<a class="fchip" href="${esc(profileSourceUrl)}" target="_blank" rel="noopener">Conferir na fonte ↗</a>` : ''}</div>
   </article>`;
 }
 
@@ -507,6 +516,228 @@ function profileAlertAnswer(alerts, coverage) {
     : `<p class="citizen-empty">Dados insuficientes para avaliar</p>${state.html || '<p class="muted">Não há notas do mandato desta pessoa para as regras de alerta.</p>'}`}
   </section>`;
 }
+function profileSummaryCards(shared, profileRecord, alerts, hasExpenseData) {
+  const person = shared.person, senate = person.role === 'senador';
+  let costLabel = 'Quanto custa?', costValue = 'Sem dados', costNote = 'Ausência de dado não significa gasto zero.';
+  if (!senate && shared.cost) {
+    if (Array.isArray(shared.cost.usedMonths) && shared.cost.usedMonths.length > 0
+        && profileCostInteger(shared.cost.monthlyAverageCents)) {
+      costValue = profileCostShort(shared.cost.monthlyAverageCents);
+      costNote = `${profileCostMonthList(shared.cost.usedMonths)} · Câmara`;
+    } else {
+      costValue = 'Sem total';
+      costNote = 'Não há mês com as quatro partes identificadas.';
+    }
+  } else if (senate && shared.senateCost) {
+    const figures = senateCostFigures(shared.senateCost, profileRecord);
+    if (figures.total && profileCostInteger(figures.total.cents)) {
+      costValue = profileCostShort(figures.total.cents);
+      costLabel = 'Quanto custa?';
+      costNote = `${figures.total.months} ${figures.total.months === 1 ? 'mês' : 'meses'} com as três partes · Senado`;
+    } else {
+      costValue = 'Sem total';
+      costLabel = 'Quanto custa?';
+      costNote = 'Não há mês com as três partes identificadas.';
+    }
+  } else if (hasExpenseData && Number.isFinite(profileRecord.mediaMensal)) {
+    costValue = profileCostShort(Math.round(profileRecord.mediaMensal * 100));
+    costLabel = 'Quanto custa?';
+    costNote = 'Só reembolsos observados; não é o custo total do mandato.';
+  }
+
+  const presence = shared.presence, registered = senate ? shared.registeredPresence : null;
+  let presenceValue = 'Sem registro', presenceNote = 'Ausência de dado não significa zero presença.';
+  if (presence && presence.dias > 0) {
+    const percent = Math.round(presence.presente / presence.dias * 100);
+    const unit = senate && profileSenateSource('presenca')?.unit === 'sessoes' ? 'sessões' : 'dias';
+    presenceValue = `${percent}%`;
+    presenceNote = `${presence.presente} de ${presence.dias} ${unit}`;
+  } else if (registered && Number.isInteger(registered.presente)) {
+    presenceValue = `${registered.presente}`;
+    presenceNote = 'sessões com presença registrada; faltas não apuradas.';
+  }
+
+  const coverage = alertCoverageState(profileRecord.coberturaAlertas);
+  const alertValue = alerts.length ? String(alerts.length) : coverage.evaluated ? '0' : '—';
+  const alertNote = alerts.length ? `Mais recente: ${alerts[0].titulo || 'Título não informado'}. Alertas não indicam irregularidade.`
+    : coverage.evaluated ? 'Nenhum alerta nos períodos avaliados; não indicam irregularidade.' : 'Dados insuficientes para avaliar; alertas não indicam irregularidade.';
+  const hasMonthlyCost = costValue !== 'Sem dados' && costValue !== 'Sem total';
+  return `<nav class="profile-summary-grid" aria-label="Resumo da ficha">
+    <a class="card profile-summary-card" href="#profile-cost"><span class="k">${esc(costLabel)}</span><b class="mono">${esc(costValue)}${hasMonthlyCost ? '<small>/mês</small>' : ''}</b><small>${esc(costNote)}</small></a>
+    <a class="card profile-summary-card" href="#profile-work"><span class="k">Aparece para trabalhar?</span><b class="mono">${esc(presenceValue)}${percentForSummary(shared) !== null ? '<small>presença</small>' : ''}</b><small>${esc(presenceNote)}</small></a>
+    <a class="card profile-summary-card profile-summary-alert" href="#profile-alerts"><span class="k">Algum alerta na cota?</span><b class="mono">${esc(alertValue)}<small>${alerts.length || coverage.evaluated ? (alerts.length === 1 ? ' alerta' : ' alertas') : ''}</small></b><small>${esc(alertNote)}</small></a>
+  </nav>`;
+}
+function percentForSummary(shared) {
+  return shared.presence?.dias > 0 ? Math.round(shared.presence.presente / shared.presence.dias * 100) : null;
+}
+function profileCostPanel(shared, profileRecord, hasExpenseData) {
+  const person = shared.person;
+  const hasChamberTotal = person.role === 'deputado' && shared.cost
+    && Array.isArray(shared.cost.usedMonths) && shared.cost.usedMonths.length > 0
+    && profileCostInteger(shared.cost.monthlyAverageCents);
+  let composition = person.role === 'deputado' && shared.cost ? profileCostAnswer(shared.cost)
+    : person.role === 'senador' && shared.senateCost ? senateCostAnswer(shared.senateCost, profileRecord) : '';
+  if (!composition) {
+    const monthly = hasExpenseData && Number.isFinite(profileRecord.mediaMensal) ? profileRecord.mediaMensal : null;
+    const period = profileRecord.periodo || {};
+    const monthlyValue = monthly === null ? null : Math.round(monthly * 100);
+    composition = `<article class="card profile-cost-breakdown" data-profile-cost-house="${person.role === 'senador' ? 'senado' : 'camara'}">
+      <span class="k">${person.role === 'senador' ? 'Cota parlamentar · Senado' : 'Cota parlamentar · Câmara'}</span>
+      ${monthlyValue === null ? '<p class="profile-cost-total-missing">Sem dados da cota neste recorte.</p><p class="muted">Ausência de dado não significa gasto zero.</p>' : `<div class="profile-cost-total"><span>Média por mês</span><b class="mono">${esc(profileCostShort(monthlyValue))}</b></div><p class="citizen-cost-exact">Valor exato: <span class="mono">${esc(brl(monthly, 2))}</span> por mês</p><p class="citizen-cost-period">${esc(citizenQuotaPeriod(period.inicio, period.fim) || 'período não informado')}${Number.isInteger(period.meses) ? `, ${period.meses} ${period.meses === 1 ? 'mês' : 'meses'} com notas` : ''}.</p>`}
+      <p class="muted">Este valor reúne apenas reembolsos observados. ${person.role === 'senador' ? 'Remuneração e equipe do Senado não estão identificadas para esta ficha.' : 'Salário, auxílios e verba de gabinete não estão compostos nesta ficha.'} Não compare com o custo do mandato de outra Casa.</p>
+      <div class="profile-card-links"><button type="button" class="more" data-profile-open="expenses">Ver detalhes da cota →</button><button type="button" class="more" data-profile-open="sources">Fontes e datas →</button></div>
+    </article>`;
+  }
+  return `<section class="profile-area" id="profile-cost" aria-labelledby="profile-cost-title">
+    <header class="profile-area-head"><h2 class="h" id="profile-cost-title">Quanto custa?</h2>
+      <p>${person.role === 'senador' ? 'O Senado publica partes diferentes das da Câmara; os valores não são comparáveis.'
+        : hasChamberTotal ? 'A média soma as quatro partes nos meses em que todas foram publicadas. Valores da época, sem correção pela inflação.'
+          : shared.cost ? 'A média exige as quatro partes no mesmo mês. Sem um mês completo, não há total mensal.'
+            : 'Só a cota parlamentar observada está disponível; não é o custo total mensal do mandato.'}</p>
+    </header>
+    <div class="profile-cost-grid">${composition}${profileQuotaPanel(profileRecord, shared, hasExpenseData)}</div>
+  </section>`;
+}
+function profileQuotaPanel(profileRecord, shared, hasExpenseData) {
+  if (!hasExpenseData) return `<article class="card profile-quota-panel"><span class="k">Onde gastou a cota</span>
+    <p class="citizen-empty">Sem despesas observadas</p><p class="muted">Ausência de dado não significa gasto zero.</p></article>`;
+  const categories = Array.isArray(profileRecord.categorias) ? profileRecord.categorias.slice(0, 6) : [];
+  const suppliers = Array.isArray(profileRecord.fornecedores) ? profileRecord.fornecedores.slice(0, 3) : [];
+  const total = Number.isFinite(profileRecord.total) ? profileRecord.total : null;
+  const categoryScale = Math.max(0, ...categories.map(item => Number.isFinite(item.valor) ? item.valor : 0));
+  const categoryRows = categories.length ? categories.map(item => {
+    const value = Number.isFinite(item.valor) ? item.valor : null;
+    const width = value !== null && categoryScale > 0 && value > 0 ? Math.min(100, value / categoryScale * 100) : 0;
+    const share = value !== null && total > 0 ? `${Math.round(value / total * 100)}% do total` : '';
+    return `<div class="profile-quota-row"><div><span>${esc(item.nome)}</span><b class="mono">${value === null ? 'Sem dado' : esc(profileQuotaAmount(value))}</b></div>
+      ${value !== null && categoryScale > 0 ? `<span class="profile-quota-bar" aria-hidden="true"><i style="width:${width.toFixed(1)}%"></i></span>` : ''}<small>${share}</small></div>`;
+  }).join('') : '<p class="muted">Categorias não disponíveis neste recorte.</p>';
+  const supplierRows = suppliers.length ? suppliers.map(item => {
+    const value = Number.isFinite(item.valor) ? item.valor : null;
+    const share = value !== null && total > 0 ? `${Math.round(value / total * 100)}% do total` : '';
+    return `<div class="profile-quota-row profile-supplier-row"><div><span>${esc(citizenName(item.name || 'Fornecedor não informado'))}</span><b class="mono">${value === null ? 'Sem dado' : esc(profileQuotaAmount(value))}</b></div>
+      <small>${[share, Number.isInteger(item.notas) ? `${item.notas} ${item.notas === 1 ? 'nota' : 'notas'}` : 'contagem de notas não informada'].filter(Boolean).join(' · ')}</small></div>`;
+  }).join('') : '<p class="muted">Fornecedores não disponíveis neste recorte.</p>';
+  const count = Number.isInteger(profileRecord.expenseCount) ? profileRecord.expenseCount : null;
+  const period = profileRecord.periodo ? citizenQuotaPeriod(profileRecord.periodo.inicio, profileRecord.periodo.fim) : '';
+  const csv = `/api/c/gastos.csv?id=${encodeURIComponent(shared.id)}`;
+  return `<article class="card profile-quota-panel">
+    <div class="profile-quota-head"><span class="k">Onde gastou a cota</span><b class="mono">${total === null ? 'Total não informado' : `${esc(formatCitizenAmount(total))} no mandato`}</b></div>
+    <p class="muted">${count === null ? 'Quantidade de notas não informada.' : `${count.toLocaleString('pt-BR')} ${count === 1 ? 'nota observada' : 'notas observadas'}`}${period ? ` · ${esc(period)}` : ''}</p>
+    <div class="profile-quota-group"><h3 class="k">Categorias · até 6</h3>${categoryRows}</div>
+    <div class="profile-quota-group"><h3 class="k">Maiores fornecedores · até 3</h3>${supplierRows}</div>
+    <div class="profile-card-links"><a class="more" href="${esc(csv)}" download>${count === null ? 'Baixar notas da cota (CSV)' : `Baixar todas as ${count.toLocaleString('pt-BR')} notas (CSV)`} →</a><button type="button" class="more" data-profile-open="expenses">Ver meses e notas →</button></div>
+  </article>`;
+}
+function profileQuotaAmount(value) { return value === 0 ? 'R$ 0' : formatCitizenAmount(value); }
+function profileAttendanceCard(shared) {
+  const person = shared.person, senate = person.role === 'senador';
+  if (senate) profileSenateEnsure();
+  const presence = shared.presence, registered = senate ? shared.registeredPresence : null;
+  const unit = senate && profileSenateSource('presenca')?.unit === 'sessoes' ? 'sessões' : 'dias';
+  const period = senate ? senatePresencePeriodLabel() : presence ? citizenQuotaPeriod(presence.inicio, presence.fim) : 'mandato';
+  const percent = presence && presence.dias > 0 ? Math.round(presence.presente / presence.dias * 100) : null;
+  const attendance = presence && presence.dias > 0 ? `<div class="profile-attendance-count"><b class="mono">${presence.presente}</b><span>de ${presence.dias} ${unit}</span></div><strong class="profile-attendance-percent">${percent}%</strong>
+      ${attendanceBar(presence)}<div class="legend"><span><i></i>Presente ${presence.presente}</span><span><i class="justified"></i>Justificada ${presence.justificadas}</span><span><i class="absent"></i>Falta ${presence.falta}</span></div>
+      ${averagePresenceLabel(shared, senate)}` : registered ? `<div class="profile-attendance-count"><b class="mono">${registered.presente}</b><span>sessões com presença registrada</span></div>
+      <p class="muted">${Number.isInteger(registered.sessoesEmExercicio) ? `De ${registered.sessoesEmExercicio} sessões deliberativas com lista validada em que estava em exercício.` : `${profileSenateSource('presenca')?.sessionCount || ''} listas consultadas.`} Faltas e justificativas não apuradas; sem percentual de assiduidade.</p>`
+      : '<p class="citizen-empty">Sem registro de presença</p><p class="muted">Ausência de dado não significa zero presença.</p>';
+  let source = '';
+  if (senate) source = profileSource(profileSenateSource('presenca'), 'Fonte do Diário do Senado');
+  else {
+    const personNumber = String(person.id).split(':')[1];
+    source = /^\d+$/.test(personNumber || '')
+      ? `<span class="src"><a href="https://www.camara.leg.br/deputados/${personNumber}/presenca-plenario/2026" target="_blank" rel="noopener">Fonte da presença na Câmara ↗</a></span>` : '';
+  }
+  return `<article class="card profile-work-card profile-presence-card">
+    <span class="k">Presença no Plenário · ${esc(period || 'mandato')}</span>${attendance}${source}
+    ${senate ? `<button type="button" class="more" data-profile-open="sources">Cobertura e fontes →</button>` : '<button type="button" class="more" data-go="attendance">Presença de todos(as) →</button>'}
+  </article>`;
+}
+function averagePresenceLabel(shared, senate) {
+  const rows = profilePresenceRows(senate ? 'senado' : 'camara');
+  if (!rows.length) return '';
+  const average = Math.round(rows.reduce((sum, row) => sum + row.presente / row.dias, 0) / rows.length * 100);
+  const percent = shared.presence?.dias > 0 ? Math.round(shared.presence.presente / shared.presence.dias * 100) : null;
+  if (percent === null) return '';
+  return `<p class="profile-attendance-average">${percent === average ? 'Perto da' : percent > average ? 'Acima da' : 'Abaixo da'} média ${senate ? 'do' : 'da'} ${senate ? 'Senado' : 'Câmara'}: ${average}%.</p>`;
+}
+function profileRecentVotesCard(shared) {
+  const senate = shared.person.role === 'senador';
+  if (senate) profileSenateEnsure();
+  const all = [...votesForPerson(shared.id)].sort((first, second) => String(second.vote?.data || '').localeCompare(String(first.vote?.data || '')));
+  const latest = all.slice(0, 4);
+  const items = latest.map(({ vote, recordedVote }) => {
+    const label = recordedVote === null ? 'Sem registro importado'
+      : vote.secreta ? 'Presença registrada · voto secreto'
+        : senate && recordedVote === 'Presente' ? 'Presença registrada · sem voto' : String(recordedVote).trim();
+    const visibleLabel = label ? label[0].toLocaleUpperCase('pt-BR') + label.slice(1) : '';
+    const date = typeof vote.data === 'string' && /^\d{4}-\d{2}-\d{2}/.test(vote.data) ? dateBR(vote.data) : '';
+    return profileVoteButton(vote, `<b>${esc(visibleLabel)}</b><span>${esc(vote.titulo)}</span>${date ? `<small>${esc(date)}</small>` : ''}`, 'profile-vote-preview-item');
+  }).join('');
+  const empty = senate && profileSenateSource('votacoes')?.status === 'unavailable'
+    ? 'Dados de votações nominais do Senado indisponíveis neste recorte.'
+    : `Sem registros individuais ${senate ? 'nas votações nominais do Senado' : 'nas votações do Placar'} neste recorte.`;
+  return `<article class="card profile-work-card profile-votes-card">
+    <span class="k">Como votou · ${senate ? 'Senado' : 'Placar'}</span>
+    ${latest.length ? `<div class="profile-vote-preview">${items}</div>` : `<p class="muted">${empty}</p>`}
+    <button type="button" class="more" data-profile-open="votes">Ver votações →</button>
+  </article>`;
+}
+function profileAlertChronology(alerts) {
+  return [...(Array.isArray(alerts) ? alerts : [])].map((alert, index) => ({ alert, index })).sort((first, second) => {
+    const point = alert => {
+      const match = /^(\d{4})(?:-(\d{2}))?/.exec(String(alert.periodo || ''));
+      const year = Number(alert.ano || match?.[1] || 0);
+      const month = alert.tipo === 'pico' ? Number(alert.mes || match?.[2] || 0) : match?.[2] ? Number(match[2]) : 13;
+      return year * 100 + month;
+    };
+    return point(second.alert) - point(first.alert) || first.index - second.index;
+  }).map(item => item.alert);
+}
+function profileAlertsSection(alerts, coverage) {
+  const ordered = profileAlertChronology(alerts);
+  const coverageState = alertCoverageState(coverage);
+  const intro = ordered.length
+    ? `${ordered.length} ${ordered.length === 1 ? 'alerta' : 'alertas'} na cota do mandato, dos mais recentes aos mais antigos. As regras detectam variação de gasto ou concentração; não indicam irregularidade.`
+    : coverageState.evaluated ? 'Nenhum alerta nos períodos avaliados pelas regras da cota.' : 'Dados insuficientes para avaliar os alertas da cota.';
+  return `<section class="profile-area" id="profile-alerts" aria-labelledby="profile-alerts-title">
+    <header class="profile-area-head"><h2 class="h" id="profile-alerts-title">Alertas na cota</h2><p>${esc(intro)}</p></header>
+    <div class="profile-alert-method"><h3 class="k">As duas regras</h3>${ALERT_RULES_HTML}<p>Alertas são registros para conferir, não conclusões de irregularidade. O prazo de apresentação das notas e a cobertura são considerados por Casa e por período.</p><button type="button" class="more" data-go="alerts">Metodologia completa →</button></div>
+    ${ordered.length ? `<div class="profile-alert-list">${ordered.map(alert => alertCard(alert, { semPessoa: true, profile: true })).join('')}</div>` : ''}
+    ${profileCoverageSection(coverage, ordered)}
+
+  </section>`;
+}
+function profileCoverageSection(coverage, alerts = []) {
+  const rows = Array.isArray(coverage) ? coverage.filter(row => Number.isInteger(Number(row?.ano))) : [];
+  if (!rows.length) return `<section class="card profile-alert-coverage"><h3 class="k">O que foi avaliado</h3><p class="muted">Sem cobertura de avaliação importada para este perfil.</p></section>`;
+  const grouped = new Map();
+  rows.forEach(row => {
+    const year = Number(row.ano), group = grouped.get(year) || [];
+    group.push(row); grouped.set(year, group);
+  });
+  const orderedAlerts = profileAlertChronology(alerts);
+  const years = [...grouped.keys()].sort((a, b) => b - a).map(year => {
+    const rules = grouped.get(year).map(row => {
+      const matchesAlert = orderedAlerts.some(alert => Number(alert.ano || String(alert.periodo || '').slice(0, 4)) === year
+        && (row.regra === 'pico' ? alert.tipo === 'pico' : alert.tipo === 'fornecedor'));
+      if (row.regra === 'fornecedor') return `<li><b>Concentração em fornecedor:</b> ${row.avaliado
+        ? `avaliada nas notas de ${esc(row.periodo || year)}${row.parcial ? ' · período parcial, o ano ainda pode receber notas' : ''}${matchesAlert ? ' · alerta registrado' : ' · nenhum alerta encontrado'}`
+        : `não avaliada em ${year} (sem total positivo de notas)`}.</li>`;
+      const evaluated = Array.isArray(row.avaliados) ? row.avaliados : [];
+      const marked = Array.isArray(row.marcados) ? row.marcados : [];
+      const skipped = (Array.isArray(row.naoAvaliados) ? row.naoAvaliados : []).filter(item => item.meses?.length)
+        .map(item => `${alertMonthList(item.meses, year)}: ${esc(item.texto)}`).join('; ');
+      return `<li><b>Mês acima da referência:</b> ${evaluated.length ? `avaliados ${alertMonthList(evaluated, year)}` : `nenhum mês de ${year} pôde ser avaliado`}${marked.length ? ` · alertas em ${alertMonthList(marked, year)}` : matchesAlert ? ' · alerta registrado' : evaluated.length ? ' · nenhum alerta nos meses avaliados' : ''}${skipped ? `. Não avaliados: ${skipped}` : ''}.</li>`;
+    }).join('');
+    const collected = [...new Set(grouped.get(year).map(row => row.coletadoEm).filter(value => typeof value === 'string'))].sort().at(-1);
+    const ruleVersion = [...new Set(grouped.get(year).map(row => row.regraVersao).filter(Boolean))].join(', ');
+    return `<article class="profile-alert-coverage-year"><h4>${year}</h4><ul>${rules}</ul>${collected || ruleVersion ? `<small>${[ruleVersion ? `Regra ${ruleVersion}` : '', collected ? `coleta de ${dateBR(collected)}` : ''].filter(Boolean).join(' · ')}</small>` : ''}</article>`;
+  }).join('');
+  return `<section class="card profile-alert-coverage"><h3 class="k">O que foi avaliado</h3><div class="profile-alert-coverage-years">${years}</div></section>`;
+}
 const PROFILE_VOTE_LIMIT = new Map();
 function profileVoteDetails(shared) {
   const senate = shared.person.role === 'senador';
@@ -525,6 +756,18 @@ function profileVoteDetails(shared) {
     ${source ? `${profileSource(source, 'Fonte das votações do Senado')}${source.detail ? `<p class="muted">${esc(datesInTextBR(source.detail))}</p>` : ''}` : ''}
     ${presence?.motivos?.length ? `<p class="note">Justificativas de presença: ${presence.motivos.map(([reason, count]) => `${esc(reason.toLowerCase())} (${count})`).join(', ')}.</p>` : ''}
     ${senate ? '' : '<button type="button" class="more" data-go="attendance">Ver a presença de todos(as)</button>'}`;
+}
+function profileWorkDetails(shared) {
+  const html = profileWorkAnswer(shared);
+  const content = html.replace(/^<section class="card citizen-answer" data-profile-answer="work">/, '')
+    .replace(/<\/section>$/, '').replace('<h2 class="h">Trabalha?</h2>', '<h3 class="k">Presença e participação</h3>');
+  return `<div class="profile-work-details" data-profile-work-details>${content}</div>`;
+}
+function profileExpenseAnswerDetails(profileRecord, person, hasExpenseData) {
+  const html = profileExpenseAnswer(profileRecord, person, hasExpenseData)
+    .replace(' data-profile-answer="expenses"', '')
+    .replace('class="card hero citizen-answer"', 'class="profile-expense-fallback-details"');
+  return `<div data-profile-expense-details>${html}</div>`;
 }
 /* Senadores eleitos em 2018 começaram o mandato antes do recorte comum de fev/2023. */
 function profileMandateStartNote(mandate) {
@@ -610,10 +853,6 @@ function profileView() {
   if (!f) return back + skel('ficha-respostas');
   const shared = profileData(f.pessoa || id), person = shared.person, election = profileElection(shared);
   const hasExpenseData = f.hasExpenseData === undefined ? f.total != null : Boolean(f.hasExpenseData);
-  // Sem composição do custo (ficha fora do recorte), a ficha mantém o cartão da cota.
-  const costAnswer = person.role === 'deputado' && shared.cost ? profileCostAnswer(shared.cost)
-    : person.role === 'senador' && shared.senateCost ? senateCostAnswer(shared.senateCost, f)
-    : profileExpenseAnswer(f, person, hasExpenseData);
   const alerts = f.alertas || [], isChamberPerson = person.role === 'deputado';
   const personNumber = String(person.id).split(':')[1];
   const presenceUrl = isChamberPerson && /^\d+$/.test(personNumber || '') ? `https://www.camara.leg.br/deputados/${personNumber}/presenca-plenario/2026` : null;
@@ -628,18 +867,23 @@ function profileView() {
     ${citizenSourceUrl(person) ? `<a class="fchip" href="${esc(citizenSourceUrl(person))}" target="_blank" rel="noopener">Página oficial ↗</a>` : ''}
     ${hasExpenseData ? `<a class="fchip" href="${esc('/api/c/gastos.csv?id=' + encodeURIComponent(person.id))}" download>Baixar todas as notas (CSV)</a>` : ''}
     ${hasExpenseData ? '<p class="muted">O arquivo traz uma nota por linha, desde fev/2023. Nas notas de 2023 a 2025, a coluna Documento fica vazia; o link da nota continua.</p>' : ''}`;
-  return `${back}
-    <div class="citizen-profile-head"><div class="profile">${citizenAvatar(person, 64)}<div><h1 class="n">${esc(citizenName(person.name))}</h1><span class="muted">${citizenRoleDescription(person)}</span>${profileTenureLabel(shared)}${election?.summary ? `<span class="pill citizen-election" data-tone="${esc(election.tone)}"><i></i>${esc(election.summary)}</span>` : ''}</div></div>
-      <button type="button" class="fchip" data-cmp-start="${esc(shared.id)}">Comparar com outro(a) →</button></div>
-    ${shareActionsHTML(profileShareCard(f, shared, alerts, hasExpenseData))}
-    <span class="k citizen-answer-label">Em 3 respostas</span>
-    <div class="citizen-answers">${costAnswer}${profileWorkAnswer(shared)}${profileAlertAnswer(alerts, f.coberturaAlertas)}</div>
-    <h2 class="h">Ver mais</h2>
+  return `<div class="citizen-profile-view">${back}
+    <header class="citizen-profile-head"><div class="profile">${citizenAvatar(person, 88)}<div class="citizen-profile-id"><h1 class="n">${esc(citizenName(person.name))}</h1><span class="citizen-profile-role">${citizenRoleDescription(person)}</span><span class="citizen-profile-tags">${profileTenureLabel(shared)}${election?.summary ? `<span class="pill citizen-election" data-tone="${esc(election.tone)}"><i></i>${esc(election.summary)}</span>` : ''}</span></div></div>
+      <div class="citizen-profile-actions"><button type="button" class="fchip citizen-profile-compare" data-cmp-start="${esc(shared.id)}">Comparar com outro(a) →</button>${shareActionsHTML(profileShareCard(f, shared, alerts, hasExpenseData))}</div></header>
+    ${profileSummaryCards(shared, f, alerts, hasExpenseData)}
+    ${profileCostPanel(shared, f, hasExpenseData)}
+    <section class="profile-area" id="profile-work" aria-labelledby="profile-work-title">
+      <header class="profile-area-head"><h2 class="h" id="profile-work-title">Como trabalha</h2><p>Presença, projetos apresentados e os votos individuais disponíveis neste recorte.</p></header>
+      <div class="profile-work-grid">${profileAttendanceCard(shared)}${profileProjectsCard(shared)}${profileRecentVotesCard(shared)}</div>
+    </section>
+    ${profileAlertsSection(alerts, f.coberturaAlertas)}
+    <section class="profile-detail-area" aria-labelledby="profile-more-title"><h2 class="h" id="profile-more-title">Mais detalhes</h2>
     ${profileSectionsHTML(person, {
-      expenses: (person.role === 'deputado' ? profileCostDetails(shared.cost) : person.role === 'senador' ? senateCostDetails(shared.senateCost, f) : '') + profileExpenseDetails(f, hasExpenseData, person.role === 'deputado' ? shared.cost : null, shared.mandate),
-      alerts: (alerts.length ? alerts.map(alert => alertCard(alert, { semPessoa: true })).join('') : '') + `<p class="muted">${alerts.length ? 'O que as regras avaliaram:' : alertCoverageState(f.coberturaAlertas).evaluated ? 'Nenhum alerta nos meses avaliados:' : 'Dados insuficientes para avaliar:'}</p>${alertCoverageState(f.coberturaAlertas).html || '<p class="muted">Sem notas do mandato desta pessoa.</p>'}${ALERT_RULES_HTML}<button type="button" class="more" data-go="alerts">Como funcionam os alertas →</button>`,
-      votes: profileVoteDetails(shared), sources: sourcesHtml,
-    })}`;
+      expenses: (!shared.cost && !shared.senateCost ? profileExpenseAnswerDetails(f, person, hasExpenseData) : '') + (person.role === 'deputado' ? profileCostDetails(shared.cost) : person.role === 'senador' ? senateCostDetails(shared.senateCost, f) : '') + profileExpenseDetails(f, hasExpenseData, person.role === 'deputado' ? shared.cost : null, shared.mandate),
+      alerts: `<p>Os cartões e a cobertura aparecem acima. Esta seção mantém as regras e os limites metodológicos junto dos demais detalhes.</p>${ALERT_RULES_HTML}<p class="muted">Alertas indicam registros para conferir, não conclusões de irregularidade. A falta de alerta não significa gasto baixo nem regular.</p><button type="button" class="more" data-go="alerts">Metodologia completa →</button>`,
+      votes: `${profileWorkDetails(shared)}${profileVoteDetails(shared)}`, sources: sourcesHtml,
+    })}</section>
+  </div>`;
 }
 
 /* ---------- Eventos ---------- */
