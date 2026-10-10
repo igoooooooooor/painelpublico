@@ -236,11 +236,15 @@ def listing(params=None, path=None):
     query = fold(str(params.get('q', ''))[:120]).strip()
     type_filter = str(params.get('type', '')).upper()
     theme_filter = str(params.get('theme', ''))
+    # "not_approved" reúne rejeição explícita e falta de aprovação; valores desconhecidos são ignorados.
+    result_filter = {'approved': {'approved'}, 'not_approved': {'rejected', 'not_approved'}}.get(
+        str(params.get('result', '')))
     filtered = [item for item in all_items
                 if (not query or all(word in fold(f"{item['title']} {item['summary']} {item['proposition']}")
                                      for word in query.split()))
                 and (not type_filter or item['type'] == type_filter)
-                and (not theme_filter or any(theme['id'] == theme_filter for theme in item['themes']))]
+                and (not theme_filter or any(theme['id'] == theme_filter for theme in item['themes']))
+                and (not result_filter or item['outcome'] in result_filter)]
     total = len(filtered)
     page_count = (total + page_size - 1) // page_size
     offset = (page - 1) * page_size

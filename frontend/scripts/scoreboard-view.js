@@ -1,6 +1,6 @@
 /* Catálogo amplo de votações: carregado só ao entrar no Placar. */
 const scoreboardState = {
-  list: { status: 'idle', data: null, error: null, available: null, query: '', type: '', theme: '', page: 1, pageSize: 12 },
+  list: { status: 'idle', data: null, error: null, available: null, query: '', type: '', theme: '', result: '', page: 1, pageSize: 12 },
   listSequence: 0,
   detail: { id: null, status: 'idle', data: null, error: null, visibleParticipants: 20 },
   detailSequence: 0,
@@ -79,6 +79,7 @@ function scoreboardListUrl() {
   if (list.query) query.set('q', list.query);
   if (list.type) query.set('type', list.type);
   if (list.theme) query.set('theme', list.theme);
+  if (list.result) query.set('result', list.result);
   query.set('page', String(list.page));
   query.set('pageSize', String(list.pageSize));
   return `/api/c/votes?${query.toString()}`;
@@ -105,7 +106,9 @@ function scoreboardLegacyVisibleVotes() {
   return scoreboardLegacyVotes().filter(vote => {
     const type = scoreboardVoteType({ proposition: vote.proposicao });
     const haystack = [vote.proposicao, vote.titulo, vote.curto].filter(Boolean).join(' ').toLocaleLowerCase('pt-BR');
-    return (!query || haystack.includes(query)) && (!list.type || list.type === type) && !list.theme;
+    const result = vote.aprovada === true ? 'approved' : vote.aprovada === false ? 'not_approved' : '';
+    return (!query || haystack.includes(query)) && (!list.type || list.type === type) && !list.theme
+      && (!list.result || list.result === result);
   });
 }
 function scoreboardCoverage(data) {
@@ -153,6 +156,7 @@ function scoreboardCoverage(data) {
     <details><summary>Como montamos este Placar e seus limites</summary>
       <p><strong>De onde vêm as votações.</strong> A Câmara publicou ${inventory} registros de votação ${timeframe}. Muitos são etapas do mesmo projeto: urgência, emendas, destaques, procedimentos e redação final. Ficamos só com as votações do texto principal de PL, PLP e PEC no Plenário. Votações simbólicas (sem registro de voto de cada deputado) e outros tipos de proposta ficam de fora.</p>
       <p><strong>Como escolhemos.</strong> Dos ${inventory} registros, ${candidates} pareciam votações do texto principal. ${review}: ${excluded}${published} entraram no Placar. ${pendingNote}</p>
+      <p><strong>Por que quase todas foram aprovadas.</strong> Antes da votação final, um projeto passa por comissões, pedidos de urgência e acordos entre os partidos. Quando não tem apoio, ele costuma parar no caminho: fica na comissão, é retirado da pauta ou é derrotado numa votação simbólica, sem registro do voto de cada deputado. As derrotas também aparecem em votações de emendas, destaques e requerimentos, que não entram aqui. Por isso, quando o texto principal chega a uma votação nominal, ele quase sempre é aprovado. Use o filtro “Rejeitadas” para ver as exceções.</p>
       <p><strong>Limites.</strong></p>
       <ul>${gaps}
         <li>O Placar ainda não cobre todo o mandato${year ? `, só ${year}` : ''}.</li>
@@ -213,6 +217,7 @@ function scoreboardFilterForm(data, fallback) {
   const types = Array.isArray(filters.types) ? filters.types : ['PL', 'PLP', 'PEC'];
   const themes = Array.isArray(filters.themes) ? filters.themes : [];
   const list = scoreboardState.list;
+  const resultOption = (value, label, title) => `<label class="scoreboard-chip"${title ? ` title="${scoreboardEscape(title)}"` : ''}><input type="radio" name="result" value="${scoreboardEscape(value)}"${list.result === value ? ' checked' : ''}><span>${scoreboardEscape(label)}</span></label>`;
   const typeOption = (value, label, title) => `<label class="scoreboard-chip"${title ? ` title="${scoreboardEscape(title)}"` : ''}><input type="radio" name="type" value="${scoreboardEscape(value)}"${list.type === value ? ' checked' : ''}><span>${scoreboardEscape(label)}</span></label>`;
   return `<form class="card wide scoreboard-filters" data-scoreboard-filter-form aria-label="Filtros do Placar">
     <div class="scoreboard-search-row">
@@ -221,6 +226,7 @@ function scoreboardFilterForm(data, fallback) {
     </div>
     <div class="scoreboard-filter-row">
       <fieldset class="scoreboard-chips"><legend class="sr-only">Tipo de proposta</legend>${typeOption('', 'Todos os tipos', '')}${types.map(type => typeOption(type, type, SCOREBOARD_TYPE_NAMES[type] || '')).join('')}</fieldset>
+      <fieldset class="scoreboard-chips"><legend class="sr-only">Resultado da votação</legend>${resultOption('', 'Todos os resultados', '')}${resultOption('approved', 'Aprovadas', 'Texto aprovado nesta votação')}${resultOption('not_approved', 'Rejeitadas', 'Texto rejeitado ou não aprovado nesta votação')}</fieldset>
       ${fallback ? `<p class="muted">Temas oficiais ficam disponíveis quando o catálogo ampliado está ativo.</p>` : `<label class="scoreboard-theme"><span class="sr-only">Tema oficial</span><select name="theme" data-scoreboard-autosubmit><option value="">Todos os temas</option>${themes.map(theme => `<option value="${scoreboardEscape(theme.id)}"${list.theme === theme.id ? ' selected' : ''}>${scoreboardEscape(theme.label)}</option>`).join('')}</select></label>`}
       <p class="scoreboard-legend" aria-hidden="true"><span><i class="vote-yes"></i>Sim</span><span><i class="vote-no"></i>Não</span><span><i class="vote-abstention"></i>Abstenção</span></p>
     </div>
@@ -454,6 +460,7 @@ function scoreboardApplyFilters(values) {
   list.query = scoreboardText(values?.query).slice(0, 120);
   list.type = ['PL', 'PLP', 'PEC'].includes(values?.type) ? values.type : '';
   list.theme = scoreboardText(values?.theme).slice(0, 80);
+  list.result = ['approved', 'not_approved'].includes(values?.result) ? values.result : '';
   list.page = 1;
   return scoreboardLoadList();
 }
@@ -485,11 +492,11 @@ if (typeof document !== 'undefined' && document.addEventListener) {
     if (!form) return;
     event.preventDefault();
     const formData = new FormData(form);
-    scoreboardApplyFilters({ query: formData.get('q'), type: formData.get('type'), theme: formData.get('theme') });
+    scoreboardApplyFilters({ query: formData.get('q'), type: formData.get('type'), theme: formData.get('theme'), result: formData.get('result') });
   });
   document.addEventListener('change', event => {
     const field = event.target;
-    if (!field?.matches?.('[data-scoreboard-filter-form] input[name="type"], [data-scoreboard-autosubmit]')) return;
+    if (!field?.matches?.('[data-scoreboard-filter-form] input[name="type"], [data-scoreboard-filter-form] input[name="result"], [data-scoreboard-autosubmit]')) return;
     const form = field.closest('[data-scoreboard-filter-form]');
     if (form?.requestSubmit) form.requestSubmit();
   });

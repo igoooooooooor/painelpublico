@@ -73,6 +73,15 @@ class VoteSnapshotTests(unittest.TestCase):
         self.assertEqual(page['items'][0]['id'], '2599999-01')
         self.assertEqual(page['pageCount'], 2)
 
+    def test_listing_filters_by_result_grouping_rejected_and_not_approved(self):
+        items = [vote('1-1', '2026-01-01', 'Aprovado', 'PL 1/2026'), vote('2-1', '2026-01-02', 'Rejeitado', 'PL 2/2026'),
+                 vote('3-1', '2026-01-03', 'Não aprovado', 'PL 3/2026')]
+        items[1]['outcome'], items[2]['outcome'] = 'rejected', 'not_approved'
+        self.write(self.index, snapshot(items))
+        self.assertEqual([i['id'] for i in votes.listing({'result': 'approved'}, self.index)['items']], ['1-1'])
+        self.assertEqual([i['id'] for i in votes.listing({'result': 'not_approved'}, self.index)['items']], ['3-1', '2-1'])
+        self.assertEqual(votes.listing({'result': 'qualquer'}, self.index)['total'], 3)
+
     def test_listing_returns_available_filters_and_stable_date_order(self):
         result = votes.listing({}, self.index)
         self.assertEqual([item['id'] for item in result['items']], ['2600001-02', '2611313-31', '2599999-01'])

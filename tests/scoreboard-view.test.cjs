@@ -238,3 +238,18 @@ test('opening a deputy from a vote keeps the vote as the back destination', () =
   assert.equal(vm.runInContext('state.view', context), 'vote');
   assert.equal(vm.runInContext('state.voteId', context), '2233802-424');
 });
+
+test('the result filter is sent to the API and the coverage explains why rejections are rare', async () => {
+  const calls = [];
+  const { context, app } = loadApp({ fetch: async url => { calls.push(url); return jsonResponse(listPayload({ items: [item('1-1', 'Decisão')] })); } });
+  vm.runInContext("navigateToView('votes')", context);
+  await flush();
+  assert.match(app.innerHTML, /name="result" value="not_approved"/);
+  assert.match(app.innerHTML, /Por que quase todas foram aprovadas/);
+  vm.runInContext("scoreboardApplyFilters({ query: '', type: '', theme: '', result: 'not_approved' })", context);
+  await flush();
+  assert.ok(calls.at(-1).includes('result=not_approved'));
+  vm.runInContext("scoreboardApplyFilters({ result: 'invalido' })", context);
+  await flush();
+  assert.ok(!calls.at(-1).includes('result='));
+});
