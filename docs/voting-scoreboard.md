@@ -500,8 +500,48 @@ Duas votações começaram no painel e foram convertidas em simbólicas pelo pre
 individuais nelas. O PL 4.685/2012 aparece nas notas com o número do Senado
 (PL 6.606/2019). Evidências em `data/reviews/scoreboard-audit-2024/`, fora do Git.
 
+## Levantamento de 2025
+
+| Observação | Quantidade |
+| --- | ---: |
+| Registros retornados pela API | 2.017, em 21 páginas |
+| Candidatos (PL 167, PLP 21, PEC 12) | 200 |
+| Simbólicos pelo portal da sessão | 84 |
+| Simbólicos pelas notas taquigráficas | 40 |
+| Parte do texto (bloco rejeitado do substitutivo do Senado) | 1 |
+| Nominais confirmados por relatório oficial | 75 (um com resultado rejeitado) |
+| Pendentes | 0 |
+| Registros individuais nas 75 decisões | 31.452 |
+| Sem link seguro ao texto exato | 9 |
+| Sem contagem publicada de abstenções | 40 |
+| Sem tema oficial | 0 |
+
+A conferência de omissões cruzou 310 eventos (121 deliberativos), 1.208 votações
+vinculadas e 838 proposições, sem votação ausente nem falha; o alerta por tipo não
+apontou registros. Em 2025 o portal da sessão deixou de listar muitas votações, e
+as notas taquigráficas decidiram 40 casos (todos simbólicos, com trecho conferido).
+
+Relatórios de votação unânime não publicam a linha “Não”; o leitor deriva zero
+apenas quando o “Total da Votação” é igual ao número de Sim. Quando o placar vem
+do relatório e os votos individuais vêm da API, a conciliação nominal confirma o
+vínculo e o limite de cinco minutos do horário de registro deixa de ser exigido.
+Sem link de texto ficaram os 2º turnos de PEC, os dois turnos das PECs 39/2022 e
+169/2019 (parecer da comissão não conferido), o substitutivo ao PL 2.664/2003 (sem
+documento) e a subemenda ao PL 1.087/2025, com duas versões registradas na sessão.
+
+Votações de **emendas do Senado** (não de substitutivo), como as do PL 2.159/2021,
+continuam fora do recorte v1, como nos anos anteriores.
+
+## Índice conjunto de 2023 a 2026
+
+Gerado em 10/10/2026 com quatro `--through`: 187 decisões, 705 candidatos, 518
+exclusões, 0 pendências, 6.533 registros da API; período de 1º/2/2023 a 9/10/2026.
+Lacunas: 19 sem texto, 83 sem abstenções, 1 sem tema. O índice anterior, só de
+2026, ficou em `data/reviews/scoreboard-audit-2025/chamber-votes.index-2026-only.json`.
+
 ## Próxima etapa
 
-Inventariar 2025 com `--audit-omissions`, revisar os candidatos com o mesmo
-critério e só então gerar o índice conjunto de 2023 a 2026. A
+Decidir se votações de emendas do Senado entram no recorte; integrar à `main` e
+publicar código e dados em etapa separada. Atualizar 2026 com novas coletas
+(`--through` posterior a 9/10) seguindo o mesmo fluxo. A
 conferência não autoriza declarar cobertura completa do ano ou do mandato.

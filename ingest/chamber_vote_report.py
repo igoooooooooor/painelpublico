@@ -168,6 +168,10 @@ def _tally(rows):
         if len(row) != 2 or row[1]['tag'] != 'td' or row[0]['colspan'] != 1 or row[1]['colspan'] != 1:
             raise CollectionError(f'Linha de contagem inválida para {label}.')
         values[field] = _parse_count(row[1]['text'], label)
+    # Unanimous reports omit the “Não” row; zero follows only when the published total equals “Sim”.
+    if 'no' not in values and 'yes' in values and values.get('total') == values['yes'] \
+            and values.get('abstention') in (None, 0):
+        values['no'] = 0
     for field, label in [('yes', 'Sim'), ('no', 'Não'), ('total', 'Total da Votação')]:
         if field not in values:
             raise CollectionError(f'Contagem de {label} ausente no relatório.')

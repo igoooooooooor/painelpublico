@@ -219,8 +219,11 @@ def build_catalogue(inventory, reviews, *, root=ROOT, collect=False, refresh=Fal
             if (report['date'] != entry['date']
                     or report['proposition'] != {'type': voted_type, 'number': voted_number, 'year': voted_year}
                     or ('rollCall' in (tally_source, participants_source)
-                        and (report['object'] != review.get('reportObject')
-                             or not _registered_after_report(report['endedAt'], record.get('dataHoraRegistro'))))):
+                        and report['object'] != review.get('reportObject'))
+                    # Sem lista da API, só o horário liga o relatório à votação; com ela, a
+                    # conciliação nominal abaixo confirma o vínculo.
+                    or (participants_source == 'rollCall'
+                        and not _registered_after_report(report['endedAt'], record.get('dataHoraRegistro')))):
                 raise CollectionError(f'{identifier}: relatório não corresponde à data, objeto e horário da decisão.')
         if voted is not None:
             if voted_id == target['id']:

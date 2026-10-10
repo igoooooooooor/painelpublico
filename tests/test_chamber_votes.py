@@ -406,6 +406,15 @@ class ChamberVotesTests(unittest.TestCase):
                     with self.assertRaisesRegex(CollectionError, "diverge do relatório"):
                         build()
 
+    def test_report_tally_with_api_voters_does_not_need_the_registration_window(self):
+        vote_detail = detail(description="Aprovado o Projeto de Lei nº 1, de 2026. Sim: 2; Total: 3.")
+        vote_detail["dataHoraRegistro"] = f"{THROUGH}T12:40:00"
+        api = FakeChamberAPI(vote_detail=vote_detail, report=roll_call_html(), participant_pages={1: {"dados": [
+            participant(1, "Sim"), participant(2, "Sim"), participant(3, "Não")], "links": []}})
+        reviewed = {**review(), "tallySource": "rollCall", "reportObject": "SUBEMENDA SUBSTITUTIVA"}
+        item = self.build([reviewed], api=api)[0]["items"][0]
+        self.assertEqual(item["tally"], {"yes": 2, "no": 1, "abstention": None, "total": 3})
+
     def test_report_fallback_requires_explicit_review_and_matching_decision(self):
         vote_detail = detail(description="Aprovada a Subemenda Substitutiva ao Projeto de Lei nº 1, de 2026.")
         vote_detail["dataHoraRegistro"] = f"{THROUGH}T12:10:20"

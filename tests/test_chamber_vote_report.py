@@ -86,6 +86,14 @@ class ChamberVoteReportTests(unittest.TestCase):
             report.parse_roll_call(fixture().replace('Encerramento da sessão:</strong> 20/05/2026 22:37',
                                                      'Encerramento da sessão:</strong> 20/05/2026 21:30'))
 
+    def test_unanimous_report_without_no_row_derives_zero_only_from_the_total(self):
+        source = (fixture(vote='Sim').replace('<tr><th>Não:</th><td>1</td></tr>', '')
+                  .replace('<tr><th>Sim:</th><td>2</td></tr>', '<tr><th>Sim:</th><td>3</td></tr>'))
+        parsed = report.parse_roll_call(source)
+        self.assertEqual(parsed['tally'], {'yes': 3, 'no': 0, 'abstention': None, 'total': 3})
+        with self.assertRaisesRegex(CollectionError, 'Contagem de Não ausente'):
+            report.parse_roll_call(fixture().replace('<tr><th>Não:</th><td>1</td></tr>', ''))
+
     def test_rejects_malformed_voter_rows_unknown_choices_and_duplicate_names(self):
         malformed = fixture(extra_row='<tr><td>Incomplete</td><td>SP</td></tr>')
         with self.assertRaises(CollectionError):
