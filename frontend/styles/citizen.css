@@ -976,6 +976,8 @@ body[data-view="home"] .citizen-alert { box-shadow: var(--shadow-raised); }
 .profile-presence-card .legend .justified { background: color-mix(in srgb, var(--muted) 55%, var(--surface)); }
 .profile-presence-card .legend .absent { background: var(--warn); }
 .profile-attendance-average, .profile-presence-card > .muted { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
+.profile-attendance-reasons { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
+.profile-attendance-reasons b { color: var(--ink); font-weight: 600; }
 .profile-presence-card .src { margin-top: auto; }
 .profile-project-count { display: flex; flex-direction: column; gap: 2px; margin: 0; }
 .profile-project-count > b { color: var(--ink); font-family: var(--f-data); font-size: 42px; line-height: 1; letter-spacing: -.04em; }

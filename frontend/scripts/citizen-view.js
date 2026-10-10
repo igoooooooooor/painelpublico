@@ -441,42 +441,6 @@ function profileExpenseAnswer(profileRecord, person, hasExpenseData) {
     : '<p class="muted">Nenhuma despesa de reembolso foi observada para este perfil no recorte importado. Ausência não significa gasto zero.</p>'}
   </section>`;
 }
-function profileWorkAnswer(shared) {
-  const head = '<section class="card citizen-answer" data-profile-answer="work"><h2 class="h">Trabalha?</h2>';
-  const senate = shared.person.role === 'senador', house = senate ? 'Senado' : 'Câmara';
-  if (senate) profileSenateEnsure();
-  if (senate && profileSenateLoading()) return `${head}${skel('linhas', 2)}</section>`;
-  const presence = shared.presence, rows = profilePresenceRows(senate ? 'senado' : 'camara');
-  const registeredPresence = senate ? shared.registeredPresence : null;
-  const unit = senate && profileSenateSource('presenca')?.unit === 'sessoes' ? 'sessões' : 'dias';
-  const averagePresence = rows.length ? Math.round(rows.reduce((sum, row) => sum + row.presente / row.dias, 0) / rows.length * 100) : null;
-  const presencePercent = presence ? Math.round(presence.presente / presence.dias * 100) : null;
-  const votes = votesForPerson(shared.id), knownVotes = votes.filter(record => record.recordedVote !== null);
-  const presenceOnlyCount = knownVotes.filter(record => ['Presente', 'Presidiu'].includes(record.recordedVote)).length;
-  const identifiedVotes = knownVotes.filter(record => senate ? ['Sim', 'Não', 'Abstenção', 'Obstrução', 'Não votou'].includes(record.recordedVote) : !['Presente', 'Presidiu'].includes(record.recordedVote));
-  const recordedVoteCount = identifiedVotes.filter(record => record.recordedVote !== 'Não votou').length;
-  const presencePeriod = !senate && presence ? citizenQuotaPeriod(presence.inicio, presence.fim) : '';
-  const voteSource = senate ? profileSenateSource('votacoes') : null;
-  const votePeriod = senate && typeof profileSectionPeriod === 'function' ? profileSectionPeriod(voteSource) : '';
-  return `${head}<span class="k">Presença no Plenário · ${senate ? senatePresencePeriodLabel() : presencePeriod || 'mandato'}</span>
-    ${presence ? `<div class="huge">${presencePercent}<small>%</small></div>
-      <p>${presence.presente} de ${presence.dias} ${unit}${averagePresence !== null ? ` · média ${senate ? 'do' : 'da'} ${house}: ${averagePresence}%` : ''}</p>
-      ${attendanceBar(presence)}
-      <div class="legend"><span><i style="background:var(--accent)"></i>Presente ${presence.presente}</span><span><i style="background:var(--muted);opacity:.55"></i>Justificada ${presence.justificadas}</span><span><i style="background:var(--warn)"></i>Falta ${presence.falta}</span></div>`
-      : registeredPresence ? `<div class="huge">${registeredPresence.presente}<small> sessões</small></div><p>Com presença registrada no Diário do Senado.</p>
-        <p class="muted">${Number.isInteger(registeredPresence.sessoesEmExercicio) ? `De ${registeredPresence.sessoesEmExercicio} sessões deliberativas com lista validada em que estava em exercício` : `${profileSenateSource('presenca')?.sessionCount || ''} listas de sessões consultadas`} (${esc(senatePresencePeriodLabel())}). Faltas e justificativas não apuradas; sem percentual de assiduidade.</p>`
-        : `<p class="citizen-empty">Presença ${senate ? 'do Senado ' : ''}sem registro importado.</p><p class="muted">Ausência de dado não significa zero presença.</p>`}
-    ${senate ? senateParticipationSummary(shared.participation) : ''}
-    <p class="citizen-vote-count">${senate && voteSource?.status === 'unavailable' ? 'Dados de votações nominais do Senado indisponíveis neste recorte.'
-      : identifiedVotes.length ? `${senate ? 'Voto identificado em' : 'Votou em'} <b>${recordedVoteCount} de ${senate ? knownVotes.length : votes.length}</b> ${senate ? `votações do Senado com registro individual${votePeriod ? ` · ${esc(votePeriod)}` : ''}` : 'votações do Placar'}`
-        : presenceOnlyCount || (senate && knownVotes.length) ? `Sem voto nominal identificado neste recorte${votePeriod ? ` · ${esc(votePeriod)}` : ''}.`
-          : `Sem registros individuais ${senate ? 'nas votações nominais do Senado' : 'nas votações do Placar'}${votePeriod ? ` · ${esc(votePeriod)}` : ''}.`}</p>
-    ${presenceOnlyCount ? `<p class="muted">${presenceOnlyCount} ${presenceOnlyCount === 1 ? 'registro só de presença ou presidência' : 'registros só de presença ou presidência'}.</p>` : ''}
-    ${senate ? '<p class="muted">Sem linha individual não significa falta. Atividade parlamentar e registro de presença não contam como voto.</p>' : ''}
-    ${senate && profileSenateSource('presenca')?.status !== 'imported' ? `<p class="muted">${registeredPresence ? 'Cobertura parcial de presença' : 'Presença indisponível para este perfil'}; veja Fontes e datas.</p>` : ''}
-    ${presence && averagePresence !== null ? `<span class="fchip citizen-verdict">${presencePercent === averagePresence ? 'Perto da média' : presencePercent > averagePresence ? 'Acima da média' : 'Abaixo da média'}</span>` : ''}
-  </section>`;
-}
 /* As duas regras de alerta, iguais para todos(as); detalhes na aba Alertas. */
 const ALERT_RULES_HTML = `<ul class="citizen-alert-rules">
     <li><b>Mês acima da referência:</b> um mês com gasto 1,75 vez maior que a mediana dos 12 meses anteriores da própria pessoa, com pelo menos R$ 10 mil de diferença e acima do gasto mensal típico dos(as) colegas. Só meses com o prazo de apresentação das notas encerrado; a avaliação começa em fev/2024.</li>
@@ -640,7 +604,7 @@ function profileAttendanceCard(shared) {
   const percent = presence && presence.dias > 0 ? Math.round(presence.presente / presence.dias * 100) : null;
   const attendance = presence && presence.dias > 0 ? `<div class="profile-attendance-count"><b class="mono">${presence.presente}</b><span>de ${presence.dias} ${unit}</span></div><strong class="profile-attendance-percent">${percent}%</strong>
       ${attendanceBar(presence)}<div class="legend"><span><i></i>Presente ${presence.presente}</span><span><i class="justified"></i>Justificada ${presence.justificadas}</span><span><i class="absent"></i>Falta ${presence.falta}</span></div>
-      ${averagePresenceLabel(shared, senate)}` : registered ? `<div class="profile-attendance-count"><b class="mono">${registered.presente}</b><span>sessões com presença registrada</span></div>
+      ${averagePresenceLabel(shared, senate)}${presenceReasonsHTML(presence)}` : registered ? `<div class="profile-attendance-count"><b class="mono">${registered.presente}</b><span>sessões com presença registrada</span></div>
       <p class="muted">${Number.isInteger(registered.sessoesEmExercicio) ? `De ${registered.sessoesEmExercicio} sessões deliberativas com lista validada em que estava em exercício.` : `${profileSenateSource('presenca')?.sessionCount || ''} listas consultadas.`} Faltas e justificativas não apuradas; sem percentual de assiduidade.</p>`
       : '<p class="citizen-empty">Sem registro de presença</p><p class="muted">Ausência de dado não significa zero presença.</p>';
   let source = '';
@@ -655,6 +619,12 @@ function profileAttendanceCard(shared) {
     ${senate ? `<button type="button" class="more" data-profile-open="sources">Cobertura e fontes →</button>` : '<button type="button" class="more" data-go="attendance">Presença de todos(as) →</button>'}
   </article>`;
 }
+/* Motivos publicados pela Câmara para os dias justificados, do mais frequente ao menos. */
+function presenceReasonsHTML(presence) {
+  const reasons = Array.isArray(presence?.motivos) ? presence.motivos.filter(([reason, count]) => reason && count > 0) : [];
+  if (!reasons.length) return '';
+  return `<p class="profile-attendance-reasons"><b>Justificativas:</b> ${reasons.map(([reason, count]) => `${esc(String(reason).toLowerCase())} (${count})`).join(', ')}.</p>`;
+}
 function averagePresenceLabel(shared, senate) {
   const rows = profilePresenceRows(senate ? 'senado' : 'camara');
   if (!rows.length) return '';
@@ -666,6 +636,7 @@ function averagePresenceLabel(shared, senate) {
 function profileRecentVotesCard(shared) {
   const senate = shared.person.role === 'senador';
   if (senate) profileSenateEnsure();
+  if (!senate && profileChamberVotesLoading(shared.id)) return `<article class="card profile-work-card profile-votes-card"><span class="k">Como votou · Placar</span>${skel('linhas', 3)}</article>`;
   const all = [...votesForPerson(shared.id)].sort((first, second) => String(second.vote?.data || '').localeCompare(String(first.vote?.data || '')));
   const latest = all.slice(0, 4);
   const items = latest.map(({ vote, recordedVote }) => {
@@ -739,29 +710,42 @@ function profileCoverageSection(coverage, alerts = []) {
   return `<section class="card profile-alert-coverage"><h3 class="k">O que foi avaliado</h3><div class="profile-alert-coverage-years">${years}</div></section>`;
 }
 const PROFILE_VOTE_LIMIT = new Map();
+const PROFILE_VOTE_PAGE = 10;
+/* Quantas votações têm voto identificado: fica em "Como votou", separado da presença. */
+function profileVoteCountHTML(shared) {
+  const senate = shared.person.role === 'senador';
+  if (senate) profileSenateEnsure();
+  if (senate ? profileSenateLoading() : profileChamberVotesLoading(shared.id)) return '';
+  const votes = votesForPerson(shared.id), knownVotes = votes.filter(record => record.recordedVote !== null);
+  const presenceOnlyCount = knownVotes.filter(record => ['Presente', 'Presidiu'].includes(record.recordedVote)).length;
+  const identifiedVotes = knownVotes.filter(record => senate ? ['Sim', 'Não', 'Abstenção', 'Obstrução', 'Não votou'].includes(record.recordedVote) : !['Presente', 'Presidiu'].includes(record.recordedVote));
+  const recordedVoteCount = identifiedVotes.filter(record => record.recordedVote !== 'Não votou').length;
+  const voteSource = senate ? profileSenateSource('votacoes') : null;
+  const votePeriod = senate && typeof profileSectionPeriod === 'function' ? profileSectionPeriod(voteSource) : '';
+  return `<p class="citizen-vote-count">${senate && voteSource?.status === 'unavailable' ? 'Dados de votações nominais do Senado indisponíveis neste recorte.'
+      : identifiedVotes.length ? `${senate ? 'Voto identificado em' : 'Votou em'} <b>${recordedVoteCount} de ${senate ? knownVotes.length : votes.length}</b> ${senate ? `votações do Senado com registro individual${votePeriod ? ` · ${esc(votePeriod)}` : ''}` : 'votações do Placar'}`
+        : presenceOnlyCount || (senate && knownVotes.length) ? `Sem voto nominal identificado neste recorte${votePeriod ? ` · ${esc(votePeriod)}` : ''}.`
+          : `Sem registros individuais ${senate ? 'nas votações nominais do Senado' : 'nas votações do Placar'}${votePeriod ? ` · ${esc(votePeriod)}` : ''}.`}</p>
+    ${presenceOnlyCount ? `<p class="muted">${presenceOnlyCount} ${presenceOnlyCount === 1 ? 'registro só de presença ou presidência' : 'registros só de presença ou presidência'}.</p>` : ''}
+    ${!senate && votes.length > knownVotes.length ? `<p class="muted">Em ${votes.length - knownVotes.length} ${votes.length - knownVotes.length === 1 ? 'votação não há registro' : 'votações não há registro'} individual na lista oficial: pode ser ausência, licença ou período fora do mandato. A fonte não diz qual.</p>` : ''}
+    ${senate ? `${senateParticipationSummary(shared.participation)}<p class="muted">Sem linha individual não significa falta. Atividade parlamentar e registro de presença não contam como voto.</p>` : ''}`;
+}
 function profileVoteDetails(shared) {
   const senate = shared.person.role === 'senador';
   if (senate) profileSenateEnsure();
-  if (senate && profileSenateLoading()) return skel('linhas', 3);
-  const votes = votesForPerson(shared.id), presence = shared.presence, limit = PROFILE_VOTE_LIMIT.get(shared.id) || 20;
+  if (senate ? profileSenateLoading() : profileChamberVotesLoading(shared.id)) return skel('linhas', 3);
+  const votes = votesForPerson(shared.id), limit = PROFILE_VOTE_LIMIT.get(shared.id) || PROFILE_VOTE_PAGE;
   const source = senate ? profileSenateSource('votacoes') : null;
   const votePeriod = senate ? profileSectionPeriod(source) || (source ? 'período não informado' : 'recorte indisponível') : '';
-  return `<span class="k">${senate ? `Votações nominais do Senado · ${esc(votePeriod)}` : 'Votações selecionadas do Placar'} · ${votes.length || 'sem registros'}</span>
+  return `<span class="k">${senate ? `Votações nominais do Senado · ${esc(votePeriod)}` : 'Votações do Placar · texto principal de PL, PLP e PEC desde fev/2023'} · ${votes.length || 'sem registros'}</span>
     ${votes.length ? `<div class="votes">${votes.slice(0, limit).map(({ vote, recordedVote }) => {
       const voteLabel = recordedVote == null ? 'Sem registro importado' : vote.secreta ? 'Presença registrada · voto secreto' : senate && recordedVote === 'Presente' ? 'Presença registrada · sem voto' : String(recordedVote).toLowerCase();
       return profileVoteButton(vote, `<b>${esc(voteLabel)}</b><span>${esc(vote.titulo)}</span>${senate ? `<small>${esc(dateBR(vote.data))} · fonte oficial ↗</small>` : ''}`);
-    }).join('')}</div>` : `<p class="muted">${senate ? 'Votos nominais do Senado ainda não disponíveis neste recorte.' : 'Nenhuma votação selecionada do Placar em 2026.'}</p>`}
+    }).join('')}</div>` : `<p class="muted">${senate ? 'Votos nominais do Senado ainda não disponíveis neste recorte.' : 'Votações do Placar indisponíveis no momento.'}</p>`}
     ${votes.length > limit ? `<button type="button" class="more" data-profile-votes-more="${esc(shared.id)}">Mostrar mais votações (${votes.length - limit})</button>` : ''}
     <p class="muted">O resumo conta votos identificados na fonte. ${senate ? 'Presença sem voto, atividade parlamentar, licenças e presidência não contam como voto nominal.' : 'Presença em voto secreto e quem presidiu aparecem à parte.'} Ausência de registro não significa que a pessoa não votou.</p>
     ${source ? `${profileSource(source, 'Fonte das votações do Senado')}${source.detail ? `<p class="muted">${esc(datesInTextBR(source.detail))}</p>` : ''}` : ''}
-    ${presence?.motivos?.length ? `<p class="note">Justificativas de presença: ${presence.motivos.map(([reason, count]) => `${esc(reason.toLowerCase())} (${count})`).join(', ')}.</p>` : ''}
-    ${senate ? '' : '<button type="button" class="more" data-go="attendance">Ver a presença de todos(as)</button>'}`;
-}
-function profileWorkDetails(shared) {
-  const html = profileWorkAnswer(shared);
-  const content = html.replace(/^<section class="card citizen-answer" data-profile-answer="work">/, '')
-    .replace(/<\/section>$/, '').replace('<h2 class="h">Trabalha?</h2>', '<h3 class="k">Presença e participação</h3>');
-  return `<div class="profile-work-details" data-profile-work-details>${content}</div>`;
+`;
 }
 function profileExpenseAnswerDetails(profileRecord, person, hasExpenseData) {
   const html = profileExpenseAnswer(profileRecord, person, hasExpenseData)
@@ -881,7 +865,7 @@ function profileView() {
     ${profileSectionsHTML(person, {
       expenses: (!shared.cost && !shared.senateCost ? profileExpenseAnswerDetails(f, person, hasExpenseData) : '') + (person.role === 'deputado' ? profileCostDetails(shared.cost) : person.role === 'senador' ? senateCostDetails(shared.senateCost, f) : '') + profileExpenseDetails(f, hasExpenseData, person.role === 'deputado' ? shared.cost : null, shared.mandate),
       alerts: `<p>Os cartões e a cobertura aparecem acima. Esta seção mantém as regras e os limites metodológicos junto dos demais detalhes.</p>${ALERT_RULES_HTML}<p class="muted">Alertas indicam registros para conferir, não conclusões de irregularidade. A falta de alerta não significa gasto baixo nem regular.</p><button type="button" class="more" data-go="alerts">Metodologia completa →</button>`,
-      votes: `${profileWorkDetails(shared)}${profileVoteDetails(shared)}`, sources: sourcesHtml,
+      votes: `${profileVoteCountHTML(shared)}${profileVoteDetails(shared)}`, sources: sourcesHtml,
     })}</section>
   </div>`;
 }
@@ -896,7 +880,7 @@ function openPolitician(id) {
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-profile-votes-more],[data-profile-toggle],[data-profile-open],[data-politician],[data-home-retry],[data-alert-type],[data-alert-role],[data-alert-year],[data-alert-more],[data-alert-retry],[data-politician-role],[data-politician-order],[data-politician-more],[data-politician-retry]');
   if (!t) return;
-  if (t.dataset.profileVotesMore) { PROFILE_VOTE_LIMIT.set(t.dataset.profileVotesMore, (PROFILE_VOTE_LIMIT.get(t.dataset.profileVotesMore) || 20) + 20); return rerender(); }
+  if (t.dataset.profileVotesMore) { PROFILE_VOTE_LIMIT.set(t.dataset.profileVotesMore, (PROFILE_VOTE_LIMIT.get(t.dataset.profileVotesMore) || PROFILE_VOTE_PAGE) + PROFILE_VOTE_PAGE); return rerender(); }
   if (t.dataset.profileToggle) { profileToggle(t); return; }
   if (t.dataset.profileOpen) {
     const button = document.querySelector(`[data-profile-toggle="${t.dataset.profileOpen}"]`);

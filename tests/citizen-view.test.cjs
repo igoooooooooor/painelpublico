@@ -61,8 +61,8 @@ function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'
     state,
   };
   vm.createContext(context);
-  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + senateCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { profileTenureLabel, senateCostAnswer, senateCostDetails, senateCostMonths, citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileWorkAnswer, profileView, profileQuotaDifferenceNote, profileMandateStartNote, alertCard, skel };', context);
-  context.votesForPerson = id => context.profileVotes(id).filter(record => String(id).startsWith('senado:') || String(record.vote.data || '').startsWith('2026'));
+  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + senateCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { profileTenureLabel, senateCostAnswer, senateCostDetails, senateCostMonths, citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileAttendanceCard, profileVoteCountHTML, profileView, profileQuotaDifferenceNote, profileMandateStartNote, alertCard, skel };', context);
+  context.votesForPerson = id => context.profileVotes(id).filter(record => record?.vote);
   context.attendanceBar = presence => presence
     ? `<span class="pbar" data-presence-days="${presence.dias}"></span>` : '';
   return { api: context.__api, elements, state, events, context };
@@ -78,6 +78,16 @@ function setProfileFixture(api, state, id, fields = {}) {
     ...fields,
   };
 }
+
+// Conteúdo de uma seção recolhível de "Mais detalhes".
+// Cartão de presença em "Como trabalha".
+// Votos de um(a) deputado(a) no catálogo do Placar, como /api/c/votes/person devolve.
+const setChamberVotes = (context, id, items) => {
+  vm.runInContext('CHAMBER_PERSON_VOTES', context).data[id] = { available: true, items };
+};
+const placarVote = (id, date, title, vote) => ({ id, date, title, proposition: 'PL 1/2026', type: 'PL', outcome: 'approved', vote, detailsAvailable: true });
+const presenceCard = html => html.match(/<article class="card profile-work-card profile-presence-card">[\s\S]*?<\/article>/)?.[0] || '';
+const profileSection = (html, key) => html.match(new RegExp(`<section[^>]*data-profile-section="${key}"[\\s\\S]*?</section>`))?.[0] || '';
 
 test('the home profile skeleton remains byte-for-byte intact while a loading politician gets the three-answer shape', () => {
   const { api, state } = makeView();
@@ -321,13 +331,14 @@ test('Senate work answer keeps attendance in 2026 and labels votes from their co
   }) : null;
   context.profileVotes = () => [{ vote: { id: 'senado:V1', data: '2023-02-01' }, recordedVote: 'Sim' }];
   context.votesForPerson = context.profileVotes;
-  const html = api.profileWorkAnswer({ id: 'senado:9', person: { role: 'senador', name: 'Senadora' }, presence: null, registeredPresence: null });
+  const shared = { id: 'senado:9', person: { role: 'senador', name: 'Senadora' }, presence: null, registeredPresence: null };
+  const html = api.profileAttendanceCard(shared) + api.profileVoteCountHTML(shared);
   assert.match(html, /Presença no Plenário · 2026/);
   assert.match(html, /Voto identificado em <b>1 de 1<\/b> votações do Senado com registro individual · de 01\/02\/2023 a 08\/10\/2026/);
   assert.doesNotMatch(html, /Presença no Plenário · 2023|Presença no Plenário ·.*10\/2026/);
 
   context.profileSenateSource = section => section === 'votacoes' ? ({ status: 'unavailable' }) : null;
-  const unavailable = api.profileWorkAnswer({ id: 'senado:9', person: { role: 'senador', name: 'Senadora' }, presence: null, registeredPresence: null });
+  const unavailable = api.profileVoteCountHTML(shared);
   assert.match(unavailable, /Dados de votações nominais do Senado indisponíveis neste recorte/);
   assert.doesNotMatch(unavailable, /Voto identificado em <b>0|0 de 0/);
 });
@@ -396,56 +407,53 @@ test('work answer uses the average of individual presence rates and counts only 
     { id: 1, dias: 250, presente: 201, falta: 49, justificadas: 0 },
     { id: 2, dias: 200, presente: 161, falta: 39, justificadas: 0 },
   ];
-  context.DATA.votacoes = [
-    { id: 'yes', data: '2026-09-01', titulo: 'Votação com sim', secreta: false },
-    { id: 'missing', data: '2026-09-02', titulo: 'Sem linha individual', secreta: false },
-    { id: 'not-voted', data: '2026-09-03', titulo: 'Registro não votou', secreta: false },
-  ];
-  context.DATA.votosCompletos = {
-    yes: [[1, 'Pessoa Parlamentar', 'PT', 'SP', 'Sim']],
-    missing: [[2, 'Outra pessoa', 'PL', 'RJ', 'Sim']],
-    'not-voted': [[1, 'Pessoa Parlamentar', 'PT', 'SP', 'Não votou']],
-  };
+  setChamberVotes(context, 'camara:1', [
+    placarVote('1-1', '2026-09-01', 'Votação com sim', 'Sim'),
+    placarVote('2-1', '2026-09-02', 'Sem linha individual', null),
+    placarVote('3-1', '2023-03-03', 'Abstenção em 2023', 'Abstenção'),
+  ]);
   setProfileFixture(api, state, 'camara:1');
   const html = api.profileView();
-  const work = html.match(/<div[^>]*data-profile-work-details[\s\S]*?<\/div>\s*<span class="k">/)?.[0] || '';
-  assert.match(work, /201 de 250 dias/);
+  const work = presenceCard(html);
+  assert.match(work, /201<\/b><span>de 250 dias/);
   assert.match(work, /média da Câmara: 80%/);
   assert.match(work, /Perto da média/);
-  assert.match(work, /Votou em <b>1 de 3<\/b> votações do Placar/);
+  // Sem linha da pessoa a votação conta no total, com o motivo em aberto; 2023 também entra (mandato inteiro).
+  assert.match(profileSection(html, 'votes'), /Votou em <b>2 de 3<\/b> votações do Placar/);
+  assert.match(profileSection(html, 'votes'), /Em 1 votação não há registro individual na lista oficial: pode ser ausência, licença ou período fora do mandato/);
   assert.match(html, /Sem registro importado[\s\S]*Sem linha individual/);
+  assert.match(profileSection(html, 'votes'), /data-vote="3-1"><b>abstenção<\/b>/);
   assert.match(html, /Presença em voto secreto e quem presidiu aparecem à parte/);
 });
 
-test('secret votes and chairing are shown as records, not nominal votes or inferred absences', () => {
+test('chairing is shown as a record, not a nominal vote or an inferred absence', () => {
   const { api, state, context } = makeView();
-  context.DATA.votacoes = [
-    { id: 'secret', data: '2026-09-01', titulo: 'Voto secreto', secreta: true },
-    { id: 'chair', data: '2026-09-02', titulo: 'Presidência da sessão', secreta: false },
-    { id: 'missing', data: '2026-09-03', titulo: 'Sem linha individual', secreta: false },
-  ];
-  context.DATA.votosCompletos = {
-    secret: [[1, 'Pessoa Parlamentar', 'PT', 'SP', 'Sim']],
-    chair: [[1, 'Pessoa Parlamentar', 'PT', 'SP', 'Artigo 17']],
-    missing: [[2, 'Outra pessoa', 'PL', 'RJ', 'Sim']],
-  };
+  setChamberVotes(context, 'camara:1', [
+    placarVote('1-1', '2026-09-02', 'Presidência da sessão', 'Presidiu'),
+    placarVote('2-1', '2026-09-03', 'Sem linha individual', null),
+  ]);
   setProfileFixture(api, state, 'camara:1');
-  let html = api.profileView();
-  let work = html.match(/<div[^>]*data-profile-work-details[\s\S]*?<\/div>\s*<span class="k">/)?.[0] || '';
-  assert.match(work, /Sem voto nominal identificado neste recorte/);
-  assert.match(work, /2 registros só de presença ou presidência/);
-  assert.doesNotMatch(work, /Votou em <b>0 de/);
-  assert.match(html, /data-vote="secret"><b>Presença registrada · voto secreto<\/b>/);
-  assert.match(html, /data-vote="chair"><b>presidiu<\/b>/);
-  assert.match(html, /data-vote="missing"><b>Sem registro importado<\/b>/);
-  assert.doesNotMatch(work, /Não votou|não compareceu|faltou à votação/);
+  const html = api.profileView();
+  const votes = profileSection(html, 'votes');
+  assert.match(votes, /Sem voto nominal identificado neste recorte/);
+  assert.match(votes, /1 registro só de presença ou presidência/);
+  assert.doesNotMatch(votes, /Votou em <b>0 de/);
+  assert.match(html, /data-vote="1-1"><b>presidiu<\/b>/);
+  assert.match(html, /data-vote="2-1"><b>Sem registro importado<\/b>/);
+  assert.doesNotMatch(presenceCard(html), /Não votou|não compareceu|faltou à votação/);
+});
 
-  context.DATA.votacoes = [{ id: 'not-voted', data: '2026-09-04', titulo: 'Ausência publicada', secreta: false }];
-  context.DATA.votosCompletos = { 'not-voted': [[1, 'Pessoa Parlamentar', 'PT', 'SP', 'Não votou']] };
-  html = api.profileView();
-  work = html.match(/<div[^>]*data-profile-work-details[\s\S]*?<\/div>\s*<span class="k">/)?.[0] || '';
-  assert.match(work, /Votou em <b>0 de 1<\/b> votações do Placar/);
-  assert.match(html, /data-vote="not-voted"><b>não votou<\/b>/);
+test('chamber votes cover the whole Placar catalog, ten at a time, with a skeleton while loading', () => {
+  const { api, state, context } = makeView();
+  setChamberVotes(context, 'camara:1', Array.from({ length: 12 }, (_, n) => placarVote(`${n + 1}-1`, `2024-0${(n % 9) + 1}-01`, `Votação ${n + 1}`, 'Sim')));
+  setProfileFixture(api, state, 'camara:1');
+  const votes = profileSection(api.profileView(), 'votes');
+  assert.match(votes, /Votações do Placar · texto principal de PL, PLP e PEC desde fev\/2023 · 12/);
+  assert.equal((votes.match(/data-vote="\d+-1"/g) || []).length, 10);
+  assert.match(votes, /Mostrar mais votações \(2\)/);
+  vm.runInContext('CHAMBER_PERSON_VOTES', context).pending.add('camara:2');
+  setProfileFixture(api, state, 'camara:2');
+  assert.match(profileSection(api.profileView(), 'votes'), /Carregando/);
 });
 
 test('Senate work answer stays unavailable even when a Câmara record has the same number', () => {
@@ -455,10 +463,11 @@ test('Senate work answer stays unavailable even when a Câmara record has the sa
   context.DATA.votosCompletos = { 'camara-77': [[77, 'Homônimo numérico', 'PT', 'SP', 'Sim']] };
   setProfileFixture(api, state, 'senado:77');
   const html = api.profileView();
-  const work = html.match(/<div[^>]*data-profile-work-details[\s\S]*?<\/div>\s*<span class="k">/)?.[0] || '';
-  assert.match(work, /Presença do Senado sem registro importado/);
+  const work = presenceCard(html);
+  assert.match(work, /Sem registro de presença/);
   assert.match(html, /Votos nominais do Senado ainda não disponíveis neste recorte/);
   assert.doesNotMatch(work, /8\/10|201 de 250|Votou em|votações do Placar · 1/);
+  assert.doesNotMatch(profileSection(html, 'votes'), /Votou em|votações do Placar · 1/);
 });
 
 test('Senate profile shows fetched votes with skeletons and never counts parliamentary activity as a vote', async () => {
@@ -466,7 +475,7 @@ test('Senate profile shows fetched votes with skeletons and never counts parliam
   const { api, state, context } = makeView({ fetchImpl: () => new Promise(resolve => { release = resolve; }) });
   context.DATA.senado = { sobDemanda: true };
   setProfileFixture(api, state, 'senado:77');
-  assert.match(api.profileView(), /data-profile-work-details[\s\S]*?Carregando/);
+  assert.match(profileSection(api.profileView(), 'votes'), /Carregando/);
   release({ ok: true, json: async () => ({
     presenca: { status: 'unavailable', items: [] },
     votacoes: { status: 'partial', startDate: '2023-02-01', endDate: '2026-10-08', sources: [
@@ -481,11 +490,11 @@ test('Senate profile shows fetched votes with skeletons and never counts parliam
   }) });
   await new Promise(resolve => setImmediate(resolve));
   const html = api.profileView();
-  const work = html.match(/<div[^>]*data-profile-work-details[\s\S]*?<\/div>\s*<span class="k">/)?.[0] || '';
-  assert.match(work, /Voto identificado em <b>1 de 3<\/b> votações do Senado com registro individual/);
-  assert.match(work, /Presença do Senado sem registro importado/);
+  const work = presenceCard(html);
+  assert.match(profileSection(html, 'votes'), /Voto identificado em <b>1 de 3<\/b> votações do Senado com registro individual/);
+  assert.match(work, /Sem registro de presença/);
   assert.doesNotMatch(work, /class="huge"|0%|média da Câmara/);
-  assert.match(work, /Voto identificado em <b>1 de 3<\/b> votações do Senado com registro individual · de 01\/02\/2023 a 08\/10\/2026/);
+  assert.match(profileSection(html, 'votes'), /Voto identificado em <b>1 de 3<\/b> votações do Senado com registro individual · de 01\/02\/2023 a 08\/10\/2026/);
   const voteDetails = html.match(/<section[^>]*data-profile-section="votes"[\s\S]*?<\/section>/)?.[0] || '';
   assert.match(voteDetails, /Votações nominais do Senado · de 01\/02\/2023 a 08\/10\/2026 · 4/);
   assert.match(voteDetails, /Votação 0/);
@@ -506,13 +515,13 @@ test('Senate registered attendance is a positive count without an inferred atten
   setProfileFixture(api, state, 'senado:77');
   api.profileView();
   await new Promise(resolve => setImmediate(resolve));
-  const work = api.profileView().match(/<div[^>]*data-profile-work-details[\s\S]*?<\/div>\s*<span class="k">/)?.[0] || '';
-  assert.match(work, /9<small> sessões/);
-  assert.match(work, /12 listas de sessões consultadas/);
+  const work = presenceCard(api.profileView());
+  assert.match(work, /9<\/b><span>sessões com presença registrada/);
+  assert.match(work, /12 listas consultadas/);
   assert.match(work, /Faltas e justificativas não apuradas/);
   assert.doesNotMatch(work, /75%|Justificada 0|Falta 3|média do Senado/);
   setProfileFixture(api, state, 'senado:78');
-  assert.match(api.profileView(), /Presença do Senado sem registro importado/);
+  assert.match(presenceCard(api.profileView()), /Sem registro de presença/);
 });
 
 test('three-answer alert shows the first alert in API order, without a severity ranking, and details keep every alert', () => {
@@ -820,6 +829,7 @@ test('profile project preview never turns unknown situations into zero laws', ()
 
 test('profile vote preview keeps actual votes, missing records and newest dates', () => {
   const { context } = makeView();
+  setChamberVotes(context, 'camara:55', []);
   context.votesForPerson = () => [
     { vote: { id: 'old', titulo: 'Voto antigo', data: '2026-01-01' }, recordedVote: 'Sim' },
     { vote: { id: 'new', titulo: 'Voto recente', data: '2026-10-01' }, recordedVote: 'Não' },
@@ -853,4 +863,14 @@ test('visible profile alerts are chronological and keep their source and explana
   assert.match(html, /Conferir na fonte/);
   assert.match(html, /Por que apareceu aqui/);
   assert.match(html, /não indicam irregularidade/);
+});
+
+test('presence card lists the published justifications without inventing missing ones', () => {
+  const { api } = makeView();
+  const person = { id: 'camara:1', role: 'deputado', name: 'Pessoa' };
+  const card = api.profileAttendanceCard({ id: 'camara:1', person, presence: { presente: 142, dias: 324, justificadas: 182, falta: 0, inicio: '2023-02', fim: '2026-09',
+    motivos: [['Missão autorizada', 120], ['Licença para tratamento de saúde', 62]] } });
+  assert.match(card, /<b>Justificativas:<\/b> missão autorizada \(120\), licença para tratamento de saúde \(62\)\./);
+  const without = api.profileAttendanceCard({ id: 'camara:1', person, presence: { presente: 10, dias: 10, justificadas: 0, falta: 0 } });
+  assert.doesNotMatch(without, /Justificativas/);
 });

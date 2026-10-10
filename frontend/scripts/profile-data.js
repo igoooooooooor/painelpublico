@@ -176,9 +176,33 @@ function profileVoteRows(v) {
     return [r[0], r[1], r[2], r[3], v.secreta && (!senate || vote === 'Votou') ? 'Presente' : vote];
   });
 }
+/* Votos de cada deputado(a) em todas as votações do Placar (/api/c/votes/person), sob demanda.
+   Sem linha da pessoa na votação, o voto fica null: não é "não" nem falta. */
+const CHAMBER_PERSON_VOTES = { data: {}, pending: new Set() };
+function profileChamberVotesEnsure(id) {
+  if (id in CHAMBER_PERSON_VOTES.data || CHAMBER_PERSON_VOTES.pending.has(id) || !/^camara:\d+$/.test(id)) return;
+  if (typeof fetch !== 'function') { CHAMBER_PERSON_VOTES.data[id] = null; return; }
+  CHAMBER_PERSON_VOTES.pending.add(id);
+  fetch('/api/c/votes/person/' + encodeURIComponent(id), { headers: { Accept: 'application/json' } })
+    .then(r => (r.ok ? r.json() : null)).then(d => { CHAMBER_PERSON_VOTES.data[id] = d?.available ? d : null; })
+    .catch(() => { CHAMBER_PERSON_VOTES.data[id] = null; })
+    .finally(() => { CHAMBER_PERSON_VOTES.pending.delete(id); if (typeof rerender === 'function') rerender(); });
+}
+function profileChamberVotesLoading(id) {
+  const canonical = profileId(id);
+  profileChamberVotesEnsure(canonical);
+  return CHAMBER_PERSON_VOTES.pending.has(canonical);
+}
 function profileVotes(id) {
   const canonical = profileId(id), chamber = canonical.split(':')[0];
   if (!['camara', 'senado'].includes(chamber)) return [];
+  if (chamber === 'camara') {
+    profileChamberVotesEnsure(canonical);
+    const items = CHAMBER_PERSON_VOTES.data[canonical]?.items;
+    return Array.isArray(items) ? items.map(item => ({
+      vote: { id: item.id, titulo: item.title, proposicao: item.proposition, data: item.date, secreta: false, outcome: item.outcome },
+      recordedVote: item.vote ?? null })) : [];
+  }
   return profileVoteList(chamber).map(vote => ({ vote, recordedVote: profileVoteRows(vote)
     .find(row => (chamber === 'camara' ? profileId(row[0]) : String(row[0])) === canonical)?.[4] ?? null }));
 }
@@ -213,7 +237,7 @@ function profileData(value) {
     cost: snapshot.mandateCost || null, senateCost: snapshot.senateCost || null, tenure: snapshot.noCargoDesde || null,
     participation: snapshot.participacaoSenado || null,
     loading: PROFILE_LOAD.pending.has(id), presence: profilePresence(id),
-    registeredPresence: role === 'senador' ? profileRegisteredPresence(id) : null, votes: profileVotes(id),
+    registeredPresence: role === 'senador' ? profileRegisteredPresence(id) : null,
     compensation: PROFILE_SALARY[role] ? { ...PROFILE_SALARY[role], individual: null } : null };
 }
 const PROFILE_ELECTION_ROLES = {

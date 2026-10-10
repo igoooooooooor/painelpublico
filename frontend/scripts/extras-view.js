@@ -149,7 +149,7 @@ function votesForPerson(personNumber) {
     const match = rows.find(row => String(row[0]) === String(personNumber).replace(/^camara:/, ''));
     return { vote, recordedVote: match?.[4] ?? null };
   });
-  return (rows || []).filter(record => record?.vote && (senate || String(record.vote.data || '').startsWith('2026')))
+  return (rows || []).filter(record => record?.vote)
     .sort((first, second) => String(second.vote.data).localeCompare(String(first.vote.data)));
 }
 function activitySource(section, label = 'Conferir na fonte do Senado') {
@@ -461,6 +461,14 @@ function comparisonVotes(a, b) {
   const chamberA = idA.split(':')[0], chamberB = idB.split(':')[0];
   if (chamberA !== chamberB || !['camara', 'senado'].includes(chamberA)) return { chamber: null, votes: [] };
   const chamber = chamberA;
+  if (chamber === 'camara' && typeof profileChamberVotesLoading === 'function') {
+    // Catálogo do Placar: votações em que ao menos um(a) dos(as) dois(duas) tem registro.
+    const loading = profileChamberVotesLoading(idA) | profileChamberVotesLoading(idB);
+    const second = new Map(votesForPerson(idB).map(record => [record.vote.id, record.recordedVote]));
+    const votes = votesForPerson(idA).map(record => ({ vote: record.vote, voteA: record.recordedVote, voteB: second.get(record.vote.id) ?? null }))
+      .filter(record => record.voteA !== null || record.voteB !== null);
+    return { chamber, votes, loading: Boolean(loading) };
+  }
   if (chamber === 'senado' && typeof profileSenateEnsure === 'function') profileSenateEnsure();
   const list = typeof profileVoteList === 'function' ? profileVoteList(chamber) : chamber === 'camara' ? DATA.votacoes || [] : [];
   const key = id => chamber === 'senado' ? id : id.slice(id.indexOf(':') + 1);
@@ -492,7 +500,7 @@ function comparisonTable([a, b]) {
   const pA = attendanceForPerson(a.pessoa.id), pB = attendanceForPerson(b.pessoa.id);
   const topCategory = f => f.categorias[0] ? `${esc(f.categorias[0].nome)} <small>${percent(f.categorias[0].valor, f.total)}%</small>` : '—';
   const topSupplier = f => f.fornecedores[0] ? `${esc(citizenName(f.fornecedores[0].name))} <small>${percent(f.fornecedores[0].valor, f.total)}%</small>` : '—';
-  const { chamber: voteChamber, votes } = comparisonVotes(a, b);
+  const { chamber: voteChamber, votes, loading: chamberVotesLoading } = comparisonVotes(a, b);
   const comparableVotes = votes.filter(record => record.voteA !== null && record.voteB !== null);
   const matchingVoteCount = comparableVotes.filter(record => record.voteA === record.voteB).length;
   const senateVoteSource = voteChamber === 'senado' && typeof profileSenateSource === 'function' ? profileSenateSource('votacoes') : null;
@@ -502,7 +510,7 @@ function comparisonTable([a, b]) {
   const voteSummary = voteChamber === 'senado'
     ? (senateVotesUnavailable ? 'Dados de votações nominais do Senado indisponíveis neste recorte.'
       : comparableVotes.length ? `${firstName(personA)} e ${firstName(personB)} registraram o mesmo voto em ${matchingVoteCount} de ${comparableVotes.length} votações nominais comparáveis no Senado.` : 'Sem votos nominais comparáveis para estes(as) senadores(as) neste recorte.')
-    : `${firstName(personA)} e ${firstName(personB)} registraram o mesmo voto em ${matchingVoteCount} de ${comparableVotes.length} votações comparáveis.`;
+    : `${firstName(personA)} e ${firstName(personB)} registraram o mesmo voto em ${matchingVoteCount} de ${comparableVotes.length} votações do Placar comparáveis.`;
   const voteRows = votes.slice(0, extrasState.comparisonVoteLimit || 20).map(record => {
     const voteAClass = record.voteA === 'Sim' ? 'yes' : record.voteA === 'Não' ? 'no' : '';
     const voteBClass = record.voteB === 'Sim' ? 'yes' : record.voteB === 'Não' ? 'no' : '';
@@ -528,11 +536,11 @@ function comparisonTable([a, b]) {
     <div class="cmp-row"><span class="cmp-l">Onde mais gastou</span><div class="cmp-v">${topCategory(a)}</div><div class="cmp-v">${topCategory(b)}</div></div>
     <div class="cmp-row"><span class="cmp-l">Empresa que mais recebeu</span><div class="cmp-v">${topSupplier(a)}</div><div class="cmp-v">${topSupplier(b)}</div></div>
   </section>
-  ${voteChamber === 'senado' || comparableVotes.length ? `<section class="card wide"><span class="k">${voteLabel}</span>
-    ${isSenateLoading ? (typeof skel === 'function' ? skel('linhas', 3) : '<i class="sk" style="display:block;width:100%;height:14px"></i>') : `<h2 class="h" style="font-size:21px">${voteSummary}</h2>
+  ${voteChamber === 'senado' || comparableVotes.length || chamberVotesLoading ? `<section class="card wide"><span class="k">${voteLabel}</span>
+    ${isSenateLoading || chamberVotesLoading ? (typeof skel === 'function' ? skel('linhas', 3) : '<i class="sk" style="display:block;width:100%;height:14px"></i>') : `<h2 class="h" style="font-size:21px">${voteSummary}</h2>
     ${voteRows || (voteChamber === 'senado' ? `<p class="muted">${senateVotesUnavailable ? 'Dados de votações nominais indisponíveis neste recorte.' : 'Sem votações nominais do Senado com registro para ambos neste recorte.'}</p>` : '')}
     ${votes.length > (extrasState.comparisonVoteLimit || 20) ? `<button type="button" class="opt citizen-more" data-cmp-votes-more>Mostrar mais (${votes.length - (extrasState.comparisonVoteLimit || 20)})</button>` : ''}`}
-    ${voteChamber === 'senado' ? `${senateVoteSource?.detail ? `<p class="muted">${esc(datesInTextBR(senateVoteSource.detail))}</p>` : ''}${activitySource(senateVoteSource, 'Fonte e período')}` : '<span class="muted">A comparação considera apenas votos registrados por ambos; ausência de registro não significa que a pessoa não votou.</span>'}
+    ${voteChamber === 'senado' ? `${senateVoteSource?.detail ? `<p class="muted">${esc(datesInTextBR(senateVoteSource.detail))}</p>` : ''}${activitySource(senateVoteSource, 'Fonte e período')}` : '<span class="muted">Votações do Placar: texto principal de PL, PLP e PEC no Plenário desde fev/2023. A comparação considera apenas votos registrados por ambos; ausência de registro não significa que a pessoa não votou.</span>'}
   </section>` : String(personA.id).split(':')[0] !== String(personB.id).split(':')[0] ? '<section class="card wide"><span class="k">Votações</span><p class="muted">Votações de casas diferentes não são comparadas.</p></section>' : ''}
   <span class="src">Destaque em roxo: quem gastou menos, teve menos alertas ou teve maior presença na Câmara. O Senado aparece como contagem de presenças registradas, sem ranking; votações entre casas não são comparadas. Gastos pelas notas da cota publicadas pela Câmara e pelo Senado (sem as passagens aéreas da Câmara).</span>`;
 }

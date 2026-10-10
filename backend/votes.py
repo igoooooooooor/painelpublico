@@ -369,3 +369,52 @@ def party_totals(path=None):
                      | {'partyTotals': by_party})
     return {'available': True, 'items': items, 'period': snapshot['period'],
             'coverage': snapshot['coverage'], 'generatedAt': snapshot['generatedAt']}
+
+
+_person_index_lock = threading.Lock()
+_person_index_cache: dict[tuple, dict] = {}
+
+
+def _person_index(snapshot_path, snapshot):
+    """Map each deputy to their recorded choice per reviewed vote, built once per index generation."""
+    stat = snapshot_path.stat()
+    key = (str(snapshot_path.resolve()), stat.st_mtime_ns, stat.st_size, snapshot['detailsVersion'])
+    with _person_index_lock:
+        cached = _person_index_cache.get(key)
+        if cached is not None:
+            return cached
+    by_person, missing_details = {}, set()
+    for vote in snapshot['items']:
+        participants, _, available = _vote_details(snapshot_path, snapshot, vote['id'])
+        if not available:
+            missing_details.add(vote['id'])
+            continue
+        for participant in participants:
+            by_person.setdefault(participant['id'], {})[vote['id']] = participant['vote']
+    index = {'byPerson': by_person, 'missingDetails': missing_details}
+    with _person_index_lock:
+        _person_index_cache.clear()
+        _person_index_cache[key] = index
+    return index
+
+
+def person_votes(identifier, path=None):
+    """Return every reviewed vote with this deputy's recorded choice.
+
+    ``vote`` is None when the roll call has no row for the person (absent from the
+    source, not in office) and ``detailsAvailable`` is False when the vote's detail
+    file is missing; neither case is a "no" vote or an absence.
+    """
+    if not isinstance(identifier, str) or not _PARTICIPANT_ID.fullmatch(identifier):
+        return None
+    snapshot_path = Path(path) if path is not None else Path(SNAPSHOTS_PATH) / INDEX_NAME
+    snapshot = _index(snapshot_path)
+    if snapshot is None:
+        return {'available': False, 'items': [], 'period': None, 'coverage': None, 'generatedAt': None}
+    index = _person_index(snapshot_path, snapshot)
+    choices = index['byPerson'].get(identifier, {})
+    items = [{key: vote[key] for key in ('id', 'date', 'proposition', 'type', 'title', 'outcome')}
+             | {'vote': choices.get(vote['id']), 'detailsAvailable': vote['id'] not in index['missingDetails']}
+             for vote in snapshot['items']]
+    return {'available': True, 'items': items, 'period': snapshot['period'],
+            'coverage': snapshot['coverage'], 'generatedAt': snapshot['generatedAt']}

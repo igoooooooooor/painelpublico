@@ -70,9 +70,25 @@ test('missing vote rows never become absences and secret votes never reveal a ch
   const ctx = load({ votacoes: [open, secret], presencaTodos: [{ id: 2 }],
     votosCompletos: { v1: [[1, 'Pessoa', 'P', 'SP', 'Sim']], v2: [[1, 'Pessoa', 'P', 'SP', 'Não']] } });
   assert.equal(ctx.profileVoteRows(open).length, 1);
-  assert.equal(ctx.profileVotes('camara:2')[0].recordedVote, null);
-  assert.equal(ctx.profileVotes('camara:1')[1].recordedVote, 'Presente');
+  assert.equal(ctx.profileVoteRows(secret)[0][4], 'Presente');
   assert.equal(ctx.profileVotes('senado:1').length, 0);
+});
+
+test('chamber profile votes come from the Placar catalog once per person and keep missing rows null', async () => {
+  const ctx = load();
+  const calls = [];
+  ctx.rerender = () => {};
+  ctx.fetch = url => { calls.push(url); return Promise.resolve({ ok: true, json: async () => ({ available: true, items: [
+    { id: '1-1', date: '2024-05-01', title: 'Votação A', proposition: 'PL 1/2024', outcome: 'approved', vote: 'Sim' },
+    { id: '2-1', date: '2023-04-01', title: 'Votação B', proposition: 'PEC 2/2023', outcome: 'rejected', vote: null },
+  ] }) }); };
+  assert.equal(ctx.profileVotes('camara:9').length, 0);
+  assert.equal(ctx.profileChamberVotesLoading('camara:9'), true);
+  await new Promise(r => setTimeout(r, 0)); await new Promise(r => setTimeout(r, 0));
+  const votes = ctx.profileVotes('camara:9');
+  assert.deepEqual(Array.from(votes, record => [record.vote.id, record.vote.titulo, record.vote.data, record.recordedVote]),
+    [['1-1', 'Votação A', '2024-05-01', 'Sim'], ['2-1', 'Votação B', '2023-04-01', null]]);
+  assert.deepEqual(calls, ['/api/c/votes/person/camara%3A9']);
 });
 
 test('Senate activity loads once on demand and keeps identities and non-vote records distinct', async () => {
@@ -96,7 +112,7 @@ test('Senate activity loads once on demand and keeps identities and non-vote rec
   assert.deepEqual(Array.from(ctx.profileVotes('senado:1'), record => record.recordedVote), ['Sim', 'Presente', 'Atividade parlamentar', 'Presidiu']);
   assert.ok(ctx.profileVotes('senado:2').every(record => record.recordedVote === null));
   assert.equal(ctx.profileVotes('camara:1').length, 0);
-  assert.equal(calls.length, 1);
+  assert.equal(calls.filter(url => url.includes('senado')).length, 1);
 });
 
 test('failed Senate activity does not create attendance or vote counts', async () => {

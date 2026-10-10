@@ -169,6 +169,11 @@ class Handler(BaseHTTPRequestHandler):
             # Totais por partido do catálogo do Placar, para comparar partidos na mesma base.
             self.send_json(votes.party_totals())
             return
+        if url.path.startswith('/api/c/votes/person/'):
+            # Voto de um(a) deputado(a) em cada votação do Placar.
+            found = votes.person_votes(unquote(url.path[len('/api/c/votes/person/'):]))
+            self.send_json(found if found is not None else {'error': 'Identificador inválido.'}, 200 if found is not None else 404)
+            return
         if url.path.startswith('/api/c/votes/'):
             identifier = unquote(url.path[len('/api/c/votes/'):])
             found = votes.detail(identifier)

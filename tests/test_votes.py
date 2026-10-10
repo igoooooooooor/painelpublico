@@ -238,6 +238,25 @@ class VoteSnapshotTests(unittest.TestCase):
         self.assertNotIn('participants', json.dumps(result))
         self.assertFalse(votes.party_totals(self.root / 'missing.json')['available'])
 
+    def test_person_votes_keep_missing_rows_and_missing_details_distinct(self):
+        self.write(self.root / votes.DETAILS_DIRECTORY / '2611313-31.json', {'id': '2611313-31', 'participants': [
+            {'id': 'camara:1', 'name': 'Ana', 'party': 'ABC', 'uf': 'SP', 'vote': 'Sim'}],
+            'partyTotals': [{'party': 'ABC', 'yes': 1, 'no': 0, 'other': 0}]})
+        self.write(self.root / votes.DETAILS_DIRECTORY / '2600001-02.json', {'id': '2600001-02', 'participants': [
+            {'id': 'camara:2', 'name': 'Bia', 'party': 'ABC', 'uf': 'RJ', 'vote': 'Não'}],
+            'partyTotals': [{'party': 'ABC', 'yes': 0, 'no': 1, 'other': 0}]})
+        result = votes.person_votes('camara:1', self.index)
+        by_id = {item['id']: item for item in result['items']}
+        self.assertEqual(len(result['items']), 3)
+        self.assertEqual(by_id['2611313-31']['vote'], 'Sim')
+        self.assertIsNone(by_id['2600001-02']['vote'])
+        self.assertTrue(by_id['2600001-02']['detailsAvailable'])
+        self.assertIsNone(by_id['2599999-01']['vote'])
+        self.assertFalse(by_id['2599999-01']['detailsAvailable'])
+        self.assertNotIn('participants', json.dumps(result))
+        self.assertIsNone(votes.person_votes('senado:1', self.index))
+        self.assertIsNone(votes.person_votes('../x', self.index))
+
     def test_detail_uses_selected_generation_and_tracks_index_switch_without_leaking_version(self):
         first_version, second_version = 'a' * 64, 'b' * 64
         first_details = {'participants': [
