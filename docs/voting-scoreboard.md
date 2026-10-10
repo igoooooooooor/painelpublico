@@ -109,8 +109,13 @@ de 2023 entram como candidatos.
 **Lição.** Regra por palavra-chave falha em silêncio: o registro não some, muda de
 categoria, e a revisão só olha candidatos. O catálogo de 2026 chegou a ser dado como
 revisado com zero PECs. Por isso o inventário grava `typeGuard`, com candidatos por
-tipo (PL, PLP e PEC) e turnos de PEC fora dos candidatos, e o relatório Markdown
-destaca tipo zerado. Antes de fechar um ano, todo alerta precisa de explicação com
+tipo (PL, PLP e PEC), turnos de PEC fora dos candidatos e aprovações ou rejeições
+de texto inteiro (projeto, substitutivo, subemenda substitutiva, PEC, emenda
+aglutinativa substitutiva) classificadas como emenda ou desconhecido; o relatório
+Markdown destaca cada caso. Em 2024 o alerta apontou mais dois: o 1º turno da PEC
+31/2007 na forma de emenda aglutinativa substitutiva e o substitutivo do Senado ao
+PLP 175/2024, cuja ressalva “com exceção de …” mencionava uma supressão. A v3
+passou a ignorar essas ressalvas em substitutivos do Senado aprovados. Antes de fechar um ano, todo alerta precisa de explicação com
 fonte; ao mudar uma regra, rode-a contra os inventários existentes e liste cada
 registro que muda de candidato.
 
@@ -467,8 +472,36 @@ O índice conjunto exige anos contíguos: 2023 só entra no site junto com 2024 
 `data/reviews/chamber-vote-reviews-2023-12-31.json` e
 `data/reviews/scoreboard-audit-2023/`, fora do Git.
 
+## Levantamento de 2024
+
+| Observação | Quantidade |
+| --- | ---: |
+| Registros retornados pela API | 2.128, em 22 páginas |
+| Candidatos (PL 156, PLP 17, PEC 6) | 179 |
+| Simbólicos pelo portal da sessão | 113 |
+| Simbólicos pelas notas taquigráficas | 22 |
+| Parte do texto (bloco rejeitado do substitutivo do Senado) | 1 |
+| Nominais confirmados por relatório oficial | 43 |
+| Pendentes | 0 |
+| Registros individuais nas 43 decisões | 18.194 |
+| Sem link seguro ao texto exato (2º turnos de PEC) | 3 |
+| Sem contagem publicada de abstenções | 18 |
+| Sem tema oficial | 0 |
+
+A conferência de omissões cruzou 253 eventos (86 deliberativos), 927 votações
+vinculadas e 721 proposições, sem votação ausente nem falha. As quatro sessões
+deliberativas sem votação listada não tiveram decisão de mérito.
+
+Retornos do Senado votados em blocos seguem o precedente do PL 3.780: o bloco com
+parecer pela aprovação decide a versão do Senado e entra como texto principal, com
+a exceção descrita; o bloco com parecer pela rejeição é parte do texto e fica fora.
+Duas votações começaram no painel e foram convertidas em simbólicas pelo presidente
+(PL 3.817/2024; o PL 81/2024 teve só preferência nominal); a API não traz votos
+individuais nelas. O PL 4.685/2012 aparece nas notas com o número do Senado
+(PL 6.606/2019). Evidências em `data/reviews/scoreboard-audit-2024/`, fora do Git.
+
 ## Próxima etapa
 
-Inventariar 2024 e 2025 com `--audit-omissions`, revisar os candidatos com o
-mesmo critério e só então gerar o índice conjunto de 2023 a 2026. A
+Inventariar 2025 com `--audit-omissions`, revisar os candidatos com o mesmo
+critério e só então gerar o índice conjunto de 2023 a 2026. A
 conferência não autoriza declarar cobertura completa do ano ou do mandato.

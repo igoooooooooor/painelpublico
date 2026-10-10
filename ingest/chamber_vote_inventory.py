@@ -331,6 +331,10 @@ _PEC_TURN = re.compile(r'(?:proposta de emenda a constituicao|\bpec\b).{0,200}\b
                        r'(?:proposta de emenda a constituicao|\bpec\b)')
 
 
+_WHOLE_TEXT = re.compile(r'^(?:aprovad[oa]s?|rejeitad[oa]s?)(?:, em (?:primeiro|segundo) turno,)? (?:o|a) '
+                         r'(?:projeto|substitutivo|subemenda substitutiva|proposta de emenda|emenda aglutinativa substitutiva)\b')
+
+
 def _type_guard(entries):
     """Sinaliza tipos sem candidatos e turnos de PEC fora deles; regra por palavra-chave falha em silêncio."""
     from ingest.chamber_vote_rules import _normalized
@@ -343,8 +347,11 @@ def _type_guard(entries):
     turns = [entry['id'] for entry in entries
              if not entry['candidate'] and entry['category'] in ('amendment', 'unknown', 'main_text')
              and _PEC_TURN.search(_normalized(entry.get('description')))]
+    whole = [entry['id'] for entry in entries
+             if not entry['candidate'] and entry['category'] in ('amendment', 'unknown')
+             and _WHOLE_TEXT.match(_normalized(entry.get('description')))]
     return {'candidateTypes': {kind: counts.get(kind, 0) for kind in ('PL', 'PLP', 'PEC')},
-            'pecTurnsNotCandidates': turns}
+            'pecTurnsNotCandidates': turns, 'wholeTextNotCandidates': whole}
 
 
 def _guard_lines(guard):
@@ -355,6 +362,9 @@ def _guard_lines(guard):
              'Candidatos por tipo: ' + ', '.join(f'{kind} {count}' for kind, count in counts.items()) + '.']
     lines.extend(f'**Atenção:** nenhum candidato {kind}; confirmar com fonte antes de fechar o ano.'
                  for kind, count in counts.items() if not count)
+    if guard.get('wholeTextNotCandidates'):
+        lines.append('Aprovações ou rejeições de texto inteiro fora dos candidatos (conferir a classificação): '
+                     + ', '.join(guard['wholeTextNotCandidates']) + '.')
     if guard['pecTurnsNotCandidates']:
         lines.append('Turnos de PEC fora dos candidatos (conferir a classificação): '
                      + ', '.join(guard['pecTurnsNotCandidates']) + '.')

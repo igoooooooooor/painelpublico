@@ -329,6 +329,7 @@ class ChamberVoteInventoryTests(unittest.TestCase):
 
         self.assertEqual(result["typeGuard"]["candidateTypes"], {"PL": 1, "PLP": 0, "PEC": 0})
         self.assertEqual(result["typeGuard"]["pecTurnsNotCandidates"], ["124-1"])
+        self.assertEqual(result["typeGuard"]["wholeTextNotCandidates"], [])
         self.assertIn("nenhum candidato PEC", report)
         self.assertIn("Turnos de PEC fora dos candidatos", report)
 

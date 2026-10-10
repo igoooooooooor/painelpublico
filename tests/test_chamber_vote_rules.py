@@ -48,13 +48,16 @@ class ChamberVoteRulesTests(unittest.TestCase):
             "de 2025, adotado pelo relator da Comissão Especial.",
             "Aprovada, em primeiro turno, a Proposta de Emenda à Constituição nº 5, de 2023, na forma da "
             "Emenda Aglutinativa Substitutiva nº 3. Sim: 385; Não: 93.",
+            "Aprovada, em primeiro turno, a Emenda Aglutinativa Substitutiva à Proposta de Emenda à "
+            "Constituição nº 31, de 2007. Sim: 344; Não: 154; Abstenção: 2; Total: 500.",
         ):
             with self.subTest(description=description):
                 result = self.classify(description)
                 self.assertEqual(result["category"], "main_text")
                 self.assertTrue(result["candidate"])
         for description in ("Aprovada a Emenda nº 3 à Proposta de Emenda à Constituição nº 45, de 2019.",
-                            "Aprovada a Emenda Aglutinativa nº 1. Sim: 379; não: 114; total: 494."):
+                            "Aprovada a Emenda Aglutinativa nº 1. Sim: 379; não: 114; total: 494.",
+                            "Aprovada a Emenda Aglutinativa Substitutiva nº 2 ao Projeto de Lei nº 4, de 2024."):
             self.assertEqual(self.classify(description)["category"], "amendment")
 
     def test_actual_highlight_and_amendment_votes_are_amendments(self):
@@ -87,6 +90,16 @@ class ChamberVoteRulesTests(unittest.TestCase):
         self.assertTrue(result["candidate"])
         self.assertEqual(result["method"], "unknown")
         self.assertIsNone(result["recordedTally"])
+
+    def test_senate_substitute_exception_clause_does_not_decide_the_category(self):
+        result = self.classify(
+            "Aprovado o Substitutivo do Senado Federal ao Projeto de Lei Complementar nº 175, de 2024, "
+            "com exceção dos artigos 3º e 7º, da supressão do § 4º do art. 4º aprovado pela Câmara e do "
+            "§ 2º do art. 8º. Sim: 343; Não: 41; Total: 384.")
+        self.assertEqual(result["category"], "main_text")
+        self.assertTrue(result["candidate"])
+        self.assertEqual(self.classify("Rejeitados os artigos 3º e 7º; a supressão do § 4º do art. 4º.")["category"],
+                         "amendment")
 
     def test_generic_dispositions_need_an_explicit_highlight_opening(self):
         for description in ("Mantido o texto. Sim: 335; Não: 117; Total: 452.",

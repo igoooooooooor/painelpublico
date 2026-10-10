@@ -140,6 +140,10 @@ def _category(description: str) -> str:
     # A recorded exception about previously rejected devices is not a second
     # outcome of the main Senate substitute (PL 3780/2023, 18/03/2026).
     text = re.sub(r"\bcom excecao dos dispositivos rejeitados\b", "", text)
+    # More generally, an exception clause lists what was left out of an approved whole text
+    # (PLP 175/2024, 19/11/2024); its words (“supressão”, “emenda”) do not set the category.
+    if re.match(r"^aprovad[oa] o substitutivo do senado\b", text):
+        text = re.sub(r"\bcom excecao d[oa]s?\b[^.;]*", "", text)
 
     # “Ressalvados os destaques” is a caveat attached to the main vote, not a
     # record of voting on a highlight itself.
@@ -150,6 +154,10 @@ def _category(description: str) -> str:
     # “Aprovada a PEC ... na forma da Emenda Aglutinativa” approves the whole text in that form.
     amendment_text = re.sub(r"\bna\s+forma\s+d[ao]s?\s+emendas?\s+aglutinativas?(?:\s+substitutivas?)?\b",
                             "", amendment_text)
+    # A whole-text (substitutive) agglutinative amendment voted in a PEC turn is the turn's text.
+    if re.search(r"\bem\s+(?:primeiro|segundo)\s+turno\b", amendment_text):
+        amendment_text = re.sub(r"\bemendas?\s+aglutinativas?\s+substitutivas?(?:\s+globa(?:l|is))?\b",
+                                "", amendment_text)
     has_amendment = bool(_AMENDMENT_RE.search(amendment_text))
     has_main = bool(_MAIN_RE.search(text))
     has_outcome = bool(_OUTCOME_RE.search(text))
