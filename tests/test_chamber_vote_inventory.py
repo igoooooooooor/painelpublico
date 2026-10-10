@@ -318,6 +318,20 @@ class ChamberVoteInventoryTests(unittest.TestCase):
         self.assertIn("O método fica desconhecido quando a fonte não o declara explicitamente", report)
         self.assertIn("| main_text | sim | unknown |", report)
 
+    def test_type_guard_flags_missing_types_and_pec_turns_outside_candidates(self):
+        self.set_list(vote(), vote("124-1", description="Aprovada a Emenda à PEC nº 9, de 2026, em primeiro turno."),
+                      vote("125-1", description="Aprovado o Requerimento de quebra de interstício para o "
+                                                "segundo turno da PEC nº 9, de 2026."))
+        self.api.details["123-1"] = detail()
+
+        result = self.collect(participant_limit=0)
+        report = inventory.render_report(result)
+
+        self.assertEqual(result["typeGuard"]["candidateTypes"], {"PL": 1, "PLP": 0, "PEC": 0})
+        self.assertEqual(result["typeGuard"]["pecTurnsNotCandidates"], ["124-1"])
+        self.assertIn("nenhum candidato PEC", report)
+        self.assertIn("Turnos de PEC fora dos candidatos", report)
+
     def test_main_failure_preserves_preexisting_report_outputs(self):
         output = self.root / "data" / "reviews" / f"chamber-vote-inventory-{THROUGH}.json"
         markdown = output.with_suffix(".md")

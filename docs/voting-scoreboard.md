@@ -106,6 +106,14 @@ da Emenda Aglutinativa” como texto principal; uma emenda aglutinativa votada
 isoladamente continua sendo emenda. Com a v3, oito turnos de PEC de 2026 e cinco
 de 2023 entram como candidatos.
 
+**Lição.** Regra por palavra-chave falha em silêncio: o registro não some, muda de
+categoria, e a revisão só olha candidatos. O catálogo de 2026 chegou a ser dado como
+revisado com zero PECs. Por isso o inventário grava `typeGuard`, com candidatos por
+tipo (PL, PLP e PEC) e turnos de PEC fora dos candidatos, e o relatório Markdown
+destaca tipo zerado. Antes de fechar um ano, todo alerta precisa de explicação com
+fonte; ao mudar uma regra, rode-a contra os inventários existentes e liste cada
+registro que muda de candidato.
+
 Nos votos individuais, todas as páginas são lidas. IDs duplicados com escolhas
 conflitantes são recusados; Sim, Não e Abstenção são comparados separadamente
 com o placar observado. Presidência (“Artigo 17”) e obstrução permanecem

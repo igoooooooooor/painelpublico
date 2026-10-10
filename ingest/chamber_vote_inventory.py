@@ -319,11 +319,46 @@ def collect_inventory(*, root=ROOT, start=date(2026, 1, 1), through=None, collec
             'participantAuditCount': sum(entry['participants'] is not None for entry in entries),
             'methodCounts': dict(sorted(Counter(entry['method'] for entry in entries).items())),
             'errorCount': sum(bool(entry['errors']) for entry in entries),
+            'typeGuard': _type_guard(entries),
             **({'omissionAudit': omissions} if omissions is not None else {}), 'entries': entries}
 
 
 def _table_text(value):
     return str(value or '').replace('|', '\\|').replace('\n', ' ').replace('\r', ' ')
+
+
+_PEC_TURN = re.compile(r'(?:proposta de emenda a constituicao|\bpec\b).{0,200}\bturno\b|\bturno\b.{0,200}'
+                       r'(?:proposta de emenda a constituicao|\bpec\b)')
+
+
+def _type_guard(entries):
+    """Sinaliza tipos sem candidatos e turnos de PEC fora deles; regra por palavra-chave falha em silêncio."""
+    from ingest.chamber_vote_rules import _normalized
+    counts = Counter()
+    for entry in entries:
+        if entry['candidate']:
+            types = {target.get('siglaTipo') for target in entry['targetPropositions']} or {'?'}
+            counts.update(types)
+    # Requerimentos (procedimento) e redação final citam turnos legitimamente; o risco é emenda ou desconhecido.
+    turns = [entry['id'] for entry in entries
+             if not entry['candidate'] and entry['category'] in ('amendment', 'unknown', 'main_text')
+             and _PEC_TURN.search(_normalized(entry.get('description')))]
+    return {'candidateTypes': {kind: counts.get(kind, 0) for kind in ('PL', 'PLP', 'PEC')},
+            'pecTurnsNotCandidates': turns}
+
+
+def _guard_lines(guard):
+    if guard is None:
+        return []
+    counts = guard['candidateTypes']
+    lines = ['## Conferência por tipo', '',
+             'Candidatos por tipo: ' + ', '.join(f'{kind} {count}' for kind, count in counts.items()) + '.']
+    lines.extend(f'**Atenção:** nenhum candidato {kind}; confirmar com fonte antes de fechar o ano.'
+                 for kind, count in counts.items() if not count)
+    if guard['pecTurnsNotCandidates']:
+        lines.append('Turnos de PEC fora dos candidatos (conferir a classificação): '
+                     + ', '.join(guard['pecTurnsNotCandidates']) + '.')
+    return lines + ['']
 
 
 def _omission_lines(audit):
@@ -363,6 +398,7 @@ def render_report(inventory):
                   f'(limite {inventory["participantLimit"]}).', f'Registros com falha: {inventory["errorCount"]}.', '',
                   'O método fica desconhecido quando a fonte não o declara explicitamente. '
                   'Contagens ou linhas individuais não transformam uma votação simbólica em nominal.', '',
+                  *_guard_lines(inventory.get('typeGuard')),
                   *_omission_lines(inventory.get('omissionAudit')),
                   '## Registros', '', '| Data | ID e fonte | Categoria | Candidato | Método | Descrição oficial |',
                   '| --- | --- | --- | --- | --- | --- |'])
@@ -406,7 +442,8 @@ def main(argv=None):
     _atomic_bytes(output, _json_bytes(inventory))
     _atomic_bytes(output.with_suffix('.md'), render_report(inventory).encode('utf-8'))
     summary = {key: inventory[key] for key in ('voteCount', 'listPageCount', 'categoryCounts', 'candidateCount',
-                                              'detailCount', 'participantAuditCount', 'methodCounts', 'errorCount')}
+                                              'detailCount', 'participantAuditCount', 'methodCounts', 'errorCount',
+                                              'typeGuard')}
     if 'omissionAudit' in inventory:
         audit = inventory['omissionAudit']
         summary['omissionAudit'] = {'missing': [row['id'] for row in audit['missing']],
