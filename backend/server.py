@@ -84,7 +84,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_page_result(*hit, prod)
                 return
         page_html = BUILD_PATH.read_text(encoding='utf-8')
-        if path in seo.SECTIONS:
+        if seo.PARTY_PAIR_PATH.match(path):
+            result = (200, seo.party_pair_page(page_html, path, origin), 'text/html; charset=utf-8', None)
+        elif path in seo.SECTIONS:
             result = (200, seo.section_page(page_html, path, origin), 'text/html; charset=utf-8', None)
         elif not database_ready:
             # Sem banco, a ficha ainda abre pelo app; só não há resumo nem sitemap.
@@ -94,6 +96,9 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 if path == '/sitemap.xml':
                     result = (200, seo.sitemap(db, origin), 'application/xml; charset=utf-8', None)
+                elif seo.COMPARE_PAIR_PATH.match(path):
+                    status, content, redirect = seo.compare_pair_page(db, page_html, path, origin)
+                    result = (status, content, 'text/html; charset=utf-8', redirect)
                 else:
                     status, content, redirect = seo.profile_page(db, page_html, path, origin)
                     result = (status, content or '', 'text/html; charset=utf-8', redirect)
@@ -136,7 +141,8 @@ class Handler(BaseHTTPRequestHandler):
             # Endereços compartilháveis usam a mesma página e metadados gerais do Placar.
             self.send_page('/placar', prod)
             return
-        if path in seo.SECTIONS or path == '/sitemap.xml' or seo.PROFILE_PATH.match(path):
+        if (path in seo.SECTIONS or path == '/sitemap.xml' or seo.PROFILE_PATH.match(path)
+                or seo.PARTY_PAIR_PATH.match(path) or seo.COMPARE_PAIR_PATH.match(path)):
             self.send_page(path, prod)
             return
         if url.path == '/api/c/cities':
@@ -158,6 +164,10 @@ class Handler(BaseHTTPRequestHandler):
             # O Placar vem de snapshots locais; não depende do SQLite nem do cache de respostas da API.
             params = {key: values[-1] for key, values in parse_qs(url.query).items()}
             self.send_json(votes.listing(params))
+            return
+        if url.path == '/api/c/votes/party-totals':
+            # Totais por partido do catálogo do Placar, para comparar partidos na mesma base.
+            self.send_json(votes.party_totals())
             return
         if url.path.startswith('/api/c/votes/'):
             identifier = unquote(url.path[len('/api/c/votes/'):])

@@ -4,8 +4,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function load(data, senate = { presenca: null, votacoes: null, loading: false }) {
+function load(data, senate = { presenca: null, votacoes: null, loading: false }, chamberCatalog = CHAMBER_CATALOG) {
   const context = {
+    citizenGet: () => new Promise(() => {}), citizenErrorMessage: String, citizenState: { cache: new Map() },
     DATA: data, ROLE_LABELS: { deputado: 'Deputado(a) federal' }, state: { view: 'x' },
     document: { addEventListener() {} }, esc: String, citizenName: String, citizenAvatar: () => '',
     formatCitizenAmount: value => `R$ ${value}`,
@@ -35,6 +36,7 @@ function load(data, senate = { presenca: null, votacoes: null, loading: false })
     ? `<a class="${className}" href="${vote.sourceUrl || ''}">${content}</a>`
     : `<button type="button" class="${className}" data-vote="${vote.id}">${content}</button>`;
   context.voteRowsForItem = v => String(v.id).startsWith('senado:') ? v.rows || [] : data.votosCompletos?.[v.id] || [];
+  if (chamberCatalog) vm.runInContext('partyState', context).chamberCatalog = chamberCatalog;
   return context;
 }
 const voteRow = (id, partyCode, choice) => [id, `Dep ${id}`, partyCode, 'SP', choice];
@@ -53,19 +55,39 @@ const DATA = {
     { id: 8, partido: 'BBB', presente: 1, falta: 0, justificadas: 0, dias: 2 },
   ],
 };
+// Catálogo do Placar: totais por sigla publicada; partido ausente ou detalhe ausente não vira zero.
+const CHAMBER_CATALOG = {
+  available: true, period: { start: '2023-02-01', end: '2026-10-09' },
+  coverage: { detail: '2 decisões nominais conferidas.' },
+  items: [
+    { id: '1-1', date: '2026-10-01', proposition: 'PL 1/2026', title: 'Aberta', partyTotals: {
+      AAA: { yes: 2, no: 1, other: 0 }, BBB: { yes: 0, no: 1, other: 2 }, PCDOB: { yes: 1, no: 0, other: 0 } } },
+    { id: '2-1', date: '2026-09-01', proposition: 'PEC 2/2026', title: 'Sem detalhe', partyTotals: null },
+  ],
+};
 const party = (acronym, deputyData) => ({ sigla: acronym, membros: 3, deputado: deputyData, senador: null, top: [] });
 
-test('party votes ignore secret ballots and use recorded vote rows for the majority side', () => {
+test('chamber party votes come from the scoreboard catalog without turning missing totals into zero votes', () => {
   const ctx = load(DATA);
-  const [aaa] = ctx.partyVotes('AAA');
+  const [aaa, missing] = ctx.partyVotes('AAA');
   assert.equal(aaa.yesCount, 2); assert.equal(aaa.noCount, 1); assert.equal(aaa.majority, 'Sim');
-  assert.equal(ctx.partyVotes('AAA').length, 1);
+  assert.equal(missing.majority, null);
   assert.equal(ctx.partyVoteAlignment(ctx.partyVotes('AAA')), 2 / 3);
   assert.equal(ctx.partyVotes('BBB')[0].majority, 'Não');
-  assert.equal(ctx.partyVotes('BBB')[0].noCount, 1);
   assert.equal(ctx.partyVotes('BBB')[0].otherCount, 2);
   assert.equal(ctx.partyVotes('CCC')[0].majority, null);
+  assert.equal(ctx.partyVotes('PCdoB')[0].majority, 'Sim');
   assert.deepEqual(ctx.partyAttendance('BBB'), null);
+});
+
+test('chamber vote comparison waits for the catalog and explains its scope', () => {
+  const pending = load(DATA, undefined, null).partyComparisonTable(party('AAA', { membros: 3 }), party('BBB', { membros: 3 }));
+  assert.match(pending, /Como votaram · Câmara[\s\S]*loading/);
+  const html = load(DATA).partyComparisonTable(party('AAA', { membros: 3 }), party('BBB', { membros: 3 }));
+  assert.match(html, /ficaram do mesmo lado em 0,00% das vezes \(0 de 1 votação nominal comparável\)/);
+  assert.match(html, /texto principal de PL, PLP e PEC no Plenário, de 01\/02\/2023 a 09\/10\/2026/);
+  assert.match(html, /2 decisões nominais conferidas/);
+  assert.match(html, /data-vote="1-1"/);
 });
 
 test('party comparison shows missing data as unavailable and never highlights it', () => {
@@ -172,4 +194,18 @@ test('party vote comparison labels Senate source bounds and does not infer missi
   const unavailable = ctx.partyComparisonTable(party('AAA', { membros: 3 }), party('BBB', { membros: 3 }));
   assert.match(unavailable, /Dados de votações nominais do Senado indisponíveis neste recorte/);
   assert.doesNotMatch(unavailable, /Sem votações com escolhas nominais registradas para ambos os partidos neste recorte/);
+});
+
+test('party votes show ten per page and the pair has a shareable path', () => {
+  const items = Array.from({ length: 12 }, (_, index) => ({ id: `${index + 1}-1`, date: '2026-10-01', proposition: 'PL', title: `Votação ${index + 1}`,
+    partyTotals: { AAA: { yes: 1, no: 0, other: 0 }, BBB: { yes: index < 9 ? 1 : 0, no: index < 9 ? 0 : 1, other: 0 } } }));
+  const ctx = load(DATA, undefined, { ...CHAMBER_CATALOG, items });
+  const html = ctx.partyComparisonTable(party('AAA', { membros: 3 }), party('BBB', { membros: 3 }));
+  assert.match(html, /ficaram do mesmo lado em 75,00% das vezes \(9 de 12 votações nominais comparáveis\)/);
+  assert.equal((html.match(/data-vote="\d+-1"/g) || []).length, 10);
+  assert.match(html, /Mostrar mais \(2\)/);
+  vm.runInContext("partyState.selected = ['PCdoB', 'S/Partido']", ctx);
+  assert.equal(ctx.partyPairPath(), '/partidos/PCdoB-vs-S%2FPartido');
+  assert.deepEqual([...ctx.partyPairFromPath('/partidos/PCdoB-vs-S%2FPartido')], ['PCdoB', 'S/Partido']);
+  assert.equal(ctx.partyPairFromPath('/partidos'), null);
 });

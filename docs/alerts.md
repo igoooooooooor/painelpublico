@@ -237,4 +237,5 @@ para quem entrou depois.
 | 8/10/2026 | Cartão de pico mostra a janela de 12 meses usada, os meses marcados e até 3 seguintes; alerta não atravessa o ano | A linha de referência precisa bater com a regra; a cota é anual |
 | 8/10/2026 | Alertas dos mais recentes aos mais antigos, com filtro por ano | Mais de mil alertas no mandato |
 | 8/10/2026 | Cartão de pico em duas barras (referência e mês) com a diferença escrita; histórico em "Ver histórico e notas"; padrões em vez de só cor; sequência de 3 meses ou mais com uma frase só | Cartões da mesma linha têm a mesma altura e o pico ocupava o dobro |
+| 10/10/2026 | Comparar políticos: custo de deputado(a) e senador(a) na mesma linha, com a composição de cada Casa e sem destaque de menor; cota entre Casas também sem destaque | Saber quanto custa cada cargo é legítimo; as partes continuam diferentes, então não há vencedor |
 | Em aberto | Pedido de acesso aos documentos do Senado | Investigação posterior |

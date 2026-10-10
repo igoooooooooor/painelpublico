@@ -11,6 +11,7 @@ import html
 import json
 import os
 import re
+from urllib.parse import unquote
 
 from . import citizen, profiles
 from .config import SNAPSHOTS_PATH
@@ -37,6 +38,10 @@ SECTIONS = {
     '/minha-cidade': ('city', 'Minha cidade',
                       'Quem representa sua cidade, emendas parlamentares e contas da prefeitura, com dados do IBGE, TSE e Tesouro.'),
 }
+# Comparação compartilhável de dois partidos: /partidos/PL-vs-PT (siglas codificadas na URL).
+PARTY_PAIR_PATH = re.compile(r'^/partidos/([^/]{1,60})-vs-([^/]{1,60})$')
+# Comparação compartilhável de dois políticos: /comparar/deputado-73604-vs-senador-22.
+COMPARE_PAIR_PATH = re.compile(r'^/comparar/(deputado|senador)-(\d{1,9})-vs-(deputado|senador)-(\d{1,9})$')
 PROFILE_PATH = re.compile(r'^/(deputado|senador)/(\d{1,9})(?:-[a-z0-9-]*)?/?$')
 ROLE_BY_PREFIX = {'deputado': ('camara', 'deputado'), 'senador': ('senado', 'senador')}
 PREFIX_BY_HOUSE = {'camara': 'deputado', 'senado': 'senador'}
@@ -201,6 +206,35 @@ def section_page(page_html, path, origin):
         json_ld = {'@context': 'https://schema.org', '@type': 'WebSite', 'name': SITE_NAME, 'url': origin + '/',
                    'inLanguage': 'pt-BR', 'description': DEFAULT_DESCRIPTION}
     return render(page_html, title, description, origin + path, json_ld=json_ld)
+
+
+def party_pair_page(page_html, path, origin):
+    """Metadados próprios para o link de comparação; a tela confere as siglas ao carregar."""
+    match = PARTY_PAIR_PATH.match(path)
+    first, second = (unquote(part).strip()[:30] for part in match.groups())
+    title = f'{first} × {second} · Comparar partidos'
+    description = (f'{first} e {second} lado a lado: gasto médio de cota, presença, alertas e como votaram '
+                   'na Câmara e no Senado, com dados públicos oficiais.')
+    # noindex: o par é escolha de quem compartilha, não uma página para indexar.
+    return render(page_html, title, description, origin + path, noindex=True)
+
+
+def compare_pair_page(db, page_html, path, origin):
+    """Metadados com os dois nomes; quem não está na base aparece como "Ficha não encontrada" no app."""
+    match = COMPARE_PAIR_PATH.match(path)
+    people = []
+    for prefix, number in (match.group(1, 2), match.group(3, 4)):
+        house, role = ROLE_BY_PREFIX[prefix]
+        record = citizen.politician(db, f'{house}:{number}')
+        person = record['pessoa'] if record else None
+        if person is None or person.get('role') != role:
+            return 200, section_page(page_html, '/comparar', origin), None
+        party_place = '-'.join(filter(None, [person.get('party'), person.get('uf')]))
+        people.append(f'{person["name"]} ({party_place})' if party_place else person['name'])
+    title = f'{people[0]} × {people[1]} · Comparar políticos'
+    description = f'{people[0]} e {people[1]} lado a lado: custo, cota, alertas, presença e votos, com dados públicos oficiais.'
+    # noindex: o par é escolha de quem compartilha, não uma página para indexar.
+    return 200, render(page_html, title, description, origin + path, noindex=True), None
 
 
 def profile_page(db, page_html, path, origin):

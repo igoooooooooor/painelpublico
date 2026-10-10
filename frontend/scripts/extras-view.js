@@ -240,6 +240,21 @@ function profileExtras(id) {
 }
 
 /* ---------- Comparar perfis ---------- */
+/* Endereço compartilhável: /comparar/deputado-73604-vs-senador-22 (mesmos prefixos das fichas). */
+const COMPARISON_PREFIX = { camara: 'deputado', senado: 'senador' };
+function comparisonPath(ids = extrasState.comparisonIds) {
+  const parts = ids.map(id => { const [house, number] = String(id).split(':'); return COMPARISON_PREFIX[house] && /^\d+$/.test(number || '') ? `${COMPARISON_PREFIX[house]}-${number}` : null; });
+  return parts.length === 2 && parts.every(Boolean) ? `/comparar/${parts.join('-vs-')}` : '/comparar';
+}
+function comparisonIdsFromPath(path) {
+  const match = String(path || '').match(/^\/comparar\/(deputado|senador)-(\d+)-vs-(deputado|senador)-(\d+)$/);
+  if (!match) return null;
+  const id = (prefix, number) => `${prefix === 'deputado' ? 'camara' : 'senado'}:${number}`;
+  const ids = [id(match[1], match[2]), id(match[3], match[4])];
+  return ids[0] === ids[1] ? null : ids;
+}
+// Troca de pessoa atualiza o endereço sem empilhar histórico.
+function syncComparisonLocation() { if (state.view === 'compare' && typeof syncLocation === 'function') syncLocation('replace'); }
 function addComparisonPerson(id) {
   if (!extrasState.comparisonIds.includes(id)) extrasState.comparisonIds = [...extrasState.comparisonIds, id].slice(-2);
   extrasState.comparisonQuery = ''; extrasState.comparisonKey = null; extrasState.comparisonResults = null; extrasState.comparisonError = null;
@@ -295,11 +310,13 @@ function comparisonShareCard([a, b]) {
     return p ? `${Math.round(p.presente / p.dias * 100)}%` : 'Sem dados';
   };
   const rows = [];
-  /* Custo só entre pessoas da mesma Casa: as Casas não publicam as mesmas partes. */
+  /* Entre Casas o custo aparece com a composição de cada uma: as Casas não publicam as mesmas partes. */
   const figures = [a, b].map(comparisonCostFigures);
-  if (figures[0].house === figures[1].house && figures.every(item => item.total)) {
-    rows.push({ label: figures[0].house === 'senado' ? 'Despesas identificadas por mês · Senado' : 'Custa por mês · Câmara',
-      values: figures.map(item => formatCitizenAmount(item.total.cents / 100)), notes: figures.map(item => `média de ${item.total.months} meses`) });
+  const sameHouse = figures[0].house === figures[1].house;
+  if (figures.every(item => item.total)) {
+    rows.push({ label: !sameHouse ? 'Quanto custa por mês (partes diferentes em cada Casa)' : figures[0].house === 'senado' ? 'Despesas identificadas por mês · Senado' : 'Custa por mês · Câmara',
+      values: figures.map(item => formatCitizenAmount(item.total.cents / 100)),
+      notes: figures.map(item => sameHouse ? `média de ${item.total.months} meses` : COST_COMPOSITION[item.house] || '') });
   }
   rows.push({ label: 'Cota parlamentar por mês', values: [money(a.mediaMensal), money(b.mediaMensal)], notes: [quotaNote(a), quotaNote(b)] });
   rows.push({ label: 'Cota comparada à média do cargo', values: [vsAverage(a), vsAverage(b)] });
@@ -329,18 +346,14 @@ function comparisonContact(profile) {
   if (!available) return 'Sem contato informado neste recorte';
   return contact.status === 'partial' ? 'Disponível em recorte parcial' : 'Dados disponíveis';
 }
+/* Quantos PL, PLP e PEC a pessoa apresentou e o que virou lei, pelos mesmos contadores da ficha.
+   Mais projetos não é melhor nem pior: a linha informa, sem destaque. */
 function comparisonProjects(profile) {
-  const projects = profile.projects;
-  if (!projects) return 'Sem dados importados';
-  const period = activityPeriod(projects);
-  const periodLabel = period ? ` · ${esc(period)}` : '';
-  if (projects.status === 'partial' || projects.status === 'unavailable' || projects.total == null && Array.isArray(projects.items)) {
-    const count = projects.items?.length;
-    const listed = count ? `${count} ${count === 1 ? 'projeto listado' : 'projetos listados'}` : 'Total não confirmado';
-    return `${listed} · recorte parcial${periodLabel}`;
-  }
-  if (projects.status === 'imported' || Number.isInteger(projects.total)) return `Dados disponíveis${periodLabel}`;
-  return projects.items?.length ? `Disponíveis neste recorte${periodLabel}` : 'Sem dados importados';
+  if (!profile.projects || typeof profileProjectStats !== 'function') return '<span class="muted">Sem dados importados</span>';
+  const stats = profileProjectStats(profile);
+  if (stats.count === null) return `<span class="muted">${stats.collection ? 'Consulta incompleta; total não confirmado' : 'Sem dados importados'}</span>`;
+  const outcome = stats.confirmed ? stats.status : stats.consulted ? 'situação consultada, sem classificação confirmada' : 'situação não consultada';
+  return `<b>${stats.count}</b><small> ${stats.count === 1 ? 'projeto' : 'projetos'}${stats.collection ? ` · ${stats.collection}` : ''}</small><br><small>${esc(outcome)}</small>`;
 }
 function comparisonCompensation(profile) {
   const salary = profile.compensation;
@@ -362,7 +375,9 @@ function comparisonOffice(profile) {
   return `${value} · ${esc(period)}${observed} · ${staff} · ${esc(fetched)}`;
 }
 /* Custo e partes de cada um pela própria Casa: Câmara pela composição do mandato, Senado pelas despesas
-   identificadas. As Casas não publicam as mesmas partes; os valores não vão para a mesma régua. */
+   identificadas. As Casas não publicam as mesmas partes: entre Casas os valores ficam lado a lado, com a
+   composição escrita e sem destaque de menor (decisão de 10/10/2026, docs/mandate-cost-collection.md). */
+const COST_COMPOSITION = { camara: 'salário, auxílios, cota e verba de gabinete', senado: 'remuneração, equipe do gabinete e cota' };
 function comparisonCostFigures(f) {
   const profile = comparisonProfile(f), house = String(f.pessoa?.id || '').split(':')[0];
   const money = cents => Number.isSafeInteger(cents) ? { cents } : null;
@@ -384,10 +399,9 @@ function comparisonCostRows(a, b, sideHtml) {
     const label = costA.house === 'senado' ? 'Despesas identificadas por mês · Senado' : 'Custa por mês · Câmara';
     return `<div class="cmp-row"><span class="cmp-l">${label}</span>${sideHtml(costA.total ? costA.total.cents : null, costB.total ? costB.total.cents : null, (value, side) => comparisonCostMoney(side === 'a' ? costA.total : costB.total))}</div>`;
   }
-  const cell = (figures, house) => figures.house === house ? comparisonCostMoney(figures.total) : 'Não se aplica';
-  return `${comparisonInfoRow('Custo do mandato por mês · Câmara', cell(costA, 'camara'), cell(costB, 'camara'))}
-    ${comparisonInfoRow('Despesas identificadas por mês · Senado', cell(costA, 'senado'), cell(costB, 'senado'))}
-    <div class="cmp-row"><span class="cmp-l"></span><div class="cmp-v muted cmp-source" style="grid-column: 2 / -1">Casas diferentes não são comparadas no custo: a Câmara soma salário, auxílios, cota e verba de gabinete; o Senado, remuneração, equipe do gabinete e cota.</div></div>`;
+  const cell = figures => `${comparisonCostMoney(figures.total)}${COST_COMPOSITION[figures.house] ? `<br><small>${COST_COMPOSITION[figures.house]}</small>` : ''}`;
+  return `${comparisonInfoRow('Quanto custa por mês', cell(costA), cell(costB))}
+    <div class="cmp-row"><span class="cmp-l"></span><div class="cmp-v muted cmp-source" style="grid-column: 2 / -1">Câmara e Senado publicam partes diferentes: parte da diferença vem do que cada Casa inclui, não só do quanto cada um gasta. Por isso nenhum valor é destacado como menor.</div></div>`;
 }
 function comparisonOfficeCell(f) {
   const figures = comparisonCostFigures(f);
@@ -432,11 +446,15 @@ function comparisonAttendanceRows(a, b, pA, pB) {
   const secondRecord = chamberB === 'senado' ? senateRegisteredPresence(b.pessoa.id) : null;
   const sessionCount = Number.isFinite(source?.sessionCount) ? source.sessionCount : null;
   const sourceDetail = 'Contagem de registros positivos. Faltas e justificativas não apuradas; ausência de linha não confirma falta.';
-  const show = (record, applies) => !applies ? '<span class="muted">Não se aplica</span>' : loading && !record ? '<i class="sk" style="display:inline-block;width:48px;height:12px"></i>'
-    : record ? `<b>${record.presente}</b><small> sessões registradas</small>` : '<span class="muted">Sem dados</span>';
-  return `${line('Presença · Câmara', chamberA === 'camara' ? value(pA) : null, chamberB === 'camara' ? value(pB) : null, null, '', chamberA === 'camara', chamberB === 'camara')}
-    <div class="cmp-row"><span class="cmp-l">Presença registrada · Senado</span><div class="cmp-v">${show(firstRecord, chamberA === 'senado')}</div><div class="cmp-v">${show(secondRecord, chamberB === 'senado')}</div></div>
-    <div class="cmp-row"><div class="cmp-v muted cmp-source" style="grid-column:1 / -1">Metodologias de presença de casas diferentes não são comparadas. ${sessionCount === null ? '' : `${sessionCount} listas de sessões consultadas no Senado. `}${esc(sourceDetail)}${activitySource(source, 'Fonte e período')}</div></div>`;
+  /* Cada Casa com a própria medida, na mesma linha e sem destaque: a Câmara publica presença e faltas por
+     sessão (porcentagem); o Senado, só os registros de presença (contagem). */
+  const cell = (chamber, attendance, record) => {
+    if (chamber === 'camara') return attendance ? `<b>${Math.round(value(attendance) * 100)}%</b><br><small>das sessões deliberativas da Câmara</small>` : '<span class="muted">Sem dados</span>';
+    if (loading && !record) return '<i class="sk" style="display:inline-block;width:48px;height:12px"></i>';
+    return record ? `<b>${record.presente}</b><small> sessões</small><br><small>com presença registrada no Senado${sessionCount === null ? '' : `, de ${sessionCount} listas consultadas`}</small>` : '<span class="muted">Sem dados</span>';
+  };
+  return `<div class="cmp-row"><span class="cmp-l">Presença</span><div class="cmp-v">${cell(chamberA, pA, firstRecord)}</div><div class="cmp-v">${cell(chamberB, pB, secondRecord)}</div></div>
+    <div class="cmp-row"><div class="cmp-v muted cmp-source" style="grid-column:1 / -1">A Câmara publica presença e faltas de cada sessão, por isso aparece em porcentagem; o Senado publica só os registros de presença, por isso aparece em número de sessões. As medidas são diferentes e nenhuma é destacada. No Senado: ${esc(sourceDetail.charAt(0).toLowerCase() + sourceDetail.slice(1))}${activitySource(source, 'Fonte e período')}</div></div>`;
 }
 function comparisonVotes(a, b) {
   const idA = String(a.pessoa.id), idB = String(b.pessoa.id);
@@ -460,6 +478,8 @@ function comparisonVotes(a, b) {
 function comparisonTable([a, b]) {
   const personA = a.pessoa, personB = b.pessoa, maxMonthly = Math.max(a.mediaMensal || 0, b.mediaMensal || 0, 1);
   const profileA = comparisonProfile(a), profileB = comparisonProfile(b);
+  // Cotas de Casas diferentes têm tetos diferentes: lado a lado, sem destacar a menor.
+  const sameHouse = String(personA.id).split(':')[0] === String(personB.id).split(':')[0];
   const firstName = person => esc(citizenName(person.name).split(' ')[0]);
   // higherIsWorse null: só informa, sem marcar "melhor" (ex.: alertas, que não medem conduta).
   const sideHtml = (valueA, valueB, format, higherIsWorse = true) => {
@@ -494,7 +514,7 @@ function comparisonTable([a, b]) {
   return `<section class="card cmp wide">
     <div class="cmp-head"><span></span>${[a, b].map(profile => `<button type="button" class="cmp-who" data-politician="${esc(profile.pessoa.id)}">${citizenAvatar(profile.pessoa, 56)}<b>${esc(citizenName(profile.pessoa.name))}</b><small>${esc([ROLE_LABELS[profile.pessoa.role], profile.pessoa.party, profile.pessoa.uf].filter(Boolean).join(' · '))}</small></button>`).join('')}</div>
     ${comparisonCostRows(a, b, sideHtml)}
-    <div class="cmp-row"><span class="cmp-l">Cota parlamentar por mês</span>${sideHtml(a.mediaMensal, b.mediaMensal, value => `<b class="mono">${formatCitizenAmount(value)}</b>`)}</div>
+    <div class="cmp-row"><span class="cmp-l">Cota parlamentar por mês</span>${sideHtml(a.mediaMensal, b.mediaMensal, value => `<b class="mono">${formatCitizenAmount(value)}</b>`, sameHouse ? true : null)}</div>
     <div class="cmp-row cmp-bars"><span class="cmp-l"></span><div><i style="width:${a.mediaMensal == null ? 0 : a.mediaMensal / maxMonthly * 100}%"></i></div><div><i style="width:${b.mediaMensal == null ? 0 : b.mediaMensal / maxMonthly * 100}%"></i></div></div>
     <div class="cmp-row"><span class="cmp-l"></span><div class="cmp-v muted cmp-source">${esc(quotaPeriod(a))}</div><div class="cmp-v muted cmp-source">${esc(quotaPeriod(b))}</div></div>
     <div class="cmp-row"><span class="cmp-l">Comparado à média do cargo</span>${sideHtml(vsAverage(a), vsAverage(b), value => `<b>${value > 0 ? '+' : ''}${value}%</b>`)}</div>
@@ -502,7 +522,7 @@ function comparisonTable([a, b]) {
     ${comparisonAttendanceRows(a, b, pA, pB)}
     ${comparisonInfoRow('Participação e exercício', comparisonParticipation(profileA), comparisonParticipation(profileB))}
     ${comparisonInfoRow('Contato institucional', esc(comparisonContact(profileA)), esc(comparisonContact(profileB)))}
-    ${comparisonInfoRow('Projetos', esc(comparisonProjects(profileA)), esc(comparisonProjects(profileB)))}
+    ${comparisonInfoRow('Projetos apresentados · PL, PLP e PEC desde fev/2023', comparisonProjects(profileA), comparisonProjects(profileB))}
     ${comparisonInfoRow('Equipe e verba de gabinete', comparisonOfficeCell(a), comparisonOfficeCell(b))}
     ${comparisonInfoRow('Remuneração', comparisonCompensationCell(a), comparisonCompensationCell(b))}
     <div class="cmp-row"><span class="cmp-l">Onde mais gastou</span><div class="cmp-v">${topCategory(a)}</div><div class="cmp-v">${topCategory(b)}</div></div>
@@ -527,9 +547,9 @@ document.addEventListener('click', e => {
   if (t.hasAttribute('data-vote-more')) { extrasState.voteLimit += 80; return rerender(); }
   if (t.hasAttribute('data-senate-votes-more')) { extrasState.senateVoteLimit += 20; return rerender(); }
   if (t.hasAttribute('data-cmp-votes-more')) { extrasState.comparisonVoteLimit += 20; return rerender(); }
-  if (t.dataset.cmpAdd) { e.stopPropagation(); addComparisonPerson(t.dataset.cmpAdd); return state.view === 'compare' ? rerender() : navigateToView('compare'); }
+  if (t.dataset.cmpAdd) { e.stopPropagation(); addComparisonPerson(t.dataset.cmpAdd); if (state.view !== 'compare') return navigateToView('compare'); rerender(); return syncComparisonLocation(); }
   if (t.hasAttribute('data-cmp-retry')) { extrasState.comparisonError = null; extrasState.comparisonResults = null; extrasState.comparisonLoading = false; return searchComparisonPeople(extrasState.comparisonQuery); }
-  if (t.dataset.cmpDel) { extrasState.comparisonIds = extrasState.comparisonIds.filter(x => x !== t.dataset.cmpDel); extrasState.comparisonQuery = ''; extrasState.comparisonKey = null; extrasState.comparisonResults = null; extrasState.comparisonError = null; return rerender(); }
+  if (t.dataset.cmpDel) { extrasState.comparisonIds = extrasState.comparisonIds.filter(x => x !== t.dataset.cmpDel); extrasState.comparisonQuery = ''; extrasState.comparisonKey = null; extrasState.comparisonResults = null; extrasState.comparisonError = null; rerender(); return syncComparisonLocation(); }
   if (t.hasAttribute('data-cmp-start')) { if (t.dataset.cmpStart) { extrasState.comparisonIds = []; addComparisonPerson(t.dataset.cmpStart); } navigateToView('compare'); }
 }, true);
 let extrasTimer = null;

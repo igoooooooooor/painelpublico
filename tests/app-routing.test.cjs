@@ -82,6 +82,26 @@ test('section paths open their view', () => {
   assert.equal(document.body.dataset.view, 'parties');
 });
 
+test('party comparison paths open the selected pair', () => {
+  const { context, document } = loadApp({ pathname: '/partidos/PL-vs-PT' });
+  assert.equal(document.body.dataset.view, 'parties');
+  assert.deepEqual([...vm.runInContext('partyState.selected', context)], ['PL', 'PT']);
+  assert.equal(vm.runInContext('viewPath()', context), '/partidos/PL-vs-PT');
+});
+
+test('politician comparison paths open both people and keep the address', () => {
+  const requested = [];
+  const { context, document } = loadApp({ pathname: '/comparar/deputado-73604-vs-senador-22',
+    fetch: url => { requested.push(url); return new Promise(() => {}); } });
+  assert.equal(document.body.dataset.view, 'compare');
+  assert.deepEqual([...vm.runInContext('extrasState.comparisonIds', context)], ['camara:73604', 'senado:22']);
+  assert.equal(vm.runInContext('viewPath()', context), '/comparar/deputado-73604-vs-senador-22');
+  assert.ok(requested.some(url => String(url).includes('/api/c/politico/camara%3A73604')));
+  assert.equal(vm.runInContext("comparisonIdsFromPath('/comparar/deputado-1-vs-deputado-1')", context), null);
+  vm.runInContext("extrasState.comparisonIds = ['camara:73604']", context);
+  assert.equal(vm.runInContext('viewPath()', context), '/comparar');
+});
+
 test('direct Placar vote paths load the vote view and keep the address', () => {
   const requested = [];
   const history = { pushState: (_, __, url) => requested.push(['push', url]), replaceState: (_, __, url) => requested.push(['replace', url]) };

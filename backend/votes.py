@@ -265,18 +265,8 @@ def listing(params=None, path=None):
             'generatedAt': snapshot['generatedAt']}
 
 
-def detail(identifier, path=None):
-    """Return one reviewed summary and its optional local roll-call details."""
-    if not isinstance(identifier, str) or not _VOTE_ID.fullmatch(identifier):
-        return None
-    snapshot_path = Path(path) if path is not None else Path(SNAPSHOTS_PATH) / INDEX_NAME
-    snapshot = _index(snapshot_path)
-    if snapshot is None:
-        return None
-    vote = next((item for item in snapshot['items'] if item['id'] == identifier), None)
-    if vote is None:
-        return None
-
+def _vote_details(snapshot_path, snapshot, identifier):
+    """Load one validated roll-call detail file; invalid or absent files return no rows."""
     details_root = (snapshot_path.parent / DETAILS_DIRECTORY).resolve()
     details_version = snapshot['detailsVersion']
     details_directory = (details_root / details_version).resolve() if details_version else details_root
@@ -322,5 +312,60 @@ def detail(identifier, path=None):
                 safe_party_totals.append({key: total[key] for key in ('party', 'yes', 'no', 'other')})
         if valid_participants and valid_party_totals:
             participants, party_totals, available = safe_participants, safe_party_totals, True
+    return participants, party_totals, available
+
+
+def detail(identifier, path=None):
+    """Return one reviewed summary and its optional local roll-call details."""
+    if not isinstance(identifier, str) or not _VOTE_ID.fullmatch(identifier):
+        return None
+    snapshot_path = Path(path) if path is not None else Path(SNAPSHOTS_PATH) / INDEX_NAME
+    snapshot = _index(snapshot_path)
+    if snapshot is None:
+        return None
+    vote = next((item for item in snapshot['items'] if item['id'] == identifier), None)
+    if vote is None:
+        return None
+
+    participants, party_totals, available = _vote_details(snapshot_path, snapshot, identifier)
     return {'available': True, 'vote': vote, 'participants': participants,
             'partyTotals': party_totals, 'participantsAvailable': available}
+
+
+# Siglas truncadas ou com grafia diferente na fonte, unificadas pela forma da lista atual.
+_PARTY_ALIASES = {'REPUBLICAN': 'REPUBLICANOS', 'SOLIDARIED': 'SOLIDARIEDADE', 'PODEMOS': 'PODE'}
+
+
+def party_key(party):
+    """Normalize a published party label for comparisons between votes."""
+    key = str(party or '').strip().upper()
+    return _PARTY_ALIASES.get(key, key)
+
+
+def party_totals(path=None):
+    """Return each reviewed vote with Yes/No/other totals by published party.
+
+    Votes without a valid detail file stay listed with ``partyTotals`` set to None,
+    so a missing file never becomes a zero count.
+    """
+    snapshot_path = Path(path) if path is not None else Path(SNAPSHOTS_PATH) / INDEX_NAME
+    snapshot = _index(snapshot_path)
+    if snapshot is None:
+        return {'available': False, 'items': [], 'period': None, 'coverage': None, 'generatedAt': None}
+    items = []
+    for vote in snapshot['items']:
+        _, totals, available = _vote_details(snapshot_path, snapshot, vote['id'])
+        by_party = None
+        if available:
+            by_party = {}
+            for total in totals:
+                key = party_key(total['party'])
+                if not key:
+                    continue
+                merged = by_party.setdefault(key, {'yes': 0, 'no': 0, 'other': 0})
+                for field in ('yes', 'no', 'other'):
+                    merged[field] += total[field]
+        items.append({key: vote[key] for key in ('id', 'date', 'proposition', 'type', 'title', 'outcome')}
+                     | {'partyTotals': by_party})
+    return {'available': True, 'items': items, 'period': snapshot['period'],
+            'coverage': snapshot['coverage'], 'generatedAt': snapshot['generatedAt']}

@@ -126,6 +126,15 @@ Decisão do mantenedor: o Senado aparece à parte, sem somar partes de definiç�
 mandato" e sem comparação com deputados(as). A comparação de custo total Câmara × Senado fica indisponível
 até reconciliar o que cada fonte inclui.
 
+**Revisão de 10/10/2026 (decisão do mantenedor):** na comparação lado a lado de um(a) deputado(a) com um(a)
+senador(a), os dois custos mensais aparecem na mesma linha ("Quanto custa por mês"), cada um com a própria
+composição escrita (Câmara: salário, auxílios, cota e verba de gabinete; Senado: remuneração, equipe do
+gabinete e cota). Para o cidadão, saber quanto custa cada cargo é informação legítima; esconder os números
+não protegia ninguém. Continua valendo o motivo original: as partes não são iguais, então nenhum dos dois
+valores é destacado como menor, e a cota de Casas diferentes também fica sem destaque (os tetos diferem).
+Listas e ordenações ("Quem mais custa", "acima da média do cargo") seguem separadas por Casa, e não há
+soma nem total novo que misture as composições.
+
 - `make collect-senate-cost` roda o coletor dos gabinetes (saída local) e `ingest/senate_cost.py --collect`,
   que junta o histórico de exercício de cada senador(a) na API do Senado (cache em
   `data/raw/senado-exercicios/`) e grava `data/snapshots/senate-cost.json`, publicado com `make deploy-data`.
@@ -222,7 +231,8 @@ conciliação documentada antes da composição final. Nenhum valor foi corrigid
 banco para forçar coincidência entre fontes.
 
 Qualquer comparação futura será **somente dentro da mesma Casa**, com mesmas
-partes, natureza e competências. Mesmo que ambas tenham cota, referência salarial
+partes, natureza e competências. (Revisto em 10/10/2026 para a comparação lado a lado de duas pessoas:
+ver “Na ficha: despesas identificadas do mandato”. Rankings e médias continuam por Casa.) Mesmo que ambas tenham cota, referência salarial
 não torna Senado e Câmara comparáveis em custo total. O piloto do Senado não
 estabeleceu remuneração paga; não há total novo para essa Casa nesta fase.
 

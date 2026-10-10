@@ -126,6 +126,8 @@ function syncTitle() {
   document.title = page ? `${page} · Painel Público` : 'Painel Público: quanto custa e como trabalha cada parlamentar';
 }
 function viewPath() {
+  if (state.view === 'compare' && typeof comparisonPath === 'function') return comparisonPath();
+  if (state.view === 'parties' && typeof partyPairPath === 'function') return partyPairPath();
   if (state.view === 'vote' && typeof SCOREBOARD_VOTE_ID !== 'undefined' && SCOREBOARD_VOTE_ID.test(String(state.voteId || ''))) return `/placar/${state.voteId}`;
   const [house, number] = String(state.politicianId || '').split(':');
   if (state.view === 'profile' && /^\d+$/.test(number || '') && (house === 'camara' || house === 'senado')) {
@@ -139,6 +141,19 @@ function applyLocation() {
   if (vote) {
     state.view = 'vote';
     state.voteId = vote[1];
+    return;
+  }
+  const comparison = typeof comparisonIdsFromPath === 'function' ? comparisonIdsFromPath(path) : null;
+  if (comparison) {
+    state.view = 'compare';
+    extrasState.comparisonIds = [];
+    comparison.forEach(addComparisonPerson);
+    return;
+  }
+  const pair = typeof partyPairFromPath === 'function' ? partyPairFromPath(path) : null;
+  if (pair) {
+    state.view = 'parties';
+    partyState.selected = pair;
     return;
   }
   const profile = path.match(/^\/(deputado|senador)\/(\d+)(?:-|$)/);

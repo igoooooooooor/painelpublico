@@ -97,6 +97,27 @@ class SeoPagesTests(unittest.TestCase):
         _, llms = self.get('/llms.txt')
         self.assertIn('/deputado/<id>-<nome>', llms)
 
+    def test_party_pair_path_has_its_own_escaped_metadata(self):
+        response, page = self.get('/partidos/PL-vs-PT')
+        self.assertEqual(response.status, 200)
+        self.assertIn('<title>PL × PT · Comparar partidos · Painel Público</title>', page)
+        self.assertIn('<meta name="robots" content="noindex">', page)
+        _, escaped = self.get('/partidos/%3Cb%3E-vs-PT')
+        self.assertNotIn('<b> ×', escaped)
+        self.assertIn('&lt;b&gt; × PT', escaped)
+
+    def test_compare_pair_path_names_both_people_and_falls_back_for_unknown_ids(self):
+        response, page = self.get('/comparar/deputado-1-vs-senador-2')
+        self.assertEqual(response.status, 200)
+        self.assertIn('Ana', page)
+        self.assertIn('Bruno &lt;Bê&gt;', page)
+        self.assertIn('· Comparar políticos · Painel Público</title>', page)
+        self.assertIn('<meta name="robots" content="noindex">', page)
+        _, unknown = self.get('/comparar/deputado-999-vs-senador-2')
+        self.assertIn('<title>Comparar políticos · Painel Público</title>', unknown)
+        _, wrong_role = self.get('/comparar/senador-1-vs-senador-2')
+        self.assertIn('<title>Comparar políticos · Painel Público</title>', wrong_role)
+
     def test_favicon_is_served_for_both_names(self):
         for path in ('/favicon.svg', '/favicon.ico'):
             response, body = self.get(path)

@@ -223,6 +223,21 @@ class VoteSnapshotTests(unittest.TestCase):
         self.assertEqual(unavailable['vote']['id'], '2611313-31')
         self.assertEqual(unavailable['participants'], [])
 
+    def test_party_totals_normalize_labels_and_keep_missing_details_unavailable(self):
+        self.write(self.root / votes.DETAILS_DIRECTORY / '2611313-31.json', {'id': '2611313-31', 'participants': [],
+            'partyTotals': [{'party': 'REPUBLICANOS', 'yes': 3, 'no': 1, 'other': 0},
+                            {'party': 'Republican', 'yes': 1, 'no': 0, 'other': 2},
+                            {'party': 'PCdoB', 'yes': 0, 'no': 2, 'other': 0}]})
+        result = votes.party_totals(self.index)
+        self.assertTrue(result['available'])
+        self.assertEqual([item['id'] for item in result['items']], ['2600001-02', '2611313-31', '2599999-01'])
+        totals = result['items'][1]['partyTotals']
+        self.assertEqual(totals['REPUBLICANOS'], {'yes': 4, 'no': 1, 'other': 2})
+        self.assertEqual(totals['PCDOB'], {'yes': 0, 'no': 2, 'other': 0})
+        self.assertIsNone(result['items'][0]['partyTotals'])
+        self.assertNotIn('participants', json.dumps(result))
+        self.assertFalse(votes.party_totals(self.root / 'missing.json')['available'])
+
     def test_detail_uses_selected_generation_and_tracks_index_switch_without_leaking_version(self):
         first_version, second_version = 'a' * 64, 'b' * 64
         first_details = {'participants': [

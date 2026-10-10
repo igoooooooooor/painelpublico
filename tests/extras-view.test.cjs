@@ -48,7 +48,7 @@ function comparison(a, b) {
     : `<button type="button" class="${className}" data-vote="${vote.id}">${content}</button>`;
   context.profileData = value => ({ id: value.id, person: value, contact: null, projects: null, compensation: null, mandate: null });
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../frontend/scripts/dates.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '../frontend/scripts/extras-view.js'), 'utf8') +
-    '\nthis.__api = { extrasState, comparisonTable, searchComparisonPeople, comparisonPickerList, comparisonView, taxCard, voteRowsForItem, votesForPerson, attendanceForPerson, attendanceRows, attendanceBar, profileExtras };', context);
+    '\nthis.__api = { extrasState, comparisonTable, comparisonShareCard, searchComparisonPeople, comparisonPickerList, comparisonView, taxCard, voteRowsForItem, votesForPerson, attendanceForPerson, attendanceRows, attendanceBar, profileExtras };', context);
   return { html: context.__api.comparisonTable([a, b]), api: context.__api, context, senate };
 }
 const profile = (id, total) => ({ pessoa: { id, name: id, role: 'senador' }, total, mediaMensal: total, media: 100,
@@ -121,10 +121,13 @@ test('profile comparison adds neutral availability and mandate details without r
     office: { amount: 125000, staffActive: 4, period: 'Jan–Jun/2026', months: 6, fetchedAt: '2026-10-07' },
     compensation: { amount: 46366.19 },
   }) : ({ id: value.id, person: value, mandate: null, contact: null, projects: null, office: null, compensation: null });
+  // Mesmos contadores da ficha (profile-data.js); aqui um retorno fixo para testar a célula.
+  context.profileProjectStats = value => ({ count: 1, collection: 'cobertura parcial', confirmed: 1, consulted: 1, status: '1 virou lei' });
   const html = api.comparisonTable([profile('camara:1', 100), profile('camara:2', 200)]);
   assert.match(html, /Participação e exercício/);
   assert.match(html, /Disponível em recorte parcial/);
-  assert.match(html, /1 projeto listado · recorte parcial · de 01\/02\/2023 a 08\/10\/2026/);
+  assert.match(html, /Projetos apresentados · PL, PLP e PEC desde fev\/2023/);
+  assert.match(html, /<b>1<\/b><small> projeto · cobertura parcial<\/small><br><small>1 virou lei<\/small>/);
   assert.match(html, /125\.000,00/);
   assert.match(html, /Jan–Jun\/2026/);
   assert.match(html, /4 pessoas ativas/);
@@ -137,7 +140,7 @@ test('profile comparison adds neutral availability and mandate details without r
   }
 });
 
-test('deputy and senator keep each house cost on its own row, never side by side', () => {
+test('deputy and senator costs sit side by side with their composition and no highlight', () => {
   const { api, context } = comparison(profile('camara:1', 24000), profile('senado:70', 27000));
   context.profileData = value => value.id === 'camara:1'
     ? { id: value.id, person: value, cost: { monthlyAverageCents: 18828630, usedMonths: Array(42).fill('x'),
@@ -146,10 +149,14 @@ test('deputy and senator keep each house cost on its own row, never side by side
   context.senateCostFigures = () => ({ total: { cents: 37586984, months: 43 }, remuneration: { cents: 4428269, months: 44 }, office: { cents: 30413582, months: 44 }, officePeople: 21 });
   const html = api.comparisonTable([{ ...profile('camara:1', 24000), pessoa: { id: 'camara:1', name: 'AJ', role: 'deputado' } }, profile('senado:70', 27000)]);
   const row = label => html.split('\n').find(line => line.includes(label)) || '';
-  assert.match(row('Custo do mandato por mês · Câmara'), /R\$ 188286\.3<\/b>[\s\S]*Não se aplica/);
-  assert.match(row('Despesas identificadas por mês · Senado'), /Não se aplica[\s\S]*R\$ 375869\.84<\/b>/);
-  assert.doesNotMatch(row('Custo do mandato por mês · Câmara') + row('Despesas identificadas por mês · Senado'), /cmp-v best/);
-  assert.match(html, /Casas diferentes não são comparadas no custo/);
+  assert.match(row('Quanto custa por mês'), /R\$ 188286\.3<\/b>[\s\S]*salário, auxílios, cota e verba de gabinete[\s\S]*R\$ 375869\.84<\/b>[\s\S]*remuneração, equipe do gabinete e cota/);
+  assert.doesNotMatch(row('Quanto custa por mês'), /cmp-v best/);
+  assert.doesNotMatch(row('Cota parlamentar por mês'), /cmp-v best/);
+  assert.match(html, /parte da diferença vem do que cada Casa inclui/);
+  assert.doesNotMatch(html, /Não se aplica<\/div><div class="cmp-v">[^<]*R\$/);
+  const card = api.comparisonShareCard([{ ...profile('camara:1', 24000), pessoa: { id: 'camara:1', name: 'AJ', role: 'deputado' } }, profile('senado:70', 27000)]);
+  assert.equal(card.rows[0].label, 'Quanto custa por mês (partes diferentes em cada Casa)');
+  assert.deepEqual([...card.rows[0].notes], ['salário, auxílios, cota e verba de gabinete', 'remuneração, equipe do gabinete e cota']);
   assert.match(row('Equipe e verba de gabinete'), /R\$ 126364\.86<\/b>[\s\S]*verba de gabinete \(Câmara\)[\s\S]*R\$ 304135\.82<\/b>[\s\S]*equipe comissionada do gabinete \(Senado\) · 21 pessoas/);
   assert.match(row('Remuneração'), /média de 42 meses[\s\S]*bruto pago, pela folha da Câmara[\s\S]*bruto pago, pela folha do Senado/);
   assert.doesNotMatch(html, /não pagamento individual/);
@@ -254,13 +261,12 @@ test('cross-house profile comparison leaves presence methods unranked and omits 
     { id: 'senado:V1', titulo: 'Matéria Senado', secreta: false, sourceUrl: 'https://senado.example.test/v1', rows: [] },
   ] };
   const html = api.comparisonTable([profile('camara:1', 100), profile('senado:55', 200)]);
-  assert.match(html, /Presença · Câmara/);
-  assert.match(html, /Presença registrada · Senado/);
-  assert.match(html, /Metodologias de presença de casas diferentes não são comparadas/);
+  const presence = html.split('\n').find(line => line.includes('<span class="cmp-l">Presença</span>')) || '';
+  assert.match(presence, /<b>100%<\/b><br><small>das sessões deliberativas da Câmara[\s\S]*<b>3<\/b><small> sessões<\/small><br><small>com presença registrada no Senado, de 18 listas consultadas/);
+  assert.doesNotMatch(presence, /Não se aplica|cmp-v best/);
+  assert.match(html, /as medidas são diferentes e nenhuma é destacada/i);
+  assert.doesNotMatch(html, /Metodologias de presença de casas diferentes não são comparadas/);
   assert.match(html, /Votações de casas diferentes não são comparadas/);
-  const rows = html.split('\n').filter(line => line.includes('Presença · Câmara') || line.includes('Presença registrada · Senado'));
-  assert.equal(rows.length, 2);
-  rows.forEach(row => assert.doesNotMatch(row, /class="cmp-v best"/));
   assert.doesNotMatch(html, /Matéria Senado|1 votação nominal com registro/);
 });
 
