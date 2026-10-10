@@ -13,12 +13,12 @@ const SHARE_SITE = 'painelpublico.com';
 
 /* card: { kicker, title, subtitle?, columns?: [nome, nome], rows: [{ label, values: [..], notes?: [..] }], footnote, fileName }
    ou, na comparação de políticos, { layout: 'faceoff', title, people: [{ name, meta, stats, categories, top }] x2, agreement, alerts, footnote, fileName }. */
-function shareActionsHTML(card) {
+function shareActionsHTML(card, label = 'Compartilhar imagem') {
   if (SHARE_STATE.card?.fileName !== card?.fileName) SHARE_STATE.message = '';
   SHARE_STATE.card = card;
   if (!card) return '';
   return `<div class="share-actions" role="group" aria-label="Compartilhar">
-    <button type="button" class="fchip" data-share="image"${SHARE_STATE.busy ? ' disabled' : ''}>Compartilhar imagem</button>
+    <button type="button" class="fchip" data-share="image"${SHARE_STATE.busy ? ' disabled' : ''}>${esc(label)}</button>
     <span class="share-status muted" role="status">${esc(SHARE_STATE.message)}</span>
   </div>`;
 }
@@ -159,8 +159,30 @@ function shareDrawFaceoff(card, context) {
       context.font = shareFont(400, 19);
       context.fillText('Sem notas da cota no período', x, y);
     }
-    // Maior nota única, com categoria, mês e fornecedor.
+    // Rodapé do card: medidor (partidos) ou maior nota única, com categoria, mês e fornecedor.
     y = cardTop + cardHeight - 160;
+    if (person.meter) {
+      const meter = person.meter;
+      context.fillStyle = SHARE_DARK.line;
+      context.fillRect(x, y, inner, 1);
+      y += 40;
+      context.fillStyle = SHARE_DARK.muted;
+      context.font = shareFont(400, 18);
+      context.fillText(meter.label, x, y);
+      const value = Number.isFinite(meter.share) ? `${Math.round(meter.share * 100)}%` : 'Sem dados';
+      context.textAlign = 'right';
+      context.fillStyle = SHARE_DARK.ink;
+      context.font = shareFont(700, 32, SHARE_FONTS.data);
+      context.fillText(value, x + inner, y + 4);
+      context.textAlign = 'left';
+      y += 26;
+      shareRoundRect(context, x, y, inner, 12, 6, SHARE_DARK.track);
+      if (Number.isFinite(meter.share) && meter.share > 0) shareRoundRect(context, x, y, Math.max(12, inner * meter.share), 12, 6, color);
+      context.fillStyle = SHARE_DARK.behind;
+      context.font = shareFont(400, 16);
+      for (const line of shareWrap(context, meter.note || '', inner, 2)) { y += 26; context.fillText(line, x, y + 10); }
+      return;
+    }
     context.fillStyle = SHARE_DARK.line;
     context.fillRect(x, y, inner, 1);
     y += 34;
@@ -185,8 +207,9 @@ function shareDrawFaceoff(card, context) {
     const share = agreement.matching / agreement.total;
     context.fillStyle = SHARE_DARK.ink;
     context.font = shareFont(600, 26);
-    context.fillText('Votaram igual em', padding + 28, y + 62);
-    const labelWidth = context.measureText('Votaram igual em').width;
+    const lead = agreement.lead || 'Votaram igual em';
+    context.fillText(lead, padding + 28, y + 62);
+    const labelWidth = context.measureText(lead).width;
     context.font = shareFont(700, 56, SHARE_FONTS.data);
     context.fillText(`${Math.round(share * 100)}%`, padding + 28 + labelWidth + 14, y + 66);
     context.textAlign = 'right';
@@ -208,7 +231,7 @@ function shareDrawFaceoff(card, context) {
   y += 128 + 46;
   context.fillStyle = SHARE_DARK.ink2;
   context.font = shareFont(400, 21);
-  context.fillText('Alertas na cota', padding + 28, y);
+  context.fillText(card.alertsLabel || 'Alertas na cota', padding + 28, y);
   const alerts = card.alerts || [];
   context.textAlign = 'right';
   context.font = shareFont(700, 26, SHARE_FONTS.data);

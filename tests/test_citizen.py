@@ -233,6 +233,9 @@ class CitizenPoliticiansTests(unittest.TestCase):
         self.assertEqual(teste['senador']['membros'], 1)
         self.assertEqual([person['id'] for person in teste['top']], ['camara:paid', 'senado:current', 'camara:zero'])
         self.assertNotIn('camara:former', [person['id'] for person in teste['top']])
+        # Categorias da cota: só deputados(as) da lista atual, somando o mesmo total do gasto da bancada.
+        self.assertAlmostEqual(teste['cotaCategorias']['total'], 123.45)
+        self.assertLessEqual(len(teste['cotaCategorias']['itens']), 3)
 
         outro = parties['OUTRO']
         self.assertEqual(outro['deputado']['comDados'], 0)
@@ -240,6 +243,7 @@ class CitizenPoliticiansTests(unittest.TestCase):
         self.assertIsNone(outro['deputado']['media'])
         self.assertIsNone(outro['senador'])
         self.assertEqual(outro['top'], [])
+        self.assertIsNone(outro['cotaCategorias'])
         self.assertEqual(result['itens'][0]['sigla'], 'TESTE')
 
 

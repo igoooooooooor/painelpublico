@@ -54,7 +54,7 @@ function partyVotes(partyCode, chamber = 'camara') {
       // Totais ausentes (sem arquivo de detalhe) ou partido sem linha ficam sem maioria, nunca zero votos.
       const totals = item.partyTotals ? item.partyTotals[partyVoteKey(partyCode)] : null;
       const yesCount = totals?.yes || 0, noCount = totals?.no || 0;
-      return { vote: { id: item.id, titulo: item.title, proposicao: item.proposition, data: item.date }, yesCount, noCount,
+      return { vote: { id: item.id, titulo: item.title, proposicao: item.proposition, data: item.date, outcome: item.outcome }, yesCount, noCount,
         otherCount: totals?.other || 0, majority: partyVoteMajority(yesCount, noCount) };
     });
   }
@@ -111,23 +111,51 @@ function partyVoteChip(record) {
   return `<span class="vchip ${className}">${esc(record.majority.toLowerCase())}</span><small class="party-score mono">${record.yesCount}–${record.noCount}</small>`;
 }
 
-/* Cartão para compartilhar a comparação de partidos, com as mesmas métricas da tabela. */
+/* Do lado vencedor: votações em que a maioria da bancada (Sim ou Não) coincidiu com o resultado final. */
+function partyWinningSide(votes) {
+  const decided = votes.filter(record => ['Sim', 'Não'].includes(record.majority) && ['approved', 'rejected'].includes(record.vote.outcome));
+  const wins = decided.filter(record => (record.majority === 'Sim') === (record.vote.outcome === 'approved')).length;
+  return decided.length ? { wins, total: decided.length } : null;
+}
+/* Cartão para compartilhar a comparação de partidos, no mesmo desenho da comparação de políticos: um card por
+   partido (cota e presença dos deputados(as), para onde vai a cota, lado vencedor) e os votos das bancadas.
+   Etiquetas só para fatos comparáveis (cota menor, presença maior); alertas sem destaque. */
 function partyShareCard(a, b) {
-  const money = value => Number.isFinite(value) ? formatCitizenAmount(value) : 'Sem dados';
-  const percentText = value => Number.isFinite(value) ? `${Math.round(value * 100)}%` : 'Sem dados';
+  const parties = [a, b];
+  const quota = parties.map(party => Number.isFinite(party.deputado?.media) ? party.deputado.media : null);
+  const presence = parties.map(party => partyAttendance(party.sigla)?.media ?? null);
+  const winner = (values, lowerWins) => values.every(value => value != null) && values[0] !== values[1] ? ((values[0] < values[1]) === lowerWins ? 0 : 1) : null;
+  const quotaWinner = winner(quota.map(value => value == null ? null : Math.round(value / 100)), true);
+  const presenceWinner = winner(presence.map(value => value == null ? null : Math.round(value * 100)), false);
+  const votes = parties.map(party => partyVotes(party.sigla));
   const perTen = party => { const alerts = (party.deputado?.alertas || 0) + (party.senador?.alertas || 0); const members = (party.deputado?.comDados || 0) + (party.senador?.comDados || 0);
     return members ? (alerts / members * 10).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : 'Sem dados'; };
+  const people = parties.map((party, index) => {
+    const side = partyWinningSide(votes[index]);
+    const categories = party.cotaCategorias?.total > 0 ? party.cotaCategorias.itens.map(item => ({ name: item.nome, share: item.valor / party.cotaCategorias.total })) : [];
+    return {
+      name: party.sigla,
+      meta: `${party.membros} na lista · ${party.deputado?.membros || 0} dep. + ${party.senador?.membros || 0} sen.`,
+      stats: [
+        { label: 'Cota por mês, média por deputado(a)', value: quota[index] == null ? 'Sem dados' : formatCitizenAmount(quota[index]),
+          tag: quotaWinner === index ? `${formatCitizenAmount(Math.abs(quota[0] - quota[1]))} a menos por mês` : '', behind: quotaWinner !== null && quotaWinner !== index },
+        { label: 'Presença média no Plenário', value: presence[index] == null ? 'Sem dados' : `${Math.round(presence[index] * 100)}%`,
+          tag: presenceWinner === index ? 'mais presente' : '', behind: presenceWinner !== null && presenceWinner !== index },
+      ],
+      categories,
+      meter: { label: 'Do lado vencedor nas votações', share: side ? side.wins / side.total : null,
+        note: side ? `maioria votou como o resultado · ${side.wins} de ${side.total}` : 'sem votações com maioria da bancada' },
+    };
+  });
+  const majorities = votes.map(list => new Map(list.filter(record => ['Sim', 'Não'].includes(record.majority)).map(record => [record.vote.id, record.majority])));
+  const shared = [...majorities[0].keys()].filter(id => majorities[1].has(id));
   return {
-    kicker: 'Comparação de partidos', title: `${a.sigla} × ${b.sigla}`, columns: [a.sigla, b.sigla],
-    rows: [
-      { label: 'Registros na lista (deputados(as) + senadores(as))', values: [String(a.membros), String(b.membros)] },
-      { label: 'Cota por mês, média por deputado(a) · mandato', values: [money(a.deputado?.media), money(b.deputado?.media)] },
-      { label: 'Alertas a cada 10 parlamentares', values: [perTen(a), perTen(b)] },
-      { label: 'Presença média no Plenário · Câmara', values: [percentText(partyAttendance(a.sigla)?.media), percentText(partyAttendance(b.sigla)?.media)] },
-      { label: 'Unidade nas votações · Câmara', values: [percentText(partyVoteAlignment(partyVotes(a.sigla))), percentText(partyVoteAlignment(partyVotes(b.sigla)))] },
-    ],
+    layout: 'faceoff', title: `${a.sigla} × ${b.sigla}`, people,
+    agreement: shared.length ? { lead: 'As bancadas votaram igual em', matching: shared.filter(id => majorities[0].get(id) === majorities[1].get(id)).length,
+      total: shared.length, source: 'votações do Placar · Câmara' } : null,
+    alertsLabel: 'Alertas a cada 10 parlamentares', alerts: parties.map(perTen),
     fileName: `${a.sigla}-x-${b.sigla}`,
-    footnote: 'Fontes: notas da cota, presença e votações publicadas pela Câmara e pelo Senado. Legenda pelo cadastro atual.',
+    footnote: 'Câmara e Senado, mandato atual. Cota, presença e votações: deputados(as). Legenda pelo cadastro atual.',
   };
 }
 
@@ -219,7 +247,7 @@ function partiesView() {
     <div class="chips" role="group" aria-label="Partidos">${partyState.data.itens.map(p => `<button type="button" class="fchip" data-party="${esc(p.sigla)}" aria-pressed="${partyState.selected.includes(p.sigla)}">${esc(p.sigla)} <b>${p.membros}</b></button>`).join('')}</div>
     <span class="muted">O número ao lado conta registros incluídos na lista (deputados(as) + senadores(as)); o Senado tem 81 cadeiras e a lista pode incluir suplentes em transição. Toque para trocar; o mais antigo da comparação sai.</span>
   </section>
-  ${a && b ? shareActionsHTML(partyShareCard(a, b)) + partyComparisonTable(a, b) : '<p class="note">Escolha dois partidos para comparar.</p>'}
+  ${a && b ? shareActionsHTML(partyShareCard(a, b), 'Compartilhar') + partyComparisonTable(a, b) : '<p class="note">Escolha dois partidos para comparar.</p>'}
   <span class="src">Destaque em roxo: menor gasto médio, menos alertas ou mais presença na Câmara. Registros de presença do Senado são contagens informativas, sem ranking, e não contam sessões sem linha publicada. Partidos maiores tendem a ter mais variação interna; compare a média, não o total. Gastos pelas notas da cota (sem passagens aéreas da Câmara); presença e votos são mostrados separadamente por casa e pelos recortes das respectivas fontes.</span>`;
 }
 

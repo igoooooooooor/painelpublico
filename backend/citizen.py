@@ -656,7 +656,8 @@ def expenses_csv(db, identifier):
 
 
 def parties(db):
-    """Resumo por partido dos(as) parlamentares em exercício: bancada, cota observada, alertas e quem mais gastou.
+    """Resumo por partido dos(as) parlamentares em exercício: bancada, cota observada, alertas, quem mais gastou
+    e as 3 maiores categorias da cota dos(as) deputados(as) (``cotaCategorias``, nula sem notas).
 
     Gasto e média só contam quem tem notas importadas; sem nenhuma nota, o gasto fica nulo (ausência não é zero).
     """
@@ -676,6 +677,18 @@ def parties(db):
             FROM authorities a JOIN authority_totals t ON t.authorityId=a.id AND t.kind='reembolso'
             WHERE {condition} AND TRIM(COALESCE(a.party,''))<>'')
         WHERE n<=3 ORDER BY sigla, n''', args)
+    # Para onde vai a cota dos(as) deputados(as) de cada partido no mandato: só a Câmara, que publica as mesmas
+    # categorias para todos(as); senadores(as) têm outra cota e ficam de fora.
+    category_rows = rows(db, '''SELECT a.party sigla, x.category, SUM(x.amountCents)/100.0 valor FROM (
+            SELECT authorityId, category, amountCents FROM expenses WHERE kind='reembolso'
+            UNION ALL SELECT authorityId, category, amountCents FROM quota_history WHERE kind='reembolso') x
+        JOIN authorities a ON a.id=x.authorityId
+        WHERE a.role='deputado' AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?) AND TRIM(COALESCE(a.party,''))<>''
+        GROUP BY a.party, x.category''', (CURRENT['deputado'],))
+    party_categories = {}
+    for r in category_rows:
+        named = party_categories.setdefault(r['sigla'], {})
+        named[category_name(r['category'])] = named.get(category_name(r['category']), 0) + r['valor']
     out = {}
     for r in lines:
         person = out.setdefault(r['sigla'], {'sigla': r['sigla'], 'membros': 0, 'deputado': None, 'senador': None, 'top': []})
@@ -685,5 +698,9 @@ def parties(db):
         person['membros'] += r['membros']
     for r in top_rows:
         out[r['sigla']]['top'].append({k: r[k] for k in ('id', 'name', 'role', 'gasto', 'gastoMensal')})
+    for sigla, party in out.items():
+        named = party_categories.get(sigla)
+        party['cotaCategorias'] = {'total': sum(named.values()), 'itens': [{'nome': k, 'valor': v} for k, v in
+            sorted(named.items(), key=lambda kv: -kv[1])[:3]]} if named else None
     items = sorted(out.values(), key=lambda person: (-person['membros'], person['sigla']))
     return {'itens': items, 'medias': _averages(db), 'snapshotAt': _snapshot(db)}

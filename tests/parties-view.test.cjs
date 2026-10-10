@@ -209,3 +209,29 @@ test('party votes show ten per page and the pair has a shareable path', () => {
   assert.deepEqual([...ctx.partyPairFromPath('/partidos/PCdoB-vs-S%2FPartido')], ['PCdoB', 'S/Partido']);
   assert.equal(ctx.partyPairFromPath('/partidos'), null);
 });
+
+test('party share card tags lower quota and higher presence, and counts the winning side and shared votes', () => {
+  const items = [
+    { id: '1-1', outcome: 'approved', partyTotals: { AAA: { yes: 3, no: 0, other: 0 }, BBB: { yes: 0, no: 2, other: 0 } } },
+    { id: '2-1', outcome: 'rejected', partyTotals: { AAA: { yes: 0, no: 3, other: 0 }, BBB: { yes: 0, no: 2, other: 0 } } },
+    { id: '3-1', outcome: 'approved', partyTotals: { AAA: { yes: 1, no: 1, other: 0 }, BBB: { yes: 2, no: 0, other: 0 } } },
+  ];
+  const ctx = load(DATA, undefined, { ...CHAMBER_CATALOG, items });
+  const card = ctx.partyShareCard(
+    { ...party('AAA', { membros: 3, comDados: 3, media: 34000, alertas: 3 }), cotaCategorias: { total: 100, itens: [{ nome: 'Divulgação', valor: 42 }] } },
+    { ...party('BBB', { membros: 2, comDados: 2, media: 32000, alertas: 1 }), cotaCategorias: null });
+  const [aaa, bbb] = card.people;
+  assert.equal(card.layout, 'faceoff');
+  assert.equal(bbb.stats[0].tag, 'R$ 2000 a menos por mês');
+  assert.equal(aaa.stats[0].behind, true);
+  // BBB sem presença válida: "Sem dados" e nenhuma etiqueta (ausência não é zero).
+  assert.equal(bbb.stats[1].value, 'Sem dados');
+  assert.equal(aaa.stats[1].tag, '');
+  assert.equal(aaa.categories[0].share, 0.42);
+  assert.equal(bbb.categories.length, 0);
+  // AAA: venceu em 1 e 2 (3 está dividido); BBB: perdeu 1, venceu 2 e 3.
+  assert.equal(aaa.meter.share, 1);
+  assert.equal(bbb.meter.share, 2 / 3);
+  assert.deepEqual([card.agreement.matching, card.agreement.total], [1, 2]);
+  assert.deepEqual([...card.alerts], ['10', '5']);
+});

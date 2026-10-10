@@ -285,7 +285,7 @@ function comparisonView() {
       <label class="search" for="comparison-q"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="comparison-q" type="search" placeholder="Nome, partido ou estado" value="${esc(extrasState.comparisonQuery)}" autocomplete="off"></label>
       <div id="comparison-res" class="citizen-list">${comparisonPickerList()}</div></section>` : '';
   let content = '';
-  if (extrasState.comparisonIds.length === 2 && readyProfiles.length === 2) content = shareActionsHTML(comparisonShareCard(readyProfiles)) + comparisonTable(readyProfiles);
+  if (extrasState.comparisonIds.length === 2 && readyProfiles.length === 2) content = shareActionsHTML(comparisonShareCard(readyProfiles), 'Compartilhar') + comparisonTable(readyProfiles);
   else if (extrasState.comparisonIds.length === 2) content = extrasState.comparisonError ? `<section class="card wide"><p>Não deu para abrir as fichas.</p><p class="muted">${esc(extrasState.comparisonError)}</p></section>` : skel('cmp');
   return `<button type="button" class="back" data-back>‹ Voltar</button>
   ${pageHead('Lado a lado', 'Comparar', 'Gastos, alertas, presença e votos de dois(duas) políticos(as) na mesma tela.')}
