@@ -6,7 +6,7 @@ import unicodedata
 from typing import Any
 
 
-RULE_VERSION = "chamber-vote-inventory-v2"
+RULE_VERSION = "chamber-vote-inventory-v3"
 
 
 def _normalized(value: Any) -> str:
@@ -144,7 +144,12 @@ def _category(description: str) -> str:
     # “Ressalvados os destaques” is a caveat attached to the main vote, not a
     # record of voting on a highlight itself.
     amendment_text = re.sub(r"\bressalvad[oa]s?\s+(?:o|a)s?\s+destaques?\b", "", text)
-    amendment_text = re.sub(r"\bsubemenda\s+substitutiva\b|\bemenda\s+constitucional\b", "", amendment_text)
+    # The PEC name itself contains “emenda”; it does not make the vote an amendment.
+    amendment_text = re.sub(r"\bsubemenda\s+substitutiva\b|\bemenda\s+constitucional\b|"
+                            r"\bproposta\s+de\s+emenda\s+(?:a|da)\s+constituicao\b", "", amendment_text)
+    # “Aprovada a PEC ... na forma da Emenda Aglutinativa” approves the whole text in that form.
+    amendment_text = re.sub(r"\bna\s+forma\s+d[ao]s?\s+emendas?\s+aglutinativas?(?:\s+substitutivas?)?\b",
+                            "", amendment_text)
     has_amendment = bool(_AMENDMENT_RE.search(amendment_text))
     has_main = bool(_MAIN_RE.search(text))
     has_outcome = bool(_OUTCOME_RE.search(text))

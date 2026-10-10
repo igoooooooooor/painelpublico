@@ -13,7 +13,7 @@ class ChamberVoteRulesTests(unittest.TestCase):
     def test_rule_version_and_result_shape_are_stable(self):
         result = self.classify("Aprovado o Projeto de Lei nº 10, de 2026.")
 
-        self.assertEqual(rules.RULE_VERSION, "chamber-vote-inventory-v2")
+        self.assertEqual(rules.RULE_VERSION, "chamber-vote-inventory-v3")
         self.assertEqual(
             set(result),
             {"category", "candidate", "reason", "method", "recordedTally", "targetPropositions"},
@@ -39,6 +39,23 @@ class ChamberVoteRulesTests(unittest.TestCase):
         self.assertEqual(result["category"], "main_text")
         self.assertTrue(result["candidate"])
         self.assertEqual(result["recordedTally"], {"yes": 346, "no": 46, "abstention": 3, "total": 395})
+
+    def test_spelled_out_pec_turns_are_main_text_not_amendments(self):
+        for description in (
+            "Aprovada, em segundo turno, a Proposta de Emenda à Constituição nº 45, de 2019, "
+            "ressalvados os destaques. Sim: 375; não: 113; abstenção:3; total: 491.",
+            "Aprovado, em primeiro turno, o Substitutivo à Proposta de Emenda à Constituição nº 18, "
+            "de 2025, adotado pelo relator da Comissão Especial.",
+            "Aprovada, em primeiro turno, a Proposta de Emenda à Constituição nº 5, de 2023, na forma da "
+            "Emenda Aglutinativa Substitutiva nº 3. Sim: 385; Não: 93.",
+        ):
+            with self.subTest(description=description):
+                result = self.classify(description)
+                self.assertEqual(result["category"], "main_text")
+                self.assertTrue(result["candidate"])
+        for description in ("Aprovada a Emenda nº 3 à Proposta de Emenda à Constituição nº 45, de 2019.",
+                            "Aprovada a Emenda Aglutinativa nº 1. Sim: 379; não: 114; total: 494."):
+            self.assertEqual(self.classify(description)["category"], "amendment")
 
     def test_actual_highlight_and_amendment_votes_are_amendments(self):
         descriptions = (

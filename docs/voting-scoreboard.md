@@ -99,6 +99,12 @@ explicitamente nomeados são procedimentos; resultados genéricos de manutençã
 supressão ou empate só viram destaques quando a abertura identifica o DTQ.
 Preferência entre textos continua sendo procedimento. A ressalva “com exceção
 dos dispositivos rejeitados” não oculta a aprovação de um substitutivo inteiro.
+A regra `chamber-vote-inventory-v3` (10/10/2026) corrige um erro da v2: o nome
+por extenso “Proposta de Emenda à Constituição” contém “emenda” e fazia turnos
+de PEC parecerem votações de emenda. A v3 também trata “aprovada a PEC ... na forma
+da Emenda Aglutinativa” como texto principal; uma emenda aglutinativa votada
+isoladamente continua sendo emenda. Com a v3, oito turnos de PEC de 2026 e cinco
+de 2023 entram como candidatos.
 
 Nos votos individuais, todas as páginas são lidas. IDs duplicados com escolhas
 conflitantes são recusados; Sim, Não e Abstenção são comparados separadamente
@@ -324,11 +330,21 @@ em vez dos 162 da triagem inicial.
 | Descrição ainda sem classificação segura | 0 |
 | Total retornado pela lista | 1.339 |
 
-Dos 159 candidatos, **20 decisões nominais estão no catálogo local**, 139 foram
-excluídas com fonte e nenhuma segue pendente de método ou objeto. O catálogo tem
+Dos 159 candidatos, **20 decisões nominais estavam no catálogo local**, 139 foram
+excluídas com fonte e nenhuma seguia pendente de método ou objeto. O catálogo tinha
 **8.240 registros individuais**, incluindo presidência e obstrução quando
 presentes. Isso não é uma quantidade de votos de mérito nem prova de completude
 dos registros oficiais do ano.
+
+**Correção de 10/10/2026.** A regra v2 classificava turnos de PEC escritos por
+extenso como emendas, e o catálogo não tinha nenhuma PEC. Com a v3, oito turnos
+de PEC de 2026 entraram como candidatos (167 no total). Os oito são nominais
+pelos relatórios oficiais e foram publicados: PEC 18/2025, PEC 383/2017,
+PEC 221/2019 e PEC 5/2023, em dois turnos cada. O catálogo passou a ter **28
+decisões**, 139 exclusões, nenhuma pendência e 12.087 registros individuais. Nos
+quatro segundos turnos, não há documento oficial do texto submetido separado da
+redação final; o link do texto fica ausente e entra na contagem de lacunas
+(4 sem texto, 15 sem abstenções publicadas, 1 sem tema).
 
 Três links exatos antes pendentes foram recuperados: o substitutivo ao PLP 80/2026
 e a subemenda ao PLP 337/2017 estão anexados a pareceres; o PLP 262/2019 teve o

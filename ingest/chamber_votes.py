@@ -238,6 +238,14 @@ def build_catalogue(inventory, reviews, *, root=ROOT, collect=False, refresh=Fal
                                   f'O relatório nominal identifica a proposição votada como {label}.')
         if tally_source == 'rollCall':
             api_tally = _recorded_partial_tally(record.get('descricao'))
+            obstructions = sum(row['vote'] == 'Obstrução' for row in report['participants'])
+            if (obstructions and api_tally.get('total') is not None
+                    and api_tally['total'] == report['tally']['total'] + obstructions):
+                # O placar exclui obstrução do total; a descrição da API às vezes a inclui.
+                api_tally = {**api_tally, 'total': None}
+                counted = f'{obstructions} {"obstrução" if obstructions == 1 else "obstruções"}'
+                data_notes.append(f'O total da descrição da API inclui {counted}. O Placar usa '
+                                  'o total do relatório nominal, com Sim, Não e Abstenção.')
             for key, value in api_tally.items():
                 if value is not None and report['tally'].get(key) is not None and value != report['tally'][key]:
                     raise CollectionError(f'{identifier}: placar da API diverge do relatório nominal.')

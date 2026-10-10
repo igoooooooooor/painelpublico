@@ -387,6 +387,25 @@ class ChamberVotesTests(unittest.TestCase):
                     with self.assertRaisesRegex(CollectionError, "horário"):
                         build()
 
+    def test_report_tally_replaces_an_api_total_that_only_adds_obstructions(self):
+        reviewed = {**review(), "tallySource": "rollCall", "reportObject": "SUBEMENDA SUBSTITUTIVA"}
+        report = roll_call_html(choices=("Sim", "Sim", "Não", "Obstrução"))
+        for index, (total, accepted) in enumerate(((4, True), (5, False))):
+            with self.subTest(total=total):
+                vote_detail = detail(description=f"Aprovado o Projeto de Lei nº 1, de 2026. Sim: 2; Não: 1; Total: {total}.")
+                vote_detail["dataHoraRegistro"] = f"{THROUGH}T12:10:20"
+                api = FakeChamberAPI(vote_detail=vote_detail, report=report, participant_pages={1: {"dados": [
+                    participant(1, "Sim"), participant(2, "Sim"), participant(3, "Não"), participant(4, "Obstrução"),
+                ], "links": []}})
+                build = lambda: self.build([reviewed], api=api, root=self.root / f"obstruction{index}")
+                if accepted:
+                    item = build()[0]["items"][0]
+                    self.assertEqual(item["tally"]["total"], 3)
+                    self.assertIn("inclui 1 obstrução.", item["dataNotes"][0])
+                else:
+                    with self.assertRaisesRegex(CollectionError, "diverge do relatório"):
+                        build()
+
     def test_report_fallback_requires_explicit_review_and_matching_decision(self):
         vote_detail = detail(description="Aprovada a Subemenda Substitutiva ao Projeto de Lei nº 1, de 2026.")
         vote_detail["dataHoraRegistro"] = f"{THROUGH}T12:10:20"
