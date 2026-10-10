@@ -69,6 +69,23 @@ class ChamberVoteReportTests(unittest.TestCase):
                 'Encerramento da votação:</strong> 21/05/2026',
                 'Encerramento da votação:</strong> 20/05/2026'))
 
+    def test_accepts_session_and_vote_after_midnight_dated_by_the_opening(self):
+        source = (fixture()
+                  .replace('Encerramento da sessão:</strong> 20/05/2026 22:37',
+                           'Encerramento da sessão:</strong> 21/05/2026 00:40')
+                  .replace('Início da votação:</strong> 20/05/2026 21:24', 'Início da votação:</strong> 21/05/2026 00:24')
+                  .replace('Encerramento da votação:</strong> 20/05/2026 21:36',
+                           'Encerramento da votação:</strong> 21/05/2026 00:39'))
+        parsed = report.parse_roll_call(source)
+        self.assertEqual(parsed['date'], '2026-05-20')
+        self.assertEqual(parsed['endedAt'], '2026-05-21T00:39')
+        with self.assertRaisesRegex(CollectionError, 'Data divergente'):
+            report.parse_roll_call(source.replace('Encerramento da sessão:</strong> 21/05/2026',
+                                                  'Encerramento da sessão:</strong> 22/05/2026'))
+        with self.assertRaisesRegex(CollectionError, 'fora do horário da sessão'):
+            report.parse_roll_call(fixture().replace('Encerramento da sessão:</strong> 20/05/2026 22:37',
+                                                     'Encerramento da sessão:</strong> 20/05/2026 21:30'))
+
     def test_rejects_malformed_voter_rows_unknown_choices_and_duplicate_names(self):
         malformed = fixture(extra_row='<tr><td>Incomplete</td><td>SP</td></tr>')
         with self.assertRaises(CollectionError):

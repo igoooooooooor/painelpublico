@@ -117,6 +117,7 @@ class FakeChamberAPI:
         ]
         self.report = report or "<html><p>Votação nominal eletrônica</p></html>".encode("utf-8")
         self.fail_report = False
+        self.propositions = {}
         self.calls = []
 
     def __call__(self, url):
@@ -134,6 +135,9 @@ class FakeChamberAPI:
             return encoded(self.participant_pages[page])
         if parsed.path.startswith("/api/v2/proposicoes/") and parsed.path.endswith("/temas"):
             return encoded({"dados": self.themes, "links": []})
+        if parsed.path.startswith("/api/v2/proposicoes/"):
+            identifier = int(parsed.path.rsplit("/", 1)[1])
+            return encoded({"dados": self.propositions[identifier], "links": []})
         if parsed.path == "/api/v2/deputados":
             return encoded({"dados": [participant(i, "Sim")["deputado_"] for i in (1, 2, 3)], "links": []})
         raise AssertionError(f"Consulta inesperada: {url}")
@@ -320,6 +324,68 @@ class ChamberVotesTests(unittest.TestCase):
         self.assertTrue(metadata["identities"])
         self.assertEqual(len(item["dataNotes"]), 2)
         self.build([reviewed], collect=False, api=lambda _: self.fail("fallback offline tentou a rede"))
+
+    def voted_build(self, voted, *, proposition_id, record=None, registered="12:10:20"):
+        vote_detail = detail()
+        vote_detail["dataHoraRegistro"] = f"{THROUGH}T{registered}"
+        api = FakeChamberAPI(vote_detail=vote_detail, report=roll_call_html(number=7))
+        if record:
+            api.propositions[record["id"]] = record
+        reviewed = {**review(proposition_id=proposition_id), "votedProposition": voted}
+        return self.build([reviewed], api=api), api
+
+    def test_voted_proposition_from_report_keeps_the_api_reference(self):
+        (snapshot, _), api = self.voted_build(
+            {"id": 77, "label": "PL 7/2026"}, proposition_id=77,
+            record={"id": 77, "siglaTipo": "PL", "numero": 7, "ano": 2026})
+        item = snapshot["items"][0]
+
+        self.assertEqual((item["proposition"], item["type"]), ("PL 7/2026", "PL"))
+        self.assertTrue(item["sources"]["proposition"].endswith("idProposicao=77"))
+        self.assertTrue(item["sources"]["referenceProposition"].endswith("idProposicao=42"))
+        self.assertEqual(item["sources"]["vote"], f"{API_BASE}/votacoes/{VOTE_ID}")
+        self.assertIn("na proposição PL 1/2026", item["dataNotes"][0])
+        self.assertTrue(any(url.endswith("/proposicoes/77/temas") for url in api.calls))
+
+    def test_renumbered_proposition_uses_the_number_on_the_vote_date(self):
+        (snapshot, _), _ = self.voted_build({"id": 42, "label": "PL 7/2026"}, proposition_id=42)
+        item = snapshot["items"][0]
+
+        self.assertEqual(item["proposition"], "PL 7/2026")
+        self.assertNotIn("referenceProposition", item["sources"])
+        self.assertIn("numeração atual PL 1/2026", item["dataNotes"][0])
+
+    def test_voted_proposition_must_match_report_and_official_record(self):
+        cases = (
+            ({"id": 77, "label": "PL 8/2026"}, {"id": 77, "siglaTipo": "PL", "numero": 8, "ano": 2026},
+             "relatório não corresponde"),
+            ({"id": 77, "label": "PL 7/2026"}, {"id": 77, "siglaTipo": "PL", "numero": 9, "ano": 2026},
+             "ficha oficial"),
+            ({"id": 42, "label": "PL 1/2026"}, None, "igual à referência"),
+            ({"id": 77, "label": "MPV 7/2026"}, None, "proposição votada inválida"),
+        )
+        for index, (voted, record, message) in enumerate(cases):
+            with self.subTest(message=message):
+                self.root = self.root / str(index)
+                with self.assertRaisesRegex(CollectionError, message):
+                    self.voted_build(voted, proposition_id=voted["id"], record=record)
+
+    def test_report_fallback_accepts_registration_a_few_minutes_after_the_report(self):
+        vote_detail = detail(description="Aprovada a Subemenda Substitutiva ao Projeto de Lei nº 1, de 2026.")
+        reviewed = {**review(), "tallySource": "rollCall", "participantsSource": "rollCall",
+                    "reportObject": "SUBEMENDA SUBSTITUTIVA"}
+        for index, (registered, accepted) in enumerate((("12:13:40", True), ("12:16:00", False),
+                                                        ("12:09:59", False))):
+            with self.subTest(registered=registered):
+                vote_detail["dataHoraRegistro"] = f"{THROUGH}T{registered}"
+                api = FakeChamberAPI(vote_detail=dict(vote_detail), report=roll_call_html(),
+                                     participant_pages={1: {"dados": [], "links": []}})
+                build = lambda: self.build([reviewed], api=api, root=self.root / f"lag{index}")
+                if accepted:
+                    self.assertEqual(build()[0]["items"][0]["tally"]["yes"], 2)
+                else:
+                    with self.assertRaisesRegex(CollectionError, "horário"):
+                        build()
 
     def test_report_fallback_requires_explicit_review_and_matching_decision(self):
         vote_detail = detail(description="Aprovada a Subemenda Substitutiva ao Projeto de Lei nº 1, de 2026.")

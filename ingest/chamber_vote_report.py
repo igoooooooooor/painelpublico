@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timedelta
 from html.parser import HTMLParser
 import re
 import unicodedata
@@ -274,13 +274,18 @@ def parse_roll_call(content):
     for field, pattern in dated:
         match = _single(pattern, text, field)
         value = _parse_datetime(match, field)
-        if value.date() != report_day:
+        # A sessão é datada pela abertura; ela e suas votações podem terminar após a meia-noite.
+        allowed = {report_day} if field == 'abertura da sessão' else {report_day, report_day + timedelta(days=1)}
+        if value.date() not in allowed:
             raise CollectionError(f'Data divergente em {field}.')
         times[field] = value
     if times['encerramento da votação'] < times['início da votação']:
         raise CollectionError('Encerramento da votação anterior ao início.')
     if times['encerramento da sessão'] < times['abertura da sessão']:
         raise CollectionError('Encerramento da sessão anterior à abertura.')
+    if (times['início da votação'] < times['abertura da sessão']
+            or times['encerramento da votação'] > times['encerramento da sessão']):
+        raise CollectionError('Votação fora do horário da sessão.')
     proposition = _single(_PROPOSITION, text, 'proposição nominal eletrônica')
     proposition_type, number, year, object_name = proposition.groups()
     if not _clean(object_name):

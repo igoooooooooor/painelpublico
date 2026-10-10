@@ -146,6 +146,18 @@ class VoteSnapshotTests(unittest.TestCase):
         self.assertTrue(listed_without_decision['available'])
         self.assertNotIn('decision', listed_without_decision['items'][0]['sources'])
 
+    def test_optional_reference_proposition_source_is_preserved_and_validated(self):
+        item = dict(self.items[0])
+        reference = 'https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=42'
+        item['sources'] = {**item['sources'], 'referenceProposition': reference}
+        self.write(self.index, snapshot([item]))
+        self.assertEqual(votes.listing({}, self.index)['items'][0]['sources']['referenceProposition'], reference)
+        for value in (None, '', 'javascript:alert(1)'):
+            with self.subTest(value=value):
+                item['sources'] = {**item['sources'], 'referenceProposition': value}
+                self.write(self.index, snapshot([item]))
+                self.assertFalse(votes.listing({}, self.index)['available'])
+
     def test_text_source_key_is_required_even_when_its_value_can_be_null(self):
         item = dict(self.items[0])
         item['sources'] = dict(item['sources'])

@@ -204,6 +204,7 @@ function scoreboardDetailSources(sources, dataNotes) {
     scoreboardSourceLink(source.text, 'Texto votado'),
     scoreboardSourceLink(source.decision, 'Decisão na Câmara'),
     scoreboardSourceLink(source.proposition, 'Ficha da proposição'),
+    scoreboardSourceLink(source.referenceProposition, 'Proposição de referência nos Dados Abertos'),
   ].filter(Boolean);
   const notes = Array.isArray(dataNotes) ? dataNotes.filter(note => typeof note === 'string').map(note => `<p class="muted">${scoreboardEscape(note)}</p>`).join('') : '';
   const missingText = source.text === null ? '<p class="muted">O link seguro para o texto exato votado ainda não está disponível. O relatório e o registro da decisão permanecem nas fontes.</p>' : '';

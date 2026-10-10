@@ -148,7 +148,7 @@ test('detail loads lazily, preserves missing values and escapes text and source 
   participants[19].vote = null;
   const detail = { available: true, vote: item('2611313-31', '<img src=x onerror=alert(1)>', {
     summary: '<script>ruim</script>', tally: { yes: 12, no: 3, abstention: null },
-    sources: { vote: 'javascript:alert(1)', rollCall: 'https://fora.example/nominal', text: 'https://www.camara.leg.br/texto?id=4', proposition: 'https://camara.leg.br/prop/123' },
+    sources: { vote: 'javascript:alert(1)', rollCall: 'https://fora.example/nominal', text: 'https://www.camara.leg.br/texto?id=4', proposition: 'https://camara.leg.br/prop/123', referenceProposition: 'https://www.camara.leg.br/prop/42' },
   }), participants, partyTotals: [], participantsAvailable: true };
   const { context, app, click } = loadApp({ fetch: async url => {
     calls.push(url);
@@ -165,6 +165,7 @@ test('detail loads lazily, preserves missing values and escapes text and source 
   assert.match(app.innerHTML, /&lt;script&gt;ruim&lt;\/script&gt;/);
   assert.doesNotMatch(app.innerHTML, /href="javascript:|href="https:\/\/fora\.example/);
   assert.match(app.innerHTML, /href="https:\/\/www\.camara\.leg\.br\/texto\?id=4/);
+  assert.match(app.innerHTML, /href="https:\/\/www\.camara\.leg\.br\/prop\/42"[^>]*>Proposição de referência nos Dados Abertos/);
   assert.match(app.innerHTML, /Abstenção<\/dt><dd>—/);
   assert.match(app.innerHTML, /Total<\/dt><dd>—/);
   assert.match(app.innerHTML, /Escolha não informada/);

@@ -126,6 +126,11 @@ def _summary_item(value):
                                             or not decision_source.startswith('https://')):
             return None
         safe_sources['decision'] = decision_source
+    if 'referenceProposition' in sources:
+        reference = sources['referenceProposition']
+        if not _text(reference, limit=2048) or not reference.startswith('https://'):
+            return None
+        safe_sources['referenceProposition'] = reference
     notes = value.get('dataNotes')
     if 'dataNotes' in value and (not isinstance(notes, list) or len(notes) > 4
                                 or any(not _text(note, limit=500) for note in notes)):

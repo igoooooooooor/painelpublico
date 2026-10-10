@@ -376,6 +376,22 @@ vinculadas e 786 proposições) não encontrou votação ausente da lista nem fa
 de consulta. As seis sessões deliberativas sem votação listada foram conferidas
 nas pautas e tramitações, sem decisão de mérito.
 
+## Proposição votada diferente da referência da API
+
+Em alguns registros a API liga a votação a outra proposição (por exemplo, a
+principal de um apensado) ou mostra a numeração atual de uma proposição
+renumerada. A revisão declara então `votedProposition: {"id", "label"}`, com o
+número do relatório nominal. O coletor exige que o relatório traga esse número
+na mesma data e, quando o ID difere, que a ficha oficial o confirme. O Placar
+mostra o número do relatório, liga a ficha da proposição votada e preserva o
+registro da API em `sources.vote` e, quando o ID difere, em
+`sources.referenceProposition`; uma nota explica a diferença. Temas vêm da
+proposição votada.
+
+O leitor do relatório aceita sessões e votações que terminam após a meia-noite;
+a data da sessão é a da abertura. Quando o relatório é a origem do placar ou dos
+votos, o registro da API pode vir até cinco minutos após o encerramento.
+
 ## Catálogo de vários anos
 
 Cada ano tem inventário e revisão próprios, nomeados pela data final. Para

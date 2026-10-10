@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter, defaultdict
-from datetime import date
+from datetime import date, datetime, timedelta
 import hashlib
 from html import unescape
 import json
@@ -27,6 +27,19 @@ VOTE_ID = re.compile(r'[0-9]+-[0-9]+')
 CHOICES = {'Sim': 'Sim', 'Não': 'Não', 'Abstenção': 'Abstenção',
            'Obstrução': 'Obstrução', 'Artigo 17': 'Presidiu', 'Presidiu': 'Presidiu'}
 REVIEW_FIELDS = ('title', 'summary', 'decisionLabel', 'yesMeaning', 'noMeaning')
+PROPOSITION_LABEL = re.compile(r'(PL|PLP|PEC) ([1-9][0-9]*)/([0-9]{4})')
+FICHA = 'https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao={}'
+# Em 2023 a API registra a votação alguns minutos após o encerramento do relatório.
+REGISTRATION_LAG = timedelta(minutes=5)
+
+
+def _registered_after_report(report_end, registered):
+    try:
+        ended = datetime.fromisoformat(report_end)
+        recorded = datetime.fromisoformat(str(registered))
+    except (TypeError, ValueError):
+        return False
+    return timedelta(0) <= recorded.replace(second=0, microsecond=0) - ended <= REGISTRATION_LAG
 
 
 def _valid_review_date(value):
@@ -176,7 +189,20 @@ def build_catalogue(inventory, reviews, *, root=ROOT, collect=False, refresh=Fal
                 or not classification['candidate'] or len(targets) != 1):
             raise CollectionError(f'{identifier}: detalhe não confirma decisão, objeto de referência e placar.')
         target = targets[0]
-        expected_proposition = f'https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao={target["id"]}'
+        api_label = f'{target["siglaTipo"]} {target["numero"]}/{target["ano"]}'
+        voted = review.get('votedProposition')
+        if voted is not None:
+            label = voted.get('label') if isinstance(voted, dict) else None
+            voted_id = voted.get('id') if isinstance(voted, dict) else None
+            match = PROPOSITION_LABEL.fullmatch(label) if isinstance(label, str) else None
+            if (not match or not isinstance(voted_id, int) or isinstance(voted_id, bool) or voted_id <= 0
+                    or label == api_label):
+                raise CollectionError(f'{identifier}: proposição votada inválida ou igual à referência da API.')
+            voted_type, voted_number, voted_year = match.group(1), int(match.group(2)), int(match.group(3))
+        else:
+            voted_id, label = target['id'], api_label
+            voted_type, voted_number, voted_year = target['siglaTipo'], target['numero'], target['ano']
+        expected_proposition = FICHA.format(voted_id)
         if safe_sources['proposition'] != expected_proposition:
             raise CollectionError(f'{identifier}: ficha da revisão não corresponde à proposição de referência.')
         content, report_source = _source_bytes(safe_sources['rollCall'], cache / 'reports' / f'{identifier}.html',
@@ -187,15 +213,29 @@ def build_catalogue(inventory, reviews, *, root=ROOT, collect=False, refresh=Fal
         participants_source = review.get('participantsSource', 'api')
         if tally_source not in ('api', 'rollCall') or participants_source not in ('api', 'rollCall'):
             raise CollectionError(f'{identifier}: origem do placar ou dos votos individuais inválida.')
-        report = None
-        if 'rollCall' in (tally_source, participants_source):
+        report, data_notes = None, []
+        if 'rollCall' in (tally_source, participants_source) or voted is not None:
             report = parse_roll_call(content)
             if (report['date'] != entry['date']
-                    or report['proposition'] != {'type': target['siglaTipo'], 'number': target['numero'],
-                                                 'year': target['ano']}
-                    or report['object'] != review.get('reportObject')
-                    or report['endedAt'] != str(record.get('dataHoraRegistro', ''))[:16]):
+                    or report['proposition'] != {'type': voted_type, 'number': voted_number, 'year': voted_year}
+                    or ('rollCall' in (tally_source, participants_source)
+                        and (report['object'] != review.get('reportObject')
+                             or not _registered_after_report(report['endedAt'], record.get('dataHoraRegistro'))))):
                 raise CollectionError(f'{identifier}: relatório não corresponde à data, objeto e horário da decisão.')
+        if voted is not None:
+            if voted_id == target['id']:
+                data_notes.append(f'Os Dados Abertos mostram esta proposição com a numeração atual {api_label}. '
+                                  f'O relatório nominal usa {label}, a numeração na data da votação.')
+            else:
+                proposition_record, _ = _load(f'{API_BASE}/proposicoes/{voted_id}',
+                                              cache / 'propositions' / f'{voted_id}.json',
+                                              collect=collect, refresh=refresh, request=request, detail=True)
+                found = proposition_record['dados']
+                if (found.get('id') != voted_id or found.get('siglaTipo') != voted_type
+                        or found.get('numero') != voted_number or found.get('ano') != voted_year):
+                    raise CollectionError(f'{identifier}: ficha oficial não confirma a proposição votada.')
+                data_notes.append(f'Os Dados Abertos registram esta votação na proposição {api_label}. '
+                                  f'O relatório nominal identifica a proposição votada como {label}.')
         if tally_source == 'rollCall':
             api_tally = _recorded_partial_tally(record.get('descricao'))
             for key, value in api_tally.items():
@@ -207,7 +247,7 @@ def build_catalogue(inventory, reviews, *, root=ROOT, collect=False, refresh=Fal
             raise CollectionError(f'{identifier}: placar nominal não conferido.')
         rows, participant_sources = _paged(f'{url}/votos', cache / 'participants' / identifier,
                                            collect=collect, refresh=refresh, request=request)
-        identity_sources, data_notes = [], []
+        identity_sources = []
         participants_origin = 'api'
         if not rows and participants_source == 'rollCall':
             deputies, identity_sources = _paged(
@@ -220,8 +260,8 @@ def build_catalogue(inventory, reviews, *, root=ROOT, collect=False, refresh=Fal
         if tally_source == 'rollCall':
             data_notes.append('O placar foi conferido no relatório nominal oficial.')
         participants, party_totals = normalize_participants(rows, tally)
-        theme_rows, theme_sources = _paged(f'{API_BASE}/proposicoes/{target["id"]}/temas',
-                                           cache / 'themes' / str(target['id']),
+        theme_rows, theme_sources = _paged(f'{API_BASE}/proposicoes/{voted_id}/temas',
+                                           cache / 'themes' / str(voted_id),
                                            collect=collect, refresh=refresh, request=request)
         themes = {}
         for theme in theme_rows:
@@ -237,10 +277,11 @@ def build_catalogue(inventory, reviews, *, root=ROOT, collect=False, refresh=Fal
         if outcome == 'not_approved' and review.get('outcome') == 'rejected':
             outcome = 'rejected'
         items.append({'id': identifier, 'date': entry['date'],
-                      'proposition': f'{target["siglaTipo"]} {target["numero"]}/{target["ano"]}',
-                      'type': target['siglaTipo'], **{field: review[field] for field in REVIEW_FIELDS},
+                      'proposition': label, 'type': voted_type, **{field: review[field] for field in REVIEW_FIELDS},
                       'outcome': outcome, 'tally': tally, 'themes': list(themes.values()),
-                      'sources': {'vote': url, **safe_sources}, 'reviewedAt': review['reviewedAt'],
+                      'sources': {'vote': url, **safe_sources,
+                                  **({'referenceProposition': FICHA.format(target['id'])}
+                                     if voted_id != target['id'] else {})}, 'reviewedAt': review['reviewedAt'],
                       **({'dataNotes': data_notes} if data_notes else {})})
         details[identifier] = {'id': identifier, 'participants': participants, 'partyTotals': party_totals,
                                'sourceMetadata': {'vote': detail_source, 'rollCall': report_source,
