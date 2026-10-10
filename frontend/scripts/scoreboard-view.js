@@ -108,7 +108,7 @@ function scoreboardCoverage(data) {
   const detail = scoreboardText(coverage.detail);
   return `<div class="scoreboard-coverage"><h2 class="h">O que é o Placar</h2>
     <p>Aqui estão votações da Câmara ${timeframe} em que os deputados votaram o texto principal de um projeto de lei ou de uma mudança na Constituição, com o voto de cada um registrado.</p>
-    <p>Escolhemos <strong>${published} votações</strong>, conferidas uma a uma. Elas não são tudo o que a Câmara votou ${year ? 'no ano' : 'no período'}. Um projeto aprovado aqui ainda pode não ter virado lei.</p>
+    <p><strong>${published} votações nominais conferidas</strong>, uma a uma, nas fontes oficiais. Elas não são tudo o que a Câmara votou ${year ? 'no ano' : 'no período'}. Um projeto aprovado aqui ainda pode não ter virado lei.</p>
     ${range}
     <details><summary>Como montamos este Placar</summary>
       <p><strong>De onde vêm as votações.</strong> A Câmara publicou ${inventory} registros de votação ${timeframe}. Muitos são etapas do mesmo projeto: urgência, emendas, destaques, procedimentos e redação final. Ficamos só com as votações do texto principal de PL, PLP e PEC no Plenário. Votações simbólicas (sem registro de voto de cada deputado) e outros tipos de proposta ficam de fora.</p>

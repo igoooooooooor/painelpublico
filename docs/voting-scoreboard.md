@@ -530,7 +530,9 @@ Sem link de texto ficaram os 2º turnos de PEC, os dois turnos das PECs 39/2022 
 documento) e a subemenda ao PL 1.087/2025, com duas versões registradas na sessão.
 
 Votações de **emendas do Senado** (não de substitutivo), como as do PL 2.159/2021,
-continuam fora do recorte v1, como nos anos anteriores.
+continuam fora do recorte v1, como nos anos anteriores. Decisão de 10/10/2026: a
+inclusão será uma expansão separada, com a mesma regra aplicada aos quatro anos;
+a relevância de um caso isolado não justifica exceção.
 
 ## Índice conjunto de 2023 a 2026
 
@@ -541,7 +543,7 @@ Lacunas: 19 sem texto, 83 sem abstenções, 1 sem tema. O índice anterior, só 
 
 ## Próxima etapa
 
-Decidir se votações de emendas do Senado entram no recorte; integrar à `main` e
+Expansão separada para emendas do Senado, nos quatro anos; integrar à `main` e
 publicar código e dados em etapa separada. Atualizar 2026 com novas coletas
 (`--through` posterior a 9/10) seguindo o mesmo fluxo. A
 conferência não autoriza declarar cobertura completa do ano ou do mandato.
