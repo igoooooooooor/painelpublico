@@ -7,6 +7,7 @@ A interface usa CSS próprio, sem dependência de framework. O template contém 
 - **Cores:** `--bg`, `--surface`, `--ink`, `--ink-2`, `--muted`, `--line` e `--chip` formam a paleta neutra. `--accent` e `--warn` destacam ações, estados e dados; `--hero-*` ajusta o contraste dos cartões escuros.
 - **Tipografia:** `--f-display` é usada em títulos, `--f-body` no texto e `--f-data` em números e dados tabulares.
 - **Medidas:** `--space-1` a `--space-4` cobrem espaçamentos recorrentes. `--radius-card`, `--radius-control` e `--control-height` padronizam cartões, campos e alvos de toque.
+- **Elevação:** `--shadow-raised` dá profundidade a cartões de destaque (custo da home, painéis, busca). Tem versão própria em cada tema; use o token em vez de escrever uma sombra nova.
 
 Os valores de cor e tipografia são definidos em `tokens.css`. O tema escuro é o padrão (`data-theme="dark"` no template). O botão de tema (no topo da home, no rodapé e na navegação do computador) alterna para `data-theme="light"` e guarda a escolha em `localStorage` (`painel-theme`), só neste navegador; um script no `<head>` aplica a escolha antes de pintar a página.
 

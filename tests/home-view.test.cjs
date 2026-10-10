@@ -31,35 +31,32 @@ function summary() {
   };
 }
 
-test('home attendance considers every valid record, including a person beyond the former ten', () => {
-  const rows = Array.from({ length: 13 }, (_, i) => ({ id: i + 1, nome: `Pessoa ${i + 1}`,
-    dias: 20, presente: i === 12 ? 1 : 19, justificadas: i === 12 ? 19 : 1, falta: 0 }));
-  rows.push({ id: 14, dias: 0, presente: 0, justificadas: 0, falta: 0 });
-  const html = load(rows).homePresenceCard();
-  assert.match(html, /Pessoa 13/);
-  assert.match(html, /data-politician="camara:13"/);
-  assert.match(html, /todos os 13 registros válidos/);
-  assert.doesNotMatch(html, /Pessoa 14|NaN/);
-});
-
-test('home cost and coverage use API denominators without inventing a combined monthly cost', () => {
-  const ctx = load(), data = summary(), html = ctx.homeCostCard(data) + ctx.homeCoverageCard(data);
-  assert.match(html, /509 deputados\(as\) com reembolsos observados, dos 513/);
-  assert.match(html, /513 deputados\(as\) e 82 registros do Senado/);
-  assert.match(html, /não são somados ao subsídio/);
-  assert.match(html, /jan\/2026 a out\/2026/);
-  assert.doesNotMatch(html, /dos 10|se elegeram|por mês, em média/);
-  data.reembolsos.deputado = { total: null, media: null, comRegistros: 0, periodo: {} };
-  assert.match(ctx.homeCostCard(data), /Sem dados/);
-});
-
-test('home category answer and ranking reflect complete API results, not named sample people', () => {
+test('home cost card uses the monthly cost from the API per House and keeps missing values explicit', () => {
   const ctx = load(), data = summary();
-  ctx.state.quiz = 'Viagens';
+  data.custoMensal = {
+    deputado: { media: 199_365, minimo: 52_037, maximo: 259_578, comCusto: 510, total: 513 },
+    senador: { media: 301_532, minimo: 126_481, maximo: 556_592, comCusto: 76, total: 82 },
+  };
+  const html = ctx.homeCostCard(data);
+  assert.match(html, /R\$ 199<small> mil/);
+  assert.match(html, /menor R\$ 52 mil/);
+  assert.match(html, /maior R\$ 260 mil/);
+  assert.match(html, /Senador\(a\), em média<\/span><b>R\$ 302 mil\/mês/);
+  assert.match(html, /Média de 510 deputados\(as\) com custo identificado, dos 513/);
+  assert.match(html, /compare só dentro da mesma Casa/);
+  data.custoMensal = { deputado: { media: null, minimo: null, maximo: null, comCusto: 0, total: 513 } };
+  assert.match(ctx.homeCostCard(data), /Sem dados/);
+  assert.doesNotMatch(ctx.homeCostCard(data), /NaN/);
+});
+
+test('home categories list every category with refunds kept and the ranking uses complete API results', () => {
+  const ctx = load(), data = summary();
   const html = ctx.homeCategoriesCard(data);
-  assert.match(html, /A maior categoria foi Serviços/);
-  assert.match(html, /Estorno R\$ -5/);
-  assert.doesNotMatch(html, /Divulgação levou|NaN/);
+  assert.match(html, /3 categorias/);
+  assert.match(html, /Serviços/);
+  assert.match(html, /Estorno<\/span><b>R\$ -5/);
+  assert.match(html, /preservando estornos/);
+  assert.doesNotMatch(html, /NaN/);
   const ranking = ctx.homeTopCard(data);
   assert.match(ranking, /data-politician="camara:100"/);
   assert.match(ranking, /entre 13 deputados\(as\) com dados/);

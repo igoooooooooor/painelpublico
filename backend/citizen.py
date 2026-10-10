@@ -430,9 +430,26 @@ def summary(db):
         FROM authorities a JOIN authority_totals t ON t.authorityId=a.id AND t.kind='reembolso'
         WHERE a.role='deputado' AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?)
         ORDER BY gastoMensal DESC,a.name,a.id''', (CURRENT['deputado'],))
+    # Custo médio mensal da ficha (salário, auxílios, cota e gabinete), só de quem tem custo identificado.
+    # Câmara e Senado publicam partes diferentes: os valores não se comparam entre as Casas.
+    monthly = costs.monthly_costs(db)
+    monthly_cost = {}
+    for role in ROLES:
+        ids = [row['id'] for row in rows(db, '''SELECT a.id FROM authorities a
+            WHERE a.role=? AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?)''', (role, CURRENT[role]))]
+        values = [monthly[identifier]['cents'] / 100 for identifier in ids
+                  if isinstance(monthly.get(identifier, {}).get('cents'), int)]
+        monthly_cost[role] = {
+            'media': sum(values) / len(values) if values else None,
+            'minimo': min(values) if values else None,
+            'maximo': max(values) if values else None,
+            'comCusto': len(values),
+            'total': len(ids),
+        }
     return {
         'parlamentares': parliamentarians,
         'reembolsos': reimbursements,
+        'custoMensal': monthly_cost,
         'categoriasCamara': [
             {'nome': name, 'valor': value}
             for name, value in sorted(categories.items(), key=lambda item: (-item[1], item[0]))

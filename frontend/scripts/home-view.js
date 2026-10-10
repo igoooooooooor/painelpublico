@@ -21,79 +21,92 @@ function homePeriod(period) {
   const start = label(period?.inicio), end = label(period?.fim);
   return start && end ? `${start} a ${end}` : 'período não informado';
 }
+const HOME_ALERTS_PATH = '/api/c/radar?pageSize=8&tipo=pico,fornecedor';
 function homeCostCard(data) {
-  if (!data) return home.error ? `<section class="card hero"><span class="k">Resumo da base</span><p>${esc(home.error)}</p><button type="button" class="opt" data-summary-retry>Tentar novamente</button></section>` : skel('ficha');
-  const deputies = data.parlamentares.deputado, quota = data.reembolsos.deputado;
-  const salary = PROFILE_SALARY.deputado;
-  return `<section class="card hero">
-    <span class="k">Cota parlamentar por deputado(a)</span>
-    <div class="huge">${Number.isFinite(quota.media) ? `<small>R$</small>${mil(quota.media)} mil<small>/mês</small>` : 'Sem dados'}</div>
-    <span class="muted">Média mensal, nos meses com notas, entre os(as) ${quota.comRegistros} deputados(as) com reembolsos observados, dos ${deputies.total} registros da lista. Mandato atual: ${esc(homePeriod(quota.periodo))}. Valores da época.</span>
-    <div>
-      <div class="cost-row"><i style="background:var(--hero-fg)"></i><b>Salário de referência</b><span class="val">${brl(salary.amount, 2)}</span><p>Subsídio bruto mensal do cargo. O pagamento individual não foi importado.</p></div>
-      <div class="cost-row"><i style="background:var(--cat1)"></i><b>Cota parlamentar</b><span class="val">${Number.isFinite(quota.total) ? formatCitizenAmount(quota.total) : 'Sem dados'}</span><p>Total observado no mandato para os(as) deputados(as) da lista. Reembolsa despesas do trabalho; não é salário.</p></div>
-      <div class="cost-row"><i style="background:var(--cat3)"></i><b>Verba de gabinete</b><span class="val">Por perfil</span><p>Gasto da equipe, com os meses publicados na ficha. Os valores têm recortes próprios e não são somados ao subsídio.</p></div>
-    </div>
-    <button type="button" class="opt" data-go="politicians" style="justify-content:center">Ver quanto gasta cada um(a)</button>
+  if (!data) return home.error ? `<section class="card home-cost"><span class="k">Resumo da base</span><p>${esc(home.error)}</p><button type="button" class="opt" data-summary-retry>Tentar novamente</button></section>` : skel('ficha');
+  const chamber = data.custoMensal?.deputado, senate = data.custoMensal?.senador;
+  if (!chamber || !Number.isFinite(chamber.media)) {
+    return `<section class="card home-cost"><span class="home-cost-label">Um(a) deputado(a) custa, em média, por mês</span><div class="home-cost-value">Sem dados</div><p class="muted">O custo mensal ainda não foi calculado para a lista atual.</p><button type="button" class="more" data-go="politicians">Ver a lista de políticos →</button></section>`;
+  }
+  const hasRange = Number.isFinite(chamber.minimo) && Number.isFinite(chamber.maximo) && chamber.maximo > chamber.minimo;
+  const position = hasRange ? (chamber.media - chamber.minimo) / (chamber.maximo - chamber.minimo) * 100 : 50;
+  return `<section class="card home-cost">
+    <span class="home-cost-label">Um(a) deputado(a) custa, em média, por mês</span>
+    <div class="home-cost-value">R$ ${mil(chamber.media)}<small> mil</small></div>
+    <p class="home-cost-parts">Salário, auxílios, cota parlamentar e verba do gabinete, somados.</p>
+    ${hasRange ? `<div class="home-range" role="img" aria-label="Média de R$ ${mil(chamber.media)} mil, entre R$ ${mil(chamber.minimo)} mil e R$ ${mil(chamber.maximo)} mil"><span class="home-range-track"><i style="left:${position.toFixed(1)}%"></i></span><span class="home-range-ends"><span>menor R$ ${mil(chamber.minimo)} mil</span><span>maior R$ ${mil(chamber.maximo)} mil</span></span></div>` : ''}
+    ${senate && Number.isFinite(senate.media) ? `<div class="home-cost-senate"><span>Senador(a), em média</span><b>R$ ${mil(senate.media)} mil/mês</b></div>` : ''}
+    <p class="home-cost-note">Média de ${chamber.comCusto} deputados(as) com custo identificado, dos ${chamber.total} da lista atual, nos meses com todas as partes publicadas; valores da época. Na Câmara, ficam fora 13º, encargos do gabinete e apartamento funcional. Câmara e Senado publicam partes diferentes do custo: compare só dentro da mesma Casa.</p>
+    <button type="button" class="more" data-go="politicians">Ver quanto custa cada um(a) →</button>
   </section>`;
 }
-function homePresenceCard() {
-  const rows = profilePresenceRows();
-  const person = [...rows].sort((a, b) => a.presente / a.dias - b.presente / b.dias || String(a.id).localeCompare(String(b.id)))[0];
-  if (!person) return `<section class="card"><span class="k">Presença no Plenário</span><p class="muted">Sem registros de presença importados.</p></section>`;
-  const identity = { id: profileId(person.id), name: person.nome, party: person.partido, uf: person.uf, role: 'deputado' };
-  return `<section class="card alarm"><span class="k">Menor presença proporcional no recorte</span>
-    <button type="button" class="citizen-who" data-politician="${esc(identity.id)}">${citizenAvatar(identity, 52)}<span><b>${esc(person.nome)}</b><small>${esc(person.partido || '')} · ${esc(person.uf || '')}</small></span></button>
-    <div><span class="big">${person.presente} de ${person.dias}</span><span class="muted"> dias com sessão de votação no mandato</span></div>
-    ${attendanceBar(person)}
-    <p class="muted">Comparação entre todos os ${rows.length} registros válidos de presença. Ausências justificadas: ${person.justificadas}; não justificadas: ${person.falta}. Os dias observados podem variar entre mandatos.</p>
-    <div class="citizen-actions"><button type="button" class="fchip" data-politician="${esc(identity.id)}">Abrir a ficha</button><button type="button" class="fchip citizen-cta" data-go="attendance">Ver presença dos deputados →</button></div>
-  </section>`;
+function homeStats(data) {
+  if (!data) return '';
+  const quota = data.reembolsos?.deputado || {}, alerts = citizenState.cache.get(HOME_ALERTS_PATH);
+  const positive = (data.categoriasCamara || []).filter(category => category.valor > 0);
+  const positiveTotal = positive.reduce((total, category) => total + category.valor, 0);
+  const tax = typeof taxWidget === 'function' ? taxWidget() : null;
+  const stats = [
+    Number.isFinite(quota.total) && [formatCitizenAmount(quota.total), `de cota usada pelos deputados(as) da lista, ${esc(homePeriod(quota.periodo))}`],
+    Number.isFinite(alerts?.total) && [alerts.total.toLocaleString('pt-BR'), 'alertas na cota pelas regras do painel; não indicam irregularidade'],
+    positive.length && positiveTotal > 0 && [`${Math.round(positive[0].valor / positiveTotal * 100)}%`, `da cota foi para ${esc(positive[0].nome.toLocaleLowerCase('pt-BR'))}`],
+    tax && Number.isFinite(quota.total) && quota.total > 0 && [`${Math.round(quota.total / tax.perSecond / 60).toLocaleString('pt-BR')} min`, 'de impostos federais pagam toda essa cota (estimativa)'],
+  ].filter(Boolean);
+  return stats.length ? `<dl class="home-stats">${stats.map(([value, label]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join('')}</dl>` : '';
 }
 function homeCategoriesCard(data) {
   if (!data) return '';
-  const categories = data.categoriasCamara, quota = data.reembolsos.deputado;
-  if (!categories.length) return '<section class="card hero"><span class="k">Categorias da cota</span><p>Sem despesas importadas para os(as) deputados(as) da lista.</p></section>';
-  const answered = state.quiz !== null, options = categories.slice(0, 3).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-  // Negative adjustments stay in the totals; a distribution bar shows positive categories only.
-  const positive = categories.filter(category => category.valor > 0), scale = positive.reduce((total, category) => total + category.valor, 0);
-  return `<section class="card hero"><span class="k">Cota dos(as) deputados(as) da lista · reembolsos observados</span>
-    <div class="huge" style="font-size:clamp(40px,12vw,54px)">${formatCitizenAmount(quota.total)}</div>
-    <h2 class="h" style="font-size:21px">Qual categoria teve o maior gasto?</h2>
-    <div class="opts">${options.map(category => `<button type="button" class="opt" data-quiz="${esc(category.nome)}" data-state="${!answered ? '' : category.nome === categories[0].nome ? 'right' : 'wrong'}" ${answered ? 'disabled' : ''}><span>${esc(category.nome)}</span><span>${answered ? brl(category.valor) : ''}</span></button>`).join('')}</div>
-    ${answered ? `<p>${state.quiz === categories[0].nome ? 'Acertou!' : 'A maior categoria foi ' + esc(categories[0].nome) + '.'} Total observado: ${brl(categories[0].valor)}.</p>` : ''}
-    <div class="stack" role="img" aria-label="Distribuição das categorias com saldo positivo">${positive.map((category, index) => `<i style="width:${category.valor / scale * 100}%;background:var(${CATS_H[index % CATS_H.length]})"></i>`).join('')}</div>
-    <div class="legend" style="color:var(--hero-muted)">${categories.map((category, index) => `<span><i style="background:var(${CATS_H[index % CATS_H.length]})"></i>${esc(category.nome)} ${brl(category.valor)}</span>`).join('')}</div>
-    <span class="muted">${esc(homePeriod(quota.periodo))}. O resumo considera todos os registros de reembolso importados dos(as) deputados(as) da lista, preservando estornos.</span>
-  </section>`;
-}
-function homeCoverageCard(data) {
-  if (!data) return '';
-  const deputyStats = data.parlamentares.deputado, senatorStats = data.parlamentares.senador;
-  return `<section class="card hero"><span class="k">Câmara e Senado · base disponível</span>
-    <h2 class="h">${deputyStats.total} deputados(as) e ${senatorStats.total} registros do Senado.</h2>
-    <p>${deputyStats.comReembolsos} deputados(as) e ${senatorStats.comReembolsos} registros do Senado têm reembolsos observados. A busca inclui todos os cadastros dessas listas.</p>
-    <p class="muted">Registros do Senado podem incluir suplentes em transição; não são uma contagem de cadeiras. Resultados eleitorais ainda não foram importados para este conjunto.</p>
-    <button type="button" class="opt" data-go="politicians">Consultar a lista de parlamentares</button>
+  const categories = data.categoriasCamara || [], quota = data.reembolsos.deputado;
+  if (!categories.length) return '<section class="card home-panel"><h2 class="h">Para onde vai a cota</h2><p>Sem despesas importadas para os(as) deputados(as) da lista.</p></section>';
+  // Estornos ficam no total e na lista; a barra mostra só as categorias com saldo positivo.
+  const max = Math.max(1, ...categories.map(category => category.valor));
+  const positiveTotal = categories.filter(category => category.valor > 0).reduce((total, category) => total + category.valor, 0);
+  return `<section class="card home-panel">
+    <div class="home-panel-head"><h2 class="h">Para onde vai a cota</h2><span class="muted">${categories.length} categorias · ${formatCitizenAmount(quota.total)} no mandato</span></div>
+    <ul class="home-category-list">${categories.map(category => `<li><span>${esc(category.nome)}</span><b>${Math.abs(category.valor) >= 1e3 ? formatCitizenAmount(category.valor) : brl(category.valor)}${category.valor > 0 && positiveTotal ? ` <small>${(category.valor / positiveTotal * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%</small>` : ''}</b><i style="width:${Math.max(0.5, Math.max(0, category.valor) / max * 100).toFixed(2)}%"></i></li>`).join('')}</ul>
+    <span class="muted">${esc(homePeriod(quota.periodo))}. Todos os reembolsos importados dos(as) deputados(as) da lista, preservando estornos.</span>
   </section>`;
 }
 function homeTopCard(data) {
   if (!data) return '';
   const ranking = data.topCamara, top = ranking.slice(0, 5), max = Math.max(1, ...top.map(p => p.gastoMensal));
-  return `<section class="card"><span class="k">Maiores gastos médios de cota por mês entre os(as) deputados(as) da lista</span>
-    ${top.length ? `<div>${top.map((p, i) => `<button type="button" class="who" data-politician="${esc(p.id)}" style="${i ? '' : 'border-top:0'}">${citizenAvatar({ id: p.id, name: p.nome }, 40)}<span class="n">${i + 1}. ${esc(p.nome)}</span><span class="v">${mil(p.gastoMensal)} mil/mês</span><span class="s">${esc(p.partido || '')} · ${esc(p.uf || '')}</span><span class="b"><i class="grow-x" style="width:${Math.max(0, p.gastoMensal) / max * 100}%"></i></span></button>`).join('')}</div>` : '<p>Sem reembolsos importados para ordenar.</p>'}
-    <span class="muted">Os cinco maiores valores entre ${ranking.length} deputados(as) com dados. ${esc(homePeriod(data.reembolsos.deputado.periodo))}. Média nos meses com notas; valores altos não indicam irregularidade.</span>
-    <button type="button" class="more" data-go="politicians">Consultar a lista completa</button>
+  return `<section class="card home-panel">
+    <div class="home-panel-head"><h2 class="h">Quem mais usa a cota</h2><span class="muted">Média mensal nos meses com notas</span></div>
+    ${top.length ? `<ol class="home-ranking">${top.map((p, i) => `<li><button type="button" data-politician="${esc(p.id)}"><span class="home-rank">${i + 1}</span><span class="home-rank-name"><b>${esc(p.nome)}</b><small>${esc(p.partido || '')} · ${esc(p.uf || '')}</small></span><span class="home-rank-value">R$ ${mil(p.gastoMensal)} mil</span><i style="width:${(Math.max(0, p.gastoMensal) / max * 100).toFixed(2)}%"></i></button></li>`).join('')}</ol>` : '<p>Sem reembolsos importados para ordenar.</p>'}
+    <span class="muted">Os cinco maiores valores entre ${ranking.length} deputados(as) com dados. ${esc(homePeriod(data.reembolsos.deputado.periodo))}. Valores altos não indicam irregularidade.</span>
+    <button type="button" class="more" data-go="politicians">Ver a lista completa →</button>
   </section>`;
+}
+function homeHero() {
+  return `<div class="home-intro">
+    <h1 class="home-title">Quanto custa cada parlamentar — e como ele trabalha.</h1>
+    <p class="home-lead">Gastos, presença e votos de deputados(as) e senadores(as), a partir dos dados oficiais da Câmara e do Senado.</p>
+    <form class="home-search" data-home-search role="search">
+      <label for="home-search-input">Busque um nome, partido ou estado</label>
+      <div class="home-search-box"><input id="home-search-input" name="q" type="search" maxlength="120" autocomplete="off" placeholder="Ex.: Tabata, PL, Minas Gerais"><button type="submit">Buscar</button></div>
+    </form>
+    <div class="home-shortcuts"><button type="button" data-go="city">Minha cidade</button><button type="button" data-cmp-start="">Comparar dois políticos</button><button type="button" data-go="votes">Placar das votações</button></div>
+  </div>`;
 }
 function homeView() {
   homeLoad();
   const data = home.data;
-  return `<div class="top">${brandMark()}<span class="pill"><i></i>${DATA.ultimaVotacao ? 'Placar selecionado · ' + formatShortDate(DATA.ultimaVotacao) : 'Base disponível'}</span>${themeToggleHTML()}</div>
-    ${homeCostCard(data)}${taxCard(data?.reembolsos.deputado.total)}${homeAlertCard()}
-    ${homePresenceCard()}${homeCategoriesCard(data)}
-    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px"><h2 class="h">Placar da Câmara</h2><button class="more" data-go="votes">Ver tudo</button></div>
-    <div class="carousel">${DATA.votacoes.map(voteCard).join('') || '<p class="note">Sem votações disponíveis neste recorte.</p>'}</div>
-    ${homeCoverageCard(data)}${homeTopCard(data)}
+  return `<div class="top">${brandMark()}${themeToggleHTML()}</div>
+    <section class="home-hero">${homeHero()}${homeCostCard(data)}</section>
+    ${homeStats(data)}
+    ${homeAlertCard()}
+    <div class="home-pair">${homeTopCard(data)}${homeCategoriesCard(data)}</div>
+    ${taxCard(data?.reembolsos.deputado.total)}
     <span class="src">Listas e reembolsos: Câmara dos Deputados e Senado Federal. ${data?.snapshotAt ? 'Fotografia da base: ' + esc(dateBR(data.snapshotAt)) + '.' : ''} Presença e votações têm a cobertura indicada em suas telas.</span>`;
+}
+if (typeof document !== 'undefined' && document.addEventListener) {
+  document.addEventListener('submit', event => {
+    const form = event.target?.closest?.('[data-home-search]');
+    if (!form) return;
+    event.preventDefault();
+    const query = String(new FormData(form).get('q') || '').trim().slice(0, 120);
+    citizenState.politicians.query = query;
+    citizenState.politicians.key = '';
+    navigateToView('politicians');
+  });
 }

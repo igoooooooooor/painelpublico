@@ -1,6 +1,7 @@
 import json
 import tempfile
 import unittest
+from unittest import mock
 from contextlib import closing
 from pathlib import Path
 
@@ -197,6 +198,23 @@ class CitizenPoliticiansTests(unittest.TestCase):
         self.assertEqual(result['topCamara'][0]['id'], 'camara:extra-09')
         self.assertEqual(result['topCamara'][-1]['id'], 'camara:zero')
         self.assertNotIn('camara:former', {item['id'] for item in result['topCamara']})
+
+    def test_home_summary_averages_monthly_cost_per_house_without_inventing_missing_costs(self):
+        self.payload['authorities'].append(
+            self.authority('camara:extra-cost', 'Pessoa Com Custo', 'deputado', 'camara_deputies_current'))
+        self.import_data()
+        fake = {
+            'camara:extra-cost': {'house': 'camara', 'cents': 30000000, 'months': 10},
+            'camara:former': {'house': 'camara', 'cents': 99900000, 'months': 10},
+        }
+        with closing(store.connect(self.db_path)) as db, db, mock.patch.object(citizen.costs, 'monthly_costs', return_value=fake):
+            result = citizen.summary(db)['custoMensal']
+        self.assertEqual(result['deputado']['media'], 300000.0)
+        self.assertEqual(result['deputado']['minimo'], 300000.0)
+        self.assertEqual(result['deputado']['maximo'], 300000.0)
+        self.assertEqual(result['deputado']['comCusto'], 1)
+        self.assertGreater(result['deputado']['total'], 1)
+        self.assertEqual(result['senador'], {'media': None, 'minimo': None, 'maximo': None, 'comCusto': 0, 'total': result['senador']['total']})
 
     def test_party_summary_counts_roster_and_keeps_missing_spending_null(self):
         self.payload['authorities'].append(
