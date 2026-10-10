@@ -85,10 +85,10 @@ collect-project-status:
 	$(PYTHON) ingest/project_status.py --collect
 
 collect-vote-inventory:
-	$(PYTHON) -m ingest.chamber_vote_inventory --collect --year $(or $(YEAR),2026) $(if $(THROUGH),--through $(THROUGH),)
+	$(PYTHON) -m ingest.chamber_vote_inventory --collect --year $(or $(YEAR),2026) $(if $(START),--start $(START),) $(if $(THROUGH),--through $(THROUGH),) $(if $(OMISSIONS),--audit-omissions,)
 
 collect-votes:
-	$(PYTHON) -m ingest.chamber_votes --collect $(if $(THROUGH),--through $(THROUGH),) $(if $(REVIEWS),--reviews $(REVIEWS),)
+	$(PYTHON) -m ingest.chamber_votes --collect $(foreach through,$(THROUGH),--through $(through)) $(if $(REVIEWS),--reviews $(REVIEWS),)
 
 collect-accounts:
 	$(PYTHON) ingest/accounts.py --collect --year $(or $(YEAR),2025)

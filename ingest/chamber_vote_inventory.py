@@ -23,7 +23,11 @@ from ingest.project_status import _atomic_bytes, _json_bytes, cached_json, reque
 
 API_BASE = 'https://dadosabertos.camara.leg.br/api/v2'
 LIST_ENDPOINT = f'{API_BASE}/orgaos/180/votacoes'
+EVENTS_ENDPOINT = f'{API_BASE}/eventos'
 GUIDE_URL = 'https://dadosabertos.camara.leg.br/howtouse/2020-02-07-dados-votacoes.html'
+
+
+VOTE_ID = re.compile(r'[0-9]+-[0-9]+')
 
 
 class CollectionError(ValueError):
@@ -148,9 +152,90 @@ def _participant_audit(rows, tally):
             'methodWarning': 'Linhas individuais e placar não comprovam sozinhos o método nominal; conferir a fonte.'}
 
 
+def _deliberative(event):
+    kind = str(event.get('descricaoTipo', ''))
+    return 'Deliberativa' in kind and 'Não Deliberativa' not in kind
+
+
+def _omission_audit(listed, details, start, through, cache, *, collect, refresh, request):
+    """Cruza a lista com eventos e proposições do Plenário; ausência não vira prova negativa."""
+    cache = cache / 'omissions'
+    query = urlencode({'idOrgao': 180, 'dataInicio': start.isoformat(), 'dataFim': through.isoformat(),
+                       'itens': 100, 'ordem': 'ASC', 'ordenarPor': 'dataHoraInicio'})
+    events_url = f'{EVENTS_ENDPOINT}?{query}'
+    missing, errors, event_votes, propositions = {}, [], set(), {}
+    try:
+        events, _ = _paged(events_url, cache / 'events', collect=collect, refresh=refresh, request=request)
+    except CollectionError as error:
+        events = []
+        errors.append(str(error))
+
+    def observe(row, origin):
+        identifier = str(row.get('id', ''))
+        try:
+            occurred = date.fromisoformat(str(row.get('data', ''))[:10])
+        except ValueError:
+            occurred = None
+        if not VOTE_ID.fullmatch(identifier) or occurred is None or not start <= occurred <= through:
+            return
+        if identifier not in listed:
+            missing.setdefault(identifier, {'id': identifier, 'date': occurred.isoformat(),
+                                            'description': row.get('descricao'), 'origins': []})
+            missing[identifier]['origins'].append(origin)
+
+    deliberative = []
+    for event in events:
+        event_id = str(event.get('id', ''))
+        if not event_id.isdigit():
+            errors.append('Evento sem identificador oficial válido.')
+            continue
+        try:
+            rows, _ = _paged(f'{EVENTS_ENDPOINT}/{event_id}/votacoes', cache / 'event-votes' / event_id,
+                             collect=collect, refresh=refresh, request=request)
+            for row in rows:
+                event_votes.add(str(row.get('id', '')))
+                observe(row, f'evento {event_id}')
+            if _deliberative(event):
+                deliberative.append(event)
+                agenda, _ = _paged(f'{EVENTS_ENDPOINT}/{event_id}/pauta', cache / 'agenda' / event_id,
+                                   collect=collect, refresh=refresh, request=request)
+                for item in agenda:
+                    for key in ('proposicao_', 'proposicaoRelacionada_'):
+                        proposition = item.get(key) if isinstance(item, dict) else None
+                        if isinstance(proposition, dict) and str(proposition.get('id', '')).isdigit():
+                            propositions[str(proposition['id'])] = True
+        except CollectionError as error:
+            errors.append(str(error))
+    for record in details.values():
+        for proposition in record.get('proposicoesAfetadas') or []:
+            if isinstance(proposition, dict) and str(proposition.get('id', '')).isdigit():
+                propositions[str(proposition['id'])] = True
+    for proposition_id in sorted(propositions, key=int):
+        try:
+            rows, _ = _paged(f'{API_BASE}/proposicoes/{proposition_id}/votacoes',
+                             cache / 'proposition-votes' / proposition_id,
+                             collect=collect, refresh=refresh, request=request)
+        except CollectionError as error:
+            errors.append(str(error))
+            continue
+        for row in rows:
+            if row.get('siglaOrgao') == 'PLEN':
+                observe(row, f'proposição {proposition_id}')
+    listed_dates = {entry_date for entry_date in listed.values()}
+    quiet = [{'id': str(event['id']), 'start': event.get('dataHoraInicio')} for event in deliberative
+             if str(event.get('dataHoraInicio', ''))[:10] not in listed_dates]
+    return {'eventsSourceUrl': events_url, 'eventCount': len(events),
+            'deliberativeEventCount': len(deliberative), 'eventVoteCount': len(event_votes),
+            'listOnlyCount': len(set(listed) - event_votes), 'propositionCount': len(propositions),
+            'missing': sorted(missing.values(), key=lambda row: (row['date'], row['id'])),
+            'deliberativeWithoutListedVotes': quiet, 'errors': errors, 'complete': not errors,
+            'limitation': 'As consultas cruzadas vêm da mesma API; concordância não prova que todas '
+                          'as decisões reais foram registradas.'}
+
+
 def collect_inventory(*, root=ROOT, start=date(2026, 1, 1), through=None, collect=False,
                       refresh=False, detail_limit=40, participant_limit=10, audit_unknown=False,
-                      request=request_bytes):
+                      audit_omissions=False, request=request_bytes):
     through = through or date.today()
     if (start.year != through.year or start > through or detail_limit < 0 or participant_limit < 0):
         raise ValueError('Período ou limites inválidos para o inventário anual.')
@@ -163,7 +248,7 @@ def collect_inventory(*, root=ROOT, start=date(2026, 1, 1), through=None, collec
     # Placar explícito primeiro; dentro de cada grupo, data mais recente primeiro.
     # Isto escolhe a amostra de conferência, nunca o catálogo a publicar.
     rows.sort(key=lambda row: classify_vote(row)['recordedTally'] is None)
-    entries, detail_count, participant_count = [], 0, 0
+    entries, detail_count, participant_count, collected = [], 0, 0, {}
     for row in rows:
         classification = classify_vote(row)
         identifier = row['id']
@@ -182,6 +267,7 @@ def collect_inventory(*, root=ROOT, start=date(2026, 1, 1), through=None, collec
                         or detail.get('data') != row['data']):
                     raise CollectionError('Detalhe não corresponde à votação da lista.')
                 classification = classify_vote(detail)
+                collected[identifier] = detail
             except CollectionError as error:
                 detail = None
                 errors.append(str(error))
@@ -215,6 +301,9 @@ def collect_inventory(*, root=ROOT, start=date(2026, 1, 1), through=None, collec
                         'errors': errors, 'reviewIssues': issues, 'publicationStatus': 'needs_review'})
     entries.sort(key=lambda entry: (entry['date'], entry['registeredAt'] or '', entry['id']), reverse=True)
     counts = Counter(entry['category'] for entry in entries)
+    omissions = (_omission_audit({entry['id']: entry['date'] for entry in entries}, collected, start, through,
+                                 cache, collect=collect, refresh=refresh, request=request)
+                 if audit_omissions else None)
     return {'schemaVersion': 1, 'ruleVersion': RULE_VERSION, 'generatedAt': utc_now(),
             'period': {'start': start.isoformat(), 'end': through.isoformat()},
             'scope': 'Câmara · Plenário · inventário de fontes; sem publicação automática',
@@ -229,11 +318,31 @@ def collect_inventory(*, root=ROOT, start=date(2026, 1, 1), through=None, collec
             'participantLimit': participant_limit, 'participantAttemptCount': participant_count,
             'participantAuditCount': sum(entry['participants'] is not None for entry in entries),
             'methodCounts': dict(sorted(Counter(entry['method'] for entry in entries).items())),
-            'errorCount': sum(bool(entry['errors']) for entry in entries), 'entries': entries}
+            'errorCount': sum(bool(entry['errors']) for entry in entries),
+            **({'omissionAudit': omissions} if omissions is not None else {}), 'entries': entries}
 
 
 def _table_text(value):
     return str(value or '').replace('|', '\\|').replace('\n', ' ').replace('\r', ' ')
+
+
+def _omission_lines(audit):
+    if audit is None:
+        return []
+    lines = ['## Conferência de omissões', '',
+             f'Eventos do Plenário: {audit["eventCount"]} ({audit["deliberativeEventCount"]} deliberativos), '
+             f'com {audit["eventVoteCount"]} votações vinculadas.',
+             f'Registros da lista sem evento vinculado: {audit["listOnlyCount"]}.',
+             f'Proposições consultadas: {audit["propositionCount"]}.',
+             f'Votações ausentes da lista: {len(audit["missing"])}. Consultas com falha: {len(audit["errors"])}.', '']
+    lines.extend(f'- [{row["id"]}]({API_BASE}/votacoes/{row["id"]}) ({row["date"]}): '
+                 f'{_table_text(row["description"])} — {", ".join(row["origins"])}' for row in audit['missing'])
+    if audit['deliberativeWithoutListedVotes']:
+        lines.extend(['', 'Sessões deliberativas sem votação na lista (conferir pauta e notas): '
+                      + ', '.join(f'{row["id"]} ({str(row["start"])[:10]})'
+                                  for row in audit['deliberativeWithoutListedVotes']) + '.'])
+    lines.extend(['', audit['limitation'], ''])
+    return lines
 
 
 def render_report(inventory):
@@ -254,6 +363,7 @@ def render_report(inventory):
                   f'(limite {inventory["participantLimit"]}).', f'Registros com falha: {inventory["errorCount"]}.', '',
                   'O método fica desconhecido quando a fonte não o declara explicitamente. '
                   'Contagens ou linhas individuais não transformam uma votação simbólica em nominal.', '',
+                  *_omission_lines(inventory.get('omissionAudit')),
                   '## Registros', '', '| Data | ID e fonte | Categoria | Candidato | Método | Descrição oficial |',
                   '| --- | --- | --- | --- | --- | --- |'])
     for entry in inventory['entries']:
@@ -267,19 +377,29 @@ def render_report(inventory):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--year', type=int, default=2026)
-    parser.add_argument('--through', type=date.fromisoformat, default=date.today())
+    parser.add_argument('--start', type=date.fromisoformat,
+                        help='Primeiro dia consultado; padrão 1º/1 do ano (use 2023-02-01 para o início do mandato).')
+    parser.add_argument('--through', type=date.fromisoformat,
+                        help='Último dia consultado; padrão hoje ou 31/12 do ano, o que vier antes.')
     parser.add_argument('--collect', action='store_true')
     parser.add_argument('--refresh', action='store_true')
     parser.add_argument('--detail-limit', type=int, default=40)
     parser.add_argument('--participant-limit', type=int, default=10)
     parser.add_argument('--audit-unknown', action='store_true',
                         help='Inclui descrições desconhecidas na conferência de detalhes, respeitando --detail-limit.')
+    parser.add_argument('--audit-omissions', action='store_true',
+                        help='Cruza a lista com eventos, pautas e votações por proposição do Plenário.')
     parser.add_argument('--root', type=Path, default=ROOT)
     args = parser.parse_args(argv)
+    args.start = args.start or date(args.year, 1, 1)
+    args.through = args.through or min(date.today(), date(args.year, 12, 31))
+    if args.start.year != args.year:
+        parser.error('--start precisa estar no ano informado em --year.')
     try:
-        inventory = collect_inventory(root=args.root, start=date(args.year, 1, 1), through=args.through,
+        inventory = collect_inventory(root=args.root, start=args.start, through=args.through,
                                       collect=args.collect, refresh=args.refresh, detail_limit=args.detail_limit,
-                                      participant_limit=args.participant_limit, audit_unknown=args.audit_unknown)
+                                      participant_limit=args.participant_limit, audit_unknown=args.audit_unknown,
+                                      audit_omissions=args.audit_omissions)
     except (CollectionError, ValueError) as error:
         parser.exit(1, f'Inventário não gravado; relatório anterior preservado: {error}\n')
     output = args.root / 'data' / 'reviews' / f'chamber-vote-inventory-{args.through}.json'
@@ -287,6 +407,11 @@ def main(argv=None):
     _atomic_bytes(output.with_suffix('.md'), render_report(inventory).encode('utf-8'))
     summary = {key: inventory[key] for key in ('voteCount', 'listPageCount', 'categoryCounts', 'candidateCount',
                                               'detailCount', 'participantAuditCount', 'methodCounts', 'errorCount')}
+    if 'omissionAudit' in inventory:
+        audit = inventory['omissionAudit']
+        summary['omissionAudit'] = {'missing': [row['id'] for row in audit['missing']],
+                                    'errors': len(audit['errors']),
+                                    'deliberativeWithoutListedVotes': len(audit['deliberativeWithoutListedVotes'])}
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     print(output.relative_to(args.root))
 

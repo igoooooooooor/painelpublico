@@ -70,6 +70,16 @@ Respostas originais, URL, data de consulta e checksum ficam em
 Markdown ficam em `data/reviews/chamber-vote-inventory-<fim>.*`, fora do Git.
 Nada é importado para o SQLite ou para os snapshots que o site usa.
 
+`--start` muda o primeiro dia (por exemplo, `2023-02-01`, início do mandato);
+sem `--through`, anos anteriores terminam em 31/12. `--audit-omissions`
+(`OMISSIONS=1` no `make`) cruza a lista com os eventos do Plenário, as votações
+de cada evento, as pautas das sessões deliberativas e as votações de cada
+proposição em pauta ou afetada. O resultado fica em `omissionAudit`: votações
+ausentes da lista, registros sem evento vinculado, sessões deliberativas sem
+votação listada e falhas de consulta. Cache ausente torna a conferência
+incompleta, não a lista. Todas as consultas vêm da mesma API: concordância
+reduz o risco de omissão, mas não prova cobertura completa.
+
 A regra `chamber-vote-inventory-v1` faz uma triagem conservadora da descrição:
 texto principal, emenda/destaque, procedimento, redação final ou desconhecido.
 **Candidato é provisório, não elegível para publicação.** Proposições afetadas
@@ -361,9 +371,29 @@ continua em `chamber-vote-reviews-2026-10-09.json`. Os insumos do primeiro lote
 foram preservados em `data/reviews/scoreboard-audit-initial-2026-10-09/`.
 Todos esses arquivos, fontes e snapshots continuam fora do Git.
 
+A conferência de omissões de 2026 (164 eventos, 70 deliberativos, 890 votações
+vinculadas e 786 proposições) não encontrou votação ausente da lista nem falha
+de consulta. As seis sessões deliberativas sem votação listada foram conferidas
+nas pautas e tramitações, sem decisão de mérito.
+
+## Catálogo de vários anos
+
+Cada ano tem inventário e revisão próprios, nomeados pela data final. Para
+juntar anos contíguos no mesmo índice, repita `--through`:
+
+```sh
+python3 -m ingest.chamber_votes --through 2023-12-31 --through 2024-12-31 \
+  --through 2025-12-31 --through 2026-10-09
+make collect-votes THROUGH="2023-12-31 2024-12-31 2025-12-31 2026-10-09"
+```
+
+Os períodos precisam ser contíguos (31/12 seguido de 1º/1); o primeiro pode
+começar em 1º/2/2023. IDs repetidos entre anos são recusados. A cobertura soma
+as contagens de cada ano, o período vai do primeiro início ao último fim, e o
+índice mantém `schemaVersion: 1`. `--reviews` só vale para um único ano.
+
 ## Próxima etapa
 
-Conferir decisões de mérito eventualmente não detectadas pela lista da API e
-planejar o índice multi-ano antes de aplicar
-a mesma metodologia desde fevereiro de 2023. A conferência deste inventário não
-autoriza declarar cobertura completa do ano ou do mandato.
+Inventariar 2023 (desde 1º/2), 2024 e 2025 com `--audit-omissions`, revisar os
+candidatos com o mesmo critério e só então gerar o índice conjunto. A
+conferência não autoriza declarar cobertura completa do ano ou do mandato.

@@ -58,6 +58,7 @@ class FakeChamberAPI:
         self.list_pages = {1: {"dados": [], "links": []}}
         self.details = {}
         self.participant_pages = {}
+        self.audit_routes = {}
         self.calls = []
 
     def __call__(self, url):
@@ -74,6 +75,8 @@ class FakeChamberAPI:
                 page = int(query.get("pagina", ["1"])[0])
                 return encoded(self.participant_pages[identifier][page])
             return encoded({"dados": self.details[tail], "links": []})
+        if parsed.path.startswith("/api/v2/eventos") or parsed.path.startswith("/api/v2/proposicoes/"):
+            return encoded({"dados": self.audit_routes.get(parsed.path, []), "links": []})
         raise AssertionError(f"Consulta inesperada: {url}")
 
 
@@ -329,6 +332,66 @@ class ChamberVoteInventoryTests(unittest.TestCase):
         self.assertEqual(raised.exception.code, 1)
         self.assertEqual(output.read_bytes(), b"previous json report\n")
         self.assertEqual(markdown.read_bytes(), b"previous markdown report\n")
+
+    def omission_api(self):
+        self.set_list(vote(), vote("124-1", occurred="2026-09-04",
+                                   description="Aprovado o requerimento."))
+        self.api.details["123-1"] = detail()
+        self.api.audit_routes.update({
+            "/api/v2/eventos": [
+                {"id": 10, "descricaoTipo": "Sessão Deliberativa", "dataHoraInicio": "2026-09-03T14:00"},
+                {"id": 11, "descricaoTipo": "Sessão Deliberativa Extraordinária",
+                 "dataHoraInicio": "2026-09-05T14:00"},
+                {"id": 12, "descricaoTipo": "Sessão Não Deliberativa Solene",
+                 "dataHoraInicio": "2026-09-06T10:00"},
+            ],
+            "/api/v2/eventos/10/votacoes": [vote()],
+            "/api/v2/eventos/10/pauta": [{"proposicao_": {"id": 7}}],
+            "/api/v2/proposicoes/7/votacoes": [
+                vote("7-9", occurred="2026-09-05", description="Aprovado o PL 7."),
+                vote("7-8", occurred="2025-12-01"),
+                vote("7-7", chamber="CFT"),
+            ],
+        })
+
+    def test_omission_audit_reports_votes_missing_from_the_list_without_claiming_completeness(self):
+        self.omission_api()
+
+        result = self.collect(participant_limit=0, audit_omissions=True)
+        audit = result["omissionAudit"]
+
+        self.assertEqual([row["id"] for row in audit["missing"]], ["7-9"])
+        self.assertEqual(audit["missing"][0]["origins"], ["proposição 7"])
+        self.assertEqual((audit["eventCount"], audit["deliberativeEventCount"]), (3, 2))
+        self.assertEqual(audit["eventVoteCount"], 1)
+        self.assertEqual(audit["listOnlyCount"], 1)
+        self.assertEqual(audit["propositionCount"], 2)
+        self.assertEqual(audit["deliberativeWithoutListedVotes"], [{"id": "11", "start": "2026-09-05T14:00"}])
+        self.assertTrue(audit["complete"])
+        self.assertIn("não prova", audit["limitation"])
+        self.assertIn("Votações ausentes da lista: 1.", inventory.render_report(result))
+        self.assertEqual(result["voteCount"], 2)
+
+    def test_omission_audit_is_opt_in_and_records_missing_caches_as_incomplete(self):
+        self.omission_api()
+        plain = self.collect(participant_limit=0)
+        self.assertNotIn("omissionAudit", plain)
+        self.assertFalse(any("/eventos" in url for url in self.api.calls))
+
+        offline = self.collect(participant_limit=0, audit_omissions=True, collect=False,
+                               request=lambda _: self.fail("cache offline tentou acessar rede"))
+        self.assertFalse(offline["omissionAudit"]["complete"])
+        self.assertEqual(offline["omissionAudit"]["missing"], [])
+
+    def test_cli_defaults_previous_year_through_december_and_validates_start(self):
+        with patch.object(inventory, "collect_inventory", side_effect=inventory.CollectionError("x")) as collect:
+            with self.assertRaises(SystemExit):
+                inventory.main(["--root", str(self.root), "--year", "2023", "--start", "2023-02-01"])
+        self.assertEqual(collect.call_args.kwargs["start"], date(2023, 2, 1))
+        self.assertEqual(collect.call_args.kwargs["through"], date(2023, 12, 31))
+        with self.assertRaises(SystemExit) as raised:
+            inventory.main(["--root", str(self.root), "--year", "2023", "--start", "2024-01-01"])
+        self.assertEqual(raised.exception.code, 2)
 
 
 if __name__ == "__main__":

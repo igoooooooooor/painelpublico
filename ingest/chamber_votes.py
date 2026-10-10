@@ -260,17 +260,52 @@ def build_catalogue(inventory, reviews, *, root=ROOT, collect=False, refresh=Fal
                 'excludedCount': excluded, 'pendingCount': pending,
                 'missingTextCount': missing_text, 'missingAbstentionCount': missing_abstention,
                 'missingThemeCount': missing_theme,
-                'detail': f'{published} decisões nominais conferidas de {inventory["candidateCount"]} candidatos '
-                          f'provisórios em {inventory["voteCount"]} registros da API. Recorte de {start.year}: texto principal '
-                          f'de PL, PLP e PEC no Plenário da Câmara. {excluded} candidatos excluídos após revisão '
-                          f'com motivo e fonte; {pending} ainda pendentes, incluindo os não revisados. '
-                          f'Decisões com lacunas: {missing_text} sem link seguro ao texto exato; {missing_abstention} sem '
-                          f'contagem publicada de abstenções nas fontes usadas; {missing_theme} sem tema oficial. '
-                          'O catálogo ainda não cobre todo o mandato. Temas da Câmara descrevem a proposição '
-                          'de referência. Campo ausente não significa zero. O resultado é o desta decisão, '
-                          'não a situação legal atual do projeto.'}
+}
+    coverage['detail'] = _coverage_detail(coverage, str(start.year))
     details_version = hashlib.sha256(_json_bytes(details)).hexdigest()
     return {'schemaVersion': 1, 'generatedAt': utc_now(), 'period': period, 'detailsVersion': details_version,
+            'coverage': coverage, 'items': items}, details
+
+
+def _coverage_detail(coverage, label):
+    return (f'{coverage["publishedCount"]} decisões nominais conferidas de {coverage["candidateCount"]} candidatos '
+            f'provisórios em {coverage["inventoryCount"]} registros da API. Recorte de {label}: texto principal '
+            f'de PL, PLP e PEC no Plenário da Câmara. {coverage["excludedCount"]} candidatos excluídos após revisão '
+            f'com motivo e fonte; {coverage["pendingCount"]} ainda pendentes, incluindo os não revisados. '
+            f'Decisões com lacunas: {coverage["missingTextCount"]} sem link seguro ao texto exato; '
+            f'{coverage["missingAbstentionCount"]} sem contagem publicada de abstenções nas fontes usadas; '
+            f'{coverage["missingThemeCount"]} sem tema oficial. '
+            'O catálogo ainda não cobre todo o mandato. Temas da Câmara descrevem a proposição '
+            'de referência. Campo ausente não significa zero. O resultado é o desta decisão, '
+            'não a situação legal atual do projeto.')
+
+
+def merge_catalogues(parts):
+    """Join contiguous yearly catalogues into one index; each year keeps its own inventory and review."""
+    if not parts:
+        raise CollectionError('Nenhum período informado para o catálogo.')
+    parts = sorted(parts, key=lambda part: part[0]['period']['start'])
+    for (previous, _), (current, _) in zip(parts, parts[1:]):
+        end = date.fromisoformat(previous['period']['end'])
+        start = date.fromisoformat(current['period']['start'])
+        if start.year != end.year + 1 or end != date(end.year, 12, 31) or start != date(start.year, 1, 1):
+            raise CollectionError('Os períodos anuais precisam ser contíguos, sem sobreposição nem lacuna.')
+    items, details = [], {}
+    for snapshot, part_details in parts:
+        for item in snapshot['items']:
+            if item['id'] in details:
+                raise CollectionError(f'{item["id"]}: decisão repetida em mais de um período.')
+            details[item['id']] = part_details[item['id']]
+            items.append(item)
+    items.sort(key=lambda item: (item['date'], item['id']), reverse=True)
+    counts = ('inventoryCount', 'candidateCount', 'reviewedCount', 'publishedCount', 'excludedCount',
+              'pendingCount', 'missingTextCount', 'missingAbstentionCount', 'missingThemeCount')
+    coverage = {key: sum(snapshot['coverage'][key] for snapshot, _ in parts) for key in counts}
+    period = {'start': parts[0][0]['period']['start'], 'end': parts[-1][0]['period']['end']}
+    years = sorted({snapshot['period']['start'][:4] for snapshot, _ in parts})
+    coverage['detail'] = _coverage_detail(coverage, years[0] if len(years) == 1 else f'{years[0]} a {years[-1]}')
+    return {'schemaVersion': 1, 'generatedAt': utc_now(), 'period': period,
+            'detailsVersion': hashlib.sha256(_json_bytes(details)).hexdigest(),
             'coverage': coverage, 'items': items}, details
 
 
@@ -299,19 +334,25 @@ def write_catalogue(snapshot, details, directory):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--through', type=date.fromisoformat, default=date.today())
-    parser.add_argument('--reviews', type=Path)
+    parser.add_argument('--through', type=date.fromisoformat, action='append',
+                        help='Fim de um inventário anual; repita para juntar anos contíguos.')
+    parser.add_argument('--reviews', type=Path, help='Revisão alternativa; só com um único --through.')
     parser.add_argument('--root', type=Path, default=ROOT)
     parser.add_argument('--collect', action='store_true')
     parser.add_argument('--refresh', action='store_true')
     args = parser.parse_args(argv)
-    inventory_path = args.root / 'data' / 'reviews' / f'chamber-vote-inventory-{args.through}.json'
-    reviews_path = args.reviews or args.root / 'data' / 'reviews' / f'chamber-vote-reviews-{args.through}.json'
+    throughs = args.through or [date.today()]
+    if args.reviews and len(throughs) > 1:
+        parser.error('--reviews só pode ser usado com um único --through.')
     try:
-        inventory = json.loads(inventory_path.read_text())
-        reviews = json.loads(reviews_path.read_text())
-        snapshot, details = build_catalogue(inventory, reviews, root=args.root,
-                                            collect=args.collect, refresh=args.refresh)
+        parts = []
+        for through in throughs:
+            reviews_path = args.reviews or args.root / 'data' / 'reviews' / f'chamber-vote-reviews-{through}.json'
+            inventory = json.loads((args.root / 'data' / 'reviews' / f'chamber-vote-inventory-{through}.json').read_text())
+            reviews = json.loads(reviews_path.read_text())
+            parts.append(build_catalogue(inventory, reviews, root=args.root,
+                                         collect=args.collect, refresh=args.refresh))
+        snapshot, details = parts[0] if len(parts) == 1 else merge_catalogues(parts)
         write_catalogue(snapshot, details, args.root / 'data' / 'snapshots')
     except (OSError, ValueError, KeyError, TypeError) as error:
         parser.exit(1, f'Catálogo não gravado; saída anterior preservada: {error}\n')

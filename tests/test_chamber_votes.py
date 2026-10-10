@@ -480,6 +480,53 @@ class ChamberVotesTests(unittest.TestCase):
         self.assertEqual(detail_path.read_bytes(), b"previous detail\n")
         self.assertEqual(index_path.read_bytes(), b"previous index\n")
 
+def yearly_part(start, end, identifier, *, published=1):
+    coverage = {"inventoryCount": 10, "candidateCount": 3, "reviewedCount": 3, "publishedCount": published,
+                "excludedCount": 3 - published, "pendingCount": 0, "missingTextCount": 0,
+                "missingAbstentionCount": published, "missingThemeCount": 0, "detail": "ano"}
+    items = [{"id": identifier, "date": start}] if published else []
+    details = {identifier: {"id": identifier, "participants": []}} if published else {}
+    return {"schemaVersion": 1, "period": {"start": start, "end": end},
+            "coverage": coverage, "items": items}, details
+
+
+class MergeCatalogueTests(unittest.TestCase):
+    def test_merges_contiguous_years_summing_coverage_and_keeping_details(self):
+        snapshot, details = chamber_votes.merge_catalogues([
+            yearly_part("2024-01-01", "2024-12-31", "2-1"),
+            yearly_part("2023-02-01", "2023-12-31", "1-1"),
+        ])
+
+        self.assertEqual(snapshot["period"], {"start": "2023-02-01", "end": "2024-12-31"})
+        self.assertEqual([item["id"] for item in snapshot["items"]], ["2-1", "1-1"])
+        self.assertEqual(snapshot["coverage"]["inventoryCount"], 20)
+        self.assertEqual(snapshot["coverage"]["excludedCount"], 4)
+        self.assertEqual(snapshot["coverage"]["missingAbstentionCount"], 2)
+        self.assertIn("Recorte de 2023 a 2024", snapshot["coverage"]["detail"])
+        self.assertEqual(set(details), {"1-1", "2-1"})
+        self.assertEqual(snapshot["detailsVersion"],
+                         hashlib.sha256(chamber_votes._json_bytes(details)).hexdigest())
+
+    def test_rejects_gaps_overlaps_and_repeated_decisions(self):
+        cases = (
+            ([yearly_part("2023-02-01", "2023-12-31", "1-1"), yearly_part("2025-01-01", "2025-12-31", "2-1")],
+             "contíguos"),
+            ([yearly_part("2023-02-01", "2023-10-09", "1-1"), yearly_part("2024-01-01", "2024-12-31", "2-1")],
+             "contíguos"),
+            ([yearly_part("2023-02-01", "2023-12-31", "1-1"), yearly_part("2024-01-01", "2024-12-31", "1-1")],
+             "repetida"),
+        )
+        for parts, message in cases:
+            with self.subTest(message=message):
+                with self.assertRaisesRegex(CollectionError, message):
+                    chamber_votes.merge_catalogues(parts)
+
+    def test_cli_rejects_alternative_review_with_several_years(self):
+        with self.assertRaises(SystemExit) as raised:
+            chamber_votes.main(["--through", "2024-12-31", "--through", "2025-12-31",
+                                "--reviews", "revisao.json"])
+        self.assertEqual(raised.exception.code, 2)
+
 
 if __name__ == "__main__":
     unittest.main()
