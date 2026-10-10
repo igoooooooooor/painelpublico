@@ -82,6 +82,17 @@ class VoteSnapshotTests(unittest.TestCase):
         self.assertEqual([i['id'] for i in votes.listing({'result': 'not_approved'}, self.index)['items']], ['3-1', '2-1'])
         self.assertEqual(votes.listing({'result': 'qualquer'}, self.index)['total'], 3)
 
+    def test_optional_related_decision_is_preserved_and_validated(self):
+        item = dict(self.items[0])
+        item['related'] = {'id': '9-9', 'relation': 'approvedAfter', 'outcome': 'approved',
+                           'tally': {'yes': 407, 'no': 6, 'abstention': None, 'total': 413}}
+        self.write(self.index, snapshot([item]))
+        self.assertEqual(votes.listing({}, self.index)['items'][0]['related'], item['related'])
+        for bad in ({**item['related'], 'relation': 'outra'}, {**item['related'], 'id': 'x'}, 'texto'):
+            with self.subTest(bad=bad):
+                self.write(self.index, snapshot([{**item, 'related': bad}]))
+                self.assertFalse(votes.listing({}, self.index)['available'])
+
     def test_listing_returns_available_filters_and_stable_date_order(self):
         result = votes.listing({}, self.index)
         self.assertEqual([item['id'] for item in result['items']], ['2600001-02', '2611313-31', '2599999-01'])

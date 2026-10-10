@@ -584,6 +584,33 @@ def yearly_part(start, end, identifier, *, published=1):
             "coverage": coverage, "items": items}, details
 
 
+class FollowedVersionTests(unittest.TestCase):
+    def items(self):
+        return [{'id': '1-1', 'proposition': 'PLP 1/2025', 'date': '2025-02-18', 'outcome': 'rejected',
+                 'tally': {'yes': 34, 'no': 356, 'abstention': 1, 'total': 391}},
+                {'id': '1-2', 'proposition': 'PLP 1/2025', 'date': '2025-02-18', 'outcome': 'approved',
+                 'tally': {'yes': 407, 'no': 6, 'abstention': None, 'total': 413}}]
+
+    def test_links_the_rejected_version_to_the_later_approval_both_ways(self):
+        items = self.items()
+        chamber_votes._link_followed_versions(items, {'1-1': '1-2'},
+                                              {'1-1': '2025-02-18T19:49', '1-2': '2025-02-18T20:01'})
+        self.assertEqual(items[0]['related']['id'], '1-2')
+        self.assertEqual(items[0]['related']['relation'], 'approvedAfter')
+        self.assertEqual(items[1]['related'], {'id': '1-1', 'relation': 'rejectedBefore', 'outcome': 'rejected',
+                                               'tally': items[0]['tally']})
+
+    def test_rejects_links_to_other_propositions_dates_order_or_outcomes(self):
+        cases = (({'proposition': 'PLP 2/2025'}, {}), ({'date': '2025-02-19'}, {}), ({'outcome': 'rejected'}, {}),
+                 ({}, {'1-2': '2025-02-18T19:00'}))
+        for change, times in cases:
+            with self.subTest(change=change, times=times):
+                items = self.items(); items[1].update(change)
+                with self.assertRaisesRegex(CollectionError, 'decisão seguinte'):
+                    chamber_votes._link_followed_versions(
+                        items, {'1-1': '1-2'}, {'1-1': '2025-02-18T19:49', '1-2': '2025-02-18T20:01', **times})
+
+
 class MergeCatalogueTests(unittest.TestCase):
     def test_merges_contiguous_years_summing_coverage_and_keeping_details(self):
         snapshot, details = chamber_votes.merge_catalogues([

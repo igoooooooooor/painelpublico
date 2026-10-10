@@ -253,3 +253,18 @@ test('the result filter is sent to the API and the coverage explains why rejecti
   await flush();
   assert.ok(!calls.at(-1).includes('result='));
 });
+
+test('a rejected alternative version links to the approval that followed', async () => {
+  const related = { id: '1-2', relation: 'approvedAfter', outcome: 'approved', tally: { yes: 407, no: 6, abstention: null, total: 413 } };
+  const detail = { available: true, vote: item('1-1', 'Versão rejeitada', { outcome: 'rejected', related }), participants: [], partyTotals: [], participantsAvailable: false };
+  const { context, app, click } = loadApp({ fetch: async url => url.startsWith('/api/c/votes?')
+    ? jsonResponse(listPayload({ items: [item('1-1', 'Versão rejeitada', { outcome: 'rejected', related })] })) : jsonResponse(detail) });
+  vm.runInContext("navigateToView('votes')", context);
+  await flush();
+  assert.match(app.innerHTML, /Versão rejeitada · projeto aprovado em seguida/);
+  click({ vote: '1-1' });
+  await flush();
+  assert.match(app.innerHTML, /O que valeu para o projeto/);
+  assert.match(app.innerHTML, /data-vote="1-2"/);
+  assert.match(app.innerHTML, /Sim 407 × Não 6/);
+});

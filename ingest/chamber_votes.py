@@ -147,6 +147,7 @@ def build_catalogue(inventory, reviews, *, root=ROOT, collect=False, refresh=Fal
     cache = root / 'data' / 'raw' / 'chamber-vote-inventory' / f'{start}_{end}'
     entries = {entry['id']: entry for entry in inventory['entries']}
     items, details, reviewed_ids, excluded_ids = [], {}, set(), set()
+    registered, followers = {}, {}
     for review in reviews:
         identifier = review.get('id') if isinstance(review, dict) else None
         if not isinstance(identifier, str) or not VOTE_ID.fullmatch(identifier) or identifier in reviewed_ids:
@@ -294,12 +295,16 @@ def build_catalogue(inventory, reviews, *, root=ROOT, collect=False, refresh=Fal
                                   **({'referenceProposition': FICHA.format(target['id'])}
                                      if voted_id != target['id'] else {})}, 'reviewedAt': review['reviewedAt'],
                       **({'dataNotes': data_notes} if data_notes else {})})
+        registered[identifier] = str(record.get('dataHoraRegistro', ''))
+        if review.get('followedBy') is not None:
+            followers[identifier] = review['followedBy']
         details[identifier] = {'id': identifier, 'participants': participants, 'partyTotals': party_totals,
                                'sourceMetadata': {'vote': detail_source, 'rollCall': report_source,
                                                   'participants': participant_sources, 'themes': theme_sources,
                                                   **({'participantsOrigin': participants_origin,
                                                       'identities': identity_sources}
                                                      if participants_origin == 'rollCall' else {})}}
+    _link_followed_versions(items, followers, registered)
     items.sort(key=lambda item: (item['date'], item['id']), reverse=True)
     published = len(items)
     excluded = len(excluded_ids)
@@ -317,6 +322,21 @@ def build_catalogue(inventory, reviews, *, root=ROOT, collect=False, refresh=Fal
     details_version = hashlib.sha256(_json_bytes(details)).hexdigest()
     return {'schemaVersion': 1, 'generatedAt': utc_now(), 'period': period, 'detailsVersion': details_version,
             'coverage': coverage, 'items': items}, details
+
+
+def _link_followed_versions(items, followers, registered):
+    """Liga a versão rejeitada à decisão seguinte sobre a mesma proposição, na mesma data."""
+    by_id = {item['id']: item for item in items}
+    for identifier, following in followers.items():
+        rejected, approved = by_id[identifier], by_id.get(following)
+        if (approved is None or rejected['outcome'] not in ('rejected', 'not_approved')
+                or approved['outcome'] != 'approved' or approved['proposition'] != rejected['proposition']
+                or approved['date'] != rejected['date'] or not registered[identifier] < registered[following]):
+            raise CollectionError(f'{identifier}: decisão seguinte não confirma aprovação posterior da mesma proposição.')
+        rejected['related'] = {'id': following, 'relation': 'approvedAfter',
+                               'outcome': approved['outcome'], 'tally': approved['tally']}
+        approved['related'] = {'id': identifier, 'relation': 'rejectedBefore',
+                               'outcome': rejected['outcome'], 'tally': rejected['tally']}
 
 
 def _coverage_detail(coverage, label):

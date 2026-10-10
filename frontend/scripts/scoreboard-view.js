@@ -46,7 +46,8 @@ function scoreboardSourceLink(url, label) {
   const safeUrl = scoreboardSafeSource(url);
   return safeUrl ? `<a href="${scoreboardEscape(safeUrl)}" target="_blank" rel="noopener">${scoreboardEscape(label)} ↗</a>` : '';
 }
-function scoreboardOutcome(outcome) {
+function scoreboardOutcome(outcome, related) {
+  if (related?.relation === 'approvedAfter' && outcome !== 'approved') return 'Versão rejeitada · projeto aprovado em seguida';
   return ({ approved: 'Aprovado nesta votação', rejected: 'Rejeitado nesta votação', not_approved: 'Não aprovado nesta votação' })[outcome] || 'Resultado não informado';
 }
 function scoreboardVoteType(item) {
@@ -156,7 +157,7 @@ function scoreboardCoverage(data) {
     <details><summary>Como montamos este Placar e seus limites</summary>
       <p><strong>De onde vêm as votações.</strong> A Câmara publicou ${inventory} registros de votação ${timeframe}. Muitos são etapas do mesmo projeto: urgência, emendas, destaques, procedimentos e redação final. Ficamos só com as votações do texto principal de PL, PLP e PEC no Plenário. Votações simbólicas (sem registro de voto de cada deputado) e outros tipos de proposta ficam de fora.</p>
       <p><strong>Como escolhemos.</strong> Dos ${inventory} registros, ${candidates} pareciam votações do texto principal. ${review}: ${excluded}${published} entraram no Placar. ${pendingNote}</p>
-      <p><strong>Por que quase todas foram aprovadas.</strong> Antes da votação final, um projeto passa por comissões, pedidos de urgência e acordos entre os partidos. Quando não tem apoio, ele costuma parar no caminho: fica na comissão, é retirado da pauta ou é derrotado numa votação simbólica, sem registro do voto de cada deputado. As derrotas também aparecem em votações de emendas, destaques e requerimentos, que não entram aqui. Por isso, quando o texto principal chega a uma votação nominal, ele quase sempre é aprovado. Use o filtro “Rejeitadas” para ver as exceções.</p>
+      <p><strong>Por que quase todas foram aprovadas.</strong> Antes da votação final, um projeto passa por comissões, pedidos de urgência e acordos entre os partidos. Quando não tem apoio, ele costuma parar no caminho: fica na comissão, é retirado da pauta ou é derrotado numa votação simbólica, sem registro do voto de cada deputado. As derrotas também aparecem em votações de emendas, destaques e requerimentos, que não entram aqui. Por isso, quando o texto principal chega a uma votação nominal, ele quase sempre é aprovado. Uma rejeição aqui pode ser de uma versão alternativa, como o substitutivo de uma comissão: nesse caso, a página da votação mostra a decisão seguinte, que aprovou o projeto.</p>
       <p><strong>Limites.</strong></p>
       <ul>${gaps}
         <li>O Placar ainda não cobre todo o mandato${year ? `, só ${year}` : ''}.</li>
@@ -196,7 +197,7 @@ function scoreboardItemCard(item) {
       ${themes.length ? `<p class="scoreboard-themes">${themes.map(theme => `<span class="pill">${scoreboardEscape(theme)}</span>`).join(' ')}</p>` : ''}
     </div>
     <div class="scoreboard-card-result">
-      <p class="scoreboard-outcome" data-outcome="${scoreboardEscape(item?.outcome || '')}">${scoreboardEscape(scoreboardOutcome(item?.outcome))}</p>
+      <p class="scoreboard-outcome" data-outcome="${scoreboardEscape(item?.outcome || '')}">${scoreboardEscape(scoreboardOutcome(item?.outcome, item?.related))}</p>
       ${scoreboardTallyBar(tally)}
       <p class="scoreboard-meta"><span><b>${scoreboardCount(tally.yes)}</b> sim</span><span><b>${scoreboardCount(tally.no)}</b> não</span><span>${abstention}</span></p>
       ${SCOREBOARD_VOTE_ID.test(id) ? `<button type="button" class="more" data-vote="${scoreboardEscape(id)}">Ver decisão e votos →</button>` : '<p class="muted">Identificador desta votação indisponível.</p>'}
@@ -226,7 +227,7 @@ function scoreboardFilterForm(data, fallback) {
     </div>
     <div class="scoreboard-filter-row">
       <fieldset class="scoreboard-chips"><legend class="sr-only">Tipo de proposta</legend>${typeOption('', 'Todos os tipos', '')}${types.map(type => typeOption(type, type, SCOREBOARD_TYPE_NAMES[type] || '')).join('')}</fieldset>
-      <fieldset class="scoreboard-chips"><legend class="sr-only">Resultado da votação</legend>${resultOption('', 'Todos os resultados', '')}${resultOption('approved', 'Aprovadas', 'Texto aprovado nesta votação')}${resultOption('not_approved', 'Rejeitadas', 'Texto rejeitado ou não aprovado nesta votação')}</fieldset>
+      <fieldset class="scoreboard-chips"><legend class="sr-only">Resultado da votação</legend>${resultOption('', 'Todos os resultados', '')}${resultOption('approved', 'Aprovadas', 'Texto aprovado nesta votação')}${resultOption('not_approved', 'Rejeitadas', 'Texto rejeitado ou não aprovado nesta votação; pode ser uma versão alternativa, e o projeto ter sido aprovado em seguida')}</fieldset>
       ${fallback ? `<p class="muted">Temas oficiais ficam disponíveis quando o catálogo ampliado está ativo.</p>` : `<label class="scoreboard-theme"><span class="sr-only">Tema oficial</span><select name="theme" data-scoreboard-autosubmit><option value="">Todos os temas</option>${themes.map(theme => `<option value="${scoreboardEscape(theme.id)}"${list.theme === theme.id ? ' selected' : ''}>${scoreboardEscape(theme.label)}</option>`).join('')}</select></label>`}
       <p class="scoreboard-legend" aria-hidden="true"><span><i class="vote-yes"></i>Sim</span><span><i class="vote-no"></i>Não</span><span><i class="vote-abstention"></i>Abstenção</span></p>
     </div>
@@ -266,6 +267,22 @@ function scoreboardVotesView() {
     <div class="scoreboard-results" aria-live="polite">${result || empty}</div>
     ${result ? scoreboardPagination(paginationData, fallback ? legacyVotes.length : Number(data?.total) || 0) : ''}
     <span class="src">Fonte: Câmara dos Deputados · dados abertos do Plenário.</span>`;
+}
+function scoreboardRelatedDecision(related) {
+  if (!related || !SCOREBOARD_VOTE_ID.test(scoreboardText(related.id))) return '';
+  const tally = `Sim ${scoreboardCount(related.tally?.yes)} × Não ${scoreboardCount(related.tally?.no)}`;
+  const link = `<button type="button" class="more" data-vote="${scoreboardEscape(related.id)}">`;
+  if (related.relation === 'approvedAfter') {
+    return `<section class="card scoreboard-related" role="note"><span class="k">O que valeu para o projeto</span>
+      <p>Esta votação decidiu sobre uma <strong>versão alternativa</strong> do texto, que foi rejeitada. Na mesma sessão, logo depois, a Câmara aprovou o projeto (${scoreboardEscape(tally)}).</p>
+      ${link}Ver a votação que aprovou o projeto →</button></section>`;
+  }
+  if (related.relation === 'rejectedBefore') {
+    return `<section class="card scoreboard-related" role="note"><span class="k">Antes desta votação</span>
+      <p>Na mesma sessão, a Câmara rejeitou antes uma versão alternativa do texto (${scoreboardEscape(tally)}). Esta é a votação que aprovou o projeto.</p>
+      ${link}Ver a versão rejeitada →</button></section>`;
+  }
+  return '';
 }
 function scoreboardDetailSources(sources, dataNotes) {
   const source = sources || {};
@@ -353,7 +370,7 @@ function scoreboardDetailView() {
   const vote = payload.vote || {};
   const tally = vote.tally || {};
   const themes = Array.isArray(vote.themes) ? vote.themes.map(theme => scoreboardText(theme?.label)).filter(Boolean) : [];
-  const outcome = scoreboardOutcome(vote.outcome);
+  const outcome = scoreboardOutcome(vote.outcome, vote.related);
   const hasParticipants = payload.participantsAvailable !== false;
   const type = scoreboardVoteType(vote);
   const participants = Array.isArray(payload.participants) ? payload.participants : [];
@@ -367,6 +384,7 @@ function scoreboardDetailView() {
     <section class="card scoreboard-decision"><span class="k">O que foi decidido</span><h2 class="h">${scoreboardEscape(vote.decisionLabel || 'Decisão não informada')}</h2>${vote.summary ? `<p>${scoreboardEscape(vote.summary)}</p>` : '<p class="muted">Resumo não informado para esta versão.</p>'}
       <div class="scoreboard-meaning"><div><span class="k"><i class="vote-yes"></i>Sim significava</span><p>${scoreboardEscape(vote.yesMeaning || 'Informação não disponível neste registro.')}</p></div><div><span class="k"><i class="vote-no"></i>Não significava</span><p>${scoreboardEscape(vote.noMeaning || 'Informação não disponível neste registro.')}</p></div></div>
       ${pecNote}<p class="muted">O resultado é o desta votação, não a situação atual da proposta.</p></section>
+    ${scoreboardRelatedDecision(vote.related)}
     <section class="card scoreboard-result"><span class="k">Resultado desta votação</span><dl class="scoreboard-tally"><div><dt>Sim</dt><dd>${scoreboardCount(tally.yes)}</dd></div><div><dt>Não</dt><dd>${scoreboardCount(tally.no)}</dd></div><div><dt>Abstenção</dt><dd>${scoreboardCount(tally.abstention)}</dd>${Number.isFinite(tally.abstention) ? '' : '<small>não publicada</small>'}</div><div><dt>Total</dt><dd>${scoreboardCount(tally.total)}</dd></div></dl>
       ${hasParticipants ? scoreboardSeatGrid(participants) : ''}
       <p class="muted">${scoreboardEscape(outcome)}. O resultado se refere a esta decisão registrada. O total soma Sim, Não e Abstenção.</p></section>

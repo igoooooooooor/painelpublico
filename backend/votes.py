@@ -131,6 +131,13 @@ def _summary_item(value):
         if not _text(reference, limit=2048) or not reference.startswith('https://'):
             return None
         safe_sources['referenceProposition'] = reference
+    related = value.get('related')
+    if 'related' in value and (
+            not isinstance(related, dict) or not _VOTE_ID.fullmatch(str(related.get('id', '')))
+            or related.get('relation') not in {'approvedAfter', 'rejectedBefore'}
+            or related.get('outcome') not in _OUTCOMES or not isinstance(related.get('tally'), dict)
+            or any(not _count(related['tally'].get(key), nullable=True) for key in ('yes', 'no', 'abstention', 'total'))):
+        return None
     notes = value.get('dataNotes')
     if 'dataNotes' in value and (not isinstance(notes, list) or len(notes) > 4
                                 or any(not _text(note, limit=500) for note in notes)):
@@ -143,6 +150,9 @@ def _summary_item(value):
         'tally': {key: tally[key] for key in ('yes', 'no', 'abstention', 'total')},
         'themes': safe_themes, 'sources': safe_sources, 'reviewedAt': value['reviewedAt'],
         **({'dataNotes': notes} if 'dataNotes' in value else {}),
+        **({'related': {'id': related['id'], 'relation': related['relation'], 'outcome': related['outcome'],
+                        'tally': {key: related['tally'][key] for key in ('yes', 'no', 'abstention', 'total')}}}
+           if 'related' in value else {}),
     }
 
 
