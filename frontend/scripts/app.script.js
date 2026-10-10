@@ -227,7 +227,8 @@ document.addEventListener('click', e => {
     e.preventDefault();
     return openPolitician(t.dataset.deputy);
   }
-  if (t.dataset.go) { navigationHistory.length = 0; navigateToView(t.dataset.go, true); }
+  // Abas do menu começam um caminho novo; links dentro da página lembram de onde veio, para o "Voltar".
+  if (t.dataset.go) { if (!t.closest || t.closest('nav.tabs')) { navigationHistory.length = 0; navigateToView(t.dataset.go, true); } else navigateToView(t.dataset.go); }
 });
 /* Alterna tema claro/escuro; o padrão é escuro e a escolha fica salva neste navegador. */
 const THEME_ICON = '<svg class="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="theme-moon" d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/><g class="theme-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></svg>';

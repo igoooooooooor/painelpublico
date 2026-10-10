@@ -477,6 +477,8 @@ def politicians(db, params):
         'gasto': 'CASE WHEN t.authorityId IS NULL THEN 1 ELSE 0 END,gastoMensal DESC',
         # Pelo peso: valor envolvido nos alertas, não a contagem (vários alertas pequenos não passam à frente de um enorme).
         'alertas': 'valorAlertas DESC,alertas DESC,CASE WHEN t.authorityId IS NULL THEN 1 ELSE 0 END,gastoMensal DESC',
+        # Pela contagem: quantos alertas a pessoa tem, com o valor só para desempatar.
+        'quantidade-alertas': 'alertas DESC,valorAlertas DESC,CASE WHEN t.authorityId IS NULL THEN 1 ELSE 0 END,gastoMensal DESC',
     }.get(params.get('ordem'), 'a.name')
     page, size, offset = store.page_args(params)
     where = ' AND '.join(clauses)
