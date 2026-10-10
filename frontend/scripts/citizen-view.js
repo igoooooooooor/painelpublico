@@ -259,44 +259,66 @@ function loadTopAlerts() {
   citizenState.pending.add(TOP_ALERTS_PATH);
   citizenGet(TOP_ALERTS_PATH).then(() => { if (state.view === 'alerts') rerender(); }).catch(() => citizenState.cache.set(TOP_ALERTS_PATH, { itens: [] }));
 }
-function alertSummaryCard() {
-  const alertState = citizenState.alerts;
-  const alertCounts = alertState.counts;
+const ALERT_RULE_ICONS = {
+  pico: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l5-5 4 3 8-9"/><path d="M15 6h5v5"/></svg>',
+  fornecedor: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l7 5"/></svg>'
+};
+/* Resumo das duas regras no topo: a regra e quantos alertas ela gerou no recorte. */
+function alertRuleCards() {
+  const counts = citizenState.alerts.counts;
+  const rules = [
+    ['pico', 'Mês acima da referência', 'O gasto do mês é pelo menos 1,75 vez a referência da própria pessoa (mediana dos 12 meses anteriores), com pelo menos R$ 10 mil de diferença, e fica acima do gasto típico dos(as) colegas.'],
+    ['fornecedor', 'Concentração em fornecedor', 'Pelo menos 50% e R$ 30 mil das notas do ano foram para um mesmo fornecedor. Inclui passagens intermediadas por agência.']
+  ];
+  return `<div class="alerts-rules">${rules.map(([key, title, text]) => `<article class="card alerts-rule" data-kind="${key === 'pico' ? 'type-peak' : 'type-supplier'}">
+      ${ALERT_RULE_ICONS[key]}<b>${title}</b><span>${text}</span>
+      <b class="mono alerts-rule-count">${counts ? (counts[key] || 0).toLocaleString('pt-BR') : '—'}</b>
+    </article>`).join('')}</div>`;
+}
+function alertTopPeople() {
   const topPeople = (citizenState.cache.get(TOP_ALERTS_PATH)?.itens || []).filter(person => person.alertas);
-  const monthlyPeakCount = alertCounts?.pico || 0;
-  const supplierConcentrationCount = alertCounts?.fornecedor || 0;
-  const totalCount = monthlyPeakCount + supplierConcentrationCount;
-  return `<section class="card hero">
-    <span class="k">${alertState.year ? `Alertas em ${esc(alertState.year)}` : `Alertas no mandato${alertState.span ? ` · ${esc(citizenQuotaPeriod(alertState.span.inicio, alertState.span.fim))}` : ''}`}</span>
-    <div class="huge">${alertCounts ? totalCount.toLocaleString('pt-BR') : '—'}</div>
-    <span class="muted">alertas pelas regras do painel, para conferir. Não indicam irregularidade.</span>
-    ${totalCount ? `<div class="stack" role="img" aria-label="${monthlyPeakCount} picos num mês e ${supplierConcentrationCount} concentrações numa empresa"><i style="width:${monthlyPeakCount / totalCount * 100}%;background:var(--accent-2)"></i><i style="width:${supplierConcentrationCount / totalCount * 100}%;background:var(--hero-fg)"></i></div>
-    <div class="legend" style="color:var(--hero-muted)"><span><i style="background:var(--accent-2)"></i>Mês acima da referência · ${monthlyPeakCount}</span><span><i style="background:var(--hero-fg)"></i>Concentração em fornecedor · ${supplierConcentrationCount}</span></div>` : ''}
-    ${topPeople.length ? `<span class="k" style="margin-top:6px">Valor das despesas nos alertas do mandato</span>
+  if (!topPeople.length) return '';
+  return `<div class="alerts-top"><span class="k">Valor das despesas nos alertas do mandato</span>
     <div class="faces citizen-top5">${topPeople.map(person => `<button type="button" class="face" data-politician="${esc(person.id)}">${citizenAvatar(person, 54)}<span>${esc(citizenName(person.name).split(' ')[0])}</span><em>${person.valorAlertas ? esc(formatCitizenAmount(person.valorAlertas)) + (person.valorAlertasParcial ? ' · parcial' : '') : `${person.alertas} ${person.alertas === 1 ? 'ALERTA' : 'ALERTAS'}`}</em></button>`).join('')}</div>
-    <span class="muted">Soma das despesas observadas nos alertas, cada nota contada uma vez. Não é estimativa de prejuízo. "Parcial": inclui concentração calculada com o ano ainda aberto.</span>` : ''}
-  </section>`;
+    <span class="muted">Soma das despesas observadas nos alertas, cada nota contada uma vez. Não é estimativa de prejuízo. "Parcial": inclui concentração calculada com o ano ainda aberto.</span></div>`;
+}
+function alertFilterGroup(label, attr, options, current) {
+  return `<span class="alerts-seg" role="group" aria-label="${label}">${options.map(([k, n]) => `<button type="button" data-${attr}="${k}" aria-pressed="${current === k}">${n}</button>`).join('')}</span>`;
 }
 function alertsView() {
   const l = citizenState.alerts; loadAlerts(false); loadTopAlerts();
-  const types = [['pico,fornecedor', 'Tudo'], ['pico', 'Mês acima da referência'], ['fornecedor', 'Concentração em fornecedor']];
-  const roles = [['', 'Todos'], ['deputado', 'Deputados(as)'], ['senador', 'Senadores(as)']];
-  return `${pageHead('Entenda em 1 minuto', 'Alertas', 'Cada cartão mostra um mês acima da referência ou uma concentração em fornecedor na cota de um(a) deputado(a) ou senador(a), segundo regras fixas e iguais para todos(as). Toque para ver de quem é e conferir na fonte.')}
-    ${alertSummaryCard()}
-    <div class="citizen-filters">
-      <div class="chips" role="group" aria-label="Tipo de alerta">${types.map(([k, n]) => `<button type="button" class="fchip" data-alert-type="${k}" aria-pressed="${l.type === k}">${n}</button>`).join('')}</div>
-      <div class="chips" role="group" aria-label="Cargo">${roles.map(([k, n]) => `<button type="button" class="fchip" data-alert-role="${k}" aria-pressed="${l.role === k}">${n}</button>`).join('')}</div>
-      ${l.years?.length > 1 || l.year ? `<div class="chips" role="group" aria-label="Ano">${[['', 'Mandato'], ...(l.years || []).map(y => [String(y.ano), String(y.ano)])].map(([k, n]) => `<button type="button" class="fchip" data-alert-year="${k}" aria-pressed="${l.year === k}">${n}</button>`).join('')}</div>` : ''}
-    </div>
+  const types = [['pico,fornecedor', 'Todos'], ['pico', 'Mês acima da referência'], ['fornecedor', 'Concentração em fornecedor']];
+  const roles = [['', 'Todas'], ['deputado', 'Câmara'], ['senador', 'Senado']];
+  const years = [['', 'Mandato'], ...(l.years || []).map(y => [String(y.ano), String(y.ano)])];
+  const scope = l.year ? `em ${esc(l.year)}` : `no mandato${l.span ? ` (${esc(citizenQuotaPeriod(l.span.inicio, l.span.fim))})` : ''}`;
+  return `<div class="alerts-page">
+    <section class="alerts-hero">
+      <div class="alerts-intro">
+        <h1 class="h ph-t">Alertas</h1>
+        <p class="ph-lead">Meses acima da referência e concentração em fornecedor nas notas da cota de deputados(as) e senadores(as), pelas mesmas regras para todos(as). Os alertas não indicam irregularidade: confira sempre as notas na fonte oficial.</p>
+        <a class="alerts-how-link" href="#alerts-how">Como as regras funcionam →</a>
+        ${alertTopPeople()}
+      </div>
+      ${alertRuleCards()}
+    </section>
+    <section class="alerts-filters" aria-label="Filtros">
+      ${alertFilterGroup('Tipo de alerta', 'alert-type', types, l.type)}
+      ${alertFilterGroup('Casa', 'alert-role', roles, l.role)}
+      ${years.length > 2 || l.year ? alertFilterGroup('Período', 'alert-year', years, l.year) : ''}
+      ${l.total !== null ? `<span class="muted alerts-status" role="status">${l.total.toLocaleString('pt-BR')} ${l.total === 1 ? 'alerta' : 'alertas'} ${scope} · dos mais recentes aos mais antigos</span>` : ''}
+    </section>
     ${l.error ? `<section class="card"><p>Não deu para carregar os alertas agora.</p><p class="muted">${esc(l.error)}</p><button type="button" class="more" data-alert-retry>Tentar de novo</button></section>` : ''}
-    ${l.total !== null ? `<span class="muted" role="status">${l.total} ${l.total === 1 ? 'alerta' : 'alertas'} neste filtro</span>` : ''}
-    ${l.items.map(a => alertCard(a)).join('')}
-    ${l.loading && !l.error ? skel('alerta', l.items.length ? 1 : 3) : l.total !== null && l.items.length < l.total ? `<button type="button" class="opt citizen-more" data-alert-more>Mostrar mais</button>` : ''}
-    <section class="card citizen-how"><span class="k">Como funciona</span>
+    <div class="alerts-grid">
+      ${l.items.map(a => alertCard(a)).join('')}
+      ${l.loading && !l.error ? skel('alerta', l.items.length ? 1 : 3) : ''}
+    </div>
+    ${!l.loading && l.total !== null && l.items.length < l.total ? `<button type="button" class="opt alerts-more" data-alert-more>Carregar mais alertas</button>` : ''}
+    <section class="card citizen-how" id="alerts-how"><span class="k">Como funciona</span>
       <p><b>Mês acima da referência:</b> o gasto do mês passou de 1,75 vez a mediana dos 12 meses anteriores da própria pessoa. A avaliação começa em fevereiro de 2024, quando há 12 meses de mandato para comparar.</p>
       <p><b>Concentração em fornecedor:</b> metade ou mais do dinheiro do ano foi para a mesma empresa, ano a ano desde 2023.</p>
       <p class="muted">Pode ter explicação, como um evento no estado ou um contrato fixo. Os dados vêm das notas que a Câmara e o Senado publicam; as passagens aéreas da Câmara não entram nessa conta.</p>
-    </section>`;
+    </section>
+  </div>`;
 }
 
 /* ---------- Aba "Políticos" ---------- */
