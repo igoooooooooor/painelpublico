@@ -192,7 +192,12 @@ document.addEventListener('click', e => {
   if (t.hasAttribute('data-back')) return navigateBack();
   if (t.dataset.quiz) { state.quiz = t.dataset.quiz; return rerender(); }
   if (t.dataset.vote) { state.voteId = t.dataset.vote; return navigateToView('vote'); }
-  if (t.dataset.deputy) return openPolitician(t.dataset.deputy);
+  if (t.dataset.deputy) {
+    // Links reais continuam abrindo em nova aba com Ctrl/Cmd/Shift ou botão do meio.
+    if (t.tagName === 'A' && (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button)) return;
+    e.preventDefault();
+    return openPolitician(t.dataset.deputy);
+  }
   if (t.dataset.go) { navigationHistory.length = 0; navigateToView(t.dataset.go, true); }
 });
 /* Alterna tema claro/escuro; o padrão é escuro e a escolha fica salva neste navegador. */

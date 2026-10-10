@@ -9,6 +9,14 @@ const scoreboardState = {
 const SCOREBOARD_DETAIL_CACHE_LIMIT = 20;
 const SCOREBOARD_VOTE_ID = /^\d+-\d+$/;
 const SCOREBOARD_VOTE_LABELS = ['Sim', 'Não', 'Abstenção', 'Obstrução', 'Presidiu'];
+// Cadeiras previstas em lei; não depende da lista de deputados do dia, que pode ter suplentes em troca.
+const SCOREBOARD_CHAMBER_SEATS = 513;
+const SCOREBOARD_TYPE_NAMES = { PL: 'Projeto de lei', PLP: 'Projeto de lei complementar', PEC: 'Proposta de emenda à Constituição' };
+const SCOREBOARD_MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+const SCOREBOARD_SEAT_GROUPS = [
+  ['Sim', 'yes'], ['Não', 'no'], ['Abstenção', 'abstention'], ['Obstrução', 'obstruction'], ['Presidiu', 'chair'],
+  ['Outro registro', 'other'], ['Escolha não informada', 'unknown'],
+];
 const scoreboardParticipantGroup = person => SCOREBOARD_VOTE_LABELS.includes(person?.vote) ? person.vote : person?.vote ? 'Outro registro' : 'Escolha não informada';
 
 const scoreboardEscape = value => String(value == null ? '' : value).replace(/[&<>"']/g, character => ({
@@ -46,6 +54,24 @@ function scoreboardVoteType(item) {
   if (['PL', 'PLP', 'PEC'].includes(type)) return type;
   const proposal = scoreboardText(item?.proposition);
   return (proposal.match(/^(PLP|PEC|PL)\b/i) || [])[1]?.toUpperCase() || '';
+}
+function scoreboardTypeBadge(type) {
+  if (!type) return '';
+  const name = SCOREBOARD_TYPE_NAMES[type] || type;
+  return `<abbr class="scoreboard-type" data-type="${scoreboardEscape(type)}" title="${scoreboardEscape(name)}">${scoreboardEscape(type)}</abbr>`;
+}
+function scoreboardMonthKey(value) {
+  return typeof value === 'string' && /^\d{4}-\d{2}/.test(value) ? value.slice(0, 7) : '';
+}
+function scoreboardMonthLabel(key) {
+  const month = SCOREBOARD_MONTHS[Number(key.slice(5, 7)) - 1];
+  return month ? `${month[0].toUpperCase()}${month.slice(1)} de ${key.slice(0, 4)}` : 'Data não informada';
+}
+function scoreboardTallyBar(tally) {
+  const parts = [['yes', tally?.yes], ['no', tally?.no], ['abstention', tally?.abstention]].filter(([, value]) => Number.isFinite(value) && value > 0);
+  if (!parts.length) return '';
+  const label = `Sim ${scoreboardCount(tally?.yes)}, Não ${scoreboardCount(tally?.no)}, ${Number.isFinite(tally?.abstention) ? `Abstenção ${scoreboardCount(tally.abstention)}` : 'abstenção não publicada'}`;
+  return `<span class="scoreboard-bar" role="img" aria-label="${scoreboardEscape(label)}">${parts.map(([key, value]) => `<i class="vote-${key}" style="flex-grow:${Number(value)}"></i>`).join('')}</span>`;
 }
 function scoreboardListUrl() {
   const list = scoreboardState.list;
@@ -106,11 +132,25 @@ function scoreboardCoverage(data) {
   ].filter(([count]) => Number.isInteger(count) && count >= 0)
     .map(([count, singular, plural]) => `<li>${scoreboardCount(count)} ${count === 1 ? singular : plural}</li>`).join('');
   const detail = scoreboardText(coverage.detail);
-  return `<div class="scoreboard-coverage"><h2 class="h">O que é o Placar</h2>
+  const funnelSteps = [
+    [coverage.inventoryCount, 'Registros de votação publicados pela Câmara', 'inventory'],
+    [coverage.candidateCount, 'Pareciam votar o texto principal', 'candidates'],
+    [coverage.publishedCount, 'Entraram no Placar', 'published'],
+  ];
+  const funnel = funnelSteps.every(([count]) => Number.isInteger(count) && count >= 0) && coverage.inventoryCount > 0
+    ? `<ol class="scoreboard-funnel" aria-label="Como as votações foram selecionadas">${funnelSteps.map(([count, label, key]) => `<li><span>${label}</span><b>${scoreboardCount(count)}</b><i class="funnel-${key}" style="width:${Math.max(1.5, count / coverage.inventoryCount * 100).toFixed(2)}%"></i></li>`).join('')}</ol>` : '';
+  const years = /^\d{4}-/.test(period.start || '') && /^\d{4}-/.test(period.end || '') ? `${period.start.slice(0, 4)}${period.start.slice(0, 4) === period.end.slice(0, 4) ? '' : `–${period.end.slice(2, 4)}`}` : '';
+  const stats = `<dl class="scoreboard-stats">
+      ${Number.isInteger(coverage.publishedCount) ? `<div><dt>Votações conferidas</dt><dd>${published}</dd></div>` : ''}
+      <div><dt>Tipos de proposta</dt><dd>PL · PLP · PEC</dd></div>
+      ${years ? `<div><dt>Período</dt><dd>${years}</dd></div>` : ''}
+    </dl>`;
+  return `${stats}<div class="card scoreboard-coverage"><h2 class="h">O que é o Placar</h2>
     <p>Aqui estão votações da Câmara ${timeframe} em que os deputados votaram o texto principal de um projeto de lei ou de uma mudança na Constituição, com o voto de cada um registrado.</p>
     <p><strong>${published} votações nominais conferidas</strong>, uma a uma, nas fontes oficiais. Elas não são tudo o que a Câmara votou ${year ? 'no ano' : 'no período'}. Um projeto aprovado aqui ainda pode não ter virado lei.</p>
     ${range}
-    <details><summary>Como montamos este Placar</summary>
+    ${funnel}
+    <details><summary>Como montamos este Placar e seus limites</summary>
       <p><strong>De onde vêm as votações.</strong> A Câmara publicou ${inventory} registros de votação ${timeframe}. Muitos são etapas do mesmo projeto: urgência, emendas, destaques, procedimentos e redação final. Ficamos só com as votações do texto principal de PL, PLP e PEC no Plenário. Votações simbólicas (sem registro de voto de cada deputado) e outros tipos de proposta ficam de fora.</p>
       <p><strong>Como escolhemos.</strong> Dos ${inventory} registros, ${candidates} pareciam votações do texto principal. ${review}: ${excluded}${published} entraram no Placar. ${pendingNote}</p>
       <p><strong>Limites.</strong></p>
@@ -140,25 +180,50 @@ function scoreboardItemCard(item) {
   const id = scoreboardText(item?.id);
   const themes = Array.isArray(item?.themes) ? item.themes.map(theme => scoreboardText(theme?.label)).filter(Boolean) : [];
   const tally = item?.tally || {};
+  const type = scoreboardVoteType(item);
+  const date = typeof item?.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(item.date) ? item.date : '';
+  const abstention = Number.isFinite(tally.abstention) ? `${scoreboardCount(tally.abstention)} abst.` : 'abst. não publicada';
   return `<article class="card scoreboard-card">
-    <span class="k">${scoreboardEscape(item?.proposition || 'Proposição não informada')} · ${scoreboardEscape(scoreboardDate(item?.date))}</span>
-    <h2 class="h">${scoreboardEscape(item?.title || 'Título não informado')}</h2>
-    <p class="scoreboard-meta">${scoreboardVoteType(item) ? `<span class="pill">${scoreboardEscape(scoreboardVoteType(item))}</span>` : ''}<span>Sim ${scoreboardCount(tally.yes)} · Não ${scoreboardCount(tally.no)} · ${scoreboardEscape(scoreboardOutcome(item?.outcome))}</span></p>
-    ${item?.summary ? `<p class="muted">${scoreboardEscape(item.summary)}</p>` : ''}
-    ${themes.length ? `<p class="scoreboard-themes">${themes.map(theme => `<span class="pill">${scoreboardEscape(theme)}</span>`).join(' ')}</p>` : ''}
-    ${SCOREBOARD_VOTE_ID.test(id) ? `<button type="button" class="more" data-vote="${scoreboardEscape(id)}">Ver decisão e votos →</button>` : '<p class="muted">Identificador desta votação indisponível.</p>'}
+    ${date ? `<p class="scoreboard-date" aria-hidden="true"><b>${date.slice(8, 10)}</b><span>${SCOREBOARD_MONTHS[Number(date.slice(5, 7)) - 1]?.slice(0, 3) || ''}</span></p>` : ''}
+    <div class="scoreboard-card-body">
+      <p class="scoreboard-kicker">${scoreboardTypeBadge(type)}<span class="k">${scoreboardEscape(item?.proposition || 'Proposição não informada')}<span${date ? ' class="sr-only"' : ''}> · ${scoreboardEscape(scoreboardDate(item?.date))}</span></span></p>
+      <h3 class="h">${scoreboardEscape(item?.title || 'Título não informado')}</h3>
+      ${item?.summary ? `<p class="muted scoreboard-summary">${scoreboardEscape(item.summary)}</p>` : ''}
+      ${themes.length ? `<p class="scoreboard-themes">${themes.map(theme => `<span class="pill">${scoreboardEscape(theme)}</span>`).join(' ')}</p>` : ''}
+    </div>
+    <div class="scoreboard-card-result">
+      <p class="scoreboard-outcome" data-outcome="${scoreboardEscape(item?.outcome || '')}">${scoreboardEscape(scoreboardOutcome(item?.outcome))}</p>
+      ${scoreboardTallyBar(tally)}
+      <p class="scoreboard-meta"><span><b>${scoreboardCount(tally.yes)}</b> sim</span><span><b>${scoreboardCount(tally.no)}</b> não</span><span>${abstention}</span></p>
+      ${SCOREBOARD_VOTE_ID.test(id) ? `<button type="button" class="more" data-vote="${scoreboardEscape(id)}">Ver decisão e votos →</button>` : '<p class="muted">Identificador desta votação indisponível.</p>'}
+    </div>
   </article>`;
+}
+function scoreboardGroupedCards(items) {
+  const groups = [];
+  for (const item of items) {
+    const key = scoreboardMonthKey(item?.date);
+    if (!groups.length || groups.at(-1).key !== key) groups.push({ key, items: [] });
+    groups.at(-1).items.push(item);
+  }
+  return groups.map(group => `<section class="scoreboard-month"><h2>${scoreboardEscape(group.key ? scoreboardMonthLabel(group.key) : 'Data não informada')} <span>${group.items.length} ${group.items.length === 1 ? 'votação' : 'votações'} nesta página</span></h2>${group.items.map(scoreboardItemCard).join('')}</section>`).join('');
 }
 function scoreboardFilterForm(data, fallback) {
   const filters = data?.filters || {};
   const types = Array.isArray(filters.types) ? filters.types : ['PL', 'PLP', 'PEC'];
   const themes = Array.isArray(filters.themes) ? filters.themes : [];
   const list = scoreboardState.list;
-  return `<form class="card scoreboard-filters" data-scoreboard-filter-form aria-label="Filtros do Placar">
-    <label>Buscar votação<input class="search" name="q" type="search" value="${scoreboardEscape(list.query)}" maxlength="120" placeholder="Proposição, título ou resumo"></label>
-    <label>Tipo<select name="type"><option value="">Todos</option>${types.map(type => `<option value="${scoreboardEscape(type)}"${list.type === type ? ' selected' : ''}>${scoreboardEscape(type)}</option>`).join('')}</select></label>
-    ${fallback ? `<p class="muted">Temas oficiais ficam disponíveis quando o catálogo ampliado está ativo.</p>` : `<label>Tema oficial<select name="theme"><option value="">Todos os temas</option>${themes.map(theme => `<option value="${scoreboardEscape(theme.id)}"${list.theme === theme.id ? ' selected' : ''}>${scoreboardEscape(theme.label)}</option>`).join('')}</select></label>`}
-    <button class="fchip" type="submit">Aplicar filtros</button>
+  const typeOption = (value, label, title) => `<label class="scoreboard-chip"${title ? ` title="${scoreboardEscape(title)}"` : ''}><input type="radio" name="type" value="${scoreboardEscape(value)}"${list.type === value ? ' checked' : ''}><span>${scoreboardEscape(label)}</span></label>`;
+  return `<form class="card wide scoreboard-filters" data-scoreboard-filter-form aria-label="Filtros do Placar">
+    <div class="scoreboard-search-row">
+      <label class="scoreboard-search"><span class="sr-only">Buscar votação</span><input name="q" type="search" value="${scoreboardEscape(list.query)}" maxlength="120" placeholder="Busque por projeto, título ou assunto"></label>
+      <button class="scoreboard-submit" type="submit">Buscar</button>
+    </div>
+    <div class="scoreboard-filter-row">
+      <fieldset class="scoreboard-chips"><legend class="sr-only">Tipo de proposta</legend>${typeOption('', 'Todos os tipos', '')}${types.map(type => typeOption(type, type, SCOREBOARD_TYPE_NAMES[type] || '')).join('')}</fieldset>
+      ${fallback ? `<p class="muted">Temas oficiais ficam disponíveis quando o catálogo ampliado está ativo.</p>` : `<label class="scoreboard-theme"><span class="sr-only">Tema oficial</span><select name="theme" data-scoreboard-autosubmit><option value="">Todos os temas</option>${themes.map(theme => `<option value="${scoreboardEscape(theme.id)}"${list.theme === theme.id ? ' selected' : ''}>${scoreboardEscape(theme.label)}</option>`).join('')}</select></label>`}
+      <p class="scoreboard-legend" aria-hidden="true"><span><i class="vote-yes"></i>Sim</span><span><i class="vote-no"></i>Não</span><span><i class="vote-abstention"></i>Abstenção</span></p>
+    </div>
   </form>`;
 }
 function scoreboardPagination(data, fallbackCount) {
@@ -183,7 +248,7 @@ function scoreboardVotesView() {
   const unavailableNote = fallback ? '<p class="scoreboard-fallback" role="status">O catálogo ampliado está indisponível. Esta tela mostra apenas as votações selecionadas que já existem neste painel.</p>' : '';
   const loading = list.status === 'loading' ? '<p class="scoreboard-status" role="status" aria-live="polite">Carregando votações…</p>' : '';
   const error = list.status === 'error' ? `<div class="scoreboard-error" role="alert"><p>${scoreboardEscape(list.error || 'Não foi possível carregar o catálogo ampliado.')}</p><button type="button" class="fchip" data-scoreboard-retry>Tentar novamente</button></div>` : '';
-  const result = fallback ? visibleLegacy.map(scoreboardLegacyCard).join('') : items.map(scoreboardItemCard).join('');
+  const result = fallback ? visibleLegacy.map(scoreboardLegacyCard).join('') : scoreboardGroupedCards(items);
   const empty = list.status === 'ready' && !fallback && items.length === 0 || fallback && legacyVotes.length === 0
     ? '<p class="card scoreboard-empty">Nenhuma votação encontrada com esses filtros.</p>' : '';
   const paginationData = fallback ? null : data;
@@ -199,16 +264,37 @@ function scoreboardVotesView() {
 function scoreboardDetailSources(sources, dataNotes) {
   const source = sources || {};
   const links = [
-    scoreboardSourceLink(source.vote, 'Registro da votação'),
-    scoreboardSourceLink(source.rollCall, 'Relatório nominal'),
-    scoreboardSourceLink(source.text, 'Texto votado'),
-    scoreboardSourceLink(source.decision, 'Decisão na Câmara'),
-    scoreboardSourceLink(source.proposition, 'Ficha da proposição'),
-    scoreboardSourceLink(source.referenceProposition, 'Proposição de referência nos Dados Abertos'),
-  ].filter(Boolean);
+    [source.vote, 'Registro da votação', 'Dados Abertos da Câmara'],
+    [source.rollCall, 'Relatório nominal', 'Voto de cada deputado'],
+    [source.text, 'Texto votado', 'Versão do texto decidida'],
+    [source.decision, 'Decisão na Câmara', 'Registro da decisão em Plenário'],
+    [source.proposition, 'Ficha da proposição', 'Tramitação da proposta'],
+    [source.referenceProposition, 'Proposição de referência nos Dados Abertos', ''],
+  ].map(([url, label, note]) => {
+    const link = scoreboardSourceLink(url, label);
+    return link ? `<li>${link}${note ? `<small>${note}</small>` : ''}</li>` : '';
+  }).filter(Boolean);
   const notes = Array.isArray(dataNotes) ? dataNotes.filter(note => typeof note === 'string').map(note => `<p class="muted">${scoreboardEscape(note)}</p>`).join('') : '';
   const missingText = source.text === null ? '<p class="muted">O link seguro para o texto exato votado ainda não está disponível. O relatório e o registro da decisão permanecem nas fontes.</p>' : '';
-  return `<section class="card"><span class="k">Fontes oficiais</span>${links.length ? `<div class="scoreboard-source-links">${links.join('')}</div>` : '<p class="muted">Links oficiais não informados para esta votação.</p>'}${missingText}${notes}</section>`;
+  return `<section class="card scoreboard-sources"><span class="k">Fontes oficiais</span>${links.length ? `<ul class="scoreboard-source-links">${links.join('')}</ul>` : '<p class="muted">Links oficiais não informados para esta votação.</p>'}${missingText}${notes}</section>`;
+}
+function scoreboardSeatGrid(participants) {
+  const rows = Array.isArray(participants) ? participants : [];
+  if (!rows.length) return '';
+  if (rows.length > SCOREBOARD_CHAMBER_SEATS) {
+    return `<p class="scoreboard-seat-warning" role="note">A lista nominal tem ${scoreboardCount(rows.length)} registros, mais que as ${SCOREBOARD_CHAMBER_SEATS} cadeiras da Câmara (por exemplo, numa troca de suplente no dia). Por isso o quadro de cadeiras não é exibido; os votos individuais estão abaixo.</p>`;
+  }
+  const counts = new Map(SCOREBOARD_SEAT_GROUPS.map(([label]) => [label, 0]));
+  rows.forEach(person => { const group = scoreboardParticipantGroup(person); counts.set(group, (counts.get(group) || 0) + 1); });
+  const empty = SCOREBOARD_CHAMBER_SEATS - rows.length;
+  const present = SCOREBOARD_SEAT_GROUPS.filter(([label]) => counts.get(label) > 0);
+  const seats = present.map(([label, key]) => `<i class="seat-${key}"></i>`.repeat(counts.get(label))).join('') + '<i class="seat-empty"></i>'.repeat(empty);
+  const legend = present.map(([label, key]) => `<span><i class="seat-${key}"></i>${scoreboardEscape(label)} ${scoreboardCount(counts.get(label))}</span>`).join('')
+    + (empty ? `<span><i class="seat-empty"></i>Sem voto registrado ${scoreboardCount(empty)}</span>` : '');
+  const label = present.map(([group]) => `${group} ${counts.get(group)}`).concat(empty ? [`sem voto registrado ${empty}`] : []).join(', ');
+  return `<div class="scoreboard-seats" role="img" aria-label="${scoreboardEscape(`Cadeiras da Câmara: ${label}`)}">${seats}</div>
+    <p class="scoreboard-seat-legend">${legend}</p>
+    <p class="muted scoreboard-seat-note">Cada ponto é uma das ${SCOREBOARD_CHAMBER_SEATS} cadeiras previstas em lei. ${empty ? '“Sem voto registrado” junta ausências, licenças e quem não votou; a fonte não diz o motivo. ' : ''}Dado ausente não significa zero.</p>`;
 }
 function scoreboardParticipants(participants) {
   const search = typeof document !== 'undefined' ? document.querySelector('[data-scoreboard-participant-search]')?.value || '' : '';
@@ -225,20 +311,30 @@ function scoreboardParticipants(participants) {
       const politician = id.match(/^camara:(\d+)$/);
       const href = politician ? `/deputado/${politician[1]}` : '';
       const meta = [SCOREBOARD_VOTE_LABELS.includes(person?.vote) ? '' : scoreboardText(person?.vote), scoreboardText(person?.party), scoreboardText(person?.uf)].filter(Boolean).join(' · ');
-      return `<li>${href ? `<a href="${href}">${scoreboardEscape(name)}</a>` : `<span>${scoreboardEscape(name)}</span>`}${meta ? `<small>${scoreboardEscape(meta)}</small>` : ''}</li>`;
+      return `<li>${href ? `<a href="${href}" data-deputy="camara:${politician[1]}">${scoreboardEscape(name)}</a>` : `<span>${scoreboardEscape(name)}</span>`}${meta ? `<small>${scoreboardEscape(meta)}</small>` : ''}</li>`;
     }).join('')}</ul></section>`;
   }).join('');
   const more = matches.length > visible.length ? `<button type="button" class="fchip" data-scoreboard-more>Mostrar mais ${Math.min(20, matches.length - visible.length)} (${scoreboardCount(matches.length - visible.length)} restantes)</button>` : '';
   const empty = matches.length === 0 ? '<p class="muted">Nenhum registro individual corresponde à busca.</p>' : '';
-  return `<section class="card scoreboard-voters"><span class="k">Votos individuais</span>
-    <label>Buscar parlamentar<input class="search" type="search" data-scoreboard-participant-search value="${scoreboardEscape(search)}" maxlength="100" placeholder="Nome, partido, UF ou voto" aria-label="Buscar nos votos individuais"></label>
+  return `<section class="card scoreboard-voters"><span class="k">Como votou cada deputado</span>
+    <label>Buscar parlamentar<input class="search" type="search" data-scoreboard-participant-search value="${scoreboardEscape(search)}" maxlength="100" placeholder="Seu deputado: nome, partido, UF ou voto" aria-label="Buscar nos votos individuais"></label>
     ${rows.length ? `<p class="muted">${scoreboardCount(matches.length)} registros${query ? ' encontrados' : ' nesta votação'}.</p>` : '<p class="muted">Nenhum registro individual foi fornecido para esta consulta.</p>'}
     ${sections}${empty}${more}</section>`;
 }
 function scoreboardPartyTotals(partyTotals) {
   const rows = Array.isArray(partyTotals) ? partyTotals : [];
   if (!rows.length) return '';
-  return `<section class="card"><span class="k">Resumo por partido</span><div class="scoreboard-party-totals">${rows.map(row => `<div><b>${scoreboardEscape(row?.party || 'Partido não informado')}</b><span>Sim ${scoreboardCount(row?.yes)} · Não ${scoreboardCount(row?.no)} · Outros ${scoreboardCount(row?.other)}</span></div>`).join('')}</div></section>`;
+  const value = number => Number.isFinite(number) && number > 0 ? Number(number) : 0;
+  const total = row => value(row?.yes) + value(row?.no) + value(row?.other);
+  const max = Math.max(1, ...rows.map(total));
+  const sorted = [...rows].sort((a, b) => total(b) - total(a) || String(a?.party || '').localeCompare(String(b?.party || ''), 'pt-BR'));
+  return `<section class="card scoreboard-parties"><span class="k">Resumo por partido</span><p class="muted">Partido no registro desta votação, do maior para o menor.</p><ul class="scoreboard-party-totals">${sorted.map(row => {
+    const name = scoreboardEscape(row?.party || 'Partido não informado');
+    const counts = `Sim ${scoreboardCount(row?.yes)} · Não ${scoreboardCount(row?.no)} · Outros ${scoreboardCount(row?.other)}`;
+    const bars = [['yes', row?.yes], ['no', row?.no], ['other', row?.other]].filter(([, n]) => value(n) > 0)
+      .map(([key, n]) => `<i class="vote-${key}" style="width:${(value(n) / max * 100).toFixed(2)}%"></i>`).join('');
+    return `<li><b>${name}</b><span class="scoreboard-party-bar" role="img" aria-label="${name}: ${counts}">${bars}</span><span>${counts}</span></li>`;
+  }).join('')}</ul></section>`;
 }
 function scoreboardDetailView() {
   const detail = scoreboardState.detail;
@@ -253,16 +349,24 @@ function scoreboardDetailView() {
   const themes = Array.isArray(vote.themes) ? vote.themes.map(theme => scoreboardText(theme?.label)).filter(Boolean) : [];
   const outcome = scoreboardOutcome(vote.outcome);
   const hasParticipants = payload.participantsAvailable !== false;
+  const type = scoreboardVoteType(vote);
+  const participants = Array.isArray(payload.participants) ? payload.participants : [];
+  const pecNote = type === 'PEC' ? `<p class="muted scoreboard-pec-note">PEC precisa de 308 votos favoráveis (3/5 da Câmara) em cada um dos dois turnos.</p>` : '';
   return `<button type="button" class="back" data-back>‹ Voltar ao Placar</button>
-    <span class="k">${scoreboardEscape(vote.proposition || 'Proposição não informada')} · votado em ${scoreboardEscape(scoreboardDate(vote.date))}</span>
-    <h1 class="h scoreboard-detail-title">${scoreboardEscape(vote.title || 'Título não informado')}</h1>
-    ${themes.length ? `<p class="scoreboard-themes">${themes.map(theme => `<span class="pill">${scoreboardEscape(theme)}</span>`).join(' ')}</p>` : ''}
-    <section class="card"><span class="k">O que foi decidido</span><h2 class="h">${scoreboardEscape(vote.decisionLabel || 'Decisão não informada')}</h2>${vote.summary ? `<p>${scoreboardEscape(vote.summary)}</p>` : '<p class="muted">Resumo não informado para esta versão.</p>'}<p class="scoreboard-outcome">${scoreboardEscape(outcome)}</p></section>
-    <section class="card scoreboard-meaning"><div><span class="k">Sim significava</span><p>${scoreboardEscape(vote.yesMeaning || 'Informação não disponível neste registro.')}</p></div><div><span class="k">Não significava</span><p>${scoreboardEscape(vote.noMeaning || 'Informação não disponível neste registro.')}</p></div></section>
-    <section class="card"><span class="k">Resultado desta votação</span><dl class="scoreboard-tally"><div><dt>Sim</dt><dd>${scoreboardCount(tally.yes)}</dd></div><div><dt>Não</dt><dd>${scoreboardCount(tally.no)}</dd></div><div><dt>Abstenção</dt><dd>${scoreboardCount(tally.abstention)}</dd></div><div><dt>Total</dt><dd>${scoreboardCount(tally.total)}</dd></div></dl><p class="muted">${scoreboardEscape(outcome)}. O resultado se refere a esta decisão registrada.</p></section>
-    ${scoreboardDetailSources(vote.sources, vote.dataNotes)}
+    <header class="scoreboard-detail-head">
+      <p class="scoreboard-kicker">${scoreboardTypeBadge(type)}${type ? `<span class="scoreboard-type-name">${scoreboardEscape(SCOREBOARD_TYPE_NAMES[type])}</span>` : ''}<span class="k">${scoreboardEscape(vote.proposition || 'Proposição não informada')} · votado em ${scoreboardEscape(scoreboardDate(vote.date))}</span></p>
+      <h1 class="h scoreboard-detail-title">${scoreboardEscape(vote.title || 'Título não informado')}</h1>
+      <p class="scoreboard-themes"><span class="scoreboard-outcome" data-outcome="${scoreboardEscape(vote.outcome || '')}">${scoreboardEscape(outcome)}</span>${themes.map(theme => `<span class="pill">${scoreboardEscape(theme)}</span>`).join(' ')}</p>
+    </header>
+    <section class="card scoreboard-decision"><span class="k">O que foi decidido</span><h2 class="h">${scoreboardEscape(vote.decisionLabel || 'Decisão não informada')}</h2>${vote.summary ? `<p>${scoreboardEscape(vote.summary)}</p>` : '<p class="muted">Resumo não informado para esta versão.</p>'}
+      <div class="scoreboard-meaning"><div><span class="k"><i class="vote-yes"></i>Sim significava</span><p>${scoreboardEscape(vote.yesMeaning || 'Informação não disponível neste registro.')}</p></div><div><span class="k"><i class="vote-no"></i>Não significava</span><p>${scoreboardEscape(vote.noMeaning || 'Informação não disponível neste registro.')}</p></div></div>
+      ${pecNote}<p class="muted">O resultado é o desta votação, não a situação atual da proposta.</p></section>
+    <section class="card scoreboard-result"><span class="k">Resultado desta votação</span><dl class="scoreboard-tally"><div><dt>Sim</dt><dd>${scoreboardCount(tally.yes)}</dd></div><div><dt>Não</dt><dd>${scoreboardCount(tally.no)}</dd></div><div><dt>Abstenção</dt><dd>${scoreboardCount(tally.abstention)}</dd>${Number.isFinite(tally.abstention) ? '' : '<small>não publicada</small>'}</div><div><dt>Total</dt><dd>${scoreboardCount(tally.total)}</dd></div></dl>
+      ${hasParticipants ? scoreboardSeatGrid(participants) : ''}
+      <p class="muted">${scoreboardEscape(outcome)}. O resultado se refere a esta decisão registrada. O total soma Sim, Não e Abstenção.</p></section>
     ${hasParticipants ? scoreboardParticipants(payload.participants) : '<section class="card scoreboard-voters"><span class="k">Votos individuais</span><p class="muted">A lista individual não está disponível para esta votação.</p></section>'}
     ${scoreboardPartyTotals(payload.partyTotals)}
+    ${scoreboardDetailSources(vote.sources, vote.dataNotes)}
     <span class="src">Fonte: Câmara dos Deputados · revisão em ${scoreboardEscape(scoreboardPeriodDate(vote.reviewedAt))}. O resultado descreve esta votação, sem indicar a situação atual da proposta.</span>`;
 }
 function scoreboardLoadList() {
@@ -382,6 +486,12 @@ if (typeof document !== 'undefined' && document.addEventListener) {
     event.preventDefault();
     const formData = new FormData(form);
     scoreboardApplyFilters({ query: formData.get('q'), type: formData.get('type'), theme: formData.get('theme') });
+  });
+  document.addEventListener('change', event => {
+    const field = event.target;
+    if (!field?.matches?.('[data-scoreboard-filter-form] input[name="type"], [data-scoreboard-autosubmit]')) return;
+    const form = field.closest('[data-scoreboard-filter-form]');
+    if (form?.requestSubmit) form.requestSubmit();
   });
   document.addEventListener('input', event => {
     if (!event.target?.matches?.('[data-scoreboard-participant-search]')) return;

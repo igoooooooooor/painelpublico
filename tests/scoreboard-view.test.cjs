@@ -192,3 +192,49 @@ test('an unavailable catalogue shows only selected legacy cards and legacy detai
   assert.match(app.innerHTML, /O que muda na prática/);
   assert.ok(calls.includes(`/api/c/votes/${votes[0].id}`));
 });
+
+test('the seat grid uses the 513 seats in law, keeps the chair apart and never shows negative empty seats', () => {
+  const { context } = loadApp();
+  const people = votes => votes.map((vote, index) => ({ id: `camara:${index}`, name: `Deputado ${index}`, party: 'ABC', uf: 'SP', vote }));
+  const html = vm.runInContext(`scoreboardSeatGrid(${JSON.stringify(people([...Array(472).fill('Sim'), ...Array(22).fill('Não'), 'Obstrução', 'Presidiu']))})`, context);
+  assert.equal((html.match(/<i class="seat-/g) || []).length, 513 + 5);
+  assert.match(html, /Presidiu 1/);
+  assert.match(html, /seat-chair/);
+  assert.match(html, /Sim 472/);
+  assert.match(html, /Sem voto registrado 17/);
+  const crowded = vm.runInContext(`scoreboardSeatGrid(${JSON.stringify(people(Array(514).fill('Sim')))})`, context);
+  assert.match(crowded, /514 registros, mais que as 513 cadeiras/);
+  assert.doesNotMatch(crowded, /class="scoreboard-seats"/);
+  assert.equal(vm.runInContext('scoreboardSeatGrid([])', context), '');
+});
+
+test('the detail hides the seat grid without a roll call and shows the PEC quorum only for PEC', async () => {
+  const pec = item('2233802-424', 'Jornada de trabalho', { proposition: 'PEC 221/2019', type: 'PEC' });
+  const responses = {
+    '/api/c/votes/2233802-424': { available: true, vote: pec, participants: [], partyTotals: [], participantsAvailable: false },
+    '/api/c/votes/2611313-31': { available: true, vote: item('2611313-31', 'Projeto comum'), participants: [{ id: 'camara:1', name: 'A', party: 'ABC', uf: 'SP', vote: 'Sim' }], partyTotals: [], participantsAvailable: true },
+  };
+  const { context, app, click } = loadApp({ fetch: async url => jsonResponse(url.startsWith('/api/c/votes?') ? listPayload({ items: [pec] }) : responses[url]) });
+  vm.runInContext("navigateToView('votes')", context);
+  await flush();
+  click({ vote: '2233802-424' });
+  await flush();
+  assert.match(app.innerHTML, /308 votos favoráveis \(3\/5 da Câmara\) em cada um dos dois turnos/);
+  assert.doesNotMatch(app.innerHTML, /class="scoreboard-seats"/);
+  assert.match(app.innerHTML, /A lista individual não está disponível/);
+  click({ vote: '2611313-31' });
+  await flush();
+  assert.doesNotMatch(app.innerHTML, /308 votos/);
+  assert.match(app.innerHTML, /class="scoreboard-seats"/);
+});
+
+test('opening a deputy from a vote keeps the vote as the back destination', () => {
+  const { context, click } = loadApp();
+  vm.runInContext("Object.assign(state, { view: 'vote', voteId: '2233802-424' })", context);
+  click({ deputy: 'camara:1020' });
+  assert.equal(vm.runInContext('state.view', context), 'profile');
+  assert.equal(vm.runInContext('state.politicianId', context), 'camara:1020');
+  click({ back: '' });
+  assert.equal(vm.runInContext('state.view', context), 'vote');
+  assert.equal(vm.runInContext('state.voteId', context), '2233802-424');
+});
