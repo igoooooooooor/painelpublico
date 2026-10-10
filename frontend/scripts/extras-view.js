@@ -297,37 +297,51 @@ function alertCountOrNull(profile) {
   const evaluated = typeof alertCoverageState === 'function' ? alertCoverageState(profile.coberturaAlertas).evaluated : profile.total != null;
   return evaluated || profile.alertas?.length ? (profile.alertas || []).length : null;
 }
-/* Cartão para compartilhar a comparação: só linhas comparáveis, com "Sem dados" quando faltar. */
+/* Cartão para compartilhar a comparação: um card por pessoa (custo, presença, para onde vai a cota, maior nota),
+   e os votos em comum. A etiqueta só diz o fato (custa menos, mais presente) e só aparece quando os números se
+   comparam: mesma Casa e mesma regra. Alertas não ganham etiqueta; dado ausente fica "Sem dados". */
 function comparisonShareCard([a, b]) {
   const name = f => citizenName(f.pessoa.name);
-  const money = value => value == null ? 'Sem dados' : formatCitizenAmount(value);
-  const vsAverage = f => f.mediaMensal != null && f.media ? `${f.mediaMensal >= f.media ? '+' : ''}${Math.round((f.mediaMensal / f.media - 1) * 100)}%` : 'Sem dados';
-  const quotaNote = f => typeof citizenQuotaPeriod === 'function' ? citizenQuotaPeriod(f.periodo?.inicio, f.periodo?.fim) : '';
   const chamber = f => String(f.pessoa.id).split(':')[0];
-  const presence = f => {
-    if (chamber(f) === 'senado') { const record = senateRegisteredPresence(f.pessoa.id); return record ? `${record.presente} sessões` : 'Sem dados'; }
-    const p = attendanceForPerson(f.pessoa.id);
-    return p ? `${Math.round(p.presente / p.dias * 100)}%` : 'Sem dados';
-  };
-  const rows = [];
-  /* Entre Casas o custo aparece com a composição de cada uma: as Casas não publicam as mesmas partes. */
+  const sameHouse = chamber(a) === chamber(b);
   const figures = [a, b].map(comparisonCostFigures);
-  const sameHouse = figures[0].house === figures[1].house;
-  if (figures.every(item => item.total)) {
-    rows.push({ label: !sameHouse ? 'Quanto custa por mês (partes diferentes em cada Casa)' : figures[0].house === 'senado' ? 'Despesas identificadas por mês · Senado' : 'Custa por mês · Câmara',
-      values: figures.map(item => formatCitizenAmount(item.total.cents / 100)),
-      notes: figures.map(item => sameHouse ? `média de ${item.total.months} meses` : COST_COMPOSITION[item.house] || '') });
-  }
-  rows.push({ label: 'Cota parlamentar por mês', values: [money(a.mediaMensal), money(b.mediaMensal)], notes: [quotaNote(a), quotaNote(b)] });
-  rows.push({ label: 'Cota comparada à média do cargo', values: [vsAverage(a), vsAverage(b)] });
-  rows.push({ label: 'Alertas na cota (mandato)', values: [a, b].map(f => alertCountOrNull(f) == null ? 'Sem avaliação' : String(f.alertas.length)) });
-  rows.push({ label: chamber(a) === chamber(b) && chamber(a) === 'senado' ? 'Presença registrada no Senado' : chamber(a) === chamber(b) ? 'Presença no Plenário · Câmara' : 'Presença (casas com métodos diferentes)',
-    values: [presence(a), presence(b)] });
+  const costs = figures.map(item => item.total ? item.total.cents / 100 : null);
+  const costLabel = !sameHouse ? 'Quanto custa por mês*' : chamber(a) === 'senado' ? 'Despesas identificadas por mês' : 'Custa por mês';
+  const presence = [a, b].map(f => {
+    if (chamber(f) === 'senado') { const record = senateRegisteredPresence(f.pessoa.id); return record ? { text: `${record.presente} sessões`, share: null } : null; }
+    const p = attendanceForPerson(f.pessoa.id);
+    return p ? { text: `${Math.round(p.presente / p.dias * 100)}%`, share: p.presente / p.dias } : null;
+  });
+  const costWinner = sameHouse && costs.every(v => v != null) && costs[0] !== costs[1] ? (costs[0] < costs[1] ? 0 : 1) : null;
+  const shares = presence.map(p => p?.share ?? null);
+  const presenceWinner = sameHouse && shares.every(v => v != null) && Math.round(shares[0] * 100) !== Math.round(shares[1] * 100) ? (shares[0] > shares[1] ? 0 : 1) : null;
+  const costGap = costWinner === null ? '' : `${formatCitizenAmount(Math.abs(figures[0].total.cents - figures[1].total.cents) / 100)} a menos por mês`;
+  const monthLabel = item => item?.month && item?.year ? `${SHORT_MONTHS[item.month]}/${item.year}` : '';
+  const people = [a, b].map((f, index) => ({
+    name: name(f),
+    meta: [f.pessoa.party, f.pessoa.uf].filter(Boolean).join(' · '),
+    stats: [
+      { label: costLabel, value: costs[index] == null ? 'Sem dados' : formatCitizenAmount(costs[index]),
+        tag: costWinner === index ? costGap : '', behind: costWinner !== null && costWinner !== index },
+      { label: chamber(f) === 'senado' ? 'Presença registrada · Senado' : 'Presença no Plenário', value: presence[index]?.text || 'Sem dados',
+        tag: presenceWinner === index ? 'mais presente' : '', behind: presenceWinner !== null && presenceWinner !== index },
+    ],
+    categories: f.total > 0 ? (f.categorias || []).slice(0, 3).map(category => ({ name: category.nome, share: category.valor / f.total })) : [],
+    top: f.maiores?.[0] ? { value: brl(f.maiores[0].valor), what: [f.maiores[0].categoria, monthLabel(f.maiores[0])].filter(Boolean).join(' · '),
+      who: f.maiores[0].fornecedor ? citizenName(f.maiores[0].fornecedor) : '' } : null,
+  }));
+  const { chamber: voteChamber, votes } = comparisonVotes(a, b);
+  const comparable = votes.filter(record => record.voteA !== null && record.voteB !== null);
+  const typical = voteChamber === 'camara' && typeof chamberPairAgreement === 'function' ? chamberPairAgreement() : null;
+  const agreement = comparable.length ? { matching: comparable.filter(record => record.voteA === record.voteB).length, total: comparable.length,
+    source: voteChamber === 'senado' ? 'votações nominais do Senado' : 'votações do Placar', typical } : null;
   return {
-    kicker: 'Comparação lado a lado', title: `${name(a).split(' ')[0]} × ${name(b).split(' ')[0]}`,
-    columns: [a, b].map(f => `${name(f)}${f.pessoa.party ? ` · ${f.pessoa.party}` : ''}`), rows,
+    layout: 'faceoff', title: `${name(a)} × ${name(b)}`, people, agreement,
+    alerts: [a, b].map(f => alertCountOrNull(f) == null ? 'Sem avaliação' : String(f.alertas.length)),
     fileName: `${name(a)}-x-${name(b)}`,
-    footnote: 'Fontes: notas da cota, remuneração e presença publicadas pela Câmara e pelo Senado. Casas diferentes não são ranqueadas.',
+    footnote: sameHouse
+      ? `Dados ${chamber(a) === 'senado' ? 'do Senado' : 'da Câmara'}. Custo: ${COST_COMPOSITION[chamber(a)] || 'partes publicadas'}.`
+      : '*Câmara e Senado publicam partes diferentes do custo e medem presença de jeitos diferentes: sem destaque entre as Casas.',
   };
 }
 function comparisonProfile(f) {

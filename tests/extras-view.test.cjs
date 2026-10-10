@@ -13,6 +13,7 @@ function comparison(a, b) {
     esc: String, citizenName: String, citizenAvatar: () => '', formatCitizenAmount: value => `R$ ${value}`, citizenRoleDescription: () => 'Deputado(a)',
     citizenState: { cache: new Map() }, state: { view: 'compare' }, skel: () => '<loading>',
     pageHead: () => '<header>', citizenErrorMessage: error => error.message, formatShortDate: String,
+    brl: value => `R$ ${value}`, SHORT_MONTHS: ['', 'jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'],
     citizenSourceUrl: p => p.id === 'senado:55' ? 'https://www25.senado.leg.br/web/senadores/senador/-/perfil/55' : null,
   };
   vm.createContext(context);
@@ -155,8 +156,13 @@ test('deputy and senator costs sit side by side with their composition and no hi
   assert.match(html, /parte da diferença vem do que cada Casa inclui/);
   assert.doesNotMatch(html, /Não se aplica<\/div><div class="cmp-v">[^<]*R\$/);
   const card = api.comparisonShareCard([{ ...profile('camara:1', 24000), pessoa: { id: 'camara:1', name: 'AJ', role: 'deputado' } }, profile('senado:70', 27000)]);
-  assert.equal(card.rows[0].label, 'Quanto custa por mês (partes diferentes em cada Casa)');
-  assert.deepEqual([...card.rows[0].notes], ['salário, auxílios, cota e verba de gabinete', 'remuneração, equipe do gabinete e cota']);
+  assert.equal(card.layout, 'faceoff');
+  assert.equal(card.people[0].stats[0].label, 'Quanto custa por mês*');
+  assert.deepEqual([...card.people.map(person => person.stats[0].value)], ['R$ 188286.3', 'R$ 375869.84']);
+  // Casas diferentes: sem etiqueta de quem custa menos nem número apagado, e o rodapé explica.
+  assert.ok(card.people.every(person => person.stats.every(stat => !stat.tag && !stat.behind)));
+  assert.match(card.footnote, /Câmara e Senado publicam partes diferentes do custo/);
+  assert.equal(card.agreement, null);
   assert.match(row('Equipe e verba de gabinete'), /R\$ 126364\.86<\/b>[\s\S]*verba de gabinete \(Câmara\)[\s\S]*R\$ 304135\.82<\/b>[\s\S]*equipe comissionada do gabinete \(Senado\) · 21 pessoas/);
   assert.match(row('Remuneração'), /média de 42 meses[\s\S]*bruto pago, pela folha da Câmara[\s\S]*bruto pago, pela folha do Senado/);
   assert.doesNotMatch(html, /não pagamento individual/);
@@ -354,4 +360,25 @@ test('tax counter adds the 27 states to the federal revenue and says what is sti
   assert.match(html, /ICMS, IPVA e ITCD dos 27 estados/);
   assert.match(html, /Não inclui impostos municipais \(IPTU, ISS e ITBI\)/);
   assert.match(html, /href="https:\/\/example\.test\/siconfi"/);
+});
+
+test('share card for two deputies tags only who costs less and who attended more, never alerts', () => {
+  const { api, context } = comparison(profile('camara:1', 100), profile('camara:2', 100));
+  context.profileData = value => ({ id: value.id, person: value, cost: { monthlyAverageCents: value.id === 'camara:1' ? 19315614 : 21836534, usedMonths: Array(40).fill('x'), parts: {} } });
+  context.DATA.presencaTodos = [{ id: 1, dias: 361, presente: 333, falta: 2, justificadas: 26 }, { id: 2, dias: 391, presente: 374, falta: 5, justificadas: 12 }];
+  context.chamberPairAgreement = () => 0.74;
+  const person = (id, name, extra) => ({ ...profile(id, 100), pessoa: { id, name, role: 'deputado', party: 'ABC', uf: 'SP' },
+    total: 1000, categorias: [{ nome: 'Divulgação', valor: 590 }, { nome: 'Combustível', valor: 90 }],
+    maiores: [{ valor: 99992.1, categoria: 'Divulgação', year: 2026, month: 5, fornecedor: 'Fornecedor A' }], ...extra });
+  const card = api.comparisonShareCard([person('camara:1', 'Ana', { alertas: [{}, {}] }), person('camara:2', 'Bia', { alertas: [{}, {}, {}, {}] })]);
+  const [ana, bia] = card.people;
+  assert.equal(ana.stats[0].tag, 'R$ 25209.2 a menos por mês');
+  assert.equal(bia.stats[0].behind, true);
+  assert.equal(bia.stats[1].tag, 'mais presente');
+  assert.equal(ana.stats[1].behind, true);
+  assert.deepEqual(ana.categories.map(category => [category.name, Math.round(category.share * 100)]), [['Divulgação', 59], ['Combustível', 9]]);
+  assert.equal(ana.top.what, 'Divulgação · mai/2026');
+  assert.equal(ana.meta, 'ABC · SP');
+  assert.deepEqual([...card.alerts], ['2', '4']);
+  assert.equal(JSON.stringify(card).includes('menos alertas'), false);
 });

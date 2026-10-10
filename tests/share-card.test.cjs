@@ -40,3 +40,19 @@ test('actions render the image button and keep the current card', () => {
   assert.equal(vm.runInContext('SHARE_STATE.card', context).title, 'Rui Falcão');
   assert.equal(context.shareActionsHTML(null), '');
 });
+
+test('face-off cards draw on a dark canvas without throwing, even with missing data', () => {
+  const context = load();
+  const calls = [];
+  const fake = new Proxy({ measureText: text => ({ width: String(text).length * 10 }), canvas: { id: 'canvas' } }, {
+    get: (target, key) => key in target ? target[key] : (...args) => calls.push([key, ...args]),
+    set: (target, key, value) => { target[key] = value; return true; },
+  });
+  const canvas = { getContext: () => fake };
+  const person = { name: 'Ana', meta: 'ABC · SP', stats: [{ label: 'Custa por mês', value: 'Sem dados', tag: '', behind: false }], categories: [], top: null };
+  const result = context.shareDrawCard({ layout: 'faceoff', people: [person, { ...person, name: 'Bia' }], agreement: null, alerts: ['Sem avaliação', '0'], footnote: 'Fontes.' }, canvas);
+  assert.equal(result.id, 'canvas');
+  assert.equal(canvas.width, 1080);
+  assert.ok(calls.some(([name, text]) => name === 'fillText' && text === 'Sem votações em comum para comparar'));
+  assert.ok(calls.some(([name, text]) => name === 'fillText' && text === 'painelpublico.com'));
+});

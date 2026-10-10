@@ -21,7 +21,7 @@ Os valores de cor e tipografia são definidos em `tokens.css`. O tema escuro é 
 
 ## Compartilhar
 
-`.share-actions` (em `share-card.js`) oferece compartilhar imagem na ficha, na comparação de políticos e na de partidos. Cada tela monta um cartão com os mesmos números que mostra (`profileShareCard`, `comparisonShareCard`, `partyShareCard`); o cartão é desenhado em canvas, 1080×1350, tema claro, sem fotos de outros domínios, com fontes, data e o aviso de independência no rodapé. No celular, abre o compartilhamento nativo; nos demais, baixa o arquivo.
+`.share-actions` (em `share-card.js`) oferece compartilhar imagem na ficha, na comparação de políticos e na de partidos. Cada tela monta um cartão com os mesmos números que mostra (`profileShareCard`, `comparisonShareCard`, `partyShareCard`); o cartão é desenhado em canvas, 1080×1350, tema claro, sem fotos de outros domínios, com fontes, data e o aviso de independência no rodapé. A comparação de políticos usa outro desenho (`layout: 'faceoff'`), no tema escuro e sem logotipo: um card por pessoa, numa cor para cada uma (violeta e laranja, só para distinguir os lados), com custo e presença em números grandes, para onde vai a cota (3 maiores categorias) e a maior nota única; embaixo, os votos em comum com a referência de dois deputados quaisquer e os alertas, sem destaque. A etiqueta ("R$ … a menos por mês", "mais presente") só aparece entre pessoas da mesma Casa, e o número de quem fica atrás fica cinza. O endereço vai em letras miúdas no rodapé. No celular, abre o compartilhamento nativo; nos demais, baixa o arquivo.
 
 ## Bordas, estados e acessibilidade
 

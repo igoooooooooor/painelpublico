@@ -6,8 +6,13 @@ const SHARE_SIZE = { width: 1080, height: 1350, padding: 72 };
 const SHARE_COLORS = { bg: '#F4F5F7', surface: '#FFFFFF', ink: '#111318', ink2: '#3B3F48', muted: '#5B606B', line: '#E3E5EA', accent: '#5B3DF5' };
 const SHARE_FONTS = { display: "'Newsreader', Georgia, serif", body: "'Geist', system-ui, sans-serif", data: "'Geist Mono', ui-monospace, monospace" };
 const SHARE_DISCLAIMER = 'Projeto pessoal e apartidário com dados públicos oficiais. Alertas não indicam irregularidade.';
+/* Comparação de políticos: tema escuro, uma cor para cada pessoa (só distingue os lados). */
+const SHARE_DARK = { bg: '#0E0F13', surface: '#17191F', ink: '#ECEDF1', ink2: '#C9CCD4', muted: '#A2A7B2', faint: '#6B707B', behind: '#8A8F9A',
+  line: '#2A2D36', track: '#3A3E48', people: ['#A898FA', '#FF9A6B'], others: ['#6B707B', '#4E535E'], rest: '#22252D' };
+const SHARE_SITE = 'painelpublico.com';
 
-/* card: { kicker, title, subtitle?, columns?: [nome, nome], rows: [{ label, values: [..], notes?: [..] }], footnote, fileName } */
+/* card: { kicker, title, subtitle?, columns?: [nome, nome], rows: [{ label, values: [..], notes?: [..] }], footnote, fileName }
+   ou, na comparação de políticos, { layout: 'faceoff', title, people: [{ name, meta, stats, categories, top }] x2, agreement, alerts, footnote, fileName }. */
 function shareActionsHTML(card) {
   if (SHARE_STATE.card?.fileName !== card?.fileName) SHARE_STATE.message = '';
   SHARE_STATE.card = card;
@@ -67,9 +72,166 @@ function shareRoundRect(context, x, y, width, height, radius, color) {
 async function shareFontsReady() {
   if (!document.fonts?.load) return;
   try {
-    await Promise.all(['400 24px Geist', '600 24px Geist', '700 24px "Geist Mono"', '500 48px Newsreader']
+    await Promise.all(['400 24px Geist', '600 24px Geist', '700 24px "Geist Mono"', '500 48px Newsreader', '600 48px Newsreader', '600 24px "Geist Mono"']
       .map(font => document.fonts.load(font)));
   } catch (error) { /* Sem as fontes do site, o canvas usa as de reserva. */ }
+}
+
+function sharePill(context, text, x, y, color) {
+  context.font = shareFont(700, 18);
+  const width = context.measureText(text).width + 28;
+  shareRoundRect(context, x, y, width, 34, 17, color);
+  context.fillStyle = SHARE_DARK.bg;
+  context.fillText(text, x + 14, y + 23);
+}
+
+/* Dois cards lado a lado (custo, presença, cota por categoria, maior nota), votos em comum e alertas embaixo. */
+function shareDrawFaceoff(card, context) {
+  const { width, height } = SHARE_SIZE, padding = 56, gap = 18;
+  const cardWidth = (width - padding * 2 - gap) / 2, inner = cardWidth - 56, cardTop = padding, cardHeight = 900;
+  context.fillStyle = SHARE_DARK.bg;
+  context.fillRect(0, 0, width, height);
+  card.people.slice(0, 2).forEach((person, index) => {
+    const color = SHARE_DARK.people[index], left = padding + index * (cardWidth + gap), x = left + 28;
+    shareRoundRect(context, left, cardTop, cardWidth, cardHeight, 28, SHARE_DARK.surface);
+    // Nome: uma linha grande; se não couber, duas menores.
+    context.fillStyle = color;
+    context.font = shareFont(600, 50, SHARE_FONTS.display);
+    let y = cardTop + 28;
+    const oneLine = context.measureText(person.name).width <= inner;
+    const nameLines = oneLine ? [person.name] : shareWrap(context, person.name, inner, 2).length > 1 ? (context.font = shareFont(600, 38, SHARE_FONTS.display), shareWrap(context, person.name, inner, 2)) : [person.name];
+    for (const line of nameLines) { y += oneLine ? 46 : 38; context.fillText(line, x, y); }
+    context.fillStyle = SHARE_DARK.muted;
+    context.font = shareFont(600, 19, SHARE_FONTS.data);
+    y += 32;
+    context.fillText(String(person.meta || '').toUpperCase(), x, y);
+    y = Math.max(y, cardTop + 140);
+    // Custo e presença: número grande, etiqueta na cor da pessoa só para quem leva.
+    for (const stat of person.stats || []) {
+      y += 32;
+      context.fillStyle = SHARE_DARK.muted;
+      context.font = shareFont(400, 18);
+      context.fillText(shareWrap(context, stat.label, inner, 1)[0] || '', x, y);
+      const available = stat.value !== 'Sem dados';
+      context.fillStyle = !available ? SHARE_DARK.muted : stat.behind ? SHARE_DARK.behind : SHARE_DARK.ink;
+      const size = shareFit(context, stat.value, inner, available ? 66 : 40, 700, SHARE_FONTS.data, 28);
+      y += size + 6;
+      context.fillText(stat.value, x, y);
+      if (stat.tag) sharePill(context, stat.tag, x, y + 16, color);
+      y += 70;
+    }
+    // Para onde vai a cota: barra com as 3 maiores categorias e o resto.
+    y += 18;
+    context.fillStyle = SHARE_DARK.line;
+    context.fillRect(x, y, inner, 1);
+    y += 38;
+    context.fillStyle = SHARE_DARK.muted;
+    context.font = shareFont(400, 18);
+    context.fillText('Onde vai a cota', x, y);
+    y += 14;
+    const categories = person.categories || [];
+    if (categories.length) {
+      const colors = [color, ...SHARE_DARK.others];
+      let barX = x;
+      categories.forEach((category, position) => {
+        const segment = Math.max(4, inner * category.share - 3);
+        shareRoundRect(context, barX, y, segment, 18, 4, colors[position]);
+        barX += segment + 3;
+      });
+      if (barX < x + inner - 4) shareRoundRect(context, barX, y, x + inner - barX, 18, 4, SHARE_DARK.rest);
+      y += 18;
+      categories.forEach((category, position) => {
+        y += 36;
+        shareRoundRect(context, x, y - 13, 12, 12, 3, colors[position]);
+        const share = `${Math.round(category.share * 100)}%`;
+        context.font = shareFont(600, 19, SHARE_FONTS.data);
+        const shareWidth = context.measureText(share).width;
+        context.fillStyle = SHARE_DARK.ink;
+        context.textAlign = 'right';
+        context.fillText(share, x + inner, y);
+        context.textAlign = 'left';
+        context.font = shareFont(400, 19);
+        context.fillText(shareWrap(context, category.name, inner - shareWidth - 40, 1)[0] || '', x + 22, y);
+      });
+    } else {
+      y += 30;
+      context.fillStyle = SHARE_DARK.muted;
+      context.font = shareFont(400, 19);
+      context.fillText('Sem notas da cota no período', x, y);
+    }
+    // Maior nota única, com categoria, mês e fornecedor.
+    y = cardTop + cardHeight - 160;
+    context.fillStyle = SHARE_DARK.line;
+    context.fillRect(x, y, inner, 1);
+    y += 34;
+    context.fillStyle = SHARE_DARK.muted;
+    context.font = shareFont(400, 18);
+    context.fillText('Maior nota única', x, y);
+    context.fillStyle = SHARE_DARK.ink;
+    y += 40;
+    shareFit(context, person.top?.value || 'Sem dados', inner, 32, 700, SHARE_FONTS.data, 22);
+    context.fillText(person.top?.value || 'Sem dados', x, y);
+    context.fillStyle = SHARE_DARK.ink2;
+    context.font = shareFont(400, 17);
+    for (const line of [person.top?.what, person.top?.who].filter(Boolean)) { y += 26; context.fillText(shareWrap(context, line, inner, 1)[0] || '', x, y); }
+  });
+
+  // Votos em comum, com a referência de dois deputados(as) quaisquer quando houver.
+  let y = cardTop + cardHeight + gap;
+  const boxWidth = width - padding * 2;
+  shareRoundRect(context, padding, y, boxWidth, 128, 28, SHARE_DARK.surface);
+  const agreement = card.agreement;
+  if (agreement) {
+    const share = agreement.matching / agreement.total;
+    context.fillStyle = SHARE_DARK.ink;
+    context.font = shareFont(600, 26);
+    context.fillText('Votaram igual em', padding + 28, y + 62);
+    const labelWidth = context.measureText('Votaram igual em').width;
+    context.font = shareFont(700, 56, SHARE_FONTS.data);
+    context.fillText(`${Math.round(share * 100)}%`, padding + 28 + labelWidth + 14, y + 66);
+    context.textAlign = 'right';
+    context.fillStyle = SHARE_DARK.muted;
+    context.font = shareFont(400, 18);
+    context.fillText(`${agreement.matching} de ${agreement.total} ${agreement.source}`, width - padding - 28, y + 40);
+    if (Number.isFinite(agreement.typical)) context.fillText(`dois deputados quaisquer: ${Math.round(agreement.typical * 100)}%`, width - padding - 28, y + 66);
+    context.textAlign = 'left';
+    const barWidth = boxWidth - 56, split = barWidth * share;
+    if (split > 2) shareRoundRect(context, padding + 28, y + 92, Math.max(6, split - 2), 12, 6, SHARE_DARK.ink);
+    if (barWidth - split > 2) shareRoundRect(context, padding + 28 + split + 2, y + 92, barWidth - split - 2, 12, 6, SHARE_DARK.track);
+  } else {
+    context.fillStyle = SHARE_DARK.muted;
+    context.font = shareFont(500, 24);
+    context.fillText('Sem votações em comum para comparar', padding + 28, y + 72);
+  }
+
+  // Alertas: só a contagem, sem destaque.
+  y += 128 + 46;
+  context.fillStyle = SHARE_DARK.ink2;
+  context.font = shareFont(400, 21);
+  context.fillText('Alertas na cota', padding + 28, y);
+  const alerts = card.alerts || [];
+  context.textAlign = 'right';
+  context.font = shareFont(700, 26, SHARE_FONTS.data);
+  let alertX = width - padding - 28;
+  [[alerts[1] ?? 'Sem dados', SHARE_DARK.people[1]], [' × ', SHARE_DARK.faint], [alerts[0] ?? 'Sem dados', SHARE_DARK.people[0]]].forEach(([text, color]) => {
+    context.fillStyle = color;
+    context.fillText(text, alertX, y);
+    alertX -= context.measureText(text).width;
+  });
+  context.textAlign = 'left';
+
+  // Rodapé miúdo: fontes, aviso de independência e endereço.
+  context.font = shareFont(400, 15);
+  context.fillStyle = SHARE_DARK.faint;
+  const notes = [...shareWrap(context, card.footnote || '', width - padding * 2 - 200, 2), ...shareWrap(context, SHARE_DISCLAIMER, width - padding * 2 - 200, 2)];
+  let footY = height - 48 - (notes.length - 1) * 22;
+  for (const line of notes) { context.fillText(line, padding, footY); footY += 22; }
+  context.textAlign = 'right';
+  context.fillStyle = SHARE_DARK.muted;
+  context.font = shareFont(600, 16, SHARE_FONTS.data);
+  context.fillText(SHARE_SITE, width - padding, height - 48);
+  context.textAlign = 'left';
+  return context.canvas;
 }
 
 function shareDrawCard(card, canvas) {
@@ -79,6 +241,7 @@ function shareDrawCard(card, canvas) {
   canvas.height = height;
   const context = canvas.getContext('2d');
   context.textBaseline = 'alphabetic';
+  if (card.layout === 'faceoff') return shareDrawFaceoff(card, context);
   context.fillStyle = SHARE_COLORS.bg;
   context.fillRect(0, 0, width, height);
 

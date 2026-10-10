@@ -254,8 +254,22 @@ class VoteSnapshotTests(unittest.TestCase):
         self.assertIsNone(by_id['2599999-01']['vote'])
         self.assertFalse(by_id['2599999-01']['detailsAvailable'])
         self.assertNotIn('participants', json.dumps(result))
+        self.assertIsNone(result['pairAgreement'])
         self.assertIsNone(votes.person_votes('senado:1', self.index))
         self.assertIsNone(votes.person_votes('../x', self.index))
+
+    def test_pair_agreement_counts_pairs_with_the_same_recorded_choice(self):
+        self.write(self.root / votes.DETAILS_DIRECTORY / '2611313-31.json', {'id': '2611313-31', 'participants': [
+            {'id': 'camara:1', 'name': 'Ana', 'party': 'ABC', 'uf': 'SP', 'vote': 'Sim'},
+            {'id': 'camara:2', 'name': 'Bia', 'party': 'ABC', 'uf': 'RJ', 'vote': 'Sim'},
+            {'id': 'camara:3', 'name': 'Caio', 'party': 'DEF', 'uf': 'MG', 'vote': 'Não'}],
+            'partyTotals': [{'party': 'ABC', 'yes': 2, 'no': 0, 'other': 0}, {'party': 'DEF', 'yes': 0, 'no': 1, 'other': 0}]})
+        self.write(self.root / votes.DETAILS_DIRECTORY / '2600001-02.json', {'id': '2600001-02', 'participants': [
+            {'id': 'camara:1', 'name': 'Ana', 'party': 'ABC', 'uf': 'SP', 'vote': 'Não'},
+            {'id': 'camara:2', 'name': 'Bia', 'party': 'ABC', 'uf': 'RJ', 'vote': 'Não'}],
+            'partyTotals': [{'party': 'ABC', 'yes': 0, 'no': 2, 'other': 0}]})
+        # 3 pares na primeira (1 igual) e 1 na segunda (igual): 2 de 4.
+        self.assertEqual(votes.person_votes('camara:1', self.index)['pairAgreement'], 0.5)
 
     def test_detail_uses_selected_generation_and_tracks_index_switch_without_leaking_version(self):
         first_version, second_version = 'a' * 64, 'b' * 64

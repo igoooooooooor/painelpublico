@@ -384,14 +384,24 @@ def _person_index(snapshot_path, snapshot):
         if cached is not None:
             return cached
     by_person, missing_details = {}, set()
+    # Pares de deputados(as) com voto registrado na mesma votação e quantos deles votaram igual:
+    # a referência "dois deputados quaisquer" da comparação, no mesmo critério do cartão.
+    pairs = agreeing_pairs = 0
     for vote in snapshot['items']:
         participants, _, available = _vote_details(snapshot_path, snapshot, vote['id'])
         if not available:
             missing_details.add(vote['id'])
             continue
+        choices = {}
         for participant in participants:
             by_person.setdefault(participant['id'], {})[vote['id']] = participant['vote']
-    index = {'byPerson': by_person, 'missingDetails': missing_details}
+            if participant['vote'] is not None:
+                choices[participant['vote']] = choices.get(participant['vote'], 0) + 1
+        voters = sum(choices.values())
+        pairs += voters * (voters - 1) // 2
+        agreeing_pairs += sum(count * (count - 1) // 2 for count in choices.values())
+    index = {'byPerson': by_person, 'missingDetails': missing_details,
+             'pairAgreement': round(agreeing_pairs / pairs, 4) if pairs else None}
     with _person_index_lock:
         _person_index_cache.clear()
         _person_index_cache[key] = index
@@ -417,4 +427,5 @@ def person_votes(identifier, path=None):
              | {'vote': choices.get(vote['id']), 'detailsAvailable': vote['id'] not in index['missingDetails']}
              for vote in snapshot['items']]
     return {'available': True, 'items': items, 'period': snapshot['period'],
-            'coverage': snapshot['coverage'], 'generatedAt': snapshot['generatedAt']}
+            'coverage': snapshot['coverage'], 'generatedAt': snapshot['generatedAt'],
+            'pairAgreement': index['pairAgreement']}

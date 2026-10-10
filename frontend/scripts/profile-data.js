@@ -188,6 +188,11 @@ function profileChamberVotesEnsure(id) {
     .catch(() => { CHAMBER_PERSON_VOTES.data[id] = null; })
     .finally(() => { CHAMBER_PERSON_VOTES.pending.delete(id); if (typeof rerender === 'function') rerender(); });
 }
+/* Referência do Placar: fração dos pares de deputados(as) que registraram o mesmo voto (null sem dado). */
+function chamberPairAgreement() {
+  const loaded = Object.values(CHAMBER_PERSON_VOTES.data).find(data => Number.isFinite(data?.pairAgreement));
+  return loaded ? loaded.pairAgreement : null;
+}
 function profileChamberVotesLoading(id) {
   const canonical = profileId(id);
   profileChamberVotesEnsure(canonical);
