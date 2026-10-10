@@ -67,6 +67,9 @@ def build(output=None):
     revenue = _read_json(SNAPSHOTS / "arrecadacao.json", None)
     if not isinstance(revenue, dict):
         revenue = None
+    state_revenue = _read_json(SNAPSHOTS / "state-tax-revenue.json", None)
+    if not isinstance(state_revenue, dict) or state_revenue.get("estadosComDado") != state_revenue.get("estadosEsperados"):
+        state_revenue = None
 
     dates = [vote.get("data") for vote in vote_summaries if isinstance(vote.get("data"), str)]
     data = {
@@ -76,6 +79,7 @@ def build(output=None):
         "presencaTodos": presence,
         "votosCompletos": votes,
         "arrecadacao": revenue,
+        "arrecadacaoEstadual": state_revenue,
         "perfis": {"profiles": {}, "sobDemanda": any(
             (SNAPSHOTS / name).exists() for name in ("perfis.json", "senado-projetos.json", "eleicoes-2026.json", "mandate-cost.json", "senate-cost.json", "tenure.json")
         )},

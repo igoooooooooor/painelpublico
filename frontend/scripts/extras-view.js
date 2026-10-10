@@ -4,29 +4,48 @@ const extrasState = { votes: {}, voteLimit: 40, voteQuery: '', attendanceOrder: 
 const chamberPersonId = id => 'camara:' + id;
 const percent = (a, b) => b ? Math.round(a / b * 100) : 0;
 
-/* ---------- Contador de impostos (estimativa a partir do dado oficial) ---------- */
-function taxWidget(now = Date.now()) {
-  const source = DATA.arrecadacao;
-  if (!source) return null;
+/* ---------- Contador de impostos (estimativa a partir do dado oficial) ----------
+   Soma a arrecadação federal (Receita Federal) e a estadual (ICMS, IPVA e ITCD dos RREOs dos 27 estados).
+   Cada esfera segue no ritmo médio diário do próprio ano depois da última data publicada. */
+function taxRate(source) {
+  if (!source || !Number.isFinite(source.acumulado) || !source.inicio || !source.ate) return null;
   const startTime = Date.parse(source.inicio + 'T00:00:00-03:00'), endTime = Date.parse(source.ate + 'T00:00:00-03:00') + 864e5;
-  const perMillisecond = source.acumulado / (endTime - startTime);
-  return { value: source.acumulado + perMillisecond * Math.max(0, now - endTime), perSecond: perMillisecond * 1000, source };
+  if (!(endTime > startTime)) return null;
+  return { amount: source.acumulado, endTime, perMillisecond: source.acumulado / (endTime - startTime), source };
+}
+function taxWidget(now = Date.now()) {
+  const federal = taxRate(DATA.arrecadacao);
+  if (!federal) return null;
+  const state = taxRate(DATA.arrecadacaoEstadual);
+  const valueOf = part => part ? part.amount + part.perMillisecond * Math.max(0, now - part.endTime) : 0;
+  const perMillisecond = federal.perMillisecond + (state ? state.perMillisecond : 0);
+  return { value: valueOf(federal) + valueOf(state), federal: valueOf(federal), state: state ? valueOf(state) : null,
+    perSecond: perMillisecond * 1000, source: federal.source, stateSource: state ? state.source : null };
 }
 const formatCurrency = v => 'R$ ' + Math.floor(v).toLocaleString('pt-BR');
+const formatTrillions = v => 'R$ ' + (v / 1e12).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' tri';
 function taxCard(quota = null) {
   const tax = taxWidget();
   if (!tax) return '';
   const observedQuota = Number.isFinite(quota) ? quota : 0, minutes = observedQuota / tax.perSecond / 60;
+  const scope = tax.state != null ? 'federais e estaduais' : 'federais';
+  const sameDate = !tax.stateSource || tax.stateSource.ate === tax.source.ate;
+  const dates = sameDate ? `até ${formatShortDate(tax.source.ate)}` : `até ${formatShortDate(tax.source.ate)} (federal) e ${formatShortDate(tax.stateSource.ate)} (estadual)`;
+  const split = tax.state != null ? `<div class="tax-split" role="img" aria-label="Federal ${formatTrillions(tax.federal)}, estadual ${formatTrillions(tax.state)}">
+      <span class="tax-split-bar"><i style="flex-grow:${tax.federal}"></i><i style="flex-grow:${tax.state}"></i></span>
+      <span class="tax-split-legend"><span><i></i>Federal <b class="mono" data-tax-federal>${formatTrillions(tax.federal)}</b></span><span><i></i>Estadual <b class="mono" data-tax-state>${formatTrillions(tax.state)}</b></span></span>
+    </div>` : '';
   return `<section class="card tax-card">
-    <div class="tax-card-top"><span class="k">Contador de impostos · 2026</span><span class="live"><i></i>ao vivo</span></div>
+    <div class="tax-card-top"><span class="k">Contador de impostos · ${esc(String(tax.source.inicio).slice(0, 4))}</span><span class="live"><i></i>ao vivo</span></div>
     <div class="tax-value mono" data-tax aria-live="off">${formatCurrency(tax.value)}</div>
-    <span class="muted">em impostos federais pagos pelos brasileiros desde 1º de janeiro. Estimativa: o valor oficial até ${formatShortDate(tax.source.ate)} mais a média diária do ano.</span>
+    <span class="muted">em impostos ${scope} pagos pelos brasileiros desde 1º de janeiro. Estimativa: os valores oficiais ${dates} mais a média diária do ano.</span>
+    ${split}
     <div class="tax-grid">
       <div><b class="mono" data-tax-second>${formatCurrency(tax.perSecond)}</b><span>por segundo</span></div>
       <div><b class="mono" data-tax-person>${formatCurrency(tax.value / tax.source.populacao)}</b><span>por pessoa no ano</span></div>
     </div>
-    ${observedQuota ? `<p class="tax-related">A cota registrada para os deputados(as) da lista no recorte (${formatCitizenAmount(observedQuota)}) equivale ao que o país paga de impostos federais em <b>${minutes < 1 ? Math.round(minutes * 60) + ' segundos' : Math.round(minutes) + ' minutos'}</b>.</p>` : ''}
-    <a class="src" href="${esc(tax.source.url)}" target="_blank" rel="noopener">Fonte: Receita Federal (arrecadação até ${formatShortDate(tax.source.ate)}). Não inclui impostos estaduais e municipais ↗</a>
+    ${observedQuota ? `<p class="tax-related">A cota registrada para os deputados(as) da lista no recorte (${formatCitizenAmount(observedQuota)}) equivale ao que o país paga de impostos ${scope} em <b>${minutes < 1 ? Math.round(minutes * 60) + ' segundos' : Math.round(minutes) + ' minutos'}</b>.</p>` : ''}
+    <p class="tax-sources src">Fontes: <a href="${esc(tax.source.url)}" target="_blank" rel="noopener">Receita Federal (impostos e contribuições administrados pela Receita até ${formatShortDate(tax.source.ate)}) ↗</a>${tax.stateSource ? `; <a href="${esc(tax.stateSource.url)}" target="_blank" rel="noopener">Tesouro Nacional, Siconfi (ICMS, IPVA e ITCD dos 27 estados até ${formatShortDate(tax.stateSource.ate)}) ↗</a>` : ''}. ${tax.stateSource ? 'Não inclui impostos municipais (IPTU, ISS e ITBI), porque nem todas as cidades publicam o dado mensal, nem taxas e contribuições estaduais.' : 'Não inclui impostos estaduais e municipais.'}</p>
   </section>`;
 }
 (function tick() {
@@ -34,6 +53,7 @@ function taxCard(quota = null) {
   if (el) { // troca só o texto (characterData), sem disparar o reencaixe da grade
     const tax = taxWidget(), set = (node, value) => { if (node && node.firstChild) node.firstChild.data = value; };
     set(el, formatCurrency(tax.value)); set(document.querySelector('[data-tax-person]'), formatCurrency(tax.value / tax.source.populacao));
+    if (tax.state != null) { set(document.querySelector('[data-tax-federal]'), formatTrillions(tax.federal)); set(document.querySelector('[data-tax-state]'), formatTrillions(tax.state)); }
   }
   setTimeout(tick, 120);
 })();

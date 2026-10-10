@@ -154,6 +154,16 @@
 /* contador de impostos */
 .tax-card { background: var(--accent-soft); border-color: transparent; }
 .tax-card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.tax-split { display: flex; flex-direction: column; gap: 8px; }
+.tax-split-bar { display: flex; gap: 3px; height: 10px; border-radius: 999px; overflow: hidden; }
+.tax-split-bar i { display: block; flex-basis: 0; background: var(--accent); }
+.tax-split-bar i + i { background: var(--cat5); }
+.tax-split-legend { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 13px; color: var(--ink-2); }
+.tax-split-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.tax-split-legend i { width: 10px; height: 10px; border-radius: 3px; background: var(--accent); }
+.tax-split-legend > span + span i { background: var(--cat5); }
+.tax-split-legend b { color: var(--ink); }
+.tax-sources { margin: 0; line-height: 1.5; }
 .live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--accent); }
 .live i { width: 8px; height: 8px; border-radius: 4px; background: var(--accent); }
 @media (prefers-reduced-motion: no-preference) { .live i { animation: pulse 1.6s ease-in-out infinite; } @keyframes pulse { 50% { opacity: .25; } } }

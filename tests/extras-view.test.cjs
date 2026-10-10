@@ -329,3 +329,23 @@ test('tax card receives the observed Chamber roster total as an argument', () =>
   assert.match(html, /cota registrada para os deputados\(as\) da lista no recorte \(R\$ 300000\)/);
   assert.doesNotMatch(html, /Tudo o que a Câmara gastou/);
 });
+
+test('tax counter adds the 27 states to the federal revenue and says what is still missing', () => {
+  const { api, context } = comparison(profile('camara:1', 100), profile('camara:2', 200));
+  context.DATA.arrecadacao = { inicio: '2026-01-01', ate: '2026-08-31', acumulado: 2_000_000_000_000, populacao: 200, url: 'https://example.test/federal' };
+  const federalOnly = context.taxWidget(Date.parse('2026-08-31T12:00:00-03:00'));
+  assert.equal(Math.round(federalOnly.value), 2_000_000_000_000);
+  assert.equal(federalOnly.state, null);
+  assert.match(api.taxCard(), /Não inclui impostos estaduais e municipais/);
+  context.DATA.arrecadacaoEstadual = { inicio: '2026-01-01', ate: '2026-08-31', acumulado: 700_000_000_000, url: 'https://example.test/siconfi' };
+  const both = context.taxWidget(Date.parse('2026-08-31T12:00:00-03:00'));
+  assert.equal(Math.round(both.value), 2_700_000_000_000);
+  assert.ok(both.perSecond > federalOnly.perSecond);
+  const html = api.taxCard(1_000_000);
+  assert.match(html, /impostos federais e estaduais pagos/);
+  assert.match(html, /Federal <b class="mono" data-tax-federal>R\$ [0-9],[0-9][0-9] tri/);
+  assert.match(html, /Estadual <b class="mono" data-tax-state>R\$ 0,[0-9][0-9] tri/);
+  assert.match(html, /ICMS, IPVA e ITCD dos 27 estados/);
+  assert.match(html, /Não inclui impostos municipais \(IPTU, ISS e ITBI\)/);
+  assert.match(html, /href="https:\/\/example\.test\/siconfi"/);
+});
