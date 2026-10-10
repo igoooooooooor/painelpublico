@@ -424,8 +424,43 @@ começar em 1º/2/2023. IDs repetidos entre anos são recusados. A cobertura som
 as contagens de cada ano, o período vai do primeiro início ao último fim, e o
 índice mantém `schemaVersion: 1`. `--reviews` só vale para um único ano.
 
+## Levantamento de 2023
+
+Inventário de 1º/2 a 31/12/2023 com a regra v3 e `--audit-omissions`:
+
+| Observação | Quantidade |
+| --- | ---: |
+| Registros retornados pela API | 1.049, em 11 páginas |
+| Candidatos | 159 |
+| Simbólicos pelo portal da sessão | 96 |
+| Simbólicos pelas notas taquigráficas | 22 |
+| Nominais confirmados por relatório oficial | 41 |
+| Pendentes | 0 |
+| Registros individuais nas 41 decisões | 17.120 |
+| Sem link seguro ao texto exato | 3 |
+| Sem contagem publicada de abstenções | 10 |
+| Sem tema oficial | 0 |
+
+A conferência de omissões cruzou 285 eventos (113 deliberativos), 975 votações
+vinculadas e 625 proposições, sem votação ausente da lista nem falha. As 15 sessões
+deliberativas sem votação listada não tiveram decisão de mérito (eleição para o
+TCU, matérias não apreciadas, adiamentos ou pauta vazia). Os 37 registros sem
+classificação são requerimentos, eleições, preferência, pareceres de comissão
+mista e uma emenda.
+
+Em nove decisões, a API liga a votação a outra proposição ou à numeração atual:
+o Placar usa `votedProposition` com o número do relatório. Os três textos
+ausentes são o 2º turno de julho e os dois turnos de dezembro da PEC 45/2019,
+sem documento do texto submetido separado da redação final. Uma descrição da API
+soma obstruções ao total (PL 3.954/2023); o Placar usa o total do relatório.
+
+O índice conjunto exige anos contíguos: 2023 só entra no site junto com 2024 e
+2025. A revisão de 2023 e as evidências ficam em
+`data/reviews/chamber-vote-reviews-2023-12-31.json` e
+`data/reviews/scoreboard-audit-2023/`, fora do Git.
+
 ## Próxima etapa
 
-Inventariar 2023 (desde 1º/2), 2024 e 2025 com `--audit-omissions`, revisar os
-candidatos com o mesmo critério e só então gerar o índice conjunto. A
+Inventariar 2024 e 2025 com `--audit-omissions`, revisar os candidatos com o
+mesmo critério e só então gerar o índice conjunto de 2023 a 2026. A
 conferência não autoriza declarar cobertura completa do ano ou do mandato.
