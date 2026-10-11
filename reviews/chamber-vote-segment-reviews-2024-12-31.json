@@ -1,0 +1,1466 @@
+[
+  {
+    "id": "2438459-66",
+    "parentId": "2438459-55",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Avaliação dos regimes especiais do IBS pelo Comitê Gestor",
+    "summary": "O texto-base foi aprovado em agosto de 2024 e os destaques ficaram para 30 de outubro. Destaque do PL para retirar o inciso V do § 1º do art. 2º, que dá ao Comitê Gestor do IBS a tarefa de avaliar, a cada cinco anos, a eficiência dos regimes aduaneiros especiais, das zonas de processamento de exportação, do Reporto, do Reidi, da devolução personalizada, da Cesta Básica Nacional e dos regimes diferenciados e específicos do IBS.",
+    "decisionLabel": "Inciso mantido",
+    "yesMeaning": "Manter o inciso no texto.",
+    "noMeaning": "Retirar o inciso do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 5 - PL - INCISO V, DO PARÁGRAFO 1º, ARTIGO 2º DO SUBSTITUTIVO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12425",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2463963",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2452546"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12425) registra votação nominal eletrônica em 2024-10-30, encerrada em 2024-10-30 às 16:26, com 292 Sim e 106 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 5 - PL - INCISO V, DO PARÁGRAFO 1º, ARTIGO 2º DO SUBSTITUTIVO”; o registro 2438459-66 da API traz o mesmo placar.",
+      "text": "O DTQ 5 (PL) pede votação em separado do inciso V do § 1º do art. 2º do substitutivo; o texto do inciso está no art. 2º da subemenda substitutiva (PRLE 1)."
+    }
+  },
+  {
+    "id": "2438459-69",
+    "parentId": "2438459-55",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda aglutinativa de Mauro Benevides Filho",
+    "summary": "Emenda aglutinativa do deputado Mauro Benevides Filho que mudou vários artigos do texto aprovado em agosto. Entre outros pontos, ela livra da responsabilidade por infrações as plataformas digitais que retêm e recolhem o IBS e a CBS, permite parcelar em até 12 vezes os débitos decididos pelo voto de qualidade e muda regras do ITCMD sobre doações entre pessoas ligadas.",
+    "decisionLabel": "Emenda aprovada",
+    "yesMeaning": "Aprovar a emenda aglutinativa.",
+    "noMeaning": "Manter o texto sem a emenda.",
+    "outcome": "approved",
+    "reportObject": "EMA - DEP. MAURO BENEVIDES FILHO - EMENDA AGLUTINATIVA Nº 1",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12426",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2656887",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2465720"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12426) registra votação nominal eletrônica em 2024-10-30, encerrada em 2024-10-30 às 16:42, com 403 Sim e 0 Não.",
+      "object": "O relatório identifica o objeto como “EMA - DEP. MAURO BENEVIDES FILHO - EMENDA AGLUTINATIVA Nº 1”; o registro 2438459-69 da API traz o mesmo placar.",
+      "text": "O inteiro teor da Emenda Aglutinativa nº 1 traz a nova redação dos arts. 51, 102, 155, 164 e 167, entre outros."
+    }
+  },
+  {
+    "id": "2438459-77",
+    "parentId": "2438459-55",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda do PSOL-REDE: Imposto sobre Grandes Fortunas",
+    "summary": "Destaque da federação PSOL-REDE para votar a emenda nº 8, que criava o Imposto sobre Grandes Fortunas, da União, sobre patrimônio acima de R$ 10 milhões, com isenções para bens tombados, de preservação ambiental e outros.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 2 - FEDERAÇÃO PSOL-REDE - EMENDA DE PLENÁRIO Nº 8",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12427",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2463354",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2452381"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12427) registra votação nominal eletrônica em 2024-10-30, encerrada em 2024-10-30 às 17:00, com 136 Sim e 262 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 2 - FEDERAÇÃO PSOL-REDE - EMENDA DE PLENÁRIO Nº 8”; o registro 2438459-77 da API traz o mesmo placar.",
+      "text": "O DTQ 2 (PSOL-REDE) pede destaque da emenda nº 8; o inteiro teor da emenda acrescenta o Livro X, do Imposto sobre Grandes Fortunas, com o limite de R$ 10.000.000,00."
+    }
+  },
+  {
+    "id": "2166464-132",
+    "parentId": "2166464-128",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emendas",
+    "title": "Emendas com parecer contrário do relator",
+    "summary": "A Câmara votou em conjunto as 23 emendas de Plenário, que tinham parecer pela rejeição. Elas tratavam, entre outros temas, de limites ao deságio na cessão de créditos tributários e não tributários pelos governos, de restringir a cessão a créditos pagos dentro do mandato do governante e de exigir licitação ou leilão. O relator, Alex Manente, recomendou rejeitar todas porque o projeto já contemplava o acordo político possível.",
+    "decisionLabel": "Emendas rejeitadas",
+    "yesMeaning": "Aprovar as emendas com parecer pela rejeição.",
+    "noMeaning": "Rejeitar essas emendas, como recomendou o relator.",
+    "outcome": "rejected",
+    "reportObject": "EMENDAS COM PARECER PELA REJEIÇÃO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12219",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2432376",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2437872"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12219) registra votação nominal eletrônica em 2024-06-04, encerrada em 2024-06-04 às 20:38, com 2 Sim e 413 Não.",
+      "object": "O relatório identifica o objeto como “EMENDAS COM PARECER PELA REJEIÇÃO”; o registro 2166464-132 da API traz o mesmo placar.",
+      "text": "O parecer às emendas de Plenário (PRLE 1), do relator Alex Manente, resume as 23 emendas e conclui pela rejeição de todas no mérito."
+    }
+  },
+  {
+    "id": "2178408-173",
+    "parentId": "2178408-165",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Capitalização e repartição só para sociedades por ações",
+    "summary": "Destaque da bancada do PL para retirar o parágrafo único do art. 24 do Decreto-Lei nº 73/1966, na redação do art. 3º da subemenda substitutiva. O artigo passa a permitir que cooperativas de seguros operem, e o parágrafo reserva às sociedades por ações as operações de seguro estruturadas nos regimes financeiros de capitalização e de repartição de capitais de cobertura.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 5 - PL - PARÁGRAFO ÚNICO, DO ART. 24, CONST. ART. 3º, DA SUB. SUBSTITUTIVA",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12344",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2471206",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2456001"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12344) registra votação nominal eletrônica em 2024-08-28, encerrada em 2024-08-28 às 20:53, com 305 Sim e 132 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “DTQ 5 - PL - PARÁGRAFO ÚNICO, DO ART. 24, CONST. ART. 3º, DA SUB. SUBSTITUTIVA”; o registro 2178408-173 da API traz o mesmo placar.",
+      "text": "O DTQ 5 (PL) pede votação em separado do parágrafo único do art. 24, constante do art. 3º da subemenda substitutiva global, com vistas à sua supressão; o parecer às emendas (PRLE 1) traz o art. 24 e o parágrafo único."
+    }
+  },
+  {
+    "id": "2194861-79",
+    "parentId": "2194861-77",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Internação em hospital de custódia ou outro local adequado",
+    "summary": "Destaque da federação PSOL-REDE para retirar o inciso I do art. 96 do Código Penal, na redação do substitutivo. Ele prevê, como medida de segurança, a internação em hospital de custódia e tratamento psiquiátrico ou, na falta dele, em outro estabelecimento adequado com capacidade comprovada de custodiar a pessoa e mantê-la internada.",
+    "decisionLabel": "Inciso mantido",
+    "yesMeaning": "Manter o inciso no texto.",
+    "noMeaning": "Retirar o inciso do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ. 4 - FDR. PSOL-REDE - INCISO I, DO ART. 96 DO DECRETO-LEI Nº 2.848/1940",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12646",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2841052",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2479605"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12646) registra votação nominal eletrônica em 2024-12-12, encerrada em 2024-12-12 às 16:08, com 176 Sim e 86 Não.",
+      "object": "O relatório identifica o objeto como “DTQ. 4 - FDR. PSOL-REDE - INCISO I, DO ART. 96 DO DECRETO-LEI Nº 2.848/1940”; o registro 2194861-79 da API traz o mesmo placar.",
+      "text": "O DTQ 4 (PSOL-REDE) pede votação em separado do inciso I do art. 96 do Decreto-Lei nº 2.848/1940, com redação dada pelo art. 2º do substitutivo; o parecer reformulado de Plenário (PRLP 5) traz o inciso."
+    }
+  },
+  {
+    "id": "2194861-82",
+    "parentId": "2194861-77",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Liberdade vigiada como medida de segurança",
+    "summary": "Destaque da federação PT-PCdoB-PV para retirar o inciso III do art. 96 do Código Penal, na redação do substitutivo, que cria a liberdade vigiada, com acompanhamento psicossocial e fiscalização judicial, como medida de segurança.",
+    "decisionLabel": "Inciso mantido",
+    "yesMeaning": "Manter o inciso no texto.",
+    "noMeaning": "Retirar o inciso do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ. 6 - FDR. PT-PCDOB-PV - INCISO III, DO ART. 96 DO DECRETO-LEI Nº 2.848/1940",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12647",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2841052",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2479608"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12647) registra votação nominal eletrônica em 2024-12-12, encerrada em 2024-12-12 às 16:17, com 229 Sim e 106 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “DTQ. 6 - FDR. PT-PCDOB-PV - INCISO III, DO ART. 96 DO DECRETO-LEI Nº 2.848/1940”; o registro 2194861-82 da API traz o mesmo placar.",
+      "text": "O DTQ 6 pede votação em separado do inciso III do art. 96 do Decreto-Lei nº 2.848/1940, constante do art. 2º do substitutivo; o parecer reformulado de Plenário (PRLP 5) traz o inciso."
+    }
+  },
+  {
+    "id": "2194861-85",
+    "parentId": "2194861-77",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Internação sem prazo final e mínimo de 3 a 20 anos",
+    "summary": "Destaque da federação PT-PCdoB-PV para retirar o § 1º do art. 97 do Código Penal, na redação do substitutivo. Ele diz que a internação ou o tratamento ambulatorial do inimputável dura por tempo indeterminado, enquanto perícia médica não constatar o fim da periculosidade, com prazo mínimo de 3 a 20 anos.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ. 5 - FDR. PT-PCDOB-PV - §1º DO ART. 97 DO CP ALTERADO PELO ART. 3º DO ...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12648",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2841052",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2479607"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12648) registra votação nominal eletrônica em 2024-12-12, encerrada em 2024-12-12 às 16:23, com 183 Sim e 79 Não.",
+      "object": "O relatório identifica o objeto como “DTQ. 5 - FDR. PT-PCDOB-PV - §1º DO ART. 97 DO CP ALTERADO PELO ART. 3º DO ...”; o registro 2194861-85 da API traz o mesmo placar.",
+      "text": "O DTQ 5 pede votação em separado do § 1º do art. 97 do Código Penal, alterado pelo art. 3º do substitutivo; o parecer reformulado de Plenário (PRLP 5) traz o parágrafo com o prazo mínimo de 3 a 20 anos."
+    }
+  },
+  {
+    "id": "2194861-88",
+    "parentId": "2194861-77",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Internação mínima de 7 ou 15 anos conforme o crime",
+    "summary": "Destaque do PSB para retirar o § 1º-A do art. 97 do Código Penal, na redação do substitutivo. Ele fixa prazos mínimos de internação: 7 anos nos crimes com violência ou grave ameaça e 15 anos nos crimes com resultado morte.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ. 2 - PSB - §1ºA DO ART. 97 DO DECRETO Nº 2848/1940",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12649",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2841052",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2479575"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12649) registra votação nominal eletrônica em 2024-12-12, encerrada em 2024-12-12 às 16:30, com 205 Sim e 91 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “DTQ. 2 - PSB - §1ºA DO ART. 97 DO DECRETO Nº 2848/1940”; o registro 2194861-88 da API traz o mesmo placar.",
+      "text": "O DTQ 2 (PSB) pede votação em separado do § 1º-A do art. 97 do Decreto-Lei nº 2.848/1940, com a redação do substitutivo; o parecer reformulado de Plenário (PRLP 5) traz os prazos mínimos de 7 e 15 anos."
+    }
+  },
+  {
+    "id": "2194861-91",
+    "parentId": "2194861-77",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Reavaliação obrigatória a cada 3 anos após o prazo mínimo",
+    "summary": "Destaque da federação PT-PCdoB-PV para retirar o § 2º do art. 97 do Código Penal, na redação do substitutivo. Ele prevê, ao fim do prazo mínimo, avaliação técnica obrigatória por laudo multidisciplinar a cada 3 anos, ou a qualquer tempo por ordem do juiz, para decidir se a medida é mantida, substituída ou suspensa.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ. 7 - FDR. PT-PCDOB-PV - §2º DO ART. 97 DO DECRETO-LEI Nº 2.848/1940",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12650",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2841052",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2479609"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12650) registra votação nominal eletrônica em 2024-12-12, encerrada em 2024-12-12 às 16:38, com 228 Sim e 107 Não.",
+      "object": "O relatório identifica o objeto como “DTQ. 7 - FDR. PT-PCDOB-PV - §2º DO ART. 97 DO DECRETO-LEI Nº 2.848/1940”; o registro 2194861-91 da API traz o mesmo placar.",
+      "text": "O DTQ 7 pede votação em separado do § 2º do art. 97 do Decreto-Lei nº 2.848/1940, alterado pelo art. 3º do substitutivo; o parecer reformulado de Plenário (PRLP 5) traz o parágrafo."
+    }
+  },
+  {
+    "id": "2194861-94",
+    "parentId": "2194861-77",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Juiz pode internar quem está em tratamento ambulatorial",
+    "summary": "Destaque da federação PT-PCdoB-PV para retirar o § 4º do art. 97 do Código Penal, na redação do substitutivo. Ele permite ao juiz determinar a internação em qualquer fase do tratamento ambulatorial, se for necessária para fins curativos ou como garantia da ordem pública.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ. 8 - FDR. PT-PCDOB-PV - §4º DO ART. 97 DO DECRETO-LEI Nº 2.848/1940",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12651",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2841052",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2479610"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12651) registra votação nominal eletrônica em 2024-12-12, encerrada em 2024-12-12 às 16:44, com 196 Sim e 84 Não.",
+      "object": "O relatório identifica o objeto como “DTQ. 8 - FDR. PT-PCDOB-PV - §4º DO ART. 97 DO DECRETO-LEI Nº 2.848/1940”; o registro 2194861-94 da API traz o mesmo placar.",
+      "text": "O DTQ 8 pede votação em separado do § 4º do art. 97 do Decreto-Lei nº 2.848/1940, alterado pelo art. 3º do substitutivo; o parecer reformulado de Plenário (PRLP 5) traz o parágrafo."
+    }
+  },
+  {
+    "id": "2238434-85",
+    "parentId": "2238434-80",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda do PSOL-REDE: retirar a captura e estocagem de carbono",
+    "summary": "Destaque da federação PSOL-REDE para votar a emenda nº 22, da deputada Erika Hilton. Ela retirava do texto o capítulo que regula a captura e a estocagem geológica de dióxido de carbono (CO2), o inciso do art. 1º que trata desse tema e a autorização para a Petrobras incluir essa atividade no seu objeto social.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 8 - FDR PSOL- EMENDA DE PLENÁRIO Nº 22",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12069",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2394893",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2421003"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12069) registra votação nominal eletrônica em 2024-03-13, encerrada em 2024-03-13 às 19:51, com 14 Sim e 362 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 8 - FDR PSOL- EMENDA DE PLENÁRIO Nº 22”; o registro 2238434-85 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda nº 22 (EMP 22) suprime o inciso IV do art. 1º, o Capítulo VI (captura e estocagem geológica de dióxido de carbono) e a expressão sobre estocagem de dióxido de carbono no art. 61-A da Lei nº 9.478/1997; o parecer às emendas (PRLE 3) rejeita as emendas não acatadas."
+    }
+  },
+  {
+    "id": "2238434-87",
+    "parentId": "2238434-80",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Mistura de 27% de etanol na gasolina, com teto de 35%",
+    "summary": "Destaque da bancada do PL para retirar o art. 32, que fixa em 27% a mistura obrigatória de álcool etílico anidro na gasolina e permite ao Poder Executivo elevá-la até 35%, se tecnicamente viável, ou reduzi-la a 22%.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 32 no texto.",
+    "noMeaning": "Retirar o art. 32 do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 3 - PL - ART. 32 DO SUBSTITUTIVO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12070",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2395253",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2420789"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12070) registra votação nominal eletrônica em 2024-03-13, encerrada em 2024-03-13 às 19:56, com 288 Sim e 62 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “DTQ 3 - PL - ART. 32 DO SUBSTITUTIVO”; o registro 2238434-87 da API traz o mesmo placar.",
+      "text": "O DTQ 3 (PL) pede votação em separado do art. 32 do substitutivo, com vistas à sua supressão; a subemenda substitutiva (PRLE 3) traz o art. 32, que altera o art. 9º da Lei nº 8.723/1993 com os percentuais de 27%, 35% e 22%."
+    }
+  },
+  {
+    "id": "2238434-89",
+    "parentId": "2238434-80",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda do PL: etanol na gasolina em 24%, com teto de 29,5%",
+    "summary": "Destaque da bancada do PL para votar a emenda nº 18, do deputado Altineu Côrtes. Ela mudava o art. 32 para fixar em 24% a mistura obrigatória de álcool anidro na gasolina, em vez de 27%, com aumento possível até 29,5%, em vez de 35%, e redução possível até 20%, em vez de 22%.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 5 - PL - EMENDA DE PLENÁRIO Nº. 18",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12071",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2394836",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2420986"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12071) registra votação nominal eletrônica em 2024-03-13, encerrada em 2024-03-13 às 20:00, com 98 Sim e 314 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 5 - PL - EMENDA DE PLENÁRIO Nº. 18”; o registro 2238434-89 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda nº 18 (EMP 18) dá nova redação ao art. 32 do substitutivo, alterando o art. 9º da Lei nº 8.723/1993 para 24%, com limites de 29,5% e 20%; a subemenda substitutiva (PRLE 3) traz 27%, 35% e 22%."
+    }
+  },
+  {
+    "id": "2238434-94",
+    "parentId": "2238434-80",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda: metas de biodiesel só com viabilidade técnica",
+    "summary": "Destaque da bancada do PL para votar a emenda nº 21, do deputado Bibo Nunes. Ela condicionava as metas anuais de mistura obrigatória de biodiesel no diesel (de 15% em 2025 a 20% em 2030) à comprovação de viabilidade técnica, avaliada pelo Conselho Nacional de Política Energética (CNPE) “dentro do conceito do berço ao túmulo”.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 10 - PL- EMENDA DE PLENÁRIO Nº. 21",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12072",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2394880",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2420999"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12072) registra votação nominal eletrônica em 2024-03-13, encerrada em 2024-03-13 às 20:06, com 191 Sim e 232 Não e 2 abstençãoões.",
+      "object": "O relatório identifica o objeto como “DTQ 10 - PL- EMENDA DE PLENÁRIO Nº. 21”; o registro 2238434-94 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda nº 21 (EMP 21) dá nova redação ao art. 33 do substitutivo, acrescentando ao art. 1º da Lei nº 13.033/2014 a condição “desde que constatada a sua viabilidade técnica”; a subemenda substitutiva (PRLE 3) traz as metas de 15% a 20% sem essa condição no caput."
+    }
+  },
+  {
+    "id": "2238434-99",
+    "parentId": "2238434-80",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda: metas de biodiesel só com viabilidade técnica (nº 19)",
+    "summary": "Destaque da bancada do PL para votar a emenda nº 19, do deputado Darci de Matos. Como a emenda nº 21, votada antes, ela condicionava as metas anuais de mistura obrigatória de biodiesel no diesel à comprovação de viabilidade técnica, avaliada pelo Conselho Nacional de Política Energética (CNPE) “dentro do conceito do berço ao túmulo”.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 11 - PL- EMENDA DE PLENÁRIO Nº. 19",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12073",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2394844",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2420992"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12073) registra votação nominal eletrônica em 2024-03-13, encerrada em 2024-03-13 às 20:19, com 152 Sim e 279 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 11 - PL- EMENDA DE PLENÁRIO Nº. 19”; o registro 2238434-99 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda nº 19 (EMP 19) dá nova redação ao art. 33 do substitutivo, acrescentando ao art. 1º da Lei nº 13.033/2014 a condição “desde que constatada a sua viabilidade técnica” e a avaliação “dentro do conceito do berço ao túmulo” no § 1º."
+    }
+  },
+  {
+    "id": "2238434-100",
+    "parentId": "2238434-80",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Metas valem para biodiesel de processos exclusivos",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BL. MDB, PSD…”), com requerimento assinado por Isnaldo Bulhões Jr. (MDB-AL, vice-líder), para retirar do art. 1º da Lei nº 13.033/2014, alterado pelo art. 33, a expressão “produzido por meio de processos exclusivamente dedicados para tal fim”. Ela diz que as metas de mistura obrigatória no diesel valem para o biodiesel produzido dessa forma.",
+    "decisionLabel": "Expressão mantida",
+    "yesMeaning": "Manter a expressão no texto.",
+    "noMeaning": "Retirar a expressão do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 14 - BL. MDB, PSD ...- EX. \"PRODUZIDO POR MEIO DE PROCESSOS...\"",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12074",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2395227",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2421107"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12074) registra votação nominal eletrônica em 2024-03-13, encerrada em 2024-03-13 às 20:25, com 382 Sim e 48 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 14 - BL. MDB, PSD ...- EX. \"PRODUZIDO POR MEIO DE PROCESSOS...\"”; o registro 2238434-100 da API traz o mesmo placar.",
+      "text": "O DTQ 14 pede votação em separado da expressão citada, constante do art. 1º da Lei nº 13.033/2014 modificado pelo art. 33 do substitutivo, para fins de supressão; a subemenda substitutiva (PRLE 3) traz a expressão no caput desse artigo."
+    }
+  },
+  {
+    "id": "2238434-104",
+    "parentId": "2238434-80",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda: subvenção do BNDES para biogás e biometano",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BL. UNIÃO, SD…”), com requerimento assinado por Aureo Ribeiro (SOLIDARIEDADE-RJ, vice-líder do bloco), para votar o art. 15 da emenda nº 4, do deputado Márcio Marinho. Esse artigo autorizava o Poder Executivo a conceder subvenção econômica, por meio do BNDES, para reduzir juros e encargos de financiamentos à produção de biogás e biometano.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir o art. 15 da emenda no texto.",
+    "noMeaning": "Deixar o art. 15 da emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 9 - BL. UNIÃO, SD ... ART. 15 DA EMENDA DE PLENÁRIO Nº. 4",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12075",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2393757",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2420458"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12075) registra votação nominal eletrônica em 2024-03-13, encerrada em 2024-03-13 às 20:33, com 38 Sim e 376 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “DTQ 9 - BL. UNIÃO, SD ... ART. 15 DA EMENDA DE PLENÁRIO Nº. 4”; o registro 2238434-104 da API traz o mesmo placar.",
+      "text": "O DTQ 9 pede destaque para o art. 15 constante da emenda nº 4; o inteiro teor da emenda (EMP 4) dá ao art. 15 a redação da subvenção econômica via BNDES, na modalidade de equalização de taxas de juros, para biogás e biometano."
+    }
+  },
+  {
+    "id": "2320081-68",
+    "parentId": "2320081-66",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Contas específicas só para repasses a prestadores privados de saúde",
+    "summary": "Emenda de adequação adotada pela Comissão de Finanças e Tributação (CFT), a partir do parecer do relator Luiz Gastão. Ela retira do § 2º do art. 22 a menção aos hospitais universitários federais: as contas-correntes específicas para receber os repasses regulares, automáticos e obrigatórios de saúde ficam restritas ao custeio de serviços de prestadores privados.",
+    "decisionLabel": "Emenda aprovada",
+    "yesMeaning": "Aprovar a emenda da CFT.",
+    "noMeaning": "Rejeitar a emenda da CFT.",
+    "outcome": "approved",
+    "reportObject": "EMENDA ADOTADA PELA CFT",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12314",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2414693",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2430306"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12314) registra votação nominal eletrônica em 2024-08-14, encerrada em 2024-08-14 às 19:51, com 421 Sim e 12 Não.",
+      "object": "O relatório identifica o objeto como “EMENDA ADOTADA PELA CFT”; o registro 2320081-68 da API traz o mesmo placar.",
+      "text": "A emenda adotada pela CFT (EMC-A 1) dá nova redação ao § 2º do art. 22, só com os prestadores privados; o parecer do relator na CFT (PRL 1) explica que a emenda suprime a expressão “e hospitais universitários federais”."
+    }
+  },
+  {
+    "id": "2349493-86",
+    "parentId": "2349493-82",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Oito anos de impedimentos para quem participar de invasão",
+    "summary": "Destaque da federação PT-PCdoB-PV para retirar o inciso I do § 7º do art. 2º da Lei nº 8.629/1993, na redação da subemenda substitutiva. Por ele, quem for identificado como participante, direto ou indireto, de invasão ou esbulho de imóvel rural fica impedido por oito anos de, entre outros, participar da reforma agrária (perdendo o lote), contratar com o poder público, receber benefícios fiscais ou crédito, prestar concurso público, ser nomeado para cargo comissionado e receber auxílios e benefícios do Governo Federal.",
+    "decisionLabel": "Inciso mantido",
+    "yesMeaning": "Manter o inciso no texto.",
+    "noMeaning": "Retirar o inciso do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 18 - FDR PT-PCDOB-PV - INCISO 1 DO § 7º DO ART. 2 DA SUBEMENDA SUBSTITUTIVA",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12179",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2426932",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2435338"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12179) registra votação nominal eletrônica em 2024-05-21, encerrada em 2024-05-21 às 22:16, com 322 Sim e 116 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 18 - FDR PT-PCDOB-PV - INCISO 1 DO § 7º DO ART. 2 DA SUBEMENDA SUBSTITUTIVA”; o registro 2349493-86 da API traz o mesmo placar.",
+      "text": "O DTQ 18 pede votação em separado do inciso I do § 7º do “Artigo 2 da Subemenda Substitutiva”; a subemenda substitutiva (PRLE 2) altera o art. 2º da Lei nº 8.629/1993 e traz o inciso, com as alíneas a a g."
+    }
+  },
+  {
+    "id": "2349493-89",
+    "parentId": "2349493-82",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Proibição de prestar concurso público por oito anos",
+    "summary": "Destaque da bancada do PSB para retirar a alínea e do inciso I do § 7º do art. 2º da Lei nº 8.629/1993, na redação da subemenda substitutiva, que impede quem for identificado como participante de invasão ou esbulho de imóvel rural de se inscrever em concursos públicos ou processos seletivos para cargos, empregos ou funções públicas por oito anos.",
+    "decisionLabel": "Alínea mantida",
+    "yesMeaning": "Manter a alínea no texto.",
+    "noMeaning": "Retirar a alínea do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 15 - PSB - ART. 2, § 7º, INCISO I, ALÍNEA E, DA LEI 8629/1993",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12180",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2426932",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2435315"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12180) registra votação nominal eletrônica em 2024-05-21, encerrada em 2024-05-21 às 22:36, com 320 Sim e 119 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 15 - PSB - ART. 2, § 7º, INCISO I, ALÍNEA E, DA LEI 8629/1993”; o registro 2349493-89 da API traz o mesmo placar.",
+      "text": "O DTQ 15 (PSB) pede votação em separado da alínea e do inciso I do § 7º do art. 2º da Lei nº 8.629/1993, com redação dada pelo art. 1º da subemenda substitutiva (PRLE 2), que traz a alínea."
+    }
+  },
+  {
+    "id": "2349493-92",
+    "parentId": "2349493-82",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Proibição de repasse público a movimentos sem CNPJ",
+    "summary": "Destaque da federação PSOL-REDE para retirar o § 10 do art. 2º da Lei nº 8.629/1993, na redação da subemenda substitutiva, que proíbe repassar recursos públicos a movimentos não constituídos na forma da lei e sem inscrição no Cadastro Nacional da Pessoa Jurídica (CNPJ), e estende a proibição às pessoas jurídicas usadas como intermediárias, mesmo que regularmente constituídas.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 14 - FDR PSOL-REDE - § 10 DO ART. 2º DA LEI 8629/1993",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12181",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2426932",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2435300"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12181) registra votação nominal eletrônica em 2024-05-21, encerrada em 2024-05-21 às 22:54, com 315 Sim e 120 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 14 - FDR PSOL-REDE - § 10 DO ART. 2º DA LEI 8629/1993”; o registro 2349493-92 da API traz o mesmo placar.",
+      "text": "O DTQ 14 (PSOL-REDE) pede votação em separado do § 10 do art. 2º da Lei nº 8.629/1993, que consta do art. 1º da subemenda substitutiva (PRLE 2), que traz o parágrafo."
+    }
+  },
+  {
+    "id": "2349493-95",
+    "parentId": "2349493-82",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Identificação dos participantes de invasões pela polícia",
+    "summary": "Destaque da federação PT-PCdoB-PV para retirar o § 13 do art. 2º da Lei nº 8.629/1993, na redação da subemenda substitutiva, que manda a autoridade policial identificar, por documento oficial, todos os participantes, diretos ou indiretos, de conflito fundiário caracterizado por invasão ou esbulho de imóvel rural, para aplicar os impedimentos da lei.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 10 - FDR PT-PCDOB-PV - § 13 DO ART. 2 DA SUBEMENDA SUBSTITUTIVA",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12182",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2426932",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2435289"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12182) registra votação nominal eletrônica em 2024-05-21, encerrada em 2024-05-21 às 23:09, com 313 Sim e 119 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 10 - FDR PT-PCDOB-PV - § 13 DO ART. 2 DA SUBEMENDA SUBSTITUTIVA”; o registro 2349493-95 da API traz o mesmo placar.",
+      "text": "O DTQ 10 pede votação em separado do § 13 do “Artigo 2 da Subemenda Substitutiva”; a subemenda substitutiva (PRLE 2) altera o art. 2º da Lei nº 8.629/1993 e traz o parágrafo."
+    }
+  },
+  {
+    "id": "2349493-103",
+    "parentId": "2349493-82",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Impedimentos também para invasões que pressionam o Estado",
+    "summary": "Destaque da federação PT-PCdoB-PV para retirar o § 15 do art. 2º da Lei nº 8.629/1993, na redação da subemenda substitutiva, que aplica os mesmos impedimentos a quem invade propriedades rurais, públicas ou privadas, ou prédios públicos para forçar o Estado ou seus agentes a fazer ou deixar de fazer algo, inclusive executar políticas de reforma agrária ou de demarcação de terras indígenas.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 12 - FDR PT-PCDOB-PV - § 15 DO ART. 2º DA SUBEMENDA SUBSTITUTIVA",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12184",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2426932",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2435295"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12184) registra votação nominal eletrônica em 2024-05-22, encerrada em 2024-05-22 às 19:07, com 320 Sim e 113 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 12 - FDR PT-PCDOB-PV - § 15 DO ART. 2º DA SUBEMENDA SUBSTITUTIVA”; o registro 2349493-103 da API traz o mesmo placar.",
+      "text": "O DTQ 12 pede votação em separado do § 15 do art. 2º da subemenda substitutiva; a subemenda substitutiva (PRLE 2) altera o art. 2º da Lei nº 8.629/1993 e traz o parágrafo."
+    }
+  },
+  {
+    "id": "2349493-118",
+    "parentId": "2349493-82",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Crime de grilagem no Código Penal",
+    "summary": "Destaque da federação PT-PCdoB-PV para votar o art. 5º da emenda nº 3 (substitutiva global), apresentada por Valmir Assunção e outros deputados. Ele criava no Código Penal o crime de grilagem, apossar-se de terras públicas ou particulares mediante fraude e falsificação de títulos, com pena de 5 a 10 anos de reclusão e multa igual ao valor de mercado do imóvel, em dobro se cometido por servidor público ou em unidades de conservação, quilombos, terras indígenas ou terras da reforma agrária.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir o art. 5º da emenda no texto.",
+    "noMeaning": "Deixar o art. 5º da emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 13 - FDR PT-PCDOB-PV - ART. 5º DA EMENDA DE PLENÁRIO Nº 3",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12185",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2424639",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2434258"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12185) registra votação nominal eletrônica em 2024-05-22, encerrada em 2024-05-22 às 19:21, com 148 Sim e 292 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 13 - FDR PT-PCDOB-PV - ART. 5º DA EMENDA DE PLENÁRIO Nº 3”; o registro 2349493-118 da API traz o mesmo placar.",
+      "text": "O DTQ 13 pede destaque para o art. 5º da emenda de Plenário nº 3; o inteiro teor da emenda traz o art. 5º, que acrescenta os §§ 6º e 7º ao art. 171 do Código Penal. O parecer às emendas (PRLE 2) recomenda rejeitar a emenda nº 3."
+    }
+  },
+  {
+    "id": "2352476-155",
+    "parentId": "2352476-149",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Cota racial de recursos onde o partido preferir",
+    "summary": "Destaque da federação PSOL-REDE, no primeiro turno, para retirar a expressão final do art. 2º do substitutivo. Pelo texto, o art. 2º do substitutivo obriga os partidos a aplicar 30% dos recursos do Fundo Especial de Financiamento de Campanha e do Fundo Partidário destinados às campanhas em candidaturas de pessoas pretas e pardas “nas circunscrições que melhor atendam aos interesses e estratégias partidárias”. Numa PEC, o trecho destacado só fica com pelo menos 308 votos Sim.",
+    "decisionLabel": "Expressão mantida",
+    "yesMeaning": "Manter a expressão no texto.",
+    "noMeaning": "Retirar a expressão do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 4 - FDR. PSOL-REDE - EXPRESSÃO \"NAS CIRCUNSCRIÇÕES QUE (...)\", CONSTANTE...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12291",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2454423",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2449000"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12291) registra votação nominal eletrônica em 2024-07-11, encerrada em 2024-07-11 às 17:48, com 404 Sim e 23 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 4 - FDR. PSOL-REDE - EXPRESSÃO \"NAS CIRCUNSCRIÇÕES QUE (...)\", CONSTANTE...”; o registro 2352476-155 da API traz o mesmo placar.",
+      "text": "O DTQ 4 (PSOL-REDE, turno 1) pede votação em separado da expressão citada, que consta do art. 2º do substitutivo; o parecer com o substitutivo (PRLP 6) traz o art. 2º. O substitutivo publicado (SBT/SSP) é imagem sem texto extraível; a conferência usou o texto anexo ao PRLP 6, a versão adotada na votação principal."
+    }
+  },
+  {
+    "id": "2352476-171",
+    "parentId": "2352476-168",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Cota racial de recursos onde o partido preferir (2º turno)",
+    "summary": "Destaque da federação PSOL-REDE, no segundo turno, para retirar a mesma expressão do art. 2º votada no primeiro turno. Pelo texto, o art. 2º do substitutivo obriga os partidos a aplicar 30% dos recursos do Fundo Especial de Financiamento de Campanha e do Fundo Partidário destinados às campanhas em candidaturas de pessoas pretas e pardas “nas circunscrições que melhor atendam aos interesses e estratégias partidárias”. Numa PEC, o trecho destacado só fica com pelo menos 308 votos Sim.",
+    "decisionLabel": "Expressão mantida",
+    "yesMeaning": "Manter a expressão no texto.",
+    "noMeaning": "Retirar a expressão do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ. 5 - FDR PSOL-REDE - EXP. \"NAS CIRCUNSCRIÇÕES QUE MELHOR ATENDAM ...\"",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12295",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2454520",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2449060"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12295) registra votação nominal eletrônica em 2024-07-11, encerrada em 2024-07-11 às 19:03, com 379 Sim e 23 Não.",
+      "object": "O relatório identifica o objeto como “DTQ. 5 - FDR PSOL-REDE - EXP. \"NAS CIRCUNSCRIÇÕES QUE MELHOR ATENDAM ...\"”; o registro 2352476-171 da API traz o mesmo placar.",
+      "text": "O DTQ 5 (PSOL-REDE, turno 2; inteiro teor fora do pacote, obtido na ficha 2449060) pede votação em separado da expressão citada, que consta do art. 2º do substitutivo; o parecer com o substitutivo (PRLP 6) traz o art. 2º. O substitutivo publicado (SBT/SSP) é imagem sem texto extraível; a conferência usou o texto anexo ao PRLP 6, a versão adotada na votação principal."
+    }
+  },
+  {
+    "id": "2388029-88",
+    "parentId": "2388029-86",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda_redacao",
+    "title": "Emenda de redação: ementa e caput do art. 138 do ADCT",
+    "summary": "Emenda de redação de Gilson Daniel ao substitutivo da comissão especial. Ela reescreve a ementa e o caput do art. 138 do Ato das Disposições Constitucionais Transitórias (ADCT): ficam desvinculados, por dez anos, até 10% dos recursos, em cada ano, para preparação, mitigação e prevenção de desastres e até 5% para resposta e recuperação. Segundo a justificação, o objetivo é adaptar a ementa ao texto e melhorar a técnica legislativa.",
+    "decisionLabel": "Emenda de redação aprovada",
+    "yesMeaning": "Aprovar a emenda de redação.",
+    "noMeaning": "Manter a redação anterior.",
+    "outcome": "approved",
+    "reportObject": "EMENDA DE REDAÇÃO Nº 1",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12276",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2454191",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2448937"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12276) registra votação nominal eletrônica em 2024-07-11, encerrada em 2024-07-11 às 12:40, com 361 Sim e 3 Não.",
+      "object": "O relatório identifica o objeto como “EMENDA DE REDAÇÃO Nº 1”; o registro 2388029-88 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda de redação nº 1 (ERD 1) dá nova redação à ementa do substitutivo e ao caput do art. 138 do ADCT, constante do seu art. 2º."
+    }
+  },
+  {
+    "id": "2416733-46",
+    "parentId": "2416733-42",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Repasse interfinanceiro para emitir LCA",
+    "summary": "Destaque da federação PSOL-REDE para retirar o art. 9º do substitutivo. Ele altera a Lei nº 11.076/2004 para permitir que instituições financeiras usem instrumentos de repasse interfinanceiro de crédito rural, com condições, no lugar dos direitos creditórios exigidos para emitir Letras de Crédito do Agronegócio (LCA), e diz que os benefícios tributários dessas emissões seguem a legislação orçamentária.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 9º no texto.",
+    "noMeaning": "Retirar o art. 9º do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ. 2 - FDR PSOL - REDE - ART. 9º DO SUBSTITUTIVO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12151",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2423529",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2433652"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12151) registra votação nominal eletrônica em 2024-05-14, encerrada em 2024-05-14 às 21:02, com 402 Sim e 10 Não.",
+      "object": "O relatório identifica o objeto como “DTQ. 2 - FDR PSOL - REDE - ART. 9º DO SUBSTITUTIVO”; o registro 2416733-46 da API traz o mesmo placar.",
+      "text": "O DTQ 2 (PSOL-REDE) pede votação em separado do art. 9º do substitutivo; o parecer com o substitutivo (PRLP 4) traz o art. 9º, que acrescenta os §§ 3º e 4º ao art. 27 da Lei nº 11.076/2004."
+    }
+  },
+  {
+    "id": "2416804-48",
+    "parentId": "2416804-43",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Depreciação acelerada só para bens ligados à produção",
+    "summary": "Destaque da bancada do PL para retirar a palavra “intrinsecamente” do § 7º do art. 2º. Pelo parágrafo, a depreciação acelerada, benefício fiscal do projeto para máquinas e equipamentos novos, só vale para bens intrinsecamente relacionados com a produção ou a comercialização de bens e serviços.",
+    "decisionLabel": "Expressão mantida",
+    "yesMeaning": "Manter a palavra no texto.",
+    "noMeaning": "Retirar a palavra do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 4 - PL - VOTAÇÃO EM SEPARADO DA EXPR.: \"INTRINSECAMENTE\" ...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12079",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2397094",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2422030"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12079) registra votação nominal eletrônica em 2024-03-19, encerrada em 2024-03-19 às 20:33, com 305 Sim e 107 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 4 - PL - VOTAÇÃO EM SEPARADO DA EXPR.: \"INTRINSECAMENTE\" ...”; o registro 2416804-48 da API traz o mesmo placar.",
+      "text": "O DTQ 4 (PL) pede votação em separado da expressão “intrinsecamente” do § 7º do art. 2º do substitutivo; a subemenda substitutiva (PRLE 1) traz o § 7º com essa palavra."
+    }
+  },
+  {
+    "id": "2416804-51",
+    "parentId": "2416804-43",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Exigência de conteúdo nacional para a depreciação acelerada",
+    "summary": "Destaque da bancada do PL para retirar o § 12 do art. 2º, que permite condicionar a depreciação acelerada, benefício fiscal do projeto para máquinas e equipamentos novos, ao cumprimento, por bens específicos, de requisitos de promoção da indústria nacional e de agregação de valor no País.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 1 - PL - §12 DO ART. 2º DO SUBSTITUTIVO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12080",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2397134",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2421938"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12080) registra votação nominal eletrônica em 2024-03-19, encerrada em 2024-03-19 às 20:42, com 287 Sim, 96 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “DTQ 1 - PL - §12 DO ART. 2º DO SUBSTITUTIVO”; o registro 2416804-51 da API traz o mesmo placar.",
+      "text": "O DTQ 1 (PL) pede votação em separado do § 12 do art. 2º do substitutivo; a subemenda substitutiva (PRLE 1) e o substitutivo (PRLP 4) trazem o § 12 com essa redação."
+    }
+  },
+  {
+    "id": "2416804-54",
+    "parentId": "2416804-43",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda: lista mensal de empresas habilitadas ao benefício",
+    "summary": "Destaque da bancada do PL para votar a emenda nº 12, de Adriana Ventura. Ela obrigava o Ministério do Desenvolvimento, Indústria, Comércio e Serviços a publicar todo mês, em seu site, a lista das empresas habilitadas e das que tiveram o pedido negado, com os valores das operações beneficiadas e as datas dos pedidos. O relator, Márcio Honaiser, recomendou rejeitá-la.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 3 - PL - EMENDA DE PLENÁRIO N° 12",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12081",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2397061",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2422008"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12081) registra votação nominal eletrônica em 2024-03-19, encerrada em 2024-03-19 às 20:52, com 142 Sim e 287 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 3 - PL - EMENDA DE PLENÁRIO N° 12”; o registro 2416804-54 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda nº 12 (EMP 12) acrescenta o parágrafo único ao art. 4º com a publicação mensal; o parecer às emendas (PRLE 1) conclui, no mérito, pela rejeição da emenda nº 12."
+    }
+  },
+  {
+    "id": "2430143-76",
+    "parentId": "2430143-72",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Redução maior de IBS e CBS para imóveis",
+    "summary": "Destaque da bancada do PL para votar a emenda nº 747, de Ricardo Salles. Ela aumentava de 40% para 60% a redução das alíquotas do IBS e da CBS, os novos tributos sobre bens e serviços, nas operações com bens imóveis. O parecer do relator, Reginaldo Lopes, recomendou rejeitá-la.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 10 - PL - EMENDA DE PLENÁRIO N° 747",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12272",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2453425",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2448579"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12272) registra votação nominal eletrônica em 2024-07-10, encerrada em 2024-07-10 às 20:12, com 229 Sim, 233 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “DTQ 10 - PL - EMENDA DE PLENÁRIO N° 747”; o registro 2430143-76 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda de Plenário nº 747 (EMP 747) dá nova redação ao art. 256; a subemenda substitutiva anexa ao parecer às emendas (PRLE 3) prevê no art. 256, do capítulo dos bens imóveis, redução de 40%, e o parecer não lista a emenda nº 747 entre as aprovadas."
+    }
+  },
+  {
+    "id": "2430143-95",
+    "parentId": "2430143-72",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Imposto Seletivo sobre armas e munições",
+    "summary": "Destaque da federação PSOL-REDE para votar a emenda nº 104, de Erika Hilton. Ela incluía armas e munições, exceto as destinadas ao poder público, entre os bens sujeitos ao Imposto Seletivo, cobrado sobre bens prejudiciais à saúde ou ao meio ambiente. O parecer do relator, Reginaldo Lopes, recomendou rejeitá-la.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 5 - FDR PSOL - REDE - EMENDA DE PLENÁRIO N° 104",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12273",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2451518",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2447635"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12273) registra votação nominal eletrônica em 2024-07-10, encerrada em 2024-07-10 às 20:44, com 155 Sim, 316 Não e 2 abstenções.",
+      "object": "O relatório identifica o objeto como “DTQ 5 - FDR PSOL - REDE - EMENDA DE PLENÁRIO N° 104”; o registro 2430143-95 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda de Plenário nº 104 (EMP 104) acrescenta armas e munições ao art. 393 e ao Anexo XVIII; o parecer às emendas (PRLE 3) não lista a emenda nº 104 entre as aprovadas e conclui pela rejeição das demais."
+    }
+  },
+  {
+    "id": "2430143-98",
+    "parentId": "2430143-72",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Carnes, peixes, queijos e sal com alíquota zero",
+    "summary": "Destaque da bancada do PL para votar a emenda nº 766, de Rodolfo Nogueira. Ela passa carnes bovina, suína, ovina, caprina e de aves, peixes, os queijos listados e o sal para a lista de alimentos com alíquota zero de IBS e CBS (Anexo I), tirando-os da lista com redução de 60% (Anexo VIII).",
+    "decisionLabel": "Emenda aprovada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "approved",
+    "reportObject": "DTQ 13 - PL - EMENDA DE PLENÁRIO N° 766",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12274",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2453566",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2448626"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12274) registra votação nominal eletrônica em 2024-07-10, encerrada em 2024-07-10 às 21:41, com 477 Sim, 3 Não e 2 abstenções.",
+      "object": "O relatório identifica o objeto como “DTQ 13 - PL - EMENDA DE PLENÁRIO N° 766”; o registro 2430143-98 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda de Plenário nº 766 (EMP 766) acrescenta os itens 16 a 19 ao Anexo I e retira os itens 1, 2, 5 e 12 do Anexo VIII; na subemenda substitutiva (PRLE 3), esses itens do Anexo VIII são carnes, peixes, queijos e sal de mesa iodado."
+    }
+  },
+  {
+    "id": "2430143-142",
+    "parentId": "2430143-140",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "dispositivos",
+    "title": "Mudanças do Senado rejeitadas na regulamentação tributária",
+    "summary": "Na votação do substitutivo do Senado, a Câmara votou em conjunto as mudanças do Senado que tinham parecer pela rejeição do relator, Reginaldo Lopes. Entre elas estavam a inclusão dos representantes comerciais na redução de 30% para profissões intelectuais, o tratamento de serviços de saúde para o saneamento, novas regras para bens e serviços de soberania, segurança nacional e segurança cibernética e a retirada das bebidas açucaradas do Imposto Seletivo. Nesses pontos volta o texto aprovado antes pela Câmara.",
+    "decisionLabel": "Dispositivos rejeitados",
+    "yesMeaning": "Aprovar esses dispositivos do Senado.",
+    "noMeaning": "Rejeitar esses dispositivos, como recomendou o relator.",
+    "outcome": "rejected",
+    "reportObject": "DISPOSITIVOS DO SUBSTITUTIVO DO SENADO FEDERAL COM PARECER PELA REJEIÇÃO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12661",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2843212",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2479835"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12661) registra votação nominal eletrônica em 2024-12-17, encerrada em 2024-12-17 às 18:34, com 18 Sim, 328 Não e 7 abstenções.",
+      "object": "O relatório identifica o objeto como “DISPOSITIVOS DO SUBSTITUTIVO DO SENADO FEDERAL COM PARECER PELA REJEIÇÃO”; o registro 2430143-142 da API traz o mesmo placar.",
+      "text": "O parecer do relator ao substitutivo do Senado (PRLP 4) descreve as principais mudanças do Senado e lista as que recomenda rejeitar, com o restabelecimento do texto da Câmara, entre elas o inciso XIX do art. 127, o § 2º do art. 130, o art. 142 e os Anexos XI e XII, e a supressão das bebidas açucaradas do Anexo XVII."
+    }
+  },
+  {
+    "id": "2430143-144",
+    "parentId": "2430143-140",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda_redacao",
+    "title": "Emenda de redação nº 2 do relator",
+    "summary": "O relator, Reginaldo Lopes, propôs ajustes de redação ao substitutivo do Senado. A emenda deixa claro que a desoneração de planos de saúde de autogestão sem fins lucrativos alcança também unidades separadas dentro de outras entidades, ajusta a tributação na venda de bens dados em garantia, ajusta a regra de alíquota zero para o gás natural usado como insumo industrial e combustível de transporte e corrige remissões e erros materiais.",
+    "decisionLabel": "Emenda de redação aprovada",
+    "yesMeaning": "Aprovar a nova redação.",
+    "noMeaning": "Manter a redação anterior.",
+    "outcome": "approved",
+    "reportObject": "EMENDA DE REDAÇÃO Nº 2",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12662",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2843701",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2480539"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12662) registra votação nominal eletrônica em 2024-12-17, encerrada em 2024-12-17 às 18:45, com 314 Sim, 117 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “EMENDA DE REDAÇÃO Nº 2”; o registro 2430143-144 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda de redação nº 2 (ERD 2) traz as novas redações dos arts. 26, 200, 213, 323, 329, 422, 468 e 545 e do Anexo III, com a justificativa de cada ajuste."
+    }
+  },
+  {
+    "id": "2433327-54",
+    "parentId": "2433327-49",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda: adiar contribuições previdenciárias de municípios gaúchos",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BL MDB (PODE)”), com requerimento assinado por Romero Rodrigues (PODE-PB, líder), para votar a emenda nº 5, de Gilson Daniel. Ela incluía as dívidas dos municípios com o Regime Geral de Previdência Social no adiamento do projeto e adiava as contribuições previdenciárias de abril de 2024 a março de 2027 dos municípios do Rio Grande do Sul afetados pela calamidade para abril de 2027 a março de 2030, com opção de parcelar em 64 meses. O relator, Afonso Motta, recomendou rejeitar todas as emendas de Plenário por ampliarem o impacto orçamentário e financeiro do projeto.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ. 6 - BL MDB (PODE) - EMENDA DE PLENÁRIO Nº 5",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12155",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2423565",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2433643"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12155) registra votação nominal eletrônica em 2024-05-14, encerrada em 2024-05-14 às 23:18, com 199 Sim, 221 Não e 2 abstenções.",
+      "object": "O relatório identifica o objeto como “DTQ. 6 - BL MDB (PODE) - EMENDA DE PLENÁRIO Nº 5”; o registro 2433327-54 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda nº 5 (EMP 5) altera o § 1º do art. 2º e acrescenta o artigo sobre as contribuições previdenciárias; o parecer às emendas (PRLE 1) resume a emenda e conclui pela rejeição das emendas 1 a 5. O requerimento traz nome e cargo, sem partido; partido e UF vêm do registro de votos da API para esta votação."
+    }
+  },
+  {
+    "id": "2433327-57",
+    "parentId": "2433327-49",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda: perdoar 36 meses de parcelas da dívida do RS",
+    "summary": "Destaque da bancada do PL para votar a emenda nº 3, de Marcel van Hattem. Ela anistiava por 36 meses as parcelas das dívidas com a União que o projeto adia, no caso do Rio Grande do Sul e de seus municípios afetados pela calamidade; o saldo devedor seria atualizado no período e os pagamentos voltariam ao fim desse período. O relator, Afonso Motta, recomendou rejeitar todas as emendas de Plenário por ampliarem o impacto orçamentário e financeiro do projeto.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ. 3 - PL - EMENDA DE PLENÁRIO Nº 3",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12156",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2423513",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2433600"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12156) registra votação nominal eletrônica em 2024-05-14, encerrada em 2024-05-14 às 23:48, com 215 Sim, 226 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “DTQ. 3 - PL - EMENDA DE PLENÁRIO Nº 3”; o registro 2433327-57 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda nº 3 (EMP 3) acrescenta o § 13 ao art. 2º com a anistia de 36 meses; o parecer às emendas (PRLE 1) conclui pela rejeição das emendas 1 a 5."
+    }
+  },
+  {
+    "id": "2433327-66",
+    "parentId": "2433327-49",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Empréstimos entre entes para despesas de PPPs e concessões",
+    "summary": "Destaque da bancada do PL para retirar do inciso I do § 1º do art. 35 da Lei de Responsabilidade Fiscal a expressão “ressalvadas as operações destinadas a financiar a estruturação de projetos ou a garantir contraprestações em contratos de parceria público-privada ou de concessão”. Segundo o parecer do relator, ela permite que operações de crédito entre entes da Federação financiem despesas correntes nesses casos.",
+    "decisionLabel": "Expressão mantida",
+    "yesMeaning": "Manter a expressão no texto.",
+    "noMeaning": "Retirar a expressão do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ. 2 - PL - EXP. \"RESSALVADAS AS OPERAÇÕES DESTINADAS A FINANCIAR...\"",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12158",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2423401",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2433513"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12158) registra votação nominal eletrônica em 2024-05-14, encerrada em 2024-05-15 às 00:23, com 277 Sim e 145 Não.",
+      "object": "O relatório identifica o objeto como “DTQ. 2 - PL - EXP. \"RESSALVADAS AS OPERAÇÕES DESTINADAS A FINANCIAR...\"”; o registro 2433327-66 da API traz o mesmo placar.",
+      "text": "O DTQ 2 (PL) pede votação em separado da expressão citada, do inciso I do § 1º do art. 35 da Lei Complementar nº 101/2000, constante do art. 4º do projeto; o substitutivo (PRLP 3) traz a expressão no art. 4º e explica seu efeito."
+    }
+  },
+  {
+    "id": "2448974-50",
+    "parentId": "2448974-43",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Prorrogação também das parcelas a vencer",
+    "summary": "Destaque da federação PT-PCdoB-PV para retirar a expressão “e vincendas” do art. 1º. Com ela, a prorrogação por até 48 meses vale para as parcelas vencidas e também para as que ainda vão vencer das operações de crédito rural contratadas de 2022 a 2024 em municípios com calamidade ou emergência por seca, estiagem ou excesso de chuva.",
+    "decisionLabel": "Expressão mantida",
+    "yesMeaning": "Manter a expressão no texto.",
+    "noMeaning": "Retirar a expressão do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ. 4 - FDR. PT-PCDOB-PV - EXPRESSÃO \"E VINCENDAS\", CONSTANTE DO ART. 1º",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12319",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2465090",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2453297"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12319) registra votação nominal eletrônica em 2024-08-14, encerrada em 2024-08-14 às 22:21, com 283 Sim, 64 Não e 2 abstenções.",
+      "object": "O relatório identifica o objeto como “DTQ. 4 - FDR. PT-PCDOB-PV - EXPRESSÃO \"E VINCENDAS\", CONSTANTE DO ART. 1º”; o registro 2448974-50 da API traz o mesmo placar.",
+      "text": "O DTQ 4 pede votação em separado da expressão “e vincendas” do art. 1º; o texto do projeto vindo do Senado autoriza a prorrogação das “parcelas vencidas e vincendas” no art. 1º."
+    }
+  },
+  {
+    "id": "2448974-56",
+    "parentId": "2448974-43",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Calamidade reconhecida por municípios e estados",
+    "summary": "Destaque da federação PT-PCdoB-PV para retirar do art. 1º a expressão “Munícipio, Distrito Federal, Estado ou”. Com ela, a prorrogação das dívidas de crédito rural vale onde a calamidade ou emergência foi reconhecida em ato oficial do município, do Distrito Federal, do estado ou do governo federal; sem ela, só o ato do governo federal contaria.",
+    "decisionLabel": "Expressão mantida",
+    "yesMeaning": "Manter a expressão no texto.",
+    "noMeaning": "Retirar a expressão do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ. 2 - FDR. PT-PCDOB-PV - EXPR. \"MUNICÍPIOS (...) ESTADO OU\" CONST. DO ART. 1º",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12320",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2465085",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2453293"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12320) registra votação nominal eletrônica em 2024-08-14, encerrada em 2024-08-14 às 22:40, com 292 Sim e 89 Não.",
+      "object": "O relatório identifica o objeto como “DTQ. 2 - FDR. PT-PCDOB-PV - EXPR. \"MUNICÍPIOS (...) ESTADO OU\" CONST. DO ART. 1º”; o registro 2448974-56 da API traz o mesmo placar.",
+      "text": "O DTQ 2 pede votação em separado da expressão “Munícipio, Distrito Federal, Estado ou” do art. 1º; o texto do projeto vindo do Senado diz “reconhecidos em ato oficial do Munícipio, Distrito Federal, Estado ou governo federal”."
+    }
+  },
+  {
+    "id": "2454400-46",
+    "parentId": "2454400-42",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda do PSOL-REDE: gastos com pessoal fora do limite dos estados",
+    "summary": "Destaque da federação PSOL-REDE para votar a emenda nº 20, da deputada Erika Hilton. Ela tirava do limite de crescimento das despesas primárias dos estados que aderirem ao Programa de Pleno Pagamento de Dívidas dos Estados (Propag) os gastos com pessoal ativo, inativo e pensionistas de todos os Poderes, órgãos e entidades da administração indireta do estado. O relator, Doutor Luizinho, recomendou rejeitá-la.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 1 - FDR PSOL-REDE - EMENDA DE PLENÁRIO Nº 20",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12606",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2832192",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2474911"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12606) registra votação nominal eletrônica em 2024-12-10, encerrada em 2024-12-10 às 22:47, com 110 Sim e 307 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 1 - FDR PSOL-REDE - EMENDA DE PLENÁRIO Nº 20”; o registro 2454400-46 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda nº 20 (EMP 20) dá nova redação ao § 3º do art. 7º, acrescentando as despesas com pessoal às exceções do limite; o parecer às emendas (PRLE 2) traz o § 3º sem essa exceção e inclui a emenda nº 20 entre as rejeitadas."
+    }
+  },
+  {
+    "id": "2454704-55",
+    "parentId": "2454704-53",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emendas",
+    "title": "Emendas com parecer contrário do relator",
+    "summary": "A Câmara votou em conjunto as emendas de Plenário que tinham parecer pela rejeição. O relator, José Guimarães, recomendou rejeitar todas porque o texto já representava o acordo político possível. A emenda nº 18 foi votada em separado logo depois.",
+    "decisionLabel": "Emendas rejeitadas",
+    "yesMeaning": "Aprovar as emendas com parecer pela rejeição.",
+    "noMeaning": "Rejeitar essas emendas, como recomendou o relator.",
+    "outcome": "rejected",
+    "reportObject": "EMENDAS COM PARECER PELA REJEIÇÃO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12382",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2476139",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2458064"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12382) registra votação nominal eletrônica em 2024-09-11, encerrada em 2024-09-12 às 00:08, com 57 Sim e 228 Não.",
+      "object": "O relatório identifica o objeto como “EMENDAS COM PARECER PELA REJEIÇÃO”; o registro 2454704-55 da API traz o mesmo placar.",
+      "text": "O parecer às emendas de Plenário (PRLE 2), do relator José Guimarães, conclui pela rejeição de todas as emendas porque o texto já representa o acordo político possível; o parecer não resume o conteúdo de cada emenda."
+    }
+  },
+  {
+    "id": "2454704-58",
+    "parentId": "2454704-53",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Multa menor para quem não declarar benefícios fiscais",
+    "summary": "Destaque da bancada do PL para votar a emenda nº 18, de Bia Kicis. Ela calculava a multa pela falta ou atraso da declaração de benefícios fiscais sobre o valor do benefício usado, e não sobre a receita bruta da empresa, com percentuais menores para atrasos de até 29 dias, e reduzia a multa sobre valores omitidos ou incorretos de 3% (mínimo de R$ 500) para 1% (mínimo de R$ 200).",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ. 5 - PL - EMENDA DE PLENÁRIO Nº 18",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12383",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2475864",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2458022"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12383) registra votação nominal eletrônica em 2024-09-11, encerrada em 2024-09-12 às 00:19, com 133 Sim e 204 Não.",
+      "object": "O relatório identifica o objeto como “DTQ. 5 - PL - EMENDA DE PLENÁRIO Nº 18”; o registro 2454704-58 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda nº 18 (EMP 18) dá nova redação aos arts. 43 e 44; o texto do projeto traz no art. 44 a multa sobre a receita bruta e a multa de 3%, no mínimo R$ 500."
+    }
+  },
+  {
+    "id": "2454704-64",
+    "parentId": "2454704-53",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Declaração e requisitos para empresas com benefícios fiscais",
+    "summary": "Destaque da bancada do PL para retirar o art. 43, que obriga a empresa que usa benefício fiscal a informar à Receita Federal, em declaração eletrônica simplificada, os incentivos de que usufrui e o valor correspondente, e condiciona os benefícios a requisitos como regularidade cadastral, ausência de certas sanções e adesão ao Domicílio Tributário Eletrônico.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 43 no texto.",
+    "noMeaning": "Retirar o art. 43 do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ. 4 - PL - ARTIGO 43.",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12384",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2468612",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2458033"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12384) registra votação nominal eletrônica em 2024-09-11, encerrada em 2024-09-12 às 00:32, com 206 Sim e 70 Não.",
+      "object": "O relatório identifica o objeto como “DTQ. 4 - PL - ARTIGO 43.”; o registro 2454704-64 da API traz o mesmo placar.",
+      "text": "O DTQ 4 (PL) pede votação em separado do art. 43, para fins de sua supressão; o texto do projeto recebido do Senado traz o art. 43, no capítulo das condições para a fruição de benefícios fiscais."
+    }
+  },
+  {
+    "id": "2454704-67",
+    "parentId": "2454704-53",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Multas para quem não entregar a declaração de benefícios fiscais",
+    "summary": "Destaque da bancada do PL para retirar o art. 44, que fixa multa mensal de 0,5% a 1,5% da receita bruta, conforme a faixa de receita, para a empresa que deixar de entregar ou atrasar a declaração de benefícios fiscais, limitada a 30% do valor dos benefícios, e multa de 3%, no mínimo R$ 500, sobre valores omitidos ou incorretos.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 44 no texto.",
+    "noMeaning": "Retirar o art. 44 do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ. 2 - PL - ARTIGO 44.",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12385",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2468612",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2458025"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12385) registra votação nominal eletrônica em 2024-09-11, encerrada em 2024-09-12 às 00:42, com 200 Sim e 80 Não.",
+      "object": "O relatório identifica o objeto como “DTQ. 2 - PL - ARTIGO 44.”; o registro 2454704-67 da API traz o mesmo placar.",
+      "text": "O DTQ 2 (PL) pede votação em separado do art. 44, para fins de sua supressão; o texto do projeto recebido do Senado traz o art. 44 com as multas."
+    }
+  },
+  {
+    "id": "2454704-70",
+    "parentId": "2454704-53",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Recursos esquecidos em bancos passam à União",
+    "summary": "Destaque da bancada do PL para retirar o capítulo VIII (arts. 45 a 48), sobre recursos esquecidos. Valores em contas de depósito com cadastro não atualizado só podem ser reclamados nos bancos até 30 dias após a publicação da lei; depois, os saldos passam à União, com edital para contestação e prazo de seis meses para ação judicial. O art. 48 permite reclamar esses valores nas instituições financeiras até 31 de dezembro de 2027.",
+    "decisionLabel": "Capítulo mantido",
+    "yesMeaning": "Manter o capítulo VIII no texto.",
+    "noMeaning": "Retirar o capítulo VIII do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ. 3 - PL - CAPÍTULO VIII",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12386",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2468612",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2458026"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12386) registra votação nominal eletrônica em 2024-09-11, encerrada em 2024-09-12 às 01:04, com 189 Sim e 140 Não.",
+      "object": "O relatório identifica o objeto como “DTQ. 3 - PL - CAPÍTULO VIII”; o registro 2454704-70 da API traz o mesmo placar.",
+      "text": "O DTQ 3 (PL) pede votação em separado do capítulo VIII, para fins de sua supressão; o texto do projeto recebido do Senado traz o capítulo “Dos Recursos Esquecidos” (arts. 45 a 48)."
+    }
+  },
+  {
+    "id": "2454704-76",
+    "parentId": "2454704-53",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda_redacao",
+    "title": "Emenda de redação sobre os recursos esquecidos",
+    "summary": "Emenda de redação da relatora, Any Ortiz, ao § 2º do art. 45. Ela diz que os saldos não reclamados que passam à União são receita primária considerada para verificar o cumprimento da meta de resultado primário da lei de diretrizes orçamentárias, e aplica a mesma regra aos valores equivalentes ao fluxo dos depósitos judiciais e extrajudiciais do capítulo VI.",
+    "decisionLabel": "Emenda de redação aprovada",
+    "yesMeaning": "Aprovar a emenda de redação.",
+    "noMeaning": "Manter a redação anterior.",
+    "outcome": "approved",
+    "reportObject": "EMENDA DE REDAÇÃO Nº 1",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12388",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2475969",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2458047"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12388) registra votação nominal eletrônica em 2024-09-12, encerrada em 2024-09-12 às 10:45, com 231 Sim e 54 Não.",
+      "object": "O relatório identifica o objeto como “EMENDA DE REDAÇÃO Nº 1”; o registro 2454704-76 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda de redação nº 1 (ERD 1) dá nova redação ao § 2º do art. 45; o parecer de Plenário (PRLP 1) explica o ajuste entre os capítulos VI e VIII."
+    }
+  },
+  {
+    "id": "2466104-97",
+    "parentId": "2466104-95",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "dispositivos",
+    "title": "Mudanças do Senado com parecer contrário do relator",
+    "summary": "Na votação do substitutivo do Senado, a Câmara votou em bloco as mudanças do Senado que o relator, Elmar Nascimento, recomendou rejeitar: o aumento de 8 para 10 emendas por bancada estadual (art. 3º); a retirada da regra que obriga as emendas de comissão a destinar 50% a ações e serviços públicos de saúde (§ 4º do art. 4º); a preferência para quaisquer obras inacabadas, e não só as iniciadas por emendas do próprio autor (art. 7º); e a possibilidade de órgãos de fiscalização e controle pedirem ajustes nos planos de trabalho (§ 2º do art. 8º). No substitutivo do Senado, cada dispositivo só é aprovado com pelo menos 257 votos Sim (maioria absoluta, por ser lei complementar).",
+    "decisionLabel": "Dispositivos rejeitados",
+    "yesMeaning": "Aprovar esses dispositivos do Senado.",
+    "noMeaning": "Rejeitar esses dispositivos do Senado, como recomendou o relator.",
+    "outcome": "rejected",
+    "reportObject": "SUBSTITUTIVO DO SENADO FEDERAL COM PARECER PELA REJEIÇÃO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12492",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2823580",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2470097"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12492) registra votação nominal eletrônica em 2024-11-19, encerrada em 2024-11-19 às 18:04, com 41 Sim e 343 Não.",
+      "object": "O relatório identifica o objeto como “SUBSTITUTIVO DO SENADO FEDERAL COM PARECER PELA REJEIÇÃO”; o registro 2466104-97 da API traz o mesmo placar.",
+      "text": "O parecer de Plenário ao substitutivo do Senado (PRLP 2) aprova o substitutivo, exceto o art. 3º, a supressão do § 4º do art. 4º, o art. 7º e o § 2º do art. 8º, pelos quais conclui pela rejeição; a descrição da API registra a rejeição desses mesmos dispositivos."
+    }
+  },
+  {
+    "id": "2466104-52",
+    "parentId": "2466104-39",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda do PSOL-REDE: menos dinheiro para emendas não impositivas",
+    "summary": "Destaque da federação PSOL-REDE para votar a emenda nº 29, da deputada Erika Hilton. Ela reduzia de R$ 11,5 bilhões para R$ 3,45 bilhões o valor somado ao limite de emendas parlamentares em 2025 para as emendas não impositivas e, a partir de 2026, corrigia o limite das emendas previstas nos §§ 9º e 12 do art. 166 da Constituição pela inflação (IPCA), e não pela correção do limite de despesas da Lei Complementar nº 200/2023.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 11 - FDR. PSOL, REDE - EMENDA Nº 29",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12457",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2815974",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2466879"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12457) registra votação nominal eletrônica em 2024-11-05, encerrada em 2024-11-05 às 22:30, com 25 Sim e 348 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “DTQ 11 - FDR. PSOL, REDE - EMENDA Nº 29”; o registro 2466104-52 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda nº 29 (EMP 29) dá nova redação aos §§ 3º e 4º do art. 11; a subemenda substitutiva (PRLE 1) traz R$ 11,5 bilhões e a correção pelo art. 4º da Lei Complementar nº 200/2023, e o relator conclui pela rejeição das emendas não acolhidas."
+    }
+  },
+  {
+    "id": "2473375-78",
+    "parentId": "2473375-59",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Teto para o aumento real do salário mínimo até 2030",
+    "summary": "Destaque da federação PSOL-REDE para retirar do art. 4º a expressão “nem superior ao índice”. O artigo diz que, entre 2025 e 2030, o aumento real previsto na Lei nº 14.663/2023, que o parecer do relator associa ao reajuste do salário mínimo, não será inferior ao índice mínimo nem superior ao índice apurado pelas regras do art. 5º da Lei Complementar nº 200/2023 (arcabouço fiscal). A expressão é a que fixa esse teto.",
+    "decisionLabel": "Expressão mantida",
+    "yesMeaning": "Manter a expressão no texto.",
+    "noMeaning": "Retirar a expressão do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 11 - FDR PSOL-REDE - EXPRESSÃO \"NEM SUPERIOR AO ÍNDICE\", ...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12688",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2846220",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2481066"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12688) registra votação nominal eletrônica em 2024-12-19, encerrada em 2024-12-19 às 21:05, com 277 Sim e 174 Não.",
+      "object": "A API registra “Mantido o texto” (277 Sim, 174 Não, 1 abstenção); o relatório 12688 identifica o destaque 11 da federação PSOL-REDE sobre a expressão “nem superior ao índice”.",
+      "text": "O DTQ 11 (PSOL-REDE) pede votação em separado da expressão “nem superior ao índice”, do art. 4º; a subemenda substitutiva global (SSP 1, anexa ao PRLE 1) traz o art. 4º, e o parecer resume emendas que tratavam esse artigo como regra de reajuste do salário mínimo."
+    }
+  },
+  {
+    "id": "2473389-62",
+    "parentId": "2473389-58",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Exceção para incentivos ao esporte e à reciclagem",
+    "summary": "Destaque da bancada do PL para votar a emenda nº 9, de Luiz Lima. Ela excluía da proibição de conceder, ampliar ou prorrogar benefícios tributários, prevista nos novos arts. 6º-A e 6º-B da Lei Complementar nº 200/2023 (arcabouço fiscal) em caso de déficit primário ou de queda das despesas discricionárias, os incentivos das Leis nº 11.438/2006 e nº 14.260/2021, que tratam, segundo a justificação, de esporte e reciclagem. O relator, Átila Lira, recomendou rejeitar todas as emendas de Plenário.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 17 - PL - EMENDA DE PLENÁRIO Nº 9",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12667",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2843532",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2480449"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12667) registra votação nominal eletrônica em 2024-12-17, encerrada em 2024-12-17 às 22:41, com 227 Sim e 233 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 17 - PL - EMENDA DE PLENÁRIO Nº 9”; o registro 2473389-62 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda nº 9 (EMP 9) dá nova redação ao inciso I dos arts. 6º-A e 6º-B; o substitutivo (PRLP 3) traz as vedações nesses artigos e o parecer às emendas (PRLE 1) conclui pela rejeição de todas."
+    }
+  },
+  {
+    "id": "2473389-65",
+    "parentId": "2473389-58",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Metas anuais de redução de benefícios fiscais",
+    "summary": "Destaque da federação PSOL-REDE para votar a emenda nº 19, de Rogério Correia e Lindbergh Farias. Ela obrigava o Poder Executivo a enviar ao Congresso, junto com o projeto de lei de diretrizes orçamentárias, projeto de lei com metas anuais de redução dos benefícios fiscais de natureza tributária, com corte de no mínimo 10% do total das renúncias em 2025. O relator, Átila Lira, recomendou rejeitar todas as emendas de Plenário.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 14 - FDR. PSOL-REDE - EMENDA DE PLENÁRIO Nº 19",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12668",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2843592",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2480481"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12668) registra votação nominal eletrônica em 2024-12-17, encerrada em 2024-12-17 às 22:53, com 186 Sim e 256 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 14 - FDR. PSOL-REDE - EMENDA DE PLENÁRIO Nº 19”; o registro 2473389-65 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda nº 19 (EMP 19) acrescenta o art. 6º-C com as metas de redução; o parecer às emendas (PRLE 1) conclui pela rejeição de todas."
+    }
+  },
+  {
+    "id": "2473389-68",
+    "parentId": "2473389-58",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Corte mínimo de 10% nos benefícios fiscais até 2031",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BL. UNIÃO…”), com requerimento assinado por Afonso Motta (PDT-RS, vice-líder do bloco), para votar a emenda nº 38, de Mauro Benevides Filho. Ela reduzia os benefícios tributários federais em no mínimo 10% entre 2026 e 2031 (2% em 2026 e 1,25% ao ano de 2027 a 2031, sobre os valores de 2025) e proibia criar ou prorrogar benefícios sem cortar outros de igual natureza e valor. O relator, Átila Lira, recomendou rejeitar todas as emendas de Plenário.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 16 - BL. UNIÃO ... - EMENDA DE PLENÁRIO Nº 38",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12669",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2843833",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2480609"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12669) registra votação nominal eletrônica em 2024-12-17, encerrada em 2024-12-17 às 23:04, com 59 Sim e 385 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 16 - BL. UNIÃO ... - EMENDA DE PLENÁRIO Nº 38”; o registro 2473389-68 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda nº 38 (EMP 38) acrescenta o art. 6º-C com a redução mínima de 10%; o parecer às emendas (PRLE 1) conclui pela rejeição de todas."
+    }
+  },
+  {
+    "id": "2473389-80",
+    "parentId": "2473389-58",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Bloqueio limitado a emendas parlamentares não impositivas",
+    "summary": "Emenda aglutinativa de José Guimarães, assinada também por líderes de blocos, que muda o art. 3º do substitutivo: o contingenciamento e o bloqueio passam a valer só para emendas parlamentares não impositivas, na mesma proporção das demais despesas discricionárias e limitados a 15% do total dessas dotações. A emenda também revoga a Lei Complementar nº 207/2024.",
+    "decisionLabel": "Emenda aprovada",
+    "yesMeaning": "Aprovar a emenda aglutinativa.",
+    "noMeaning": "Rejeitar a emenda aglutinativa.",
+    "outcome": "approved",
+    "reportObject": "EMENDA AGLUTINATIVA Nº 1",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12672",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2844838",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2481079"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12672) registra votação nominal eletrônica em 2024-12-18, encerrada em 2024-12-18 às 19:35, com 444 Sim e 16 Não.",
+      "object": "O relatório identifica o objeto como “EMENDA AGLUTINATIVA Nº 1”; o registro 2473389-80 da API traz o mesmo placar.",
+      "text": "O inteiro teor da Emenda Aglutinativa nº 1 dá nova redação ao art. 3º do substitutivo, que no parecer PRLP 3 alcançava as emendas parlamentares em geral, e inclui artigo que revoga a Lei Complementar nº 207/2024."
+    }
+  },
+  {
+    "id": "347421-224",
+    "parentId": "347421-221",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Recursos dos fundos do art. 212-A para alimentação escolar",
+    "summary": "No segundo turno, destaque da federação PSOL-REDE para retirar o § 4º do art. 212-A da Constituição: os Estados, o Distrito Federal e os Municípios podem usar recursos dos fundos do inciso I do art. 212-A para complementar o dinheiro recebido da União para programas de alimentação escolar na educação básica. Numa PEC, o trecho destacado só fica com pelo menos 308 votos Sim.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 11 - FDR PSOL ... - §4º DO ART. 212-A DA CF ALTERADO PELO ART. 1º - 2º TURNO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12684",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2846245",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2481477"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12684) registra votação nominal eletrônica em 2024-12-19, encerrada em 2024-12-19 às 18:07, com 358 Sim e 129 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 11 - FDR PSOL ... - §4º DO ART. 212-A DA CF ALTERADO PELO ART. 1º - 2º TURNO”; o registro 347421-224 da API traz o mesmo placar.",
+      "text": "O DTQ 11 (PSOL-REDE), do segundo turno, pede votação em separado do § 4º do art. 212-A da Constituição, alterado pelo art. 1º; a redação final da Câmara (RDF 2), de 19/12/2024, traz o parágrafo, como a Emenda Aglutinativa nº 1."
+    }
+  },
+  {
+    "id": "347421-202",
+    "parentId": "347421-200",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Renda para o benefício do art. 203, V: sem deduções fora da lei",
+    "summary": "Destaque da bancada do PL para votação em separado do parágrafo único do art. 203 da Constituição, incluído pela emenda aglutinativa: para comprovar a renda que dá direito ao benefício do inciso V do art. 203, concedido administrativa ou judicialmente, ficariam proibidas deduções não previstas em lei. Numa PEC, o trecho destacado só fica com pelo menos 308 votos Sim.",
+    "decisionLabel": "Trecho retirado",
+    "yesMeaning": "Manter o parágrafo único no texto.",
+    "noMeaning": "Retirar o parágrafo único do texto.",
+    "outcome": "removed",
+    "reportObject": "DTQ 10 - PL - PARÁG. ÚNICO DO ART. 203 CONST. DA EMENDA AGLUTINATIVA..",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12680",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2845167",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2481261"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12680) registra votação nominal eletrônica em 2024-12-19, encerrada em 2024-12-19 às 15:11, com 4 Sim e 360 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 10 - PL - PARÁG. ÚNICO DO ART. 203 CONST. DA EMENDA AGLUTINATIVA..”; o registro 347421-202 da API traz o mesmo placar.",
+      "text": "O DTQ 10 (PL) pede votação em separado do parágrafo único do art. 203 constante da Emenda Aglutinativa nº 1, que traz o dispositivo; a redação final (RDF 2) não altera mais o art. 203."
+    }
+  },
+  {
+    "id": "347421-205",
+    "parentId": "347421-200",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Até 10% da complementação do Fundeb para tempo integral em 2025",
+    "summary": "Destaque da federação PSOL-REDE para retirar o inciso XIV do art. 212-A da Constituição, na redação da emenda aglutinativa: em 2025, até 10% dos valores da complementação prevista no inciso V podem ser repassados pela União para ações de fomento à criação de matrículas em tempo integral na educação básica pública, mantida a classificação do repasse como Fundeb e sem seguir os critérios das alíneas a, b e c do inciso V. Numa PEC, o trecho destacado só fica com pelo menos 308 votos Sim.",
+    "decisionLabel": "Inciso mantido",
+    "yesMeaning": "Manter o inciso no texto.",
+    "noMeaning": "Retirar o inciso do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 4 - FDR.PSOL-REDE - INC. XIV DO ART. 212-A DA CF...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12681",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2845167",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2481245"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12681) registra votação nominal eletrônica em 2024-12-19, encerrada em 2024-12-19 às 15:52, com 349 Sim e 143 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 4 - FDR.PSOL-REDE - INC. XIV DO ART. 212-A DA CF...”; o registro 347421-205 da API traz o mesmo placar.",
+      "text": "O DTQ 4 (PSOL-REDE) pede votação em separado do inciso XIV do art. 212-A da Constituição, alterado pelo art. 1º da Emenda Aglutinativa nº 1, que traz o inciso."
+    }
+  },
+  {
+    "id": "1197773-140",
+    "parentId": "1197773-90",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emendas",
+    "title": "Emendas do Senado com parecer contrário do relator",
+    "summary": "Na votação das emendas do Senado, a Câmara votou em conjunto as emendas com parecer pela rejeição, ressalvados os destaques. Entre outros pontos, elas incluíam a Defensoria Pública, oficiais de justiça e polícias legislativas e judiciais entre as atividades de risco permanente, criavam crimes ligados a organizações criminosas e mudavam a Lei Geral de Proteção de Dados. O relator, Rubens Pereira Júnior, recomendou rejeitar todas para manter o texto aprovado antes pela Câmara.",
+    "decisionLabel": "Emendas rejeitadas",
+    "yesMeaning": "Aprovar as emendas do Senado com parecer pela rejeição.",
+    "noMeaning": "Rejeitar essas emendas, como recomendou o relator.",
+    "outcome": "rejected",
+    "reportObject": "EMENDAS DO SENADO FEDERAL COM PARECER PELA REJEIÇÃO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12552",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2833037",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2475414"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12552) registra votação nominal eletrônica em 2024-12-04, encerrada em 2024-12-04 às 21:17, com 23 Sim, 404 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “EMENDAS DO SENADO FEDERAL COM PARECER PELA REJEIÇÃO”; o registro 1197773-140 da API traz o mesmo placar; o relatório usa o número atual do projeto (PL 4015/2023), que a API registra como o mesmo PL 996/2015.",
+      "text": "O parecer às emendas do Senado (PRLP 7) resume as 14 emendas e conclui, no mérito, pela rejeição de todas, por o texto da Câmara contemplar o acordo político possível."
+    }
+  },
+  {
+    "id": "2433327-60",
+    "parentId": "2433327-49",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda: perdão definitivo da dívida do RS com a União",
+    "summary": "Destaque da bancada do PL para votar a emenda nº 4, de Marcel van Hattem. Ela anistiava de forma definitiva as dívidas com a União tratadas no projeto, no caso do Rio Grande do Sul e de seus municípios afetados pela calamidade. O relator, Afonso Motta, recomendou rejeitar todas as emendas de Plenário por ampliarem o impacto orçamentário e financeiro do projeto.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ. 4 - PL - EMENDA DE PLENÁRIO Nº 4",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12157",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2423547",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2433628"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12157) registra votação nominal eletrônica em 2024-05-14, encerrada em 2024-05-15 às 00:00, com 184 Sim, 223 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “DTQ. 4 - PL - EMENDA DE PLENÁRIO Nº 4”; o registro 2433327-60 da API traz o mesmo placar; o total de 409 da API inclui o voto do presidente (art. 17), que o relatório informa à parte (total da votação 408).",
+      "text": "O inteiro teor da emenda nº 4 (EMP 4) acrescenta o § 13 ao art. 2º com a anistia definitiva; o parecer às emendas (PRLE 1) conclui pela rejeição das emendas 1 a 5."
+    }
+  }
+]

@@ -1,0 +1,203 @@
+[
+ {
+  "id": "2618177-73",
+  "parentId": "2618177-71",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-10",
+  "kind": "emendas",
+  "title": "Emendas com parecer contrário da relatora",
+  "summary": "A Câmara votou em conjunto as emendas de Plenário que tinham parecer pela rejeição. Elas tratavam, entre outros temas, do preço do gás de botijão, de créditos tributários do setor de combustíveis e da tributação do transporte aéreo. A relatora, Marussa Boldrin, recomendou rejeitar todas porque não integravam o acordo político feito para o projeto. A emenda nº 1 foi votada em separado logo depois.",
+  "decisionLabel": "Emendas rejeitadas",
+  "yesMeaning": "Aprovar as emendas com parecer pela rejeição.",
+  "noMeaning": "Rejeitar essas emendas, como recomendou a relatora.",
+  "outcome": "rejected",
+  "reportObject": "EMENDAS COM PARECER PELA REJEIÇÃO",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13873",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3171284",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2643225"
+  },
+  "evidence": {
+   "method": "O relatório nominal oficial (ideVotacao 13873) registra votação nominal eletrônica com o objeto “EMENDAS COM PARECER PELA REJEIÇÃO” e o mesmo placar da descrição da API.",
+   "object": "A API registra “Rejeitadas as Emendas de Plenário” (108 Sim, 275 Não) às 17:58; o relatório 13873 tem o objeto “Emendas com parecer pela rejeição” e o mesmo placar.",
+   "text": "O parecer às emendas de Plenário (PRLE 1) resume as 15 emendas e conclui pela rejeição de todas por não integrarem o acordo político."
+  }
+ },
+ {
+  "id": "2618177-82",
+  "parentId": "2618177-71",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-10",
+  "kind": "emenda",
+  "title": "Emenda do NOVO: cortar despesas para compensar renúncias",
+  "summary": "Destaque da bancada do NOVO para votar a emenda nº 1, de Marcel van Hattem. Ela só permitia usar o aumento extraordinário de receita para compensar as renúncias do projeto se o governo cortasse, no mesmo ano, despesas discricionárias equivalentes a pelo menos metade da compensação.",
+  "decisionLabel": "Emenda rejeitada",
+  "yesMeaning": "Incluir a emenda no texto.",
+  "noMeaning": "Deixar a emenda de fora.",
+  "outcome": "rejected",
+  "reportObject": "DTQ 1 - NOVO - EMENDA DE PLENÁRIO Nº 1",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13874",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3132647",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2625932"
+  },
+  "evidence": {
+   "method": "O relatório nominal oficial (ideVotacao 13874) registra votação nominal eletrônica com o objeto “DTQ 1 - NOVO - EMENDA DE PLENÁRIO Nº 1” e o mesmo placar da descrição da API.",
+   "object": "A API registra “Rejeitada a Emenda de Plenário nº 1” (105 Sim, 233 Não) às 18:07; o relatório 13874 identifica o destaque 1 do NOVO sobre a emenda nº 1.",
+   "text": "O inteiro teor da emenda nº 1 (EMP 1) traz a exigência de redução de despesa primária discricionária de pelo menos metade do valor da compensação."
+  }
+ },
+ {
+  "id": "2351506-108",
+  "parentId": "2351506-104",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-10",
+  "kind": "destaque",
+  "title": "Imunidade para creches, comunidades terapêuticas e outras entidades",
+  "summary": "Destaque da federação PT-PCdoB-PV para retirar do texto a lista de entidades incluídas no § 4º-A do art. 150 da Constituição, que trata da imunidade tributária: creches, comunidades terapêuticas, monastérios, seminários, conventos, serviços de acolhimento institucional, atividades socioassistenciais e demais atividades sem fins lucrativos. Numa PEC, o trecho destacado só fica com pelo menos 308 votos Sim.",
+  "decisionLabel": "Expressão mantida",
+  "yesMeaning": "Manter a lista de entidades no texto.",
+  "noMeaning": "Retirar a lista de entidades do texto.",
+  "outcome": "kept",
+  "reportObject": "DTQ 5 - FDR PT-PCDOB-PV - TURNO 1 - EXPR. \"BEM COMO CRECHES, COMUNIDADES (...)\"",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13760",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3139022",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2628857"
+  },
+  "evidence": {
+   "method": "O relatório nominal oficial (ideVotacao 13760) registra votação nominal eletrônica com o objeto “DTQ 5 - FDR PT-PCDOB-PV - TURNO 1 - EXPR. \"BEM COMO CRECHES, COMUNIDADES (...)\"” e o mesmo placar da descrição da API.",
+   "object": "A API registra “Mantido o texto” (340 Sim, 110 Não, 7 abstenções) às 15:44; o relatório 13760 identifica o destaque 5 da federação PT-PCdoB-PV, no primeiro turno.",
+   "text": "O inteiro teor do DTQ 5 pede votação em separado da expressão citada, do § 4º-A do art. 150, contida no art. 1º da Emenda Aglutinativa nº 3."
+  }
+ },
+ {
+  "id": "2351506-112",
+  "parentId": "2351506-104",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-10",
+  "kind": "destaque",
+  "title": "Imunidade para atividades socioassistenciais e outras sem fins lucrativos",
+  "summary": "Destaque da federação PT-PCdoB-PV para retirar do § 4º-A do art. 150 da Constituição a expressão “atividades socioassistenciais e demais atividades sem fins lucrativos”, uma parte menor da lista votada antes. Numa PEC, o trecho destacado só fica com pelo menos 308 votos Sim.",
+  "decisionLabel": "Expressão mantida",
+  "yesMeaning": "Manter a expressão no texto.",
+  "noMeaning": "Retirar a expressão do texto.",
+  "outcome": "kept",
+  "reportObject": "DTQ 6 - FDR PT-PCDOB-PV - TURNO 1 - DA EXPRESSÃO \"ATIVIDADES SOCIOASSISTE...",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13761",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3139059",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2628887"
+  },
+  "evidence": {
+   "method": "O relatório nominal oficial (ideVotacao 13761) registra votação nominal eletrônica com o objeto “DTQ 6 - FDR PT-PCDOB-PV - TURNO 1 - DA EXPRESSÃO \"ATIVIDADES SOCIOASSISTE...” e o mesmo placar da descrição da API.",
+   "object": "A API registra “Mantido o texto” (342 Sim, 113 Não, 5 abstenções) às 16:13; o relatório 13761 identifica o destaque 6 da federação PT-PCdoB-PV, no primeiro turno.",
+   "text": "O inteiro teor do DTQ 6 pede votação em separado da expressão citada, contida no art. 1º da Emenda Aglutinativa nº 3."
+  }
+ },
+ {
+  "id": "2351506-115",
+  "parentId": "2351506-104",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-10",
+  "kind": "destaque",
+  "title": "Imunidade para “demais atividades sem fins lucrativos”",
+  "summary": "Destaque da federação PT-PCdoB-PV para retirar do § 4º-A do art. 150 da Constituição só a expressão “e demais atividades sem fins lucrativos”, a parte mais ampla da lista. Numa PEC, o trecho destacado só fica com pelo menos 308 votos Sim.",
+  "decisionLabel": "Expressão mantida",
+  "yesMeaning": "Manter a expressão no texto.",
+  "noMeaning": "Retirar a expressão do texto.",
+  "outcome": "kept",
+  "reportObject": "DTQ 4 - FDR PT-PCDOB-PV - TURNO 1 - EXPRESSÃO \"E DEMAIS ATIVIDADES SEM (...)\"",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13762",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3138965",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2628807"
+  },
+  "evidence": {
+   "method": "O relatório nominal oficial (ideVotacao 13762) registra votação nominal eletrônica com o objeto “DTQ 4 - FDR PT-PCDOB-PV - TURNO 1 - EXPRESSÃO \"E DEMAIS ATIVIDADES SEM (...)\"” e o mesmo placar da descrição da API.",
+   "object": "A API registra “Mantido o texto” (335 Sim, 117 Não, 5 abstenções) às 16:46; o relatório 13762 identifica o destaque 4 da federação PT-PCdoB-PV, no primeiro turno.",
+   "text": "O inteiro teor do DTQ 4 pede votação em separado da expressão citada, contida no art. 1º da Emenda Aglutinativa nº 3."
+  }
+ },
+ {
+  "id": "2613731-47",
+  "parentId": "2613731-42",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-10",
+  "kind": "emenda",
+  "title": "Emenda do PL: pena menor e decisão prévia do Cade",
+  "summary": "Destaque da bancada do PL para votar a emenda nº 2, de Lafayette de Andrada, na redação original. Ela reduzia a pena do novo crime de elevar preços sem justa causa para 6 meses a 2 anos de detenção, ou multa, e só permitia o processo depois de decisão definitiva do Cade. O texto aprovado antes prevê 2 a 4 anos de detenção e multa, com cooperação entre o Ministério Público e o Cade.",
+  "decisionLabel": "Emenda rejeitada",
+  "yesMeaning": "Trocar o texto aprovado pela redação da emenda nº 2.",
+  "noMeaning": "Manter o texto aprovado.",
+  "outcome": "rejected",
+  "reportObject": "DTQ 2 PL - EMENDA DE PLENÁRIO Nº 2",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13737",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3131533",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2625433"
+  },
+  "evidence": {
+   "method": "O relatório nominal oficial (ideVotacao 13737) registra votação nominal eletrônica com o objeto “DTQ 2 PL - EMENDA DE PLENÁRIO Nº 2” e o mesmo placar da descrição da API.",
+   "object": "A API registra “Rejeitada a Emenda de Plenário nº 2” (196 Sim, 200 Não, 1 abstenção) às 22:26; o relatório 13737 identifica o destaque 2 do PL sobre a emenda nº 2.",
+   "text": "O inteiro teor da emenda nº 2 (EMP 2) traz a pena e a exigência de decisão do Cade; a subemenda substitutiva aprovada (PRLE 2) traz 2 a 4 anos e a cooperação com o Cade."
+  },
+  "dataNotes": [
+   "O relatório nominal das 21:56 (ideVotacao 13736) registra 182 Sim, 182 Não e 2 abstenções para o mesmo destaque. Nos Dados Abertos, esse registro aparece como 2613731-65, descrito só como “Resultado”. A decisão publicada aqui é a das 22:25."
+  ]
+ },
+ {
+  "id": "2162116-181",
+  "parentId": "2162116-178",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-10",
+  "kind": "emenda_redacao",
+  "title": "Emenda de redação do relator",
+  "summary": "O relator, André Figueiredo, reorganizou o texto aprovado no primeiro turno. A emenda levou a regra de repasse da União a estados, Distrito Federal e municípios para o § 2º do art. 204, retirou os §§ 4º e 5º que tratavam disso, ajustou a definição das ações cobertas pelo piso e deixou expresso que a transição de 0,3% a 0,75% da receita vale para todos os entes.",
+  "decisionLabel": "Emenda de redação aprovada",
+  "yesMeaning": "Aprovar a nova redação.",
+  "noMeaning": "Manter a redação anterior.",
+  "outcome": "approved",
+  "reportObject": "EMENDA DE REDAÇÃO Nº 4",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13673",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3119735",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2619299"
+  },
+  "evidence": {
+   "method": "O relatório nominal oficial (ideVotacao 13673) registra votação nominal eletrônica com o objeto “EMENDA DE REDAÇÃO Nº 4” e o mesmo placar da descrição da API.",
+   "object": "A API registra “Aprovada a Emenda de Redação nº 4” (386 Sim, 1 Não) às 21:33; o relatório 13673 tem o mesmo objeto e placar.",
+   "text": "O inteiro teor da emenda de redação nº 4 (ERD 4) traz a nova redação e a justificativa de clareza do texto."
+  }
+ },
+ {
+  "id": "2611717-38",
+  "parentId": "2611717-33",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-10",
+  "kind": "destaque",
+  "title": "Exceção para benefícios em áreas de livre comércio",
+  "summary": "Destaque da bancada do NOVO para retirar o art. 1º. Esse artigo livra de duas regras fiscais (o art. 29, inciso I, da Lei nº 15.321/2025 e o art. 14-A da Lei de Responsabilidade Fiscal) as propostas de 2026 que concedem benefício tributário nas áreas de livre comércio, desde que a renúncia esteja prevista no orçamento ou tenha compensação.",
+  "decisionLabel": "Artigo mantido",
+  "yesMeaning": "Manter o art. 1º no texto.",
+  "noMeaning": "Retirar o art. 1º do texto.",
+  "outcome": "kept",
+  "reportObject": "DTQ 1 - NOVO - ART. 1° DO PLP",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13607",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3104495",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2611889"
+  },
+  "evidence": {
+   "method": "O relatório nominal oficial (ideVotacao 13607) registra votação nominal eletrônica com o objeto “DTQ 1 - NOVO - ART. 1° DO PLP” e o mesmo placar da descrição da API.",
+   "object": "A API registra “Mantido o texto” (284 Sim, 86 Não, 3 abstenções) às 19:25; o relatório 13607 identifica o destaque 1 do NOVO sobre o art. 1º.",
+   "text": "O inteiro teor do DTQ 1 pede votação em separado do art. 1º do PLP 77/2026 para suprimi-lo; o texto do projeto traz o art. 1º citado."
+  }
+ },
+ {
+  "id": "2376169-101",
+  "parentId": "2376169-62",
+  "status": "pending",
+  "reason": "Pertence à votação do substitutivo do Senado de 18/3/2026, que não está no catálogo (votação principal sem placar nominal publicado); ligá-lo à votação de 2023 seria errado."
+ }
+]

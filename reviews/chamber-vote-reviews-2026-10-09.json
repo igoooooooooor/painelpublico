@@ -1,0 +1,2799 @@
+[
+ {
+  "id": "2611313-31",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-09",
+  "title": "Subemenda substitutiva sobre benefícios tributários e despesas de 2026",
+  "summary": "A Câmara aprovou a subemenda substitutiva ao PLP 74/2026 adotada pelo relator da Comissão de Finanças e Tributação.",
+  "decisionLabel": "Subemenda substitutiva",
+  "yesMeaning": "Aprovar essa subemenda substitutiva ao PLP 74/2026.",
+  "noMeaning": "Rejeitar essa versão do texto.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?codCasa=1&ideVotacao=13931&indTipoSessao=E&indTipoSessaoLegislativa=O&numLegislatura=57&numSessao=160&numSessaoLegislativa=4&tipo=uf",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3177849&filename=SSP+1+%3D%3E+PLP+74%2F2026",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/prop_imp?idProposicao=2611313&ord=1&tp=completa",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2611313"
+  },
+  "evidence": {
+   "method": "O relatório oficial registra votação nominal eletrônica em 03/09/2026, sessão extraordinária 160, das 17:18 às 17:28, com 346 Sim, 46 Não e 3 abstenções, coincidindo com o inventário.",
+   "object": "O relatório identifica a subemenda substitutiva ao PLP 74/2026. A ficha do SSP 1, apresentado em Plenário em 03/09/2026, identifica o documento votado como proposição 2645883.",
+   "text": "O inteiro teor oficial do SSP 1 está ligado à ficha da proposição 2645883. O resumo se limita à versão e ao tema descritos pelas fontes oficiais."
+  },
+  "reason": null,
+  "votedPropositionId": 2645883
+ },
+ {
+  "id": "2580259-24",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-09",
+  "title": "Substitutivo sobre o Fundo de Universalização das Telecomunicações (Fust)",
+  "summary": "A Câmara aprovou o substitutivo ao PLP 230/2025 apresentado pela relatora.",
+  "decisionLabel": "Substitutivo oferecido pela relatora",
+  "yesMeaning": "Aprovar esse substitutivo ao PLP 230/2025.",
+  "noMeaning": "Rejeitar essa versão do texto.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?codCasa=1&ideVotacao=13882&indTipoSessao=E&indTipoSessaoLegislativa=O&numLegislatura=57&numSessao=151&numSessaoLegislativa=4&tipo=uf",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3170169&filename=SBT+1+%3D%3E+PLP+230%2F2025",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/prop_imp?idProposicao=2580259&ord=1&tp=completa",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2580259"
+  },
+  "evidence": {
+   "method": "O relatório oficial registra votação nominal eletrônica em 12/08/2026, sessão extraordinária 151, das 19:34 às 19:47, com 333 Sim e 91 Não, coincidindo com o inventário.",
+   "object": "O relatório identifica o substitutivo oferecido pela relatora ao PLP 230/2025. A ficha do SBT 1, apresentado em Plenário em 12/08/2026, identifica a versão como proposição 2643385.",
+   "text": "O inteiro teor ligado à ficha do SBT 1 está identificado como codteor 3170169. Nenhum efeito específico do substitutivo é afirmado aqui."
+  },
+  "reason": null,
+  "votedPropositionId": 2643385
+ },
+ {
+  "id": "2611992-24",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-09",
+  "title": "Substitutivo ao projeto sobre o adicional ao frete da Marinha Mercante",
+  "summary": "A Câmara aprovou substitutivo que prorroga até 8 de janeiro de 2032 a não incidência do AFRMM nas navegações ligadas a portos do Norte ou Nordeste.",
+  "decisionLabel": "Substitutivo oferecido pelo relator",
+  "yesMeaning": "Aprovar esse substitutivo ao PLP 80/2026.",
+  "noMeaning": "Rejeitar essa versão do texto.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?codCasa=1&ideVotacao=13881&indTipoSessao=E&indTipoSessaoLegislativa=O&numLegislatura=57&numSessao=151&numSessaoLegislativa=4&tipo=uf",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3169597",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/prop_imp?idProposicao=2611992&ord=1&tp=completa",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2611992"
+  },
+  "evidence": {
+   "method": "O relatório oficial registra votação nominal eletrônica em 12/08/2026, sessão extraordinária 151, das 19:06 às 19:11, com 327 Sim e 26 Não, coincidindo com o inventário.",
+   "object": "O relatório identifica o substitutivo oferecido pelo relator ao PLP 80/2026. A relação oficial de documentos registra o SBT 1, proposição 2643363, apresentado em Plenário em 12/08/2026.",
+   "text": "O inteiro teor codteor 3169597 contém o substitutivo ao PLP 80/2026 nas páginas 10–11, dentro do parecer PRLP 1. A ficha do SBT 1 (2643363) liga essa versão ao documento apresentado antes da votação. O texto legal coincide com a redação final posterior, ressalvadas a data e normalizações tipográficas."
+  },
+  "reason": null,
+  "votedPropositionId": 2643363
+ },
+ {
+  "id": "2618177-71",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-09",
+  "title": "Substitutivo reformulado sobre medidas tributárias ligadas à energia",
+  "summary": "A Câmara aprovou o substitutivo reformulado da relatora ao PLP 114/2026, ressalvado o destaque.",
+  "decisionLabel": "Substitutivo reformulado da relatora",
+  "yesMeaning": "Aprovar esse substitutivo reformulado ao PLP 114/2026, ressalvado o destaque.",
+  "noMeaning": "Rejeitar essa versão do texto.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?codCasa=1&ideVotacao=13872&indTipoSessao=E&indTipoSessaoLegislativa=O&numLegislatura=57&numSessao=151&numSessaoLegislativa=4&tipo=uf",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3171396&filename=SBT+1+%3D%3E+PLP+114%2F2026",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/prop_imp?idProposicao=2618177&ord=1&tp=completa",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2618177"
+  },
+  "evidence": {
+   "method": "O relatório oficial registra votação nominal eletrônica em 12/08/2026, sessão extraordinária 151, das 17:36 às 17:49, com 318 Sim, 113 Não e 1 abstenção, coincidindo com o inventário.",
+   "object": "O relatório identifica o substitutivo oferecido pela relatora ao PLP 114/2026; o registro oficial descreve a versão como substitutivo reformulado e ressalva o destaque. A ficha do SBT 1 é a proposição 2643154.",
+   "text": "O inteiro teor ligado à ficha do SBT 1 está identificado como codteor 3171396. O registro ressalva que o destaque teve votação própria."
+  },
+  "reason": null,
+  "votedPropositionId": 2643154
+ },
+ {
+  "id": "2606313-36",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-09",
+  "title": "Substitutivo ao projeto sobre enfrentamento da violência contra mulheres",
+  "summary": "A Câmara aprovou o substitutivo ao PLP 41/2026.",
+  "decisionLabel": "Substitutivo oferecido",
+  "yesMeaning": "Aprovar esse substitutivo ao PLP 41/2026.",
+  "noMeaning": "Rejeitar essa versão do texto.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?codCasa=1&ideVotacao=13830&indTipoSessao=E&indTipoSessaoLegislativa=O&numLegislatura=57&numSessao=136&numSessaoLegislativa=4&tipo=uf",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3158393&filename=SBT+1+%3D%3E+PLP+41%2F2026",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/prop_imp?idProposicao=2606313&ord=1&tp=completa",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2606313"
+  },
+  "evidence": {
+   "method": "O relatório oficial registra votação nominal eletrônica em 07/07/2026, sessão extraordinária 136, das 20:27 às 20:50, com 470 Sim e 1 Não, coincidindo com o inventário.",
+   "object": "O relatório identifica o substitutivo oferecido ao PLP 41/2026. A ficha do SBT 1, apresentado em Plenário em 07/07/2026, identifica a versão como proposição 2637875.",
+   "text": "O inteiro teor oficial está ligado à ficha do SBT 1, proposição 2637875. O resumo limita-se ao objeto e ao tema geral documentados nas fontes oficiais."
+  },
+  "reason": null,
+  "votedPropositionId": 2637875
+ },
+ {
+  "id": "2382675-97",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-09",
+  "title": "Substitutivo ao projeto sobre política industrial e tecnológica",
+  "summary": "A Câmara aprovou um substitutivo que estabelece diretrizes e instrumentos de política industrial, tecnológica, de inovação e de comércio exterior, com planejamento, apoio à produção nacional e mudanças em compras públicas.",
+  "decisionLabel": "Substitutivo oferecido pelo relator",
+  "yesMeaning": "Aprovar esse substitutivo ao PL 4.133/2023.",
+  "noMeaning": "Rejeitar essa versão do texto.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?codCasa=1&ideVotacao=13807&indTipoSessao=E&indTipoSessaoLegislativa=O&numLegislatura=57&numSessao=120&numSessaoLegislativa=4&tipo=partido",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3148936#page=11",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/prop_imp?idProposicao=2382675&ord=1&tp=completa",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2382675"
+  },
+  "evidence": {
+   "method": "O relatório oficial registra votação nominal eletrônica em 17/06/2026, sessão extraordinária 120, das 18:37 às 18:53, com 308 Sim, 129 Não e 1 abstenção, coincidindo com o inventário.",
+   "object": "O relatório identifica o substitutivo oferecido pelo relator ao PL 4.133/2023. A ficha identifica o SBT 1 como proposição 2633548, apresentado em Plenário em 17/06/2026.",
+   "text": "A ficha oficial do SBT 1 (2633548), sua API e o histórico de documentos vinculam o substitutivo ao PDF codteor 3148936. O texto integral anexado ao PRLP 3 começa na página 11. O SBT foi registrado às 18:15, antes da votação nominal das 18:37–18:53. As notas da sessão 120, evento 82555, identificam o substitutivo oferecido pelo relator da CCTI e o resultado 308 Sim, 129 Não e 1 abstenção. O artigo 9º sobre defesa do mercado interno já está na página 22 do substitutivo, corrigindo a observação da auditoria anterior. A apresentação anterior do parecer não rompe o vínculo oficial do SBT com seu anexo; a redação final posterior não foi usada como substituta do texto votado. Fontes e metadados preservados em data/reviews/pl4133-exact-text-followup/."
+  },
+  "reason": null,
+  "votedPropositionId": 2633548
+ },
+ {
+  "id": "2122125-115",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-09",
+  "title": "Subemenda substitutiva sobre a Lei Orgânica da Advocacia-Geral da União (AGU)",
+  "summary": "A Câmara aprovou uma subemenda para atualizar a estrutura organizacional da Advocacia-Geral da União.",
+  "decisionLabel": "Subemenda substitutiva",
+  "yesMeaning": "Aprovar essa subemenda substitutiva ao PLP 337/2017.",
+  "noMeaning": "Rejeitar essa versão do texto.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?codCasa=1&ideVotacao=13782&indTipoSessao=E&indTipoSessaoLegislativa=O&numLegislatura=57&numSessao=118&numSessaoLegislativa=4&tipo=uf",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3147987",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/prop_imp?idProposicao=2122125&ord=1&tp=completa",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2122125"
+  },
+  "evidence": {
+   "method": "O relatório oficial registra votação nominal eletrônica em 16/06/2026, sessão extraordinária 118, das 19:57 às 20:08, com 417 Sim e 19 Não, coincidindo com o inventário.",
+   "object": "O relatório identifica a subemenda substitutiva ao PLP 337/2017. A ficha oficial do SSP 1 apresentado em Plenário na mesma data identifica a versão como proposição 2632885.",
+   "text": "O inteiro teor codteor 3147987 contém a subemenda substitutiva ao PLP 337/2017 a partir da página 4 do relatório PRLE 2, apresentado às 19:42 antes da votação. A ficha e o registro da SSP 1 (2632885) vinculam esse mesmo documento à subemenda adotada; o horário posterior de cadastro não foi tratado como horário de apresentação do texto."
+  },
+  "reason": null,
+  "votedPropositionId": 2632885
+ },
+ {
+  "id": "2447983-57",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-09",
+  "title": "Projeto sobre cooperativas e fundos de desenvolvimento regional",
+  "summary": "A Câmara aprovou projeto que permite que cooperativas sejam beneficiárias dos recursos do FDNE, FDA e FDCO.",
+  "decisionLabel": "Projeto de Lei Complementar",
+  "yesMeaning": "Aprovar o texto principal do PLP 262/2019 submetido à votação.",
+  "noMeaning": "Rejeitar esse texto principal.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?codCasa=1&ideVotacao=13723&indTipoSessao=E&indTipoSessaoLegislativa=O&numLegislatura=57&numSessao=95&numSessaoLegislativa=4&tipo=uf",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2452202",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/prop_imp?idProposicao=2447983&ord=1&tp=completa",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2447983"
+  },
+  "evidence": {
+   "method": "O relatório oficial registra votação nominal eletrônica em 19/05/2026, sessão extraordinária 95, das 20:28 às 20:47, com 442 Sim e 2 Não, coincidindo com o inventário.",
+   "object": "O relatório identifica o PLP 262/2019 como Projeto de Lei Complementar, sem indicar substitutivo. O histórico oficial da proposição registra a aprovação do projeto antes de votação separada da emenda da Comissão de Finanças e Tributação.",
+   "text": "O inteiro teor codteor 2452202 identifica o projeto principal PLP 262/2019. O registro da sessão confirma que esse projeto foi votado primeiro e a emenda da CFT teve votação separada em seguida. O resumo descreve o texto principal, sem atribuir a ele o efeito de uma votação posterior."
+  },
+  "reason": null,
+  "votedPropositionId": 2447983
+ },
+ {
+  "id": "2601990-42",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-09",
+  "title": "Substitutivo ao projeto sobre regime tributário de associações desportivas",
+  "summary": "A Câmara aprovou o substitutivo ao PLP 21/2026.",
+  "decisionLabel": "Substitutivo oferecido",
+  "yesMeaning": "Aprovar esse substitutivo ao PLP 21/2026.",
+  "noMeaning": "Rejeitar essa versão do texto.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?codCasa=1&ideVotacao=13702&indTipoSessao=E&indTipoSessaoLegislativa=O&numLegislatura=57&numSessao=85&numSessaoLegislativa=4&tipo=partido",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3129050&filename=SBT+1+%3D%3E+PLP+21%2F2026",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/prop_imp?idProposicao=2601990&ord=1&tp=completa",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2601990"
+  },
+  "evidence": {
+   "method": "O relatório oficial registra votação nominal eletrônica em 13/05/2026, sessão extraordinária 85, das 16:24 às 16:37, com 421 Sim, 3 Não e 1 abstenção, coincidindo com o inventário.",
+   "object": "O relatório identifica o substitutivo oferecido ao PLP 21/2026. A ficha de pareceres, substitutivos e votos lista o SBT 1 apresentado em 13/05/2026; o registro da votação corresponde à proposição 2624599.",
+   "text": "O inteiro teor oficial está ligado ao SBT 1, codteor 3129050. A descrição se limita à versão aprovada e ao assunto geral do projeto."
+  },
+  "reason": null,
+  "votedPropositionId": 2624599
+ },
+ {
+  "id": "2191208-67",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-09",
+  "title": "Subemenda substitutiva ao projeto sobre penas restritivas de direitos",
+  "summary": "A Câmara aprovou a subemenda substitutiva ao PL 488/2019, ressalvado o destaque.",
+  "decisionLabel": "Subemenda substitutiva global",
+  "yesMeaning": "Aprovar essa subemenda substitutiva global ao PL 488/2019, ressalvado o destaque.",
+  "noMeaning": "Rejeitar essa versão do texto.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?codCasa=1&ideVotacao=13699&indTipoSessao=E&indTipoSessaoLegislativa=O&numLegislatura=57&numSessao=82&numSessaoLegislativa=4&tipo=partido",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3127731&filename=SSP+1+%3D%3E+PL+488%2F2019",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/prop_imp?idProposicao=2191208&ord=1&tp=completa",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2191208"
+  },
+  "evidence": {
+   "method": "O relatório oficial registra votação nominal eletrônica em 12/05/2026, sessão extraordinária 82, das 18:04 às 18:21, com 436 Sim e 3 Não, coincidindo com o inventário.",
+   "object": "O relatório identifica a subemenda substitutiva ao PL 488/2019 e o registro da sessão ressalva o destaque. A ficha do SSP 1 apresentado em Plenário em 12/05/2026 identifica a versão como proposição 2623923.",
+   "text": "O inteiro teor oficial está ligado à ficha do SSP 1, proposição 2623923, codteor 3127731. O resumo não descreve efeitos específicos da subemenda."
+  },
+  "reason": null,
+  "votedPropositionId": 2623923
+ },
+ {
+  "id": "2469569-38",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-09",
+  "title": "Substitutivo ao PL 4.397/2024 sobre locação comercial para partidos",
+  "summary": "A Câmara aprovou o substitutivo ao PL 4.397/2024, projeto sobre regras de condomínio para a locação de imóveis comerciais a partidos.",
+  "decisionLabel": "Substitutivo aprovado",
+  "yesMeaning": "Aprovar o substitutivo oferecido ao PL 4.397/2024.",
+  "noMeaning": "Rejeitar o substitutivo oferecido ao PL 4.397/2024.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13662",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3117155&filename=SBT+1+%3D%3E+PL+4397/2024",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2469569",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2469569"
+  },
+  "evidence": {
+   "method": "Relatório Nominal Eletrônica de 22/04/2026, das 22:11 às 22:16; 300 Sim, 36 Não, 1 abstenção e total de 337. A data, o objeto e a contagem coincidem com o registro da votação.",
+   "object": "O relatório identifica PL 4397/2024 — SUBSTITUTIVO OFERECIDO. A ficha registra a aprovação do substitutivo e a prejudicialidade da proposição inicial e da apensada.",
+   "text": "A ficha vincula o PDF oficial SBT 1 => PL 4397/2024. O relatório nominal confirma que o substitutivo oferecido foi o objeto votado; o resumo do tema permanece amplo."
+  },
+  "reason": null
+ },
+ {
+  "id": "2608575-64",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-09",
+  "title": "Condições para isenção de ISS ligada à Copa do Mundo Feminina de 2027",
+  "summary": "A Câmara aprovou o PLP 55/2026. O texto votado estabelece condições para que municípios e o Distrito Federal concedam isenção de ISS a fatos ligados à organização ou à realização da Copa do Mundo Feminina da FIFA 2027.",
+  "decisionLabel": "Projeto aprovado",
+  "yesMeaning": "Aprovar o PLP 55/2026.",
+  "noMeaning": "Rejeitar o PLP 55/2026.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13643",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3096551&filename=PLP+55/2026",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2608575",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2608575"
+  },
+  "evidence": {
+   "method": "Relatório Nominal Eletrônica de 15/04/2026, das 21:37 às 21:49; 342 Sim, 39 Não e total de 381. A data, o objeto e a contagem coincidem com o registro da votação. A fonte não informa abstenções.",
+   "object": "O relatório identifica PLP 55/2026 — PROJETO DE LEI COMPLEMENTAR, sem indicar substitutivo. A ficha registra a aprovação do PLP.",
+   "text": "O PDF oficial de inteiro teor do PLP 55/2026 foi conferido; seu texto estabelece condições para isenção de ISS relacionada à Copa do Mundo Feminina da FIFA 2027."
+  },
+  "reason": null,
+  "votedPropositionId": 2608575
+ },
+ {
+  "id": "2503998-75",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-09",
+  "title": "Substitutivo sobre informações fiscais para a ANP",
+  "summary": "A Câmara aprovou o substitutivo ao PLP 109/2025, projeto sobre o acesso da ANP a informações fiscais para fiscalização e regulação de petróleo, gás natural e biocombustíveis.",
+  "decisionLabel": "Substitutivo aprovado",
+  "yesMeaning": "Aprovar o substitutivo oferecido ao PLP 109/2025.",
+  "noMeaning": "Rejeitar o substitutivo oferecido ao PLP 109/2025.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13628",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3109637&filename=SBT+1+%3D%3E+PLP+109/2025",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2503998",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2503998"
+  },
+  "evidence": {
+   "method": "Relatório Nominal Eletrônica de 07/04/2026, das 19:06 às 19:16; 381 Sim, 2 Não e total de 383. A data, o objeto e a contagem coincidem com o registro da votação. A fonte não informa abstenções.",
+   "object": "O relatório identifica PLP 109/2025 — SUBSTITUTIVO OFERECIDO. A ficha registra a aprovação do substitutivo adotado pelo relator.",
+   "text": "A ficha de tramitação identifica o PDF oficial SBT 1 => PLP 109/2025. O tema da matéria de referência é registrado sem atribuir efeitos específicos ao substitutivo."
+  },
+  "reason": null
+ },
+ {
+  "id": "2611717-33",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-09",
+  "title": "Regras para benefícios tributários e despesas obrigatórias em 2026",
+  "summary": "A Câmara aprovou o texto principal do PLP 77/2026, ressalvado o destaque, que teve votação separada. O texto do projeto trata de regras relativas a benefícios tributários e despesas obrigatórias no exercício de 2026.",
+  "decisionLabel": "Projeto aprovado, ressalvado o destaque",
+  "yesMeaning": "Aprovar o texto principal do PLP 77/2026, com o destaque reservado a decisão separada.",
+  "noMeaning": "Rejeitar o texto principal do PLP 77/2026.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13606",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3104102&filename=PLP+77/2026",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2611717",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2611717"
+  },
+  "evidence": {
+   "method": "Relatório Nominal Eletrônica de 25/03/2026, das 19:01 às 19:17; 391 Sim, 33 Não, 2 abstenções e total de 426. A data, o objeto e a contagem coincidem com o registro da votação.",
+   "object": "O relatório identifica PLP 77/2026 — PROJETO DE LEI COMPLEMENTAR. O relatório e a ficha dizem que o destaque ao art. 1º foi ressalvado e decidido em votação separada.",
+   "text": "O PDF oficial de inteiro teor do PLP 77/2026 foi conferido; corresponde ao texto principal identificado no relatório nominal."
+  },
+  "reason": null,
+  "votedPropositionId": 2611717
+ },
+ {
+  "id": "2595984-34",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-09",
+  "title": "Criação de varas federais no Amazonas e em Mato Grosso do Sul",
+  "summary": "A Câmara aprovou o PL 6.359/2025. O texto votado trata da criação de duas varas federais no Amazonas e seis em Mato Grosso do Sul.",
+  "decisionLabel": "Projeto aprovado",
+  "yesMeaning": "Aprovar o PL 6.359/2025.",
+  "noMeaning": "Rejeitar o PL 6.359/2025.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13605",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3066192&filename=PL+6359/2025",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2595984",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2595984"
+  },
+  "evidence": {
+   "method": "Relatório Nominal Eletrônica de 25/03/2026, das 17:39 às 17:50; 258 Sim, 140 Não, 1 abstenção e total de 399. A data, o objeto e a contagem coincidem com o registro da votação.",
+   "object": "O relatório identifica PL 6359/2025 — PROJETO DE LEI. A ficha registra a aprovação do projeto em turno único.",
+   "text": "O PDF oficial de inteiro teor do PL 6359/2025 foi conferido; trata da criação de duas varas federais no Amazonas e seis em Mato Grosso do Sul."
+  },
+  "reason": null,
+  "votedPropositionId": 2595984
+ },
+ {
+  "id": "2418774-66",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-09",
+  "title": "Subemenda global sobre desmembramento entre municípios",
+  "summary": "A Câmara aprovou a subemenda substitutiva global ao PLP 6/2024. O texto votado estabelece normas gerais para o desmembramento de parte de um município e sua incorporação a outro, no contexto de conflitos territoriais municipais.",
+  "decisionLabel": "Subemenda substitutiva global aprovada",
+  "yesMeaning": "Aprovar a subemenda substitutiva global adotada ao PLP 6/2024.",
+  "noMeaning": "Rejeitar essa subemenda substitutiva global.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13565",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3099213&filename=PRLE+2+%3D%3E+PLP+6/2024",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2418774",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2418774"
+  },
+  "evidence": {
+   "method": "Relatório Nominal Eletrônica de 17/03/2026, das 20:31 às 20:40; 417 Sim, 1 Não e total de 418. A data, o objeto e a contagem coincidem com o registro da votação. A fonte não informa abstenções.",
+   "object": "O relatório identifica PLP 6/2024 — SUBEMENDA SUBSTITUTIVA. A pauta da sessão identifica a versão como subemenda substitutiva global adotada pelo relator da CCJC.",
+   "text": "O PDF oficial PRLE 2 => PLP 6/2024 contém, nas páginas finais, a subemenda substitutiva da CCJC que define normas gerais para desmembramento de municípios."
+  },
+  "reason": null
+ },
+ {
+  "id": "2578879-38",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-09",
+  "title": "Cargos e funções no Conselho Nacional de Justiça (CNJ)",
+  "summary": "A Câmara aprovou o PL 5.490/2025. O texto votado cria cargos efetivos, cargos em comissão e funções comissionadas no quadro de pessoal do Conselho Nacional de Justiça.",
+  "decisionLabel": "Projeto aprovado",
+  "yesMeaning": "Aprovar o PL 5.490/2025.",
+  "noMeaning": "Rejeitar o PL 5.490/2025.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13530",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3034087&filename=PL+5490/2025",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2578879",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2578879"
+  },
+  "evidence": {
+   "method": "Relatório Nominal Eletrônica de 03/03/2026, das 20:33 às 20:41; 248 Sim, 164 Não, 2 abstenções e total de 414. A data, o objeto e a contagem coincidem com o registro da votação.",
+   "object": "O relatório identifica PL 5490/2025 — PROJETO DE LEI. A ficha registra a aprovação do projeto em turno único.",
+   "text": "O PDF oficial de inteiro teor do PL 5490/2025 foi conferido; seu texto cria cargos efetivos, cargos em comissão e funções comissionadas para o CNJ."
+  },
+  "reason": null,
+  "votedPropositionId": 2578879
+ },
+ {
+  "id": "2543171-49",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-09",
+  "title": "Sistema de apoio oficial ao crédito à exportação",
+  "summary": "A Câmara aprovou o PL 6.139/2023, ressalvado o destaque. O texto votado estabelece o sistema brasileiro de apoio oficial ao crédito à exportação; o destaque ficou sujeito a decisão separada.",
+  "decisionLabel": "Projeto aprovado, ressalvado o destaque",
+  "yesMeaning": "Aprovar o PL 6.139/2023, com o destaque reservado a decisão separada.",
+  "noMeaning": "Rejeitar o PL 6.139/2023.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13511",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2971670&filename=PL+6139/2023",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2543171",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2543171"
+  },
+  "evidence": {
+   "method": "Relatório Nominal Eletrônica de 02/03/2026, das 20:08 às 20:25; 340 Sim, 108 Não, 1 abstenção e total de 449. A data, o objeto e a contagem coincidem com o registro da votação.",
+   "object": "O relatório identifica PL 6139/2023 — PROJETO DE LEI. A ficha registra a aprovação do projeto, ressalvado o destaque.",
+   "text": "O PDF oficial de inteiro teor do PL 6139/2023 foi conferido; estabelece o sistema brasileiro de apoio oficial ao crédito à exportação."
+  },
+  "reason": null,
+  "votedPropositionId": 2543171
+ },
+ {
+  "id": "2601040-31",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-09",
+  "title": "Substitutivo ao PLP 14/2026 sobre tributos da indústria química",
+  "summary": "A Câmara aprovou o substitutivo do relator ao PLP 14/2026, projeto sobre tributos da indústria química e petroquímica.",
+  "decisionLabel": "Substitutivo do relator aprovado",
+  "yesMeaning": "Aprovar o substitutivo oferecido pelo relator ao PLP 14/2026.",
+  "noMeaning": "Rejeitar o substitutivo oferecido pelo relator ao PLP 14/2026.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13494",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3081444&filename=SBT+1+%3D%3E+PLP+14/2026",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2601040",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2601040"
+  },
+  "evidence": {
+   "method": "Relatório Nominal Eletrônica de 10/02/2026, das 21:09 às 21:22; 317 Sim, 61 Não, 2 abstenções e total de 380. A data, o objeto e a contagem coincidem com o registro da votação.",
+   "object": "O relatório identifica PLP 14/2026 — SUBSTITUTIVO OFERECIDO PELO RELATOR. A ficha registra a aprovação do substitutivo.",
+   "text": "A ficha de tramitação identifica o PDF oficial SBT 1 => PLP 14/2026. O tema do projeto de referência é registrado sem atribuir efeitos específicos ao substitutivo."
+  },
+  "reason": null
+ },
+ {
+  "id": "2379032-78",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2379032-78",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82956"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 3904/2023 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 3.904, de 2023, adotado pelo relator da Comissão de Agricultura, Pecuária, Abastecimento e Desenvolvimento, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "2642329-22",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2642329-22",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82956"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 4952/2026 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 4.952, de 2026, adotado pelo relator da Comissão de Administração e Serviço Público."
+  }
+ },
+ {
+  "id": "2642328-21",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2642328-21",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82956"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 4951/2026 - PROJETO DE LEI (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Projeto de Lei nº 4.951, de 2026."
+  }
+ },
+ {
+  "id": "2642167-20",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2642167-20",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82944"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 4921/2026 - PROJETO DE LEI (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Projeto de Lei nº 4.921, de 2026."
+  }
+ },
+ {
+  "id": "2639657-19",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2639657-19",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82944"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 3710/2026 - PROJETO DE LEI (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Projeto de Lei nº 3.710, de 2026."
+  }
+ },
+ {
+  "id": "2539048-45",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2539048-45",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82944"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 3652/2025 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 3.652, de 2025, adotado pelo relator da Comissão de Educação."
+  }
+ },
+ {
+  "id": "2586419-33",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2586419-33",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82944"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 5894/2025 - SUBEMENDA SUBSTITUTIVA (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovada a Subemenda Substitutiva ao Projeto de Lei nº 5.894, de 2025, adotada pelo relator da Comissão de Cultura."
+  }
+ },
+ {
+  "id": "2323657-108",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2323657-108",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82944"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 1290/2022 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 1.290, de 2022, adotado pela relatora da Comissão de Constituição e Justiça e de Cidadania."
+  }
+ },
+ {
+  "id": "1229705-82",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/1229705-82",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82944"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 1400/2015 - SUBSTITUTIVO OFERECIDO PELO RELATOR (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 1.400, de 2015, adotado pelo relator da Comissão de Finanças e Tributação."
+  }
+ },
+ {
+  "id": "2347038-83",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2347038-83",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82944"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 241/2023 - SUBSTITUTIVO OFERECIDO PELO RELATOR (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 241, de 2023, adotado pelo relator da Comissão de Previdência, Assistência Social, Infância, Adolescência e Família."
+  }
+ },
+ {
+  "id": "2589671-49",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2589671-49",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82944"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 287/2024 - PROJETO DE LEI (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Projeto de Lei nº 287, de 2024, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "2231069-136",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2231069-136",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82935"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 6231/2019 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 6.231, de 2019, adotado pelo relator da Comissão de Finanças e Tributação."
+  }
+ },
+ {
+  "id": "2637279-29",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2637279-29",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82935"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 3481/2026 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 3.481, de 2026, adotado pelo relator da Comissão de Educação."
+  }
+ },
+ {
+  "id": "2616937-26",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2616937-26",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82935"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 1675/2023 - PROJETO DE LEI (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Projeto de Lei nº 1.675, de 2023."
+  }
+ },
+ {
+  "id": "866002-89",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/866002-89",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82935"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 8332/2015 - PROJETO DE LEI (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Projeto de Lei nº 8.332, de 2015."
+  }
+ },
+ {
+  "id": "1194323-97",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/1194323-97",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82935"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 956/2015 - PROJETO DE LEI (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Projeto de Lei nº 956, de 2015."
+  }
+ },
+ {
+  "id": "2632245-21",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2632245-21",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82895"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 3083/2026 - PROJETO DE LEI (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Projeto de Lei nº 3.083, de 2026."
+  }
+ },
+ {
+  "id": "289361-76",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/289361-76",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82895"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 5415/2005 - SUBSTITUTIVO OFERECIDO PELO RELATOR (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 5.415, de 2005, da Comissão de Segurança Pública e Combate ao Crime Organizado."
+  }
+ },
+ {
+  "id": "2500126-44",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "A transcrição oficial registra a fórmula simbólica de votação para esse objeto; não há inferência baseada em ausência de relatório ou em contagem.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2500126-44",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/82895"
+  },
+  "evidence": {
+   "method": "Em votação o substitutivo adotado pela Comissão de Cultura ao Projeto de Lei nº 1.842, de 2025. Em votação. Aqueles que forem pela aprovação permaneçam como se acham. (Pausa.) APROVADO.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 1.842, de 2025, da Comissão de Cultura."
+  }
+ },
+ {
+  "id": "2314800-41",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2314800-41",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82895"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 4412/2021 - PROJETO DE LEI (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Projeto de Lei nº 4.412, de 2021."
+  }
+ },
+ {
+  "id": "2305879-50",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "A transcrição oficial registra a fórmula simbólica de votação para esse objeto; não há inferência baseada em ausência de relatório ou em contagem.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2305879-50",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/82895"
+  },
+  "evidence": {
+   "method": "Em votação o Projeto de Lei nº 1.932, de 2021. Aqueles que forem pela aprovação permaneçam como se acham. (Pausa.) APROVADO.",
+   "object": "Aprovado o Projeto de Lei nº 1.932, de 2021."
+  }
+ },
+ {
+  "id": "2637883-17",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2637883-17",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82895"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 3540/2026 - SUBSTITUTIVO OFERECIDO PELO RELATOR (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 3.540, de 2026, adotado pelo relator da Comissão de Previdência, Assistência Social, Infância, Adolescência e Família."
+  }
+ },
+ {
+  "id": "2560976-27",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2560976-27",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82895"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 4578/2025 - SUBSTITUTIVO OFERECIDO PELA RELATORA (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 4.578, de 2025, adotado pela relatora da Comissão Especial."
+  }
+ },
+ {
+  "id": "2355883-84",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "A transcrição oficial registra a fórmula simbólica de votação para esse objeto; não há inferência baseada em ausência de relatório ou em contagem.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2355883-84",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/82876"
+  },
+  "evidence": {
+   "method": "Em votação o substitutivo oferecido pelo Relator da Comissão de Viação e Transportes ao PL nº 1.828, de 2023. Aqueles que forem pela aprovação permaneçam como se acham. (Pausa.) APROVADO.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 1.828, de 2023, adotado pelo relator da Comissão de Viação e Transportes."
+  }
+ },
+ {
+  "id": "2625609-21",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "A transcrição oficial registra a fórmula simbólica de votação para esse objeto; não há inferência baseada em ausência de relatório ou em contagem.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2625609-21",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/82876"
+  },
+  "evidence": {
+   "method": "Em votação o Projeto de Lei nº 5.961, de 2025. Aqueles que forem pela aprovação permaneçam como se acham. (Pausa.) APROVADO.",
+   "object": "Aprovado o Projeto de Lei nº 5.961, de 2025."
+  }
+ },
+ {
+  "id": "582036-114",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/582036-114",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82876"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 429/2024 - SUBSTITUTIVO DO SENADO FEDERAL (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "A API descreve o substitutivo do Senado ao PL 5.827/2013 e lista o PL 429/2024 como proposição afetada; o portal da sessão identifica “PL Nº 429/2024 - SUBSTITUTIVO DO SENADO FEDERAL (Simbólica)”."
+  }
+ },
+ {
+  "id": "2416877-89",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2416877-89",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82876"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 25/2024 - SUBSTITUTIVO OFERECIDO PELO RELATOR (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 25, de 2024, adotado pelo relator da Comissão de Constituição e Justiça e de Cidadania."
+  }
+ },
+ {
+  "id": "492267-143",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/492267-143",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82876"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 462/2011 - SUBEMENDA SUBSTITUTIVA (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovada a Subemenda Substitutiva ao Projeto de Lei nº 462, de 2011, adotada pelo relator da Comissão de Administração e Serviço Público."
+  }
+ },
+ {
+  "id": "2225017-39",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "A transcrição oficial registra a fórmula simbólica de votação para esse objeto; não há inferência baseada em ausência de relatório ou em contagem.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2225017-39",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/82790"
+  },
+  "evidence": {
+   "method": "Em votação o Projeto de Lei nº 5.500, de 2019. Aqueles que forem pela aprovação permaneçam como se acham. (Pausa.) APROVADO.",
+   "object": "Aprovado o Projeto de Lei nº 5.500, de 2019."
+  }
+ },
+ {
+  "id": "2377163-52",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2377163-52",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82790"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 3839/2023 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 3.839, de 2023, adotado pela relatora da Comissão da Amazônia e dos Povos Originários e Tradicionais."
+  }
+ },
+ {
+  "id": "2461382-42",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2461382-42",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82790"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 3839/2024 -  SUBSTITUTIVO OFERECIDO PELO RELATOR (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 3.839, de 2024, adotado pelo relator da Comissão de Constituição e Justiça e de Cidadania."
+  }
+ },
+ {
+  "id": "2638483-29",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2638483-29",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82772"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 3085/2026 - PROJETO DE LEI (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Projeto de Lei nº 3.085, de 2026, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "2491321-60",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2491321-60",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82738"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 1361/2025 - SUBEMENDA SUBSTITUTIVA (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovada a Subemenda Substitutiva ao Projeto de Lei nº 1.361, de 2025, adotada pelo relator da Comissão de Finanças e Tributação."
+  }
+ },
+ {
+  "id": "2500155-37",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2500155-37",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82738"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 1845/2025 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 1.845, de 2025, adotado pelo relator da Comissão de Constituição e Justiça e de Cidadania."
+  }
+ },
+ {
+  "id": "2625767-37",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "A transcrição oficial registra a fórmula simbólica de votação para esse objeto; não há inferência baseada em ausência de relatório ou em contagem.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2625767-37",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/82729"
+  },
+  "evidence": {
+   "method": "Em votação o substitutivo oferecido pelo Relator da Comissão de Saúde ao PL nº 2.465, de 2026. Orientação de bancadas. Em votação. Aqueles que forem pela aprovação permaneçam como se acham. (Pausa.) APROVADO.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 2.465, de 2026, adotado pelo relator da Comissão de Saúde."
+  }
+ },
+ {
+  "id": "2504793-30",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2504793-30",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82660"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 2143/2025 - SUBSTITUTIVO OFERECIDO PELO RELATOR (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 2.143, de 2025, adotado pelo relator da Comissão de Agricultura, Pecuária, Abastecimento e Desenvolvimento Rural."
+  }
+ },
+ {
+  "id": "2153731-47",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2153731-47",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82635"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 8754/2017 - PROJETO DE LEI (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Projeto de Lei nº 8.754, de 2017."
+  }
+ },
+ {
+  "id": "2384370-84",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2384370-84",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82555"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 4225/2023 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 4.225, de 2023, adotado pela relatora da Comissão de Saúde."
+  }
+ },
+ {
+  "id": "2351249-64",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2351249-64",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82555"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 1106/2023 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 1.106, de 2023, adotado pelo relator da Comissão de Constituição e Justiça e de Cidadania, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "2566557-49",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2566557-49",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82513"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 4913/2025 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 4.913, de 2025, adotado pela relatora da Comissão de Trabalho."
+  }
+ },
+ {
+  "id": "2433663-53",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2433663-53",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82342"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 1822/2024 - SUBSTITUTIVO OFERECIDO PELO RELATOR (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 1.822, de 2024, adotado pelo relator da Comissão de Previdência, Assistência Social, Infância, Adolescência e Família."
+  }
+ },
+ {
+  "id": "2596615-28",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2596615-28",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82310"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 2951/2024 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 2.951, de 2024, adotado pelo relator da Comissão de Agricultura, Pecuária, Abastecimento e Desenvolvimento Rural, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "2422907-83",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2422907-83",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82310"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 699/2023 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 699, de 2023, adotado pelo relator da Comissão de Finanças e Tributação."
+  }
+ },
+ {
+  "id": "2613488-27",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "A transcrição oficial registra a fórmula simbólica de votação para esse objeto; não há inferência baseada em ausência de relatório ou em contagem.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2613488-27",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/82277"
+  },
+  "evidence": {
+   "method": "Em votação o substitutivo oferecido pelo Relator da Comissão de Turismo ao PL nº 1.602, de 2026. Aqueles que forem pela aprovação permaneçam como se acham. (Pausa.) APROVADO.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 1.602, de 2026, adotado pelo relator da Comissão de Turismo."
+  }
+ },
+ {
+  "id": "2596617-25",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2596617-25",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82277"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 5868/2025 - PROJETO DE LEI (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Projeto de Lei nº 5.868, de 2025."
+  }
+ },
+ {
+  "id": "502669-106",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/502669-106",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82277"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 1384/2011 - SUBEMENDA SUBSTITUTIVA (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovada a Subemenda Substitutiva ao Projeto de Lei nº 1.384, de 2011, adotada pelo relator da Comissão de Agricultura, Pecuária, Abastecimento e Desenvolvimento Rural."
+  }
+ },
+ {
+  "id": "2349768-66",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2349768-66",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82277"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 780/2023 - PROJETO DE LEI (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Projeto de Lei nº 780, de 2023."
+  }
+ },
+ {
+  "id": "2531924-53",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2531924-53",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82246"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 3240/2025 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 3.240, de 2025, adotado pelo relator da Comissão de Administração e Serviço Público, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "2586587-36",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "A transcrição oficial registra a fórmula simbólica de votação para esse objeto; não há inferência baseada em ausência de relatório ou em contagem.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2586587-36",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/82246"
+  },
+  "evidence": {
+   "method": "Em votação o substitutivo oferecido pelo Relator da CCJC ao PL nº 5.900, de 2025. Em votação. Aqueles que forem pela aprovação permaneçam como se acham. (Pausa.) APROVADO.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 5.900, de 2025, adotado pelo relator da Comissão de Constituição e Justiça e de Cidadania."
+  }
+ },
+ {
+  "id": "2613731-42",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-09",
+  "title": "Subemenda substitutiva ao PL 1.625/2026",
+  "summary": "A Câmara aprovou a subemenda substitutiva ao PL 1.625/2026, adotada pelo relator da Comissão de Defesa do Consumidor, ressalvados os destaques. O resultado se refere a essa versão do texto.",
+  "decisionLabel": "Subemenda substitutiva aprovada",
+  "yesMeaning": "Aprovar a subemenda substitutiva ao PL 1.625/2026.",
+  "noMeaning": "Rejeitar essa versão do texto.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2613731-42",
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13735",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3134050",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/prop_imp?idProposicao=2613731&ord=1&tp=completa",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2613731",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82214"
+  },
+  "evidence": {
+   "method": "O relatório oficial identifica “Nominal Eletrônica” para PL nº 1.625/2026 — Subemenda Substitutiva em 20/05/2026, das 21:24 às 21:36; registra 268 Sim, 113 Não e total de 381. A sessão/portal também marca a opção como “(Nominal)”.",
+   "object": "A opção da sessão diz “PL Nº 1625/2026 - SUBEMENDA SUBSTITUTIVA (Nominal)”. O registro da API descreve a aprovação da subemenda substitutiva adotada pelo relator da Comissão de Defesa do Consumidor, ressalvados os destaques; a cronologia confirma que a proposição inicial ficou prejudicada.",
+   "text": "O inteiro teor ligado à proposição oficial 2626727 traz o título “Subemenda Substitutiva às Emendas apresentadas ao Projeto de Lei nº 1.625, de 2026”. O PDF escaneado tem identificação lateral “PRLE n. 2”; o resumo fica limitado à versão votada e não atribui efeitos específicos a partir da extração do texto."
+  },
+  "reason": null,
+  "votedPropositionId": 2626727,
+  "tallySource": "rollCall",
+  "participantsSource": "rollCall",
+  "reportObject": "SUBEMENDA SUBSTITUTIVA"
+ },
+ {
+  "id": "2562764-38",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2562764-38",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82214"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 4689/2025 - SUBSTITUTIVO OFERECIDO PELA RELATORA (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 4.689, de 2025, adotado pela relatora da Comissão de Cultura."
+  }
+ },
+ {
+  "id": "2516808-62",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2516808-62",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82214"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 2564/2025 - SUBSTITUTIVO OFERECIDO PELA RELATORA (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 2.564, de 2025, adotado pela relatora da Comissão de Meio Ambiente e Desenvolvimento Sustentável."
+  }
+ },
+ {
+  "id": "2263446-95",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2263446-95",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82214"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 4733/2020 - PROJETO DE LEI (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Projeto de Lei nº 4.733, de 2020."
+  }
+ },
+ {
+  "id": "2625949-26",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2625949-26",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82214"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 2486/2026 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 2.486, de 2026, adotado pelo relator da Comissão do Meio Ambiente e Desenvolvimento Sustentável, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "2565441-32",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2565441-32",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82155"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 4822/2025 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 4.822, de 2025, adotado pelo relator da Comissão de Constituição e Justiça e de Cidadania, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "2528433-60",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2528433-60",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82155"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 3066/2025 - SUBEMENDA SUBSTITUTIVA (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovada a Subemenda Substitutiva Global ao Projeto de Lei nº 3.066, de 2025, adotada pela relatora da Comissão de Previdência, Assistência Social, Infância, Adolescência e Família."
+  }
+ },
+ {
+  "id": "2349508-113",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2349508-113",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82155"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 715/2023 - SUBSTITUTO DO SENADO FEDERAL COM PARECER PELA REJEIÇÃO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Rejeitado o Substitutivo do Senado Federal ao projeto de lei nº 715, de 2023."
+  }
+ },
+ {
+  "id": "2349508-111",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "A decisão tratou somente de um dispositivo específico do substitutivo do Senado, não do texto principal integral.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2349508-111",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82155"
+  },
+  "evidence": {
+   "method": "O portal oficial classifica o objeto como simbólico: “PL   Nº 715/2023 - ART. 14-B DA LEI Nº 5.889/1973 CONTIDO NO ART. 1º DO SUBST. DO SENADO FEDERAL (Simbólica)”.",
+   "object": "Aprovado o art. 14-b da lei nº 5.889, de 1973, contido no artigo primeiro do Substitutivo do Senado Federal ao Projeto de Lei nº 715, de 2023.",
+   "scope": "O registro restringe a decisão ao art. 14-b da Lei nº 5.889/1973, contido no art. 1º do substitutivo do Senado ao PL 715/2023."
+  }
+ },
+ {
+  "id": "2624727-32",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2624727-32",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82132"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 2391/2026 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 2.391, de 2026, adotado pela relatora da Comissão de Previdência, Assistência Social, Infância, Adolescência e Família."
+  }
+ },
+ {
+  "id": "2481715-63",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2481715-63",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82096"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 3278/2021 - PROJETO DE LEI (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Projeto de Lei nº 3.278, de 2021."
+  }
+ },
+ {
+  "id": "2439777-41",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2439777-41",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82096"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 2978/2023 - PROJETO DE LEI (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Projeto de Lei nº 2.978, de 2023, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "2585361-37",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "A transcrição oficial registra a fórmula simbólica de votação para esse objeto; não há inferência baseada em ausência de relatório ou em contagem.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2585361-37",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/82096"
+  },
+  "evidence": {
+   "method": "Em votação o Projeto de Lei nº 5.878, de 2025. Em votação. Aqueles que forem pela aprovação permaneçam como se acham. (Pausa.) APROVADO.",
+   "object": "Aprovado o Projeto de Lei nº 5.878, de 2025."
+  }
+ },
+ {
+  "id": "2554555-49",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2554555-49",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82080"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 4295/2025 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 4.295, de 2025, adotado pela relatora da Comissão de Constituição e Justiça e de Cidadania."
+  }
+ },
+ {
+  "id": "2405705-65",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2405705-65",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=82080"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 1054/2019 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 1.054, de 2019, adotado pela relatora da Comissão de Administração e Serviço Público."
+  }
+ },
+ {
+  "id": "2598651-43",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2598651-43",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81997"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 6601/2025 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 6.601, de 2025, adotado pelo relator da Comissão de Trabalho."
+  }
+ },
+ {
+  "id": "2545048-48",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "A transcrição oficial registra a fórmula simbólica de votação para esse objeto; não há inferência baseada em ausência de relatório ou em contagem.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2545048-48",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81962"
+  },
+  "evidence": {
+   "method": "Em votação a subemenda substitutiva oferecida pela Relatora da Comissão de Constituição e Justiça e de Cidadania ao Projeto de Lei nº 3.984, de 2025, ressalvado o destaque. Em votação. Aqueles que forem pela aprovação permaneçam como se acham. (Pausa.)",
+   "object": "Aprovada a Subemenda Substitutiva Global ao Projeto de Lei nº 3.984, de 2025, adotada pela relatora da Comissão de Constituição e Justiça e de Cidadania, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "2407337-85",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "A transcrição oficial registra a fórmula simbólica de votação para esse objeto; não há inferência baseada em ausência de relatório ou em contagem.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2407337-85",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81962"
+  },
+  "evidence": {
+   "method": "Em votação a subemenda substitutiva oferecida pela Relatora da Comissão de Constituição e Justiça e de Cidadania ao PL nº 5.744, de 2023. Aqueles que forem pela aprovação permaneçam como se acham. (Pausa.) APROVADA.",
+   "object": "Aprovada a Subemenda Substitutiva ao Projeto de Lei nº 5.744, de 2023, adotada pelo relator da Comissão de Constituição e Justiça e de Cidadania."
+  }
+ },
+ {
+  "id": "949094-181",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "A transcrição oficial registra a fórmula simbólica de votação para esse objeto; não há inferência baseada em ausência de relatório ou em contagem.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/949094-181",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81962"
+  },
+  "evidence": {
+   "method": "Em votação a subemenda substitutiva oferecida pela Relatora da Comissão de Viação e Transportes ao PL nº 466, de 2015. Aqueles que forem pela aprovação permaneçam como se acham. (Pausa.) APROVADA.",
+   "object": "Aprovada a Subemenda Substitutiva ao Projeto de Lei nº 466, de 2015, adotada pela Relatora da Comissão de Viação e Transportes."
+  }
+ },
+ {
+  "id": "2447259-84",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2447259-84",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81962"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 2780/2024 - SUBEMENDA SUBSTITUTIVA (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovada a Subemenda Substitutiva Reformulada ao Projeto de Lei nº 2.780, de 2024, adotada pelo relator da Comissão Especial, ressalvados os destaques."
+  }
+ },
+ {
+  "id": "2412181-88",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "O portal oficial identifica explicitamente o método simbólico para a votação do objeto correspondente ao registro da API.",
+  "sources": {
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2412181-88",
+   "session": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81831"
+  },
+  "evidence": {
+   "method": "O portal oficial lista a opção “PL   Nº 5967/2023 - SUBSTITUTIVO OFERECIDO (Simbólica)” e a classifica explicitamente como “(Simbólica)”.",
+   "object": "Aprovado o Substitutivo ao Projeto de Lei nº 5.967, de 2023, adotado pelo relator da Comissão de Segurança Pública e Combate ao Crime Organizado."
+  }
+ },
+ {
+  "id": "2529801-36",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2529801-36",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81831",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81831"
+  },
+  "evidence": {
+   "date": "Evento oficial 81831; registro da votação em 2026-04-29 às 2026-04-29T20:34:34.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 3.158, de 2025, da Comissão de Constituição e Justiça e de Cidadania.",
+   "method": "Opção do portal: PL Nº 3158/2025 - SUBSTITUTIVO OFERECIDO PELA RELATORA (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 3.158, de 2025, da Comissão de Constituição e Justiça e de Cidadania."
+  }
+ },
+ {
+  "id": "2448730-62",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2448730-62",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81831",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81831"
+  },
+  "evidence": {
+   "date": "Evento oficial 81831; registro da votação em 2026-04-29 às 2026-04-29T20:06:54.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 2.841, de 2024, adotado pela relatora da Comissão de Educação.",
+   "method": "Opção do portal: PL Nº 2841/2024 - SUBSTITUTIVO OFERECIDO PELA RELATORA (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 2.841, de 2024, adotado pela relatora da Comissão de Educação."
+  }
+ },
+ {
+  "id": "2426763-76",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2426763-76",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81831",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81831"
+  },
+  "evidence": {
+   "date": "Evento oficial 81831; registro da votação em 2026-04-29 às 2026-04-29T19:11:49.",
+   "object": "API da Câmara: Aprovada a Subemenda Substitutiva Global ao Projeto de Lei nº 1.248, de 2024, adotada pela relatora da Comissão de Educação.",
+   "method": "Opção do portal: PL Nº 1248/2024 - SUBEMENDA SUBSTITUTIVA (Simbólica)",
+   "result": "Aprovada a Subemenda Substitutiva Global ao Projeto de Lei nº 1.248, de 2024, adotada pela relatora da Comissão de Educação."
+  }
+ },
+ {
+  "id": "2611078-28",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2611078-28",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81785",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81785"
+  },
+  "evidence": {
+   "date": "Evento oficial 81785; registro da votação em 2026-04-28 às 2026-04-28T23:05:20.",
+   "object": "API da Câmara: Aprovada a Subemenda Substitutiva Global ao Projeto de Lei nº 1.315, de 2026, adotada pela relatora da Comissão de Relações Exteriores e de Defesa Nacional, ressalvados os destaques.",
+   "method": "Opção do portal: PL Nº 1315/2026 - SUBEMENDA SUBSTITUTIVA (Simbólica)",
+   "result": "Aprovada a Subemenda Substitutiva Global ao Projeto de Lei nº 1.315, de 2026, adotada pela relatora da Comissão de Relações Exteriores e de Defesa Nacional, ressalvados os destaques."
+  }
+ },
+ {
+  "id": "2392934-85",
+  "status": "excluded",
+  "reason": "O registro corresponde à votação simbólica do objeto identificado na transcrição, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2392934-85",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81785",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81785"
+  },
+  "evidence": {
+   "date": "Registro oficial: 2026-04-28 2026-04-28T22:11:48; transcrição do evento 81785.",
+   "object": "Em votação o substitutivo oferecido pelo Relator da Comissão de Saúde ao Projeto de Lei nº 4.820, de 2023.",
+   "method": "Aqueles que forem pela aprovação permaneçam como se acham.",
+   "result": "APROVADO."
+  }
+ },
+ {
+  "id": "2456613-24",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2456613-24",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81785",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81785"
+  },
+  "evidence": {
+   "date": "Evento oficial 81785; registro da votação em 2026-04-28 às 2026-04-28T21:42:10.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 3.453, de 2024, adotado pela relatora da Comissão de Constituição e Justiça e de Cidadania.",
+   "method": "Opção do portal: PL Nº 3453/2024 - SUBSTITUTIVO OFERECIDO (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 3.453, de 2024, adotado pela relatora da Comissão de Constituição e Justiça e de Cidadania."
+  }
+ },
+ {
+  "id": "2317939-74",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2317939-74",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81738",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81738"
+  },
+  "evidence": {
+   "date": "Evento oficial 81738; registro da votação em 2026-04-23 às 2026-04-23T12:13:18.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 580, de 2022, adotado pelo relator da Comissão de Constituição e Justiça e de Cidadania.",
+   "method": "Opção do portal: PL Nº 580/2022 - SUBSTITUTIVO OFERECIDO PELO RELATOR (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 580, de 2022, adotado pelo relator da Comissão de Constituição e Justiça e de Cidadania."
+  }
+ },
+ {
+  "id": "2419185-69",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2419185-69",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81726",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81726"
+  },
+  "evidence": {
+   "date": "Evento oficial 81726; registro da votação em 2026-04-22 às 2026-04-22T22:52:57.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 539, de 2024, adotado pelo relator da Comissão da Amazônia e dos Povos Originários e Tradicionais.",
+   "method": "Opção do portal: PL Nº 539/2024 - SUBSTITUTIVO OFERECIDO (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 539, de 2024, adotado pelo relator da Comissão da Amazônia e dos Povos Originários e Tradicionais."
+  }
+ },
+ {
+  "id": "2234260-141",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2234260-141",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81726",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81726"
+  },
+  "evidence": {
+   "date": "Evento oficial 81726; registro da votação em 2026-04-22 às 2026-04-22T22:21:59.",
+   "object": "API da Câmara: Aprovada a Subemenda Substitutiva Global ao Projeto de Lei nº 6.461, de 2019, adotada pela relatora da Comissão Especial, ressalvados os destaques.",
+   "method": "Opção do portal: PL Nº 6461/2019 - SUBEMENDA SUBSTITUTIVA (Simbólica)",
+   "result": "Aprovada a Subemenda Substitutiva Global ao Projeto de Lei nº 6.461, de 2019, adotada pela relatora da Comissão Especial, ressalvados os destaques."
+  }
+ },
+ {
+  "id": "2368697-53",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2368697-53",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81726",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81726"
+  },
+  "evidence": {
+   "date": "Evento oficial 81726; registro da votação em 2026-04-22 às 2026-04-22T21:28:47.",
+   "object": "API da Câmara: Aprovada a Subemenda Substitutiva Global ao Projeto de Lei nº 3.025, de 2023, adotada pelo relator da Comissão de Minas e Energia, ressalvados os destaques.",
+   "method": "Opção do portal: PL Nº 3025/2023 - SUBEMENDA SUBSTITUTIVA (Simbólica)",
+   "result": "Aprovada a Subemenda Substitutiva Global ao Projeto de Lei nº 3.025, de 2023, adotada pelo relator da Comissão de Minas e Energia, ressalvados os destaques."
+  }
+ },
+ {
+  "id": "2419128-90",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2419128-90",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81726",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81726"
+  },
+  "evidence": {
+   "date": "Evento oficial 81726; registro da votação em 2026-04-22 às 2026-04-22T19:54:23.",
+   "object": "API da Câmara: Aprovada a Subemenda Substitutiva Global ao Projeto de Lei nº 533, de 2024, adotada pelo relator da Comissão de Educação.",
+   "method": "Opção do portal: PL Nº 533/2024 - SUBEMENDA SUBSTITUTIVA (Simbólica)",
+   "result": "Aprovada a Subemenda Substitutiva Global ao Projeto de Lei nº 533, de 2024, adotada pelo relator da Comissão de Educação."
+  }
+ },
+ {
+  "id": "530513-106",
+  "status": "excluded",
+  "reason": "O registro corresponde à votação simbólica do objeto identificado na transcrição, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/530513-106",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81699",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81699"
+  },
+  "evidence": {
+   "date": "Registro oficial: 2026-04-17 2026-04-17T10:51:40; transcrição do evento 81699.",
+   "object": "Em votação o substitutivo adotado pela Comissão de Viação e Transportes ao Projeto de Lei nº 2.879, de 2011.",
+   "method": "Aqueles que forem pela aprovação permaneçam como se acham.",
+   "result": "APROVADO."
+  }
+ },
+ {
+  "id": "2495726-47",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2495726-47",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81658",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81658"
+  },
+  "evidence": {
+   "date": "Evento oficial 81658; registro da votação em 2026-04-15 às 2026-04-15T21:32:41.",
+   "object": "API da Câmara: Aprovado o Projeto de Lei nº 2.083, de 2022.",
+   "method": "Opção do portal: PL Nº 2083/2022 - PROJETO DE LEI (Simbólica)",
+   "result": "Aprovado o Projeto de Lei nº 2.083, de 2022."
+  }
+ },
+ {
+  "id": "2611097-23",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2611097-23",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81658",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81658"
+  },
+  "evidence": {
+   "date": "Evento oficial 81658; registro da votação em 2026-04-15 às 2026-04-15T21:11:20.",
+   "object": "API da Câmara: Aprovado o Projeto de Lei nº 4.740, de 2025.",
+   "method": "Opção do portal: PL Nº 4740/2025 - PROJETO DE LEI (Simbólica)",
+   "result": "Aprovado o Projeto de Lei nº 4.740, de 2025."
+  }
+ },
+ {
+  "id": "2483732-60",
+  "status": "excluded",
+  "reason": "O registro corresponde à votação simbólica do objeto identificado na transcrição, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2483732-60",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81545",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81545"
+  },
+  "evidence": {
+   "date": "Registro oficial: 2026-04-08 2026-04-08T20:58:44; transcrição do evento 81545.",
+   "object": "Em votação o substitutivo oferecido pelo Relator da Comissão de Minas e Energia ao Projeto de Lei nº 399, de 2025, ressalvado o destaque.",
+   "method": "Aqueles que forem pela aprovação permaneçam como se acham.",
+   "result": "APROVADO O PROJETO, COM OS VOTOS CONTRÁRIOS DO PARTIDO NOVO E DO PARTIDO MISSÃO."
+  }
+ },
+ {
+  "id": "344542-77",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/344542-77",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81519",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81519"
+  },
+  "evidence": {
+   "date": "Evento oficial 81519; registro da votação em 2026-04-07 às 2026-04-07T18:41:15.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 396, de 2007, da Comissão de Trabalho, de Administração e Serviço Público.",
+   "method": "Opção do portal: PL Nº 396/2007 - SUBSTITUTIVO OFERECIDO (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 396, de 2007, da Comissão de Trabalho, de Administração e Serviço Público."
+  }
+ },
+ {
+  "id": "2079783-99",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2079783-99",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81519",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81519"
+  },
+  "evidence": {
+   "date": "Evento oficial 81519; registro da votação em 2026-04-07 às 2026-04-07T18:17:25.",
+   "object": "API da Câmara: Aprovado o Projeto de Lei nº 4.768, de 2016.",
+   "method": "Opção do portal: PL Nº 4768/2016 - PROJETO DE LEI (Simbólica)",
+   "result": "Aprovado o Projeto de Lei nº 4.768, de 2016."
+  }
+ },
+ {
+  "id": "2200711-74",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2200711-74",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81441",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81441"
+  },
+  "evidence": {
+   "date": "Evento oficial 81441; registro da votação em 2026-03-26 às 2026-03-26T10:33:10.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 2.736, de 2019, da Comissão de Viação e Transportes.",
+   "method": "Opção do portal: PL Nº 2736/2019 - SUBSTITUTIVO OFERECIDO (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 2.736, de 2019, da Comissão de Viação e Transportes."
+  }
+ },
+ {
+  "id": "2575942-32",
+  "status": "excluded",
+  "reason": "O registro corresponde à votação simbólica do objeto identificado na transcrição, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2575942-32",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81424",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81424"
+  },
+  "evidence": {
+   "date": "Registro oficial: 2026-03-25 2026-03-25T20:04:03; transcrição do evento 81424.",
+   "object": "Em votação o Projeto de Lei nº 5.405, de 2025.",
+   "method": "Aqueles que forem pela aprovação permaneçam como se acham.",
+   "result": "APROVADO."
+  }
+ },
+ {
+  "id": "2492368-52",
+  "status": "excluded",
+  "reason": "O registro corresponde à votação simbólica do objeto identificado na transcrição, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2492368-52",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81424",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81424"
+  },
+  "evidence": {
+   "date": "Registro oficial: 2026-03-25 2026-03-25T19:50:13; transcrição do evento 81424.",
+   "object": "Em votação o substitutivo oferecido pela Relatora da Comissão de Constituição e Justiça e de Cidadania ao Projeto de Lei nº 1.404, de 2025, ressalvado o destaque.",
+   "method": "Aqueles que forem pela aprovação permaneçam como se acham.",
+   "result": "APROVADO."
+  }
+ },
+ {
+  "id": "2323053-53",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2323053-53",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81411",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81411"
+  },
+  "evidence": {
+   "date": "Evento oficial 81411; registro da votação em 2026-03-24 às 2026-03-24T18:22:20.",
+   "object": "API da Câmara: Aprovado o Projeto de Lei nº 5.189, de 2019.",
+   "method": "Opção do portal: PL Nº 5189/2019 - PROJETO DE LEI (Simbólica)",
+   "result": "Aprovado o Projeto de Lei nº 5.189, de 2019."
+  }
+ },
+ {
+  "id": "2539231-32",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2539231-32",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81411",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81411"
+  },
+  "evidence": {
+   "date": "Evento oficial 81411; registro da votação em 2026-03-24 às 2026-03-24T18:11:37.",
+   "object": "API da Câmara: Aprovado o Projeto de Lei nº 3.675, de 2025.",
+   "method": "Opção do portal: PL Nº 3675/2025 - PROJETO DE LEI (Simbólica)",
+   "result": "Aprovado o Projeto de Lei nº 3.675, de 2025."
+  }
+ },
+ {
+  "id": "2487399-53",
+  "status": "excluded",
+  "reason": "O registro corresponde à votação simbólica do objeto identificado na transcrição, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2487399-53",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81411",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81411"
+  },
+  "evidence": {
+   "date": "Registro oficial: 2026-03-24 2026-03-24T17:51:26; transcrição do evento 81411.",
+   "object": "Em votação o substitutivo adotado pela Comissão do Esporte ao Projeto de Lei nº 1.069, de 2025, ressalvado o destaque.",
+   "method": "Aqueles que forem pela aprovação permaneçam como se acham.",
+   "result": "APROVADO."
+  }
+ },
+ {
+  "id": "2593639-25",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2593639-25",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81411",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81411"
+  },
+  "evidence": {
+   "date": "Evento oficial 81411; registro da votação em 2026-03-24 às 2026-03-24T17:32:06.",
+   "object": "API da Câmara: Aprovado o Projeto de Lei nº 126, de 2025, ressalvado o destaque.",
+   "method": "Opção do portal: PL Nº 126/2025 - PROJETO DE LEI (Simbólica)",
+   "result": "Aprovado o Projeto de Lei nº 126, de 2025, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "2523788-36",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2523788-36",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81411",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81411"
+  },
+  "evidence": {
+   "date": "Evento oficial 81411; registro da votação em 2026-03-24 às 2026-03-24T17:23:35.",
+   "object": "API da Câmara: Aprovado o Projeto de Lei nº 2.805, de 2025.",
+   "method": "Opção do portal: PL Nº 2805/2025 - PROJETO DE LEI (Simbólica)",
+   "result": "Aprovado o Projeto de Lei nº 2.805, de 2025."
+  }
+ },
+ {
+  "id": "2485231-48",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2485231-48",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81378",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81378"
+  },
+  "evidence": {
+   "date": "Evento oficial 81378; registro da votação em 2026-03-19 às 2026-03-19T11:42:57.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 646, de 2025, adotado pelo relator da Comissão de Constituição e Justiça e de Cidadania.",
+   "method": "Opção do portal: PL Nº 646/2025 - SUBSTITUTIVO OFERECIDO PELO RELATOR (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 646, de 2025, adotado pelo relator da Comissão de Constituição e Justiça e de Cidadania."
+  }
+ },
+ {
+  "id": "2376169-90",
+  "status": "excluded",
+  "reason": "Votação simbólica de dispositivos do substitutivo do Senado, e não do texto principal do PL 3.780/2023.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2376169-90",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81344",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81344"
+  },
+  "evidence": {
+   "date": "Registro oficial: 2026-03-18 2026-03-18T22:09:29; transcrição do evento 81344.",
+   "object": "Em votação os dispositivos do substitutivo do Senado Federal ao Projeto de Lei nº 3.780, de 2023, com parecer pela rejeição, ressalvado o destaque.",
+   "method": "Aqueles que forem pela aprovação permaneçam como se acham.",
+   "result": "REJEITADOS, COM O VOTO CONTRÁRIO, MAIS UMA VEZ, DA FEDERAÇÃO PSOL REDE."
+  }
+ },
+ {
+  "id": "2462009-70",
+  "status": "excluded",
+  "reason": "O registro corresponde à votação simbólica do objeto identificado na transcrição, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2462009-70",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81344",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81344"
+  },
+  "evidence": {
+   "date": "Registro oficial: 2026-03-18 2026-03-18T21:40:19; transcrição do evento 81344.",
+   "object": "Em votação o substitutivo oferecido pela Relatora da Comissão de Constituição e Justiça e de Cidadania ao Projeto nº 3.880, de 2024, ressalvado o destaque.",
+   "method": "Aqueles que forem pela aprovação permaneçam como se acham.",
+   "result": "APROVADO."
+  }
+ },
+ {
+  "id": "603333-80",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/603333-80",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81344",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81344"
+  },
+  "evidence": {
+   "date": "Evento oficial 81344; registro da votação em 2026-03-18 às 2026-03-18T19:08:46.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 2.950, de 2015, adotado pelo relator da Comissão de Previdência, Assistência Social, Infância, Adolescência e Família.",
+   "method": "Opção do portal: PL Nº 2950/2015 - SUBSTITUTIVO OFERECIDO (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 2.950, de 2015, adotado pelo relator da Comissão de Previdência, Assistência Social, Infância, Adolescência e Família."
+  }
+ },
+ {
+  "id": "2563330-76",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2563330-76",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81323",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81323"
+  },
+  "evidence": {
+   "date": "Evento oficial 81323; registro da votação em 2026-03-17 às 2026-03-17T23:44:32.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 4.709, de 2025, adotado pelo relator da Comissão de Constituição e Justiça e de Cidadania, ressalvados os destaques.",
+   "method": "Opção do portal: PL Nº 4709/2025 - SUBSTITUTIVO OFERECIDO PELO RELATOR (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 4.709, de 2025, adotado pelo relator da Comissão de Constituição e Justiça e de Cidadania, ressalvados os destaques."
+  }
+ },
+ {
+  "id": "2481730-54",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2481730-54",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81323",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81323"
+  },
+  "evidence": {
+   "date": "Evento oficial 81323; registro da votação em 2026-03-17 às 2026-03-17T22:55:32.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 5.031, de 2024, adotado pela relatora da Comissão de Relações Exteriores e de Defesa Nacional.",
+   "method": "Opção do portal: PL Nº 5031/2024 - SUBSTITUTIVO OFERECIDO (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 5.031, de 2024, adotado pela relatora da Comissão de Relações Exteriores e de Defesa Nacional."
+  }
+ },
+ {
+  "id": "2538782-44",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2538782-44",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81323",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81323"
+  },
+  "evidence": {
+   "date": "Evento oficial 81323; registro da votação em 2026-03-17 às 2026-03-17T22:45:42.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 3.630, de 2025, adotado pelo relator da Comissão de Constituição e Justiça e de Cidadania.",
+   "method": "Opção do portal: PL Nº 3630/2025 - SUBSTITUTIVO OFERECIDO (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 3.630, de 2025, adotado pelo relator da Comissão de Constituição e Justiça e de Cidadania."
+  }
+ },
+ {
+  "id": "2503833-50",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2503833-50",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81323",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81323"
+  },
+  "evidence": {
+   "date": "Evento oficial 81323; registro da votação em 2026-03-17 às 2026-03-17T22:15:20.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 1.769, de 2019, adotado pelo relator da Comissão de Defesa do Consumidor, ressalvado o destaque.",
+   "method": "Opção do portal: PL Nº 1769/2019 - SUBSTITUTIVO OFERECIDO (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 1.769, de 2019, adotado pelo relator da Comissão de Defesa do Consumidor, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "2609001-29",
+  "status": "excluded",
+  "reason": "O registro corresponde à votação simbólica do objeto identificado na transcrição, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2609001-29",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81323",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81323"
+  },
+  "evidence": {
+   "date": "Registro oficial: 2026-03-17 2026-03-17T20:03:51; transcrição do evento 81323.",
+   "object": "Em votação o Projeto de Lei nº 6.674, de 2025.",
+   "method": "Aqueles que forem pela aprovação permaneçam como se acham.",
+   "result": "APROVADO."
+  }
+ },
+ {
+  "id": "2596663-43",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2596663-43",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81277",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81277"
+  },
+  "evidence": {
+   "date": "Evento oficial 81277; registro da votação em 2026-03-11 às 2026-03-11T21:54:10.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 6.415, de 2025, adotado pela relatora da Comissão de Constituição e Justiça e de Cidadania, ressalvado o destaque.",
+   "method": "Opção do portal: PL Nº 6415/2025 - SUBSTITUTIVO OFERECIDO PELA RELATORA (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 6.415, de 2025, adotado pela relatora da Comissão de Constituição e Justiça e de Cidadania, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "2593723-25",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2593723-25",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81277",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81277"
+  },
+  "evidence": {
+   "date": "Evento oficial 81277; registro da votação em 2026-03-11 às 2026-03-11T21:00:01.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 6.222, de 2025, adotado pela relatora da Comissão de Defesa dos Direitos da Mulher.",
+   "method": "Opção do portal: PL Nº 6222/2025 - SUBSTITUTIVO OFERECIDO PELA RELATORA (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 6.222, de 2025, adotado pela relatora da Comissão de Defesa dos Direitos da Mulher."
+  }
+ },
+ {
+  "id": "2539000-34",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2539000-34",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81277",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81277"
+  },
+  "evidence": {
+   "date": "Evento oficial 81277; registro da votação em 2026-03-11 às 2026-03-11T20:19:50.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 3.640, de 2025, adotado pela relatora da Comissão de Meio Ambiente e Desenvolvimento Sustentável.",
+   "method": "Opção do portal: PL Nº 3640/2025 - SUBSTITUTIVO OFERECIDO (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 3.640, de 2025, adotado pela relatora da Comissão de Meio Ambiente e Desenvolvimento Sustentável."
+  }
+ },
+ {
+  "id": "2607606-28",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2607606-28",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81277",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81277"
+  },
+  "evidence": {
+   "date": "Evento oficial 81277; registro da votação em 2026-03-11 às 2026-03-11T19:54:55.",
+   "object": "API da Câmara: Aprovado o Projeto de Lei nº 1.049, de 2026.",
+   "method": "Opção do portal: PL Nº 1049/2026 - PROJETO DE LEI (Simbólica)",
+   "result": "Aprovado o Projeto de Lei nº 1.049, de 2026."
+  }
+ },
+ {
+  "id": "2604314-42",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2604314-42",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81277",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81277"
+  },
+  "evidence": {
+   "date": "Evento oficial 81277; registro da votação em 2026-03-11 às 2026-03-11T19:22:11.",
+   "object": "API da Câmara: Aprovado o Substitutivo Reformulado ao Projeto de Lei nº 727, de 2026, adotado pela relatora da Comissão de Constituição e Justiça e de Cidadania.",
+   "method": "Opção do portal: PL Nº 727/2026 - SUBSTITUTIVO OFERECIDO (Simbólica)",
+   "result": "Aprovado o Substitutivo Reformulado ao Projeto de Lei nº 727, de 2026, adotado pela relatora da Comissão de Constituição e Justiça e de Cidadania."
+  }
+ },
+ {
+  "id": "2318547-106",
+  "status": "excluded",
+  "reason": "O registro corresponde à votação simbólica do objeto identificado na transcrição, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2318547-106",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81277",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81277"
+  },
+  "evidence": {
+   "date": "Registro oficial: 2026-03-11 2026-03-11T18:22:26; transcrição do evento 81277.",
+   "object": "Em votação o Projeto de Lei nº 3.946, de 2021.",
+   "method": "Aqueles que forem pela aprovação permaneçam como se acham.",
+   "result": "APROVADO."
+  }
+ },
+ {
+  "id": "2168236-63",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2168236-63",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81242",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81242"
+  },
+  "evidence": {
+   "date": "Evento oficial 81242; registro da votação em 2026-03-10 às 2026-03-10T20:35:51.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 9.600, de 2018, da Comissão de Constituição e Justiça e de Cidadania, ressalvado o destaque.",
+   "method": "Opção do portal: PL Nº 9600/2018 - SUBSTITUTIVO OFERECIDO (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 9.600, de 2018, da Comissão de Constituição e Justiça e de Cidadania, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "2539182-33",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2539182-33",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81242",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81242"
+  },
+  "evidence": {
+   "date": "Evento oficial 81242; registro da votação em 2026-03-10 às 2026-03-10T20:30:39.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 3.662, de 2025, adotado pela relatora da Comissão de Constituição e Justiça e de Cidadania.",
+   "method": "Opção do portal: PL Nº 3662/2025 - SUBSTITUTIVO OFERECIDO (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 3.662, de 2025, adotado pela relatora da Comissão de Constituição e Justiça e de Cidadania."
+  }
+ },
+ {
+  "id": "2449741-66",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2449741-66",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81242",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81242"
+  },
+  "evidence": {
+   "date": "Evento oficial 81242; registro da votação em 2026-03-10 às 2026-03-10T19:53:09.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 2.942, de 2024, adotado pela relatora da Comissão de Segurança Pública e Combate ao Crime Organizado, ressalvado o destaque.",
+   "method": "Opção do portal: PL Nº 2942/2024 - SUBSTITUTIVO OFERECIDO (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 2.942, de 2024, adotado pela relatora da Comissão de Segurança Pública e Combate ao Crime Organizado, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "2484092-63",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2484092-63",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81242",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81242"
+  },
+  "evidence": {
+   "date": "Evento oficial 81242; registro da votação em 2026-03-10 às 2026-03-10T19:32:05.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 481, de 2025, adotado pela relatora da Comissão de Defesa dos Direitos da Mulher.",
+   "method": "Opção do portal: PL Nº 481/2025 - SUBSTITUTIVO OFERECIDO (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 481, de 2025, adotado pela relatora da Comissão de Defesa dos Direitos da Mulher."
+  }
+ },
+ {
+  "id": "2581652-28",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2581652-28",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81242",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81242"
+  },
+  "evidence": {
+   "date": "Evento oficial 81242; registro da votação em 2026-03-10 às 2026-03-10T18:50:02.",
+   "object": "API da Câmara: Aprovado o Projeto de Lei nº 5.672, de 2025.",
+   "method": "Opção do portal: PL Nº 5672/2025 - PROJETO DE LEI (Simbólica)",
+   "result": "Aprovado o Projeto de Lei nº 5.672, de 2025."
+  }
+ },
+ {
+  "id": "2485565-52",
+  "status": "excluded",
+  "reason": "O registro corresponde à votação simbólica do objeto identificado na transcrição, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2485565-52",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81242",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81242"
+  },
+  "evidence": {
+   "date": "Registro oficial: 2026-03-10 2026-03-10T17:09:35; transcrição do evento 81242.",
+   "object": "Em votação o substitutivo oferecido pela Relatora da Comissão de Previdência, Assistência Social, Infância, Adolescência e Família ao Projeto de Lei nº 705, de 2025.",
+   "method": "Aqueles que forem pela aprovação permaneçam como se acham.",
+   "result": "APROVADO."
+  }
+ },
+ {
+  "id": "2390091-39",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2390091-39",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81242",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81242"
+  },
+  "evidence": {
+   "date": "Evento oficial 81242; registro da votação em 2026-03-10 às 2026-03-10T16:52:01.",
+   "object": "API da Câmara: Aprovado o Projeto de Lei nº 4.638, de 2023.",
+   "method": "Opção do portal: PL Nº 4638/2023 - PROJETO DE LEI (Simbólica)",
+   "result": "Aprovado o Projeto de Lei nº 4.638, de 2023."
+  }
+ },
+ {
+  "id": "2605055-22",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2605055-22",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81226",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81226"
+  },
+  "evidence": {
+   "date": "Evento oficial 81226; registro da votação em 2026-03-05 às 2026-03-05T13:40:46.",
+   "object": "API da Câmara: Aprovado o Projeto de Lei nº 793, de 2026.",
+   "method": "Opção do portal: PL Nº 793/2026 - PROJETO DE LEI (Simbólica)",
+   "result": "Aprovado o Projeto de Lei nº 793, de 2026."
+  }
+ },
+ {
+  "id": "2442773-42",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2442773-42",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81196",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81196"
+  },
+  "evidence": {
+   "date": "Evento oficial 81196; registro da votação em 2026-03-04 às 2026-03-04T22:26:52.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 2.525, de 2024, adotado pela relatora da Comissão de Constituição e Justiça e de Cidadania.",
+   "method": "Opção do portal: PL Nº 2525/2024 - SUBSTITUTIVO OFERECIDO PELA RELATORA (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 2.525, de 2024, adotado pela relatora da Comissão de Constituição e Justiça e de Cidadania."
+  }
+ },
+ {
+  "id": "2603272-26",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2603272-26",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81178",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81178"
+  },
+  "evidence": {
+   "date": "Evento oficial 81178; registro da votação em 2026-03-03 às 2026-03-03T21:40:43.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 591, de 2026, adotado pelo relator da Comissão de Administração e Serviço Público.",
+   "method": "Opção do portal: PL Nº 591/2026 - SUBSTITUTIVO OFERECIDO (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 591, de 2026, adotado pelo relator da Comissão de Administração e Serviço Público."
+  }
+ },
+ {
+  "id": "2553687-44",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2553687-44",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81178",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81178"
+  },
+  "evidence": {
+   "date": "Evento oficial 81178; registro da votação em 2026-03-03 às 2026-03-03T18:59:50.",
+   "object": "API da Câmara: Aprovado o Projeto de Lei nº 4.254, de 2025.",
+   "method": "Opção do portal: PL Nº 4254/2025 - PROJETO DE LEI (Simbólica)",
+   "result": "Aprovado o Projeto de Lei nº 4.254, de 2025."
+  }
+ },
+ {
+  "id": "2563459-45",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2563459-45",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81178",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81178"
+  },
+  "evidence": {
+   "date": "Evento oficial 81178; registro da votação em 2026-03-03 às 2026-03-03T18:14:24.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 4.716, de 2025, adotado pelo relator da Comissão de Constituição e Justiça e de Cidadania.",
+   "method": "Opção do portal: PL Nº 4716/2025 - SUBSTITUTIVO OFERECIDO (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 4.716, de 2025, adotado pelo relator da Comissão de Constituição e Justiça e de Cidadania."
+  }
+ },
+ {
+  "id": "2462004-35",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2462004-35",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81178",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81178"
+  },
+  "evidence": {
+   "date": "Evento oficial 81178; registro da votação em 2026-03-03 às 2026-03-03T17:57:01.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 3.879, de 2024, adotado pelo relator da Comissão de Administração e Serviço Público.",
+   "method": "Opção do portal: PL Nº 3879/2024 - SUBSTITUTIVO OFERECIDO (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 3.879, de 2024, adotado pelo relator da Comissão de Administração e Serviço Público."
+  }
+ },
+ {
+  "id": "2181415-158",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2181415-158",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81154",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81154"
+  },
+  "evidence": {
+   "date": "Evento oficial 81154; registro da votação em 2026-03-02 às 2026-03-03T00:19:25.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 10.556, de 2018, adotado pelo relator da Comissão de Indústria, Comércio e Serviços, ressalvado o destaque.",
+   "method": "Opção do portal: PL Nº 10556/2018 - SUBSTITUTIVO OFERECIDO PELO RELATOR (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 10.556, de 2018, adotado pelo relator da Comissão de Indústria, Comércio e Serviços, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "589982-119",
+  "status": "excluded",
+  "reason": "O registro corresponde à votação simbólica do objeto identificado na transcrição, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/589982-119",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81154",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81154"
+  },
+  "evidence": {
+   "date": "Registro oficial: 2026-03-02 2026-03-02T22:27:40; transcrição do evento 81154.",
+   "object": "Em votação o substitutivo oferecido pelo Relator da Comissão de Constituição e Justiça e de Cidadania ao Projeto de Lei nº 6.240, de 2013, ressalvados os destaques.",
+   "method": "Aqueles que forem pela aprovação permaneçam como se acham.",
+   "result": "APROVADO."
+  }
+ },
+ {
+  "id": "2567351-32",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2567351-32",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81154",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81154"
+  },
+  "evidence": {
+   "date": "Evento oficial 81154; registro da votação em 2026-03-02 às 2026-03-02T21:23:49.",
+   "object": "API da Câmara: Aprovado o Projeto de Lei nº 2.158, de 2023, ressalvado o destaque.",
+   "method": "Opção do portal: PL Nº 2158/2023 - PROJETO DE LEI (Simbólica)",
+   "result": "Aprovado o Projeto de Lei nº 2.158, de 2023, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "2592030-35",
+  "status": "excluded",
+  "reason": "O registro corresponde à votação simbólica do objeto identificado na transcrição, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2592030-35",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81115",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81115"
+  },
+  "evidence": {
+   "date": "Registro oficial: 2026-02-26 2026-02-26T13:09:10; transcrição do evento 81115.",
+   "object": "Em votação o substitutivo da Relatora da Comissão de Defesa dos Direitos da Mulher relativo ao Projeto de Lei nº 6.140, de 2025.",
+   "method": "Aqueles que forem pela aprovação permaneçam como se acham.",
+   "result": "APROVADO."
+  }
+ },
+ {
+  "id": "2532468-61",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2532468-61",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81115",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81115"
+  },
+  "evidence": {
+   "date": "Evento oficial 81115; registro da votação em 2026-02-26 às 2026-02-26T12:47:51.",
+   "object": "API da Câmara: Aprovado o Projeto de Lei nº 2.213, de 2025.",
+   "method": "Opção do portal: PL Nº 2213/2025 - PROJETO DE LEI (Simbólica)",
+   "result": "Aprovado o Projeto de Lei nº 2.213, de 2025."
+  }
+ },
+ {
+  "id": "2600838-42",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2600838-42",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81075",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81075"
+  },
+  "evidence": {
+   "date": "Evento oficial 81075; registro da votação em 2026-02-24 às 2026-02-25T00:15:31.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 278, de 2026, adotado pelo relator da Comissão de Meio Ambiente e Desenvolvimento Sustentável, ressalvado o destaque.",
+   "method": "Opção do portal: PL Nº 278/2026 - SUBSTITUTIVO APRESENTADO PELO RELATOR (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 278, de 2026, adotado pelo relator da Comissão de Meio Ambiente e Desenvolvimento Sustentável, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "2579832-151",
+  "status": "excluded",
+  "reason": "Votação simbólica de uma parte do substitutivo do Senado, não do texto principal do PL 5.582/2025.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2579832-151",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81075",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81075"
+  },
+  "evidence": {
+   "date": "Registro oficial: 2026-02-24 2026-02-24T23:03:22; transcrição do evento 81075.",
+   "object": "Em votação a parte do substitutivo do Senado Federal ao Projeto de Lei nº 5.582, de 2025, com parecer pela rejeição.",
+   "method": "Aqueles que forem pela aprovação permaneçam como se acham.",
+   "result": "REJEITADA."
+  }
+ },
+ {
+  "id": "2579832-149",
+  "status": "excluded",
+  "reason": "Votação simbólica de uma parte do substitutivo do Senado, não do texto principal do PL 5.582/2025.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2579832-149",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81075",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81075"
+  },
+  "evidence": {
+   "date": "Registro oficial: 2026-02-24 2026-02-24T23:02:58; transcrição do evento 81075.",
+   "object": "Em votação a parte do substitutivo do Senado Federal ao Projeto de Lei nº 5.582, de 2025, com parecer pela aprovação.",
+   "method": "Aqueles que forem pela aprovação permaneçam como se acham.",
+   "result": "APROVADA."
+  }
+ },
+ {
+  "id": "2591970-30",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2591970-30",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81011",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81011"
+  },
+  "evidence": {
+   "date": "Evento oficial 81011; registro da votação em 2026-02-10 às 2026-02-10T22:43:49.",
+   "object": "API da Câmara: Aprovado o Projeto de Lei nº 6.132, de 2025.",
+   "method": "Opção do portal: PL Nº 6132/2025 - PROJETO DE LEI (Simbólica)",
+   "result": "Aprovado o Projeto de Lei nº 6.132, de 2025."
+  }
+ },
+ {
+  "id": "2591974-30",
+  "status": "excluded",
+  "reason": "O registro corresponde à votação simbólica do objeto identificado na transcrição, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2591974-30",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81011",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81011"
+  },
+  "evidence": {
+   "date": "Registro oficial: 2026-02-10 2026-02-10T20:11:01; transcrição do evento 81011.",
+   "object": "Em votação o substitutivo oferecido pelo Relator da Comissão do Esporte ao Projeto de Lei nº 6.133, de 2025.",
+   "method": "Aqueles que forem pela aprovação permaneçam como se acham.",
+   "result": "APROVADO."
+  }
+ },
+ {
+  "id": "2345500-48",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2345500-48",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81002",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81002"
+  },
+  "evidence": {
+   "date": "Evento oficial 81002; registro da votação em 2026-02-09 às 2026-02-09T22:31:04.",
+   "object": "API da Câmara: Aprovado o Projeto de Lei nº 509, de 2020.",
+   "method": "Opção do portal: PL Nº 509/2020 - PROJETO DE LEI (Simbólica)",
+   "result": "Aprovado o Projeto de Lei nº 509, de 2020."
+  }
+ },
+ {
+  "id": "2432865-62",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2432865-62",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81002",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81002"
+  },
+  "evidence": {
+   "date": "Evento oficial 81002; registro da votação em 2026-02-09 às 2026-02-09T22:18:39.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 1.743, de 2024, adotado pela relatora da Comissão de Constituição e Justiça e de Cidadania, ressalvados os destaques.",
+   "method": "Opção do portal: PL Nº 1743/2024 - SUBSTITUTIVO OFERECIDO PELA RELATORA (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 1.743, de 2024, adotado pela relatora da Comissão de Constituição e Justiça e de Cidadania, ressalvados os destaques."
+  }
+ },
+ {
+  "id": "2485911-29",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2485911-29",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81002",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81002"
+  },
+  "evidence": {
+   "date": "Evento oficial 81002; registro da votação em 2026-02-09 às 2026-02-09T20:59:48.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 756, de 2025, adotado pelo relator da Comissão de Cultura.",
+   "method": "Opção do portal: PL Nº 756/2025 - SUBSTITUTIVO OFERECIDO (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 756, de 2025, adotado pelo relator da Comissão de Cultura."
+  }
+ },
+ {
+  "id": "2585316-39",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2585316-39",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=80928",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/80928"
+  },
+  "evidence": {
+   "date": "Evento oficial 80928; registro da votação em 2026-02-03 às 2026-02-03T15:48:49.",
+   "object": "API da Câmara: Aprovado o Substitutivo ao Projeto de Lei nº 5.874, de 2025, adotado pelo relator da Comissão de Administração e Serviço Público, ressalvado o destaque.",
+   "method": "Opção do portal: PL Nº 5874/2025 - SUBSTITUTIVO OFERECIDO (Simbólica)",
+   "result": "Aprovado o Substitutivo ao Projeto de Lei nº 5.874, de 2025, adotado pelo relator da Comissão de Administração e Serviço Público, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "2600426-34",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2600426-34",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=80928",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/80928"
+  },
+  "evidence": {
+   "date": "Evento oficial 80928; registro da votação em 2026-02-03 às 2026-02-03T14:44:49.",
+   "object": "API da Câmara: Aprovado o Projeto de Lei nº 179, de 2026, ressalvado o destaque.",
+   "method": "Opção do portal: PL Nº 179/2026 - PROJETO DE LEI (Simbólica)",
+   "result": "Aprovado o Projeto de Lei nº 179, de 2026, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "2593628-28",
+  "status": "excluded",
+  "reason": "O portal oficial da sessão identifica o mesmo objeto como votação simbólica, fora da cobertura nominal.",
+  "reviewedAt": "2026-10-09",
+  "sources": {
+   "detail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2593628-28",
+   "sessionPortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=80928",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/80928"
+  },
+  "evidence": {
+   "date": "Evento oficial 80928; registro da votação em 2026-02-03 às 2026-02-03T14:17:02.",
+   "object": "API da Câmara: Aprovado o Projeto de Lei nº 6.070, de 2025, ressalvado o destaque.",
+   "method": "Opção do portal: PL Nº 6070/2025 - PROJETO DE LEI (Simbólica)",
+   "result": "Aprovado o Projeto de Lei nº 6.070, de 2025, ressalvado o destaque."
+  }
+ },
+ {
+  "id": "2376169-88",
+  "status": "excluded",
+  "reviewedAt": "2026-10-09",
+  "reason": "As notas da sessão confirmam votação simbólica do substitutivo do Senado ao PL 3.780/2023, fora do recorte nominal.",
+  "sources": {
+   "inventoryListPage": "https://dadosabertos.camara.leg.br/api/v2/orgaos/180/votacoes?dataInicio=2026-01-01&dataFim=2026-10-09&ordem=ASC&ordenarPor=dataHoraRegistro&pagina=5&itens=100",
+   "voteDetail": "https://dadosabertos.camara.leg.br/api/v2/votacoes/2376169-88",
+   "event": "https://dadosabertos.camara.leg.br/api/v2/eventos/81344",
+   "eventAgenda": "https://dadosabertos.camara.leg.br/api/v2/eventos/81344/pauta",
+   "sessionTranscript": "https://escriba.camara.leg.br/escriba-servicosweb/html/81344",
+   "votePortal": "https://www.camara.leg.br/presenca-comissoes/votacao-portal?reuniao=81344",
+   "standingOrders": "https://www2.camara.leg.br/legin/fed/rescad/1989/resolucaodacamaradosdeputados-17-21-setembro-1989-320110-normaatualizada-pl.html"
+  },
+  "evidence": {
+   "method": "Aqueles que forem pela aprovação permaneçam como se acham; APROVADO, COM O VOTO CONTRÁRIO DA FEDERAÇÃO PSOL REDE.",
+   "object": "Aprovado o Substitutivo do Senado Federal ao Projeto de Lei nº 3.780, de 2023, com exceção dos dispositivos rejeitados.",
+   "verification": "Between this result and the next separate vote (DTQ 7), the session transcript records no verification request or nominal rerun for the substitute vote."
+  }
+ },
+ {
+  "id": "2351506-122",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-10",
+  "title": "Imunidade tributária de templos e entidades — 2º turno",
+  "summary": "A Câmara aprovou, em segundo turno, a PEC 5/2023. A proposta original trata da imunidade tributária das alíneas “b” e “c” do inciso VI do artigo 150 da Constituição.",
+  "decisionLabel": "PEC aprovada em 2º turno",
+  "yesMeaning": "Aprovar a PEC 5/2023 nesta votação, na versão indicada.",
+  "noMeaning": "Rejeitar essa versão do texto.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13763",
+   "text": null,
+   "decision": "https://www.camara.leg.br/proposicoesWeb/prop_imp?idProposicao=2351506&ord=1&tp=completa",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2351506"
+  },
+  "evidence": {
+   "method": "O relatório oficial registra votação nominal eletrônica de PEC 5/2023 — PROPOSTA DE EMENDA À CONSTITUIÇÃO - 2º TURNO, encerrada em 2026-05-28 17:20, com 368 Sim, 96 Não, 7 abstenções e total de 471, coincidindo com a API.",
+   "object": "O portal da sessão lista a opção “PEC Nº 5/2023 - PROPOSTA DE EMENDA À CONSTITUIÇÃO - 2º TURNO (Nominal)”. A API descreve: “Aprovada, em segundo turno, a Proposta de Emenda à Constituição n° 5, de 2023. Sim: 368; Não: 96; Abstenção: 7; Total: 471.”",
+   "text": "Não há documento oficial do texto submetido a este turno separado da redação final, que não é usada como texto votado; o link fica ausente."
+  },
+  "reason": null
+ },
+ {
+  "id": "2233802-438",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-10",
+  "title": "Jornada de trabalho — 2º turno",
+  "summary": "A Câmara aprovou, em segundo turno, a PEC 221/2019. A proposta original altera o artigo 7º da Constituição para reduzir a jornada de trabalho.",
+  "decisionLabel": "PEC aprovada em 2º turno",
+  "yesMeaning": "Aprovar a PEC 221/2019 nesta votação, na versão indicada.",
+  "noMeaning": "Rejeitar essa versão do texto.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13754",
+   "text": null,
+   "decision": "https://www.camara.leg.br/proposicoesWeb/prop_imp?idProposicao=2233802&ord=1&tp=completa",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2233802"
+  },
+  "evidence": {
+   "method": "O relatório oficial registra votação nominal eletrônica de PEC 221/2019 — PROPOSTA DE EMENDA À CONSTITUIÇÃO - 2º TURNO, encerrada em 2026-05-27 23:33, com 461 Sim, 19 Não e total de 480, coincidindo com a API.",
+   "object": "O portal da sessão lista a opção “PEC Nº 221/2019 - PROPOSTA DE EMENDA À CONSTITUIÇÃO - 2º TURNO (Nominal)”. A API descreve: “Aprovada, em segundo turno, a Proposta de Emenda à Constituição n° 221, de 2019. . Sim: 461; Não: 19; Total: 480.”",
+   "text": "Não há documento oficial do texto submetido a este turno separado da redação final, que não é usada como texto votado; o link fica ausente."
+  },
+  "reason": null
+ },
+ {
+  "id": "2233802-424",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-10",
+  "title": "Jornada de trabalho — 1º turno",
+  "summary": "A Câmara aprovou, em primeiro turno, a PEC 221/2019 na forma da Emenda Aglutinativa nº 1, registrada como substitutiva global. A proposta original altera o artigo 7º da Constituição para reduzir a jornada de trabalho.",
+  "decisionLabel": "Emenda aglutinativa substitutiva global, 1º turno",
+  "yesMeaning": "Aprovar a PEC 221/2019 nesta votação, na versão indicada.",
+  "noMeaning": "Rejeitar essa versão do texto.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13752",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3138730",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/prop_imp?idProposicao=2233802&ord=1&tp=completa",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2233802"
+  },
+  "evidence": {
+   "method": "O relatório oficial registra votação nominal eletrônica de PEC 221/2019 — EMENDA AGLUTINATIVA Nº 1, encerrada em 2026-05-27 23:07, com 472 Sim, 22 Não e total de 494, coincidindo com a API.",
+   "object": "O portal da sessão lista a opção “PEC Nº 221/2019 - EMENDA AGLUTINATIVA Nº 1 (Nominal)”. A API descreve: “Aprovada, em primeiro turno, a Proposta de Emenda à Constituição nº 221, de 2019. Sim: 472; Não: 22; Total: 494.”",
+   "text": "O inteiro teor oficial do EMA 1 (Emenda Aglutinativa), ID 2628653, apresentado em 2026-05-27 20:40, corresponde ao objeto identificado no relatório e no portal da sessão."
+  },
+  "reason": null
+ },
+ {
+  "id": "2162116-178",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-10",
+  "title": "Recursos mínimos para o SUAS — 2º turno",
+  "summary": "A Câmara aprovou, em segundo turno, a PEC 383/2017, que trata de recursos mínimos para o financiamento do Sistema Único de Assistência Social (SUAS).",
+  "decisionLabel": "PEC aprovada em 2º turno",
+  "yesMeaning": "Aprovar a PEC 383/2017 nesta votação, na versão indicada.",
+  "noMeaning": "Rejeitar essa versão do texto.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13672",
+   "text": null,
+   "decision": "https://www.camara.leg.br/proposicoesWeb/prop_imp?idProposicao=2162116&ord=1&tp=completa",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2162116"
+  },
+  "evidence": {
+   "method": "O relatório oficial registra votação nominal eletrônica de PEC 383/2017 — PROPOSTA DE EMENDA À CONSTITUIÇÃO - SEGUNDO TURNO, encerrada em 2026-04-28 21:19, com 444 Sim, 12 Não e total de 456, coincidindo com a API.",
+   "object": "O portal da sessão lista a opção “PEC Nº 383/2017 - PROPOSTA DE EMENDA À CONSTITUIÇÃO - SEGUNDO TURNO (Nominal)”. A API descreve: “Aprovada, em segundo turno, a Proposta de Emenda à Constituição n° 383, de 2017. Sim: 444; Não: 12; Total: 456.”",
+   "text": "Não há documento oficial do texto submetido a este turno separado da redação final, que não é usada como texto votado; o link fica ausente."
+  },
+  "reason": null
+ },
+ {
+  "id": "2500080-330",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-10",
+  "title": "PEC da segurança pública — 2º turno",
+  "summary": "A Câmara aprovou, em segundo turno, a PEC 18/2025, que trata das competências da União, dos estados, do Distrito Federal e dos municípios em segurança pública.",
+  "decisionLabel": "PEC aprovada em 2º turno",
+  "yesMeaning": "Aprovar a PEC 18/2025 nesta votação, na versão indicada.",
+  "noMeaning": "Rejeitar essa versão do texto.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13533",
+   "text": null,
+   "decision": "https://www.camara.leg.br/proposicoesWeb/prop_imp?idProposicao=2500080&ord=1&tp=completa",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2500080"
+  },
+  "evidence": {
+   "method": "O relatório oficial registra votação nominal eletrônica de PEC 18/2025 — PROPOSTA DE EMENDA À CONSTITUIÇÃO - 2º TURNO, encerrada em 2026-03-04 21:47, com 461 Sim, 14 Não e total de 475, coincidindo com a API.",
+   "object": "O portal da sessão lista a opção “PEC Nº 18/2025 - PROPOSTA DE EMENDA À CONSTITUIÇÃO - 2º TURNO (Nominal)”. A API descreve: “Aprovada, em segundo turno, a Proposta de Emenda à Constituição nº 18, de 2025. Sim: 461; Não: 14; Total: 475.”",
+   "text": "Não há documento oficial do texto submetido a este turno separado da redação final, que não é usada como texto votado; o link fica ausente."
+  },
+  "reason": null
+ },
+ {
+  "id": "2500080-320",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-10",
+  "title": "PEC da segurança pública — 1º turno",
+  "summary": "A Câmara aprovou, em primeiro turno, o substitutivo do relator da Comissão Especial à PEC 18/2025. A proposta trata das competências da União, dos estados, do Distrito Federal e dos municípios em segurança pública.",
+  "decisionLabel": "Substitutivo do relator, 1º turno",
+  "yesMeaning": "Aprovar a PEC 18/2025 nesta votação, na versão indicada.",
+  "noMeaning": "Rejeitar essa versão do texto.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13532",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3092942",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/prop_imp?idProposicao=2500080&ord=1&tp=completa",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2500080"
+  },
+  "evidence": {
+   "method": "O relatório oficial registra votação nominal eletrônica de PEC 18/2025 — SUBSTITUTIVO OFERECIDO PELO RELATOR - 1º TURNO, encerrada em 2026-03-04 21:08, com 487 Sim, 15 Não, 1 abstenção e total de 503, coincidindo com a API.",
+   "object": "O portal da sessão lista a opção “PEC Nº 18/2025 - SUBSTITUTIVO OFERECIDO PELO RELATOR - 1º TURNO (Nominal)”. A API descreve: “Aprovado, em primeiro turno, o Substitutivo à Proposta de Emenda à Constituição nº 18, de 2025, adotado pelo relator da Comissão Especial. Sim: 487; Não: 15; Abstenção: 1; Total: 503.”",
+   "text": "O inteiro teor oficial do SBT 1 (Substitutivo), ID 2607053, apresentado em 2026-03-04 20:21, corresponde ao objeto identificado no relatório e no portal da sessão."
+  },
+  "reason": null
+ },
+ {
+  "id": "2351506-104",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-10",
+  "title": "Imunidade tributária de templos e entidades — 1º turno",
+  "summary": "A Câmara aprovou, em primeiro turno, a PEC 5/2023 na forma da Emenda Aglutinativa Substitutiva nº 3. A proposta original trata da imunidade tributária das alíneas “b” e “c” do inciso VI do artigo 150 da Constituição.",
+  "decisionLabel": "Emenda aglutinativa substitutiva, 1º turno",
+  "yesMeaning": "Aprovar a PEC 5/2023 nesta votação, na versão indicada.",
+  "noMeaning": "Rejeitar essa versão do texto.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13759",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3138846",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/prop_imp?idProposicao=2351506&ord=1&tp=completa",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2351506"
+  },
+  "evidence": {
+   "method": "O relatório oficial registra votação nominal eletrônica de PEC 5/2023 — EMENDA AGLUTINATIVA SUBSTITUTIVA Nº 3, encerrada em 2026-05-28 15:12, com 385 Sim, 93 Não, 7 abstenções e total de 485, coincidindo com a API.",
+   "object": "O portal da sessão lista a opção “PEC Nº 5/2023 - EMENDA AGLUTINATIVA SUBSTITUTIVA Nº 3 (Nominal)”. A API descreve: “Aprovada, em primeiro turno, a Proposta de Emenda à Constituição nº 5, de 2023, na forma da Emenda Aglutinativa Substitutiva nº 3. Sim: 385; Não: 93; Abstenção: 7; Total: 485.”",
+   "text": "O inteiro teor oficial do EMA 3 (Emenda Aglutinativa), ID 2628701, apresentado em 2026-05-27 22:47, corresponde ao objeto identificado no relatório e no portal da sessão."
+  },
+  "reason": null
+ },
+ {
+  "id": "2162116-169",
+  "status": "confirmed",
+  "reviewedAt": "2026-10-10",
+  "title": "Recursos mínimos para o SUAS — 1º turno",
+  "summary": "A Câmara aprovou, em primeiro turno, a PEC 383/2017 na forma da Emenda Aglutinativa nº 2. A proposta trata de recursos mínimos para o financiamento do Sistema Único de Assistência Social (SUAS).",
+  "decisionLabel": "Emenda aglutinativa, 1º turno",
+  "yesMeaning": "Aprovar a PEC 383/2017 nesta votação, na versão indicada.",
+  "noMeaning": "Rejeitar essa versão do texto.",
+  "sources": {
+   "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13633",
+   "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3110175",
+   "decision": "https://www.camara.leg.br/proposicoesWeb/prop_imp?idProposicao=2162116&ord=1&tp=completa",
+   "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2162116"
+  },
+  "evidence": {
+   "method": "O relatório oficial registra votação nominal eletrônica de PEC 383/2017 — EMENDA AGLUTINATIVA Nº 2 - PRIMEIRO TURNO, encerrada em 2026-04-08 20:27, com 464 Sim, 16 Não e total de 480, coincidindo com a API.",
+   "object": "O portal da sessão lista a opção “PEC Nº 383/2017 - EMENDA AGLUTINATIVA Nº 2 - PRIMEIRO TURNO (Nominal)”. A API descreve: “Aprovada, em primeiro turno, a Proposta de Emenda à Constituição nº 383, de 2017, na forma da Emenda Aglutinativa nº 2. Sim: 464; Não: 16; Total: 480.”",
+   "text": "O inteiro teor oficial do EMA 2 (Emenda Aglutinativa), ID 2614417, apresentado em 2026-04-08 12:44, corresponde ao objeto identificado no relatório e no portal da sessão."
+  },
+  "reason": null
+ }
+]

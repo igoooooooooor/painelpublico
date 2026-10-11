@@ -1,0 +1,2048 @@
+[
+  {
+    "id": "2520670-66",
+    "parentId": "2520670-52",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Imposto maior sobre juros sobre capital próprio",
+    "summary": "Destaque da bancada do NOVO para retirar o art. 8º do texto aprovado, que eleva para 17,5% o imposto de renda na fonte sobre os juros sobre capital próprio pagos por empresas a seus sócios e acionistas.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 8º no texto.",
+    "noMeaning": "Retirar o art. 8º do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 8 - NOVO - ART. 8 DO SUBSTITUTIVO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13461",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3069268",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2597595"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13461) registra votação nominal eletrônica em 2025-12-16, encerrada em 2025-12-17 às 01:30, com 286 Sim e 116 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 8 - NOVO - ART. 8 DO SUBSTITUTIVO”; o registro 2520670-66 da API traz o mesmo placar.",
+      "text": "O DTQ 8 (NOVO) pede votação em separado do art. 8º do substitutivo; a subemenda substitutiva global (PRLE 1) traz o art. 8º, que altera o § 2º do art. 9º da Lei nº 9.249/1995 para 17,5%."
+    }
+  },
+  {
+    "id": "2541109-40",
+    "parentId": "2541109-38",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda: projetos de defesa fora do limite de gastos",
+    "summary": "A emenda nº 1, do deputado Coronel Meira, também tirava do limite de despesas do arcabouço fiscal os gastos com projetos estratégicos de defesa nacional. O relator, José Priante, recomendou rejeitá-la para manter o texto acordado.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Aprovar a emenda.",
+    "noMeaning": "Rejeitar a emenda, como recomendou o relator.",
+    "outcome": "rejected",
+    "reportObject": "EMENDA COM PARECER PELA REJEIÇÃO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13180",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3002478",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2562251"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13180) registra votação nominal eletrônica em 2025-09-24, encerrada em 2025-09-24 às 21:03, com 45 Sim e 288 Não.",
+      "object": "O relatório identifica o objeto como “EMENDA COM PARECER PELA REJEIÇÃO”; o registro 2541109-40 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda nº 1 acrescenta o inciso XII ao § 2º do art. 3º da Lei Complementar nº 200/2023; o parecer às emendas (PRLE 1) conclui pela rejeição."
+    }
+  },
+  {
+    "id": "2541109-45",
+    "parentId": "2541109-38",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Empréstimos internacionais fora do limite de gastos",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BLOCO PL”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para retirar o inciso XI, que tira do limite de despesas do arcabouço fiscal os gastos pagos com empréstimos internacionais e as contrapartidas desses empréstimos.",
+    "decisionLabel": "Inciso mantido",
+    "yesMeaning": "Manter o inciso no texto.",
+    "noMeaning": "Retirar o inciso do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 2 - BLOCO PL - INCISO XI DO § 2º DO ARTIGO 3º DA LEI COMPLEMENTAR 200/2023",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13181",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2967958",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2562215"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13181) registra votação nominal eletrônica em 2025-09-24, encerrada em 2025-09-24 às 21:36, com 281 Sim e 148 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 2 - BLOCO PL - INCISO XI DO § 2º DO ARTIGO 3º DA LEI COMPLEMENTAR 200/2023”; o registro 2541109-45 da API traz o mesmo placar.",
+      "text": "O DTQ 2 (PL) pede votação em separado do inciso XI do § 2º do art. 3º da Lei Complementar nº 200/2023, alterado pelo art. 1º do PLP 163/2025, cujo texto traz o inciso."
+    }
+  },
+  {
+    "id": "2541109-48",
+    "parentId": "2541109-38",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Gastos extras com saúde e educação fora da meta fiscal",
+    "summary": "Destaque da bancada do NOVO para retirar o inciso I do art. 14-A, que deixa as despesas temporárias de saúde e educação pagas com recursos do Fundo Social fora da apuração da meta de resultado fiscal.",
+    "decisionLabel": "Inciso mantido",
+    "yesMeaning": "Manter o inciso no texto.",
+    "noMeaning": "Retirar o inciso do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 1 - NOVO - INCISO I DO ART. 14-A DA LEI COMPLEMENTAR Nº 200/2023...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13182",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2967958",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2562185"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13182) registra votação nominal eletrônica em 2025-09-24, encerrada em 2025-09-24 às 22:30, com 293 Sim e 133 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 1 - NOVO - INCISO I DO ART. 14-A DA LEI COMPLEMENTAR Nº 200/2023...”; o registro 2541109-48 da API traz o mesmo placar.",
+      "text": "O DTQ 1 (NOVO) pede votação em separado do inciso I do art. 14-A da Lei Complementar nº 200/2023, estabelecido pelo art. 1º do texto original, que traz o inciso."
+    }
+  },
+  {
+    "id": "2554285-51",
+    "parentId": "2554285-48",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Novos cargos de servidores no TRF da 5ª Região",
+    "summary": "Destaque da bancada do NOVO para retirar o art. 3º, que acrescenta ao quadro do Tribunal Regional Federal da 5ª Região os cargos de analista e técnico judiciário, os cargos em comissão e as funções comissionadas listados nos anexos. Os três novos cargos de desembargador estão em outro artigo.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 3º no texto.",
+    "noMeaning": "Retirar o art. 3º do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 1 - NOVO - ART. 3º",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13443",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2987629",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2596764"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13443) registra votação nominal eletrônica em 2025-12-15, encerrada em 2025-12-15 às 22:03, com 293 Sim e 120 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 1 - NOVO - ART. 3º”; o registro 2554285-51 da API traz o mesmo placar.",
+      "text": "O DTQ 1 (NOVO) pede votação em separado do art. 3º; o texto do projeto traz o art. 3º e os anexos com os cargos."
+    }
+  },
+  {
+    "id": "2438459-135",
+    "parentId": "2438459-113",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Plataformas: sem multa punitiva se informarem o Fisco",
+    "summary": "Na votação do substitutivo do Senado, destaque da bancada do NOVO sobre o inciso II do § 14 do art. 22 da Lei Complementar nº 214/2025. Segundo o requerimento, o dispositivo livrava da multa punitiva a plataforma digital que não quitasse o tributo de um fornecedor sem nota fiscal, desde que compartilhasse as informações com o Fisco, mantendo tributo, multa de mora e juros. No substitutivo do Senado, cada dispositivo destacado só é aprovado com pelo menos 257 votos Sim (maioria absoluta, por ser lei complementar).",
+    "decisionLabel": "Dispositivo rejeitado",
+    "yesMeaning": "Aprovar o dispositivo do Senado.",
+    "noMeaning": "Rejeitar o dispositivo do Senado.",
+    "outcome": "removed",
+    "reportObject": "DTQ 16 - NOVO - INCISO II DO § 14 NO ART. 22 DA LEI COMPLEMENTAR Nº 214/2025",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13452",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3022524",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2596866"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13452) registra votação nominal eletrônica em 2025-12-16, encerrada em 2025-12-16 às 18:55, com 63 Sim e 373 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 16 - NOVO - INCISO II DO § 14 NO ART. 22 DA LEI COMPLEMENTAR Nº 214/2025”; o registro 2438459-135 da API traz o mesmo placar.",
+      "text": "O DTQ 16 (NOVO) pede votação em separado do inciso II do § 14 do art. 22 da Lei Complementar nº 214/2025, alterado pelo art. 174 do substitutivo do Senado, e descreve seu conteúdo."
+    }
+  },
+  {
+    "id": "2438459-139",
+    "parentId": "2438459-113",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Alíquota zero para medicamentos",
+    "summary": "Na votação do substitutivo do Senado, destaque da federação PT-PCdoB-PV para aprovar o art. 146 da Lei Complementar nº 214/2025 na versão do Senado: alíquota zero de IBS e CBS para medicamentos de doenças raras e negligenciadas, oncologia, diabetes, HIV/aids e outras ISTs, doenças cardiovasculares e do Farmácia Popular, e para medicamentos comprados pelo poder público e por entidades de saúde que atendem o SUS. No substitutivo do Senado, cada dispositivo destacado só é aprovado com pelo menos 257 votos Sim (maioria absoluta, por ser lei complementar).",
+    "decisionLabel": "Dispositivo aprovado",
+    "yesMeaning": "Aprovar o art. 146 do Senado.",
+    "noMeaning": "Rejeitar o art. 146 do Senado.",
+    "outcome": "kept",
+    "reportObject": "DTQ 18 - FDR PT-PCDOB-PV - ART. 146 DA LEI COMPLEMENTAR 214/2025...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13453",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3022524",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2596888"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13453) registra votação nominal eletrônica em 2025-12-16, encerrada em 2025-12-16 às 19:10, com 441 Sim e 3 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 18 - FDR PT-PCDOB-PV - ART. 146 DA LEI COMPLEMENTAR 214/2025...”; o registro 2438459-139 da API traz o mesmo placar.",
+      "text": "O DTQ 18 pede votação em separado do art. 146 da Lei Complementar nº 214/2025, alterado pelo art. 174 do substitutivo do Senado, com vistas à sua aprovação; o substitutivo (EMS 108) traz o artigo."
+    }
+  },
+  {
+    "id": "2438459-141",
+    "parentId": "2438459-113",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Tributação da Sociedade Anônima do Futebol",
+    "summary": "Na votação do substitutivo do Senado, destaque da bancada do PL para aprovar o art. 293 da Lei Complementar nº 214/2025 na versão do Senado, que trata do pagamento unificado de tributos da SAF: 3% de tributos federais, 1% de CBS e 1% de IBS, e deixa fora dessa base, nos cinco primeiros anos, a receita com transferência de atletas. No substitutivo do Senado, cada dispositivo destacado só é aprovado com pelo menos 257 votos Sim (maioria absoluta, por ser lei complementar).",
+    "decisionLabel": "Dispositivo aprovado",
+    "yesMeaning": "Aprovar o art. 293 do Senado.",
+    "noMeaning": "Rejeitar o art. 293 do Senado.",
+    "outcome": "kept",
+    "reportObject": "DTQ 9 - PL - ARTIGO 293 DA LEI COMPLEMENTAR 214/2025...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13454",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3022524",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2596830"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13454) registra votação nominal eletrônica em 2025-12-16, encerrada em 2025-12-16 às 19:26, com 423 Sim e 23 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 9 - PL - ARTIGO 293 DA LEI COMPLEMENTAR 214/2025...”; o registro 2438459-141 da API traz o mesmo placar.",
+      "text": "O DTQ 9 (PL) pede votação em separado do art. 293 da Lei Complementar nº 214/2025, alterado pelo art. 174 do substitutivo do Senado, para fins de aprovação; o substitutivo (EMS 108) traz o artigo."
+    }
+  },
+  {
+    "id": "2438459-143",
+    "parentId": "2438459-113",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "IBS e CBS na importação de direitos de atletas",
+    "summary": "Na votação do substitutivo do Senado, destaque da bancada do PL para aprovar o art. 295 da Lei Complementar nº 214/2025 na versão do Senado, que sujeita a importação de direitos desportivos de atletas ao IBS e à CBS pelas regras dos arts. 292 e 293. No substitutivo do Senado, cada dispositivo destacado só é aprovado com pelo menos 257 votos Sim (maioria absoluta, por ser lei complementar).",
+    "decisionLabel": "Dispositivo rejeitado",
+    "yesMeaning": "Aprovar o art. 295 do Senado.",
+    "noMeaning": "Rejeitar o art. 295 do Senado.",
+    "outcome": "removed",
+    "reportObject": "DTQ 10 - PL - ARTIGO 295 DA LEI COMPLEMENTAR 214/2025...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13455",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3022524",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2596831"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13455) registra votação nominal eletrônica em 2025-12-16, encerrada em 2025-12-16 às 19:30, com 15 Sim e 334 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 10 - PL - ARTIGO 295 DA LEI COMPLEMENTAR 214/2025...”; o registro 2438459-143 da API traz o mesmo placar.",
+      "text": "O DTQ 10 (PL) pede votação em separado do art. 295 da Lei Complementar nº 214/2025, alterado pelo art. 174 do substitutivo do Senado, para fins de aprovação; o substitutivo (EMS 108) traz o artigo."
+    }
+  },
+  {
+    "id": "2438459-146",
+    "parentId": "2438459-113",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Teto de 2% do Imposto Seletivo sobre bebidas açucaradas",
+    "summary": "Na votação do substitutivo do Senado, destaque da bancada do PL para aprovar o inciso II do § 2º do art. 422 da Lei Complementar nº 214/2025, que limitava a 2% a alíquota do Imposto Seletivo sobre bebidas açucaradas. Teve maioria de votos Não. No substitutivo do Senado, cada dispositivo destacado só é aprovado com pelo menos 257 votos Sim (maioria absoluta, por ser lei complementar).",
+    "decisionLabel": "Dispositivo rejeitado",
+    "yesMeaning": "Aprovar o teto de 2% do Senado.",
+    "noMeaning": "Rejeitar o teto de 2% do Senado.",
+    "outcome": "removed",
+    "reportObject": "DTQ 17 - PL - INC. II, § 2º, ART. 422, INSERIDO PELO ART. 174 DO SUBSTITUTIVO...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13456",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3022524",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2596869"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13456) registra votação nominal eletrônica em 2025-12-16, encerrada em 2025-12-16 às 20:18, com 221 Sim e 242 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 17 - PL - INC. II, § 2º, ART. 422, INSERIDO PELO ART. 174 DO SUBSTITUTIVO...”; o registro 2438459-146 da API traz o mesmo placar.",
+      "text": "O DTQ 17 (PL) pede votação em separado do inciso II do § 2º do art. 422, inserido pelo art. 174 do substitutivo do Senado, para fins de aprovação; o substitutivo (EMS 108) traz o limite de 2% para bebidas açucaradas."
+    }
+  },
+  {
+    "id": "2438459-148",
+    "parentId": "2438459-113",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda_redacao",
+    "title": "Emendas de redação nº 1, 2 e 4",
+    "summary": "Três emendas de redação votadas em conjunto. A nº 1 ajusta, entre outros pontos, as competências das administrações tributárias estaduais e municipais na cobrança e o regime dos programas de fidelidade. As nº 2, do PL, e nº 4 estendem as alíquotas do pagamento unificado da SAF (§ 4º do art. 293) às entidades do inciso XII do art. 128 da Lei Complementar nº 214/2025.",
+    "decisionLabel": "Emendas de redação aprovadas",
+    "yesMeaning": "Aprovar as emendas de redação.",
+    "noMeaning": "Manter a redação anterior.",
+    "outcome": "approved",
+    "reportObject": "EMENDAS DE REDAÇÃO 1, 2 E 4.",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13457",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3068108",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2596845"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13457) registra votação nominal eletrônica em 2025-12-16, encerrada em 2025-12-16 às 20:26, com 408 Sim e 3 Não.",
+      "object": "O relatório identifica o objeto como “EMENDAS DE REDAÇÃO 1, 2 E 4.”; o registro 2438459-148 da API traz o mesmo placar.",
+      "text": "Os inteiros teores das emendas de redação nº 1, 2 e 4 trazem os ajustes descritos; o relatório nominal identifica o objeto como as emendas 1, 2 e 4."
+    }
+  },
+  {
+    "id": "2471177-64",
+    "parentId": "2471177-56",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Demarcação de terra indígena sem homologação não impede a ratificação",
+    "summary": "Destaque da federação PSOL-REDE para retirar o § 5º-A do art. 2º da Lei nº 13.178/2015, incluído pelo substitutivo: um processo de demarcação de terra indígena sem decreto de homologação não impede a ratificação do registro de imóveis rurais em faixa de fronteira.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 3 - FDR PSOL-REDE - § 5º-A DO ART 2º DA LEI N. 13.178 DE 2015...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12926",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2932208",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2523764"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12926) registra votação nominal eletrônica em 2025-06-10, encerrada em 2025-06-10 às 21:20, com 257 Sim e 88 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 3 - FDR PSOL-REDE - § 5º-A DO ART 2º DA LEI N. 13.178 DE 2015...”; o registro 2471177-64 da API traz o mesmo placar.",
+      "text": "O DTQ 3 (PSOL-REDE) pede votação em separado do § 5º-A do art. 2º da Lei nº 13.178/2015, que consta do art. 2º do substitutivo; o parecer com o substitutivo (PRLP 3) traz o parágrafo."
+    }
+  },
+  {
+    "id": "2471177-105",
+    "parentId": "2471177-102",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Retomada pela União sem pagar a terra nua",
+    "summary": "Na votação do substitutivo do Senado, destaque da federação PT-PCdoB-PV para retirar o inciso V do art. 1º da Lei nº 13.178/2015. Ele permite à União declarar sem efeito a ratificação, pelo rito da desapropriação para reforma agrária e sem indenizar a terra nua, se publicar o decreto em até cinco anos e comprovar que a função social não foi cumprida; nesse caso, quem indeniza é o Estado.",
+    "decisionLabel": "Dispositivo mantido",
+    "yesMeaning": "Manter o inciso do Senado.",
+    "noMeaning": "Retirar o inciso do Senado.",
+    "outcome": "kept",
+    "reportObject": "DTQ 9 - FDR PT-PCDOB-PV - DO INCISO V DO ART. 1º DA LEI Nº 13.178/2015, ALTER...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13417",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3042038",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2594596"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13417) registra votação nominal eletrônica em 2025-12-09, encerrada em 2025-12-09 às 21:25, com 283 Sim e 116 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 9 - FDR PT-PCDOB-PV - DO INCISO V DO ART. 1º DA LEI Nº 13.178/2015, ALTER...”; o registro 2471177-105 da API traz o mesmo placar.",
+      "text": "O DTQ 9 pede votação em separado do inciso V do art. 1º da Lei nº 13.178/2015, alterada pelo art. 2º do substitutivo do Senado (EMS 4497), que traz o inciso."
+    }
+  },
+  {
+    "id": "2471177-108",
+    "parentId": "2471177-102",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Função social comprovada só com o cadastro do imóvel",
+    "summary": "Na votação do substitutivo do Senado, destaque da federação PT-PCdoB-PV para retirar o inciso VI do art. 1º da Lei nº 13.178/2015, pelo qual a função social do imóvel é considerada cumprida com a apresentação do Certificado de Cadastro de Imóvel Rural, com presunção de boa-fé do proprietário.",
+    "decisionLabel": "Dispositivo mantido",
+    "yesMeaning": "Manter o inciso do Senado.",
+    "noMeaning": "Retirar o inciso do Senado.",
+    "outcome": "kept",
+    "reportObject": "DTQ 8 - FDR PT-PCDOB-PV - INCISO VI DO ART. 1º DA LEI 13.178/2015...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13418",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3042038",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2594581"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13418) registra votação nominal eletrônica em 2025-12-09, encerrada em 2025-12-09 às 21:40, com 302 Sim e 124 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 8 - FDR PT-PCDOB-PV - INCISO VI DO ART. 1º DA LEI 13.178/2015...”; o registro 2471177-108 da API traz o mesmo placar.",
+      "text": "O DTQ 8 pede votação em separado do inciso VI do art. 1º da Lei nº 13.178/2015, alterada pelo art. 2º do substitutivo do Senado (EMS 4497), que traz o inciso."
+    }
+  },
+  {
+    "id": "2471177-111",
+    "parentId": "2471177-102",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Ratificação também para imóveis em disputa com a União",
+    "summary": "Na votação do substitutivo do Senado, destaque da federação PT-PCdoB-PV para retirar o inciso IX do art. 1º da Lei nº 13.178/2015, que estende a ratificação a quem está em processo administrativo ou judicial em que a União reivindica o imóvel.",
+    "decisionLabel": "Dispositivo mantido",
+    "yesMeaning": "Manter o inciso do Senado.",
+    "noMeaning": "Retirar o inciso do Senado.",
+    "outcome": "kept",
+    "reportObject": "DTQ 10 - FDR PT-PCDOB-PV - INCISO IX DO ART. 1º DA LEI 13.178/2015, ALTERADA ...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13419",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3042038",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2594597"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13419) registra votação nominal eletrônica em 2025-12-09, encerrada em 2025-12-09 às 21:51, com 298 Sim e 117 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 10 - FDR PT-PCDOB-PV - INCISO IX DO ART. 1º DA LEI 13.178/2015, ALTERADA ...”; o registro 2471177-111 da API traz o mesmo placar.",
+      "text": "O DTQ 10 pede votação em separado do inciso IX do art. 1º da Lei nº 13.178/2015, alterada pelo art. 2º do substitutivo do Senado (EMS 4497), que traz o inciso."
+    }
+  },
+  {
+    "id": "2471177-114",
+    "parentId": "2471177-102",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Imóveis acima de 2.500 hectares passam pelo Congresso",
+    "summary": "Na votação do substitutivo do Senado, destaque da federação PT-PCdoB-PV para retirar o art. 2º-A, que condiciona a ratificação de imóveis com mais de 2.500 hectares à aprovação do Congresso Nacional, com aprovação tácita se o Congresso não decidir em dois anos.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 2º-A do Senado.",
+    "noMeaning": "Retirar o art. 2º-A do Senado.",
+    "outcome": "kept",
+    "reportObject": "DTQ 7 - FDR PT-PCDOB-PV - DO ART. 2-A DO SUBSTITUTIVO DO SENADO FEDERAL ...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13420",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3042038",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2594560"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13420) registra votação nominal eletrônica em 2025-12-09, encerrada em 2025-12-09 às 22:00, com 286 Sim e 107 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 7 - FDR PT-PCDOB-PV - DO ART. 2-A DO SUBSTITUTIVO DO SENADO FEDERAL ...”; o registro 2471177-114 da API traz o mesmo placar.",
+      "text": "O DTQ 7 pede votação em separado do art. 2º-A do substitutivo do Senado (EMS 4497), que traz o artigo."
+    }
+  },
+  {
+    "id": "2471177-117",
+    "parentId": "2471177-102",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Aprovação automática após dois anos sem decisão do Congresso",
+    "summary": "Na votação do substitutivo do Senado, destaque da federação PSOL-REDE para retirar a alínea b do inciso III do § 2º do art. 2º-A: a advertência, no registro do imóvel, de que a falta de decisão do Congresso em dois anos vale como aprovação tácita automática da ratificação.",
+    "decisionLabel": "Dispositivo mantido",
+    "yesMeaning": "Manter a alínea do Senado.",
+    "noMeaning": "Retirar a alínea do Senado.",
+    "outcome": "kept",
+    "reportObject": "DTQ 6 - FDR PSOL-REDE - ALÍNEA B, DO INC. III, DO §2°, DO ART. 2-A, CONSTANTE...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13421",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3042038",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2594558"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13421) registra votação nominal eletrônica em 2025-12-09, encerrada em 2025-12-09 às 22:10, com 298 Sim e 112 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 6 - FDR PSOL-REDE - ALÍNEA B, DO INC. III, DO §2°, DO ART. 2-A, CONSTANTE...”; o registro 2471177-117 da API traz o mesmo placar.",
+      "text": "O DTQ 6 (PSOL-REDE) pede votação em separado da alínea b do inciso III do § 2º do art. 2º-A, que consta do art. 2º do substitutivo do Senado (EMS 4497), que traz a alínea."
+    }
+  },
+  {
+    "id": "106701-227",
+    "parentId": "106701-223",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Práticas agropecuárias regulamentadas fora do crime de maus-tratos",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BLOCO UNIÃO”), com requerimento assinado por Gilberto Abramo (REPUBLICANOS-MG, líder), para votar a emenda nº 7, de Pedro Lupion. Ela acrescenta ao art. 32 da Lei nº 9.605/1998, que trata do crime de maus-tratos a animais, um parágrafo dizendo que o artigo não se aplica às práticas e procedimentos regulamentados pela autoridade agropecuária. O relator, Fred Costa, tinha recomendado rejeitá-la.",
+    "decisionLabel": "Emenda aprovada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "approved",
+    "reportObject": "DTQ 1 - BLOCO UNIÃO - EMENDA DE PLENÁRIO Nº 7",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13339",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3039429",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2581493"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13339) registra votação nominal eletrônica em 2025-11-05, encerrada em 2025-11-05 às 12:56, com 269 Sim e 154 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 1 - BLOCO UNIÃO - EMENDA DE PLENÁRIO Nº 7”; o registro 106701-227 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda de Plenário nº 7 (EMP 7) traz o parágrafo; o DTQ 1, assinado por Gilberto Abramo como líder, pede destaque para a EMP 7; o parecer às emendas (PRLE 3) descreve a emenda e recomenda rejeitá-la. O requerimento traz nome e cargo, sem partido; partido e UF vêm do registro de votos da API para esta votação."
+    }
+  },
+  {
+    "id": "2157806-168",
+    "parentId": "2157806-137",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda aglutinativa com ajustes no texto do streaming",
+    "summary": "Emenda aglutinativa nº 1, atribuída no relatório nominal a “BLOCO UNIÃO” e assinada pelo relator, Doutor Luizinho. Ela reescreve o texto do projeto aprovado na véspera, com poucas mudanças. Entre elas, permite que o provedor de vídeo sob demanda sujeito a faixa abaixo da alíquota máxima da Condecine cumpra a cota de conteúdo brasileiro do catálogo “exclusivamente com conteúdos brasileiros”, regra que não vale para provedor dependente de pessoa jurídica estrangeira.",
+    "decisionLabel": "Emenda aprovada",
+    "yesMeaning": "Aprovar a emenda aglutinativa.",
+    "noMeaning": "Rejeitar a emenda aglutinativa.",
+    "outcome": "approved",
+    "reportObject": "BLOCO UNIÃO - EMENDA AGLUTINATIVA Nº 1",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13346",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3040169",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2582001"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13346) registra votação nominal eletrônica em 2025-11-05, encerrada em 2025-11-05 às 15:01, com 325 Sim e 94 Não.",
+      "object": "O relatório identifica o objeto como “BLOCO UNIÃO - EMENDA AGLUTINATIVA Nº 1”; o registro 2157806-168 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda aglutinativa nº 1 (EMA 1) traz o texto completo do projeto; comparado à subemenda substitutiva (PRLE 1), ele acrescenta o § 10 ao art. 7º e estende ao § 10 a ressalva do § 8º sobre provedores dependentes de pessoa jurídica estrangeira, além de ajustes de redação."
+    }
+  },
+  {
+    "id": "2157806-177",
+    "parentId": "2157806-137",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Credenciamento e regras de atuação dos serviços de streaming",
+    "summary": "Destaque do NOVO para retirar o Capítulo VI, “Das atividades reguladas”, e o art. 19. Esse trecho exige credenciamento dos provedores de streaming no órgão responsável, representante legal no País para quem atua do exterior, envio de informações para fiscalização, tratamento isonômico por fabricantes de aparelhos feitos principalmente para assistir a conteúdos audiovisuais e espera de 9 semanas para filmes lançados nos cinemas chegarem ao streaming. O art. 19 dá 60 dias para os provedores pedirem o credenciamento.",
+    "decisionLabel": "Capítulo mantido",
+    "yesMeaning": "Manter o capítulo e o art. 19 no texto.",
+    "noMeaning": "Retirar o capítulo e o art. 19 do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 23 - NOVO - CAP. VI, \"DAS ATIVIDADES REGULADAS\", E, POR DECORRÊNCIA...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13347",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3040169",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2581521"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13347) registra votação nominal eletrônica em 2025-11-05, encerrada em 2025-11-05 às 15:29, com 327 Sim e 98 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 23 - NOVO - CAP. VI, \"DAS ATIVIDADES REGULADAS\", E, POR DECORRÊNCIA...”; o registro 2157806-177 da API traz o mesmo placar.",
+      "text": "O DTQ 23 (NOVO) pede votação em separado do Capítulo VI, “Das atividades reguladas”, e, por decorrência, do art. 19, com fins de supressão; a emenda aglutinativa nº 1 (EMA 1), aprovada antes, traz o Capítulo VI (arts. 12 a 17) e o art. 19."
+    }
+  },
+  {
+    "id": "2233324-100",
+    "parentId": "2233324-86",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Nome “Dia Marielle Franco” para o dia dos defensores de direitos humanos",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BL. PL, FDR. PT…”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para retirar do art. 1º a expressão “Dia Marielle Franco”, que dá esse nome ao Dia Nacional das Defensoras e Defensores de Direitos Humanos, comemorado em 14 de março.",
+    "decisionLabel": "Expressão mantida",
+    "yesMeaning": "Manter a expressão no texto.",
+    "noMeaning": "Retirar a expressão do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 2 - BL. PL, FDR. PT ...- EXPR. \"DIA MARIELLE FRANCO\", CONSTANTE ART. 1º...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12869",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2898009",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2503849"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12869) registra votação nominal eletrônica em 2025-05-26, encerrada em 2025-05-26 às 21:14, com 231 Sim e 202 Não.",
+      "object": "A API registra “Mantido o texto” (231 Sim, 202 Não, 8 abstenções); o relatório 12869 identifica o destaque 2 do bloco do PL sobre a expressão “Dia Marielle Franco” do art. 1º.",
+      "text": "O inteiro teor do DTQ 2 pede votação em separado da expressão “Dia Marielle Franco”, do art. 1º do substitutivo, para fins de supressão; a subemenda substitutiva (SSP 1) traz a expressão."
+    }
+  },
+  {
+    "id": "2233324-103",
+    "parentId": "2233324-86",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Ações de valorização de defensores de direitos humanos",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BL. PL, FDR. PT, UNIÃO…”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para retirar o art. 2º. Ele diz que, na data e na semana em que ela cair, entidades públicas e privadas poderão promover ações de valorização e proteção de defensores de direitos humanos, como debates, incentivo à participação de grupos historicamente marginalizados e divulgação de mecanismos de proteção.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 2º no texto.",
+    "noMeaning": "Retirar o art. 2º do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 1 - BL. PL, FDR. PT, UNIÃO ... - ARTIGO 2º, PARA FINS DE SUPRESSÃO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12870",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2898011",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2503846"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12870) registra votação nominal eletrônica em 2025-05-26, encerrada em 2025-05-26 às 21:32, com 284 Sim e 147 Não.",
+      "object": "A API registra “Mantido o texto” (284 Sim, 147 Não, 2 abstenções); o relatório 12870 identifica o destaque 1 do bloco do PL sobre o art. 2º, para fins de supressão.",
+      "text": "O DTQ 1 pede votação em separado do art. 2º para fins de supressão; a subemenda substitutiva (SSP 1) traz o art. 2º com os incisos I a IV."
+    }
+  },
+  {
+    "id": "2233324-106",
+    "parentId": "2233324-86",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Incentivo à participação de mulheres, negros e indígenas",
+    "summary": "Destaque da bancada do NOVO para retirar o inciso III do art. 2º, que inclui entre as ações possíveis no Dia Nacional das Defensoras e Defensores de Direitos Humanos o incentivo à participação de mulheres, pessoas negras, povos indígenas e demais grupos historicamente marginalizados nos espaços de decisão e defesa de direitos.",
+    "decisionLabel": "Inciso mantido",
+    "yesMeaning": "Manter o inciso no texto.",
+    "noMeaning": "Retirar o inciso do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 3 - NOVO - INCISO III DO ART 2º DA SUBEMENDA SUBSTITUTIVA",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12871",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2898011",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2503852"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12871) registra votação nominal eletrônica em 2025-05-26, encerrada em 2025-05-26 às 21:46, com 233 Sim e 174 Não.",
+      "object": "A API registra “Mantido o texto” (233 Sim, 174 Não, 3 abstenções); o relatório 12871 identifica o destaque 3 do NOVO sobre o inciso III do art. 2º da subemenda substitutiva.",
+      "text": "O DTQ 3 (NOVO) pede votação em separado do inciso III do art. 2º da subemenda substitutiva; a subemenda (SSP 1) traz o inciso."
+    }
+  },
+  {
+    "id": "2252295-130",
+    "parentId": "2252295-120",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Licitação exclusiva para empresas estratégicas de saúde",
+    "summary": "Destaque da bancada do NOVO para retirar o art. 26 do substitutivo, que permite à administração pública fazer licitação só para comprar Produto Estratégico de Saúde (PES) produzido ou desenvolvido por Empresa Estratégica de Saúde (EES), definida como pessoa jurídica pública ou privada credenciada pelo Poder Executivo.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 26 no texto.",
+    "noMeaning": "Retirar o art. 26 do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 6 - NOVO - ART. 26 DO SUBSTITUTIVO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13001",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2951335",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2533348"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13001) registra votação nominal eletrônica em 2025-07-08, encerrada em 2025-07-08 às 20:39, com 316 Sim e 110 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 6 - NOVO - ART. 26 DO SUBSTITUTIVO”; o registro 2252295-130 da API traz o mesmo placar.",
+      "text": "O DTQ 6 (NOVO) pede votação em separado do art. 26 do substitutivo; o substitutivo da Comissão de Saúde (SBT 1) traz o art. 26 e, no art. 2º, as definições de PES e EES."
+    }
+  },
+  {
+    "id": "2270325-92",
+    "parentId": "2270325-88",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda: unidades de saúde de PMs e bombeiros como gasto em saúde",
+    "summary": "Destaque da bancada do PL para votar a emenda nº 6, de Sargento Gonçalves. Ela incluía nas ações e serviços públicos de saúde da Lei Complementar nº 141/2012 o custeio e o investimento em unidades de saúde das polícias militares e dos corpos de bombeiros militares, como hospitais militares estaduais e policlínicas, que atuem de forma integrada ou complementar ao SUS. O relator, Daniel Agrobom, recomendou rejeitá-la por não atender aos parâmetros da própria lei complementar.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 1 - PL - EMENDA DE PLENÁRIO Nº 6",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13380",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3044463",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2583960"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13380) registra votação nominal eletrônica em 2025-11-12, encerrada em 2025-11-12 às 20:41, com 148 Sim e 215 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 1 - PL - EMENDA DE PLENÁRIO Nº 6”; o registro 2270325-92 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda nº 6 (EMP 6) acrescenta o inciso XV ao art. 3º da Lei Complementar nº 141/2012; o parecer às emendas (PRLE 1) conclui pela rejeição da emenda nº 6."
+    }
+  },
+  {
+    "id": "2270800-148",
+    "parentId": "2270800-135",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Prisão em flagrante de parlamentar decidida pela Casa",
+    "summary": "Destaque da federação PSOL-REDE para retirar o § 5º do art. 53 da Constituição, na forma do substitutivo: em caso de flagrante de crime inafiançável, os autos vão em 24 horas à Casa do parlamentar, que decide pelo voto secreto da maioria de seus membros sobre a prisão e se autoriza ou não a formação de culpa. Numa PEC, o trecho destacado só fica com pelo menos 308 votos Sim.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o § 5º no texto.",
+    "noMeaning": "Retirar o § 5º do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 9 - FDR PSOL-REDE - §5º, DO ART. 53 DA CONSTITUIÇÃO FEDERAL...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13155",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3001045",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2561399"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13155) registra votação nominal eletrônica em 2025-09-16, encerrada em 2025-09-16 às 21:34, com 322 Sim, 147 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “DTQ 9 - FDR PSOL-REDE - §5º, DO ART. 53 DA CONSTITUIÇÃO FEDERAL...”; o registro 2270800-148 da API traz o mesmo placar.",
+      "text": "O DTQ 9 (PSOL-REDE), do primeiro turno, pede votação em separado do § 5º do art. 53 da Constituição, constante do art. 1º do substitutivo; o parecer reformulado com o substitutivo (PRLP 3, mesmo inteiro teor do PPR 1) traz o parágrafo."
+    }
+  },
+  {
+    "id": "2270800-151",
+    "parentId": "2270800-135",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Foro no STF para presidentes de partidos",
+    "summary": "Destaque da bancada do NOVO para retirar do art. 102 da Constituição a expressão “os Presidentes Nacionais de partidos políticos com representação no Congresso Nacional”, que inclui esses dirigentes entre as autoridades julgadas pelo Supremo Tribunal Federal (STF) nas infrações penais comuns. Numa PEC, o trecho destacado só fica com pelo menos 308 votos Sim.",
+    "decisionLabel": "Expressão mantida",
+    "yesMeaning": "Manter a expressão no texto.",
+    "noMeaning": "Retirar a expressão do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 8 - NOVO - EXPRESSÃO \"OS PRESIDENTES NACIONAIS DE PARTIDOS POLÍTICOS (...)\"",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13156",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3001086",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2561368"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13156) registra votação nominal eletrônica em 2025-09-16, encerrada em 2025-09-16 às 22:06, com 317 Sim, 156 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “DTQ 8 - NOVO - EXPRESSÃO \"OS PRESIDENTES NACIONAIS DE PARTIDOS POLÍTICOS (...)\"”; o registro 2270800-151 da API traz o mesmo placar.",
+      "text": "O DTQ 8 (NOVO), do primeiro turno, pede votação em separado da expressão citada, na alínea b do inciso I do art. 102 da Constituição, prevista no art. 2º do substitutivo; o parecer reformulado (PRLP 3) traz a alínea com a expressão."
+    }
+  },
+  {
+    "id": "2270800-165",
+    "parentId": "2270800-160",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Votação secreta para autorizar processo contra parlamentar",
+    "summary": "Destaque da bancada do NOVO, no segundo turno, para retirar a palavra “secreta” do § 3º do art. 53 da Constituição, na forma do substitutivo. O parágrafo manda a Casa decidir, por votação secreta da maioria absoluta, em até 90 dias, a licença para processar um parlamentar pedida pelo STF. Numa PEC, o trecho destacado só fica com pelo menos 308 votos Sim.",
+    "decisionLabel": "Trecho retirado",
+    "yesMeaning": "Manter a palavra “secreta” no texto.",
+    "noMeaning": "Retirar a palavra “secreta” do texto.",
+    "outcome": "removed",
+    "reportObject": "DTQ 16 - NOVO - EXPRESSÃO \"SECRETA\" CONTIDA NO §3° DO ART. 53 DA CF...- 2º TURNO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13159",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3001354",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2561487"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13159) registra votação nominal eletrônica em 2025-09-16, encerrada em 2025-09-17 às 00:18, com 296 Sim e 174 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 16 - NOVO - EXPRESSÃO \"SECRETA\" CONTIDA NO §3° DO ART. 53 DA CF...- 2º TURNO”; o registro 2270800-165 da API traz o mesmo placar.",
+      "text": "O DTQ 16 (NOVO), do segundo turno, pede votação em separado da expressão “secreta” do § 3º do art. 53 da Constituição, incluído pelo art. 1º do substitutivo; o parecer reformulado (PRLP 3) traz o § 3º com “votação secreta da maioria absoluta”."
+    }
+  },
+  {
+    "id": "2270800-175",
+    "parentId": "2270800-160",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda aglutinativa: voto secreto e foro de presidentes de partido",
+    "summary": "Emenda aglutinativa do relator, Claudio Cajado, com líderes de PP, UNIÃO, Republicanos, MDB, PL, Federação PSDB-Cidadania, Avante e Podemos, feita com base nos destaques nº 13 e 17 do segundo turno. Ela reescreve o § 3º do art. 53 da Constituição para que a licença para processar e a prisão em flagrante por crime inafiançável de parlamentar sejam decididas pelo voto secreto da maioria absoluta da Casa, revoga o § 5º do art. 53 e mantém o foro no STF para presidentes nacionais de partidos.",
+    "decisionLabel": "Emenda aprovada",
+    "yesMeaning": "Aprovar a emenda aglutinativa.",
+    "noMeaning": "Rejeitar a emenda aglutinativa.",
+    "outcome": "approved",
+    "reportObject": "EMENDA AGLUTINATIVA Nº 1 - 2º TURNO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13161",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3001704",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2561796"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13161) registra votação nominal eletrônica em 2025-09-17, encerrada em 2025-09-17 às 14:10, com 314 Sim e 168 Não.",
+      "object": "O relatório identifica o objeto como “EMENDA AGLUTINATIVA Nº 1 - 2º TURNO”; o registro 2270800-175 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda aglutinativa nº 1 (EMA 1) traz a nova redação do § 3º do art. 53, o art. 2º sobre o art. 102 e a revogação do § 5º do art. 53, e lista os signatários."
+    }
+  },
+  {
+    "id": "2279186-92",
+    "parentId": "2279186-86",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Regras de tributação do empréstimo de ações e títulos",
+    "summary": "Destaque da bancada do NOVO para retirar o Capítulo III do substitutivo (arts. 19 a 31). Ele define como se tributam os empréstimos de títulos e valores mobiliários registrados no País: o imposto de renda sobre a remuneração de quem empresta, o reembolso de proventos durante o empréstimo, os casos de tomador isento e a venda dos papéis pelo tomador.",
+    "decisionLabel": "Capítulo mantido",
+    "yesMeaning": "Manter o Capítulo III no texto.",
+    "noMeaning": "Retirar o Capítulo III do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 9 - NOVO - CAPÍTULO 3 DO SUBSTITUTIVO APRESENTADO PELO RELATOR",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13281",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3034350",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2579003"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13281) registra votação nominal eletrônica em 2025-10-29, encerrada em 2025-10-29 às 19:39, com 260 Sim e 132 Não.",
+      "object": "A API registra “Mantido o texto” (260 Sim, 132 Não); o relatório 13281 identifica o destaque 9 do NOVO sobre o Capítulo 3 do substitutivo.",
+      "text": "O DTQ 9 (NOVO) pede votação em separado do Capítulo 3 do substitutivo; o substitutivo (SBT 1) traz o Capítulo III, “Do empréstimo de títulos e valores mobiliários no País”, com os arts. 19 a 31."
+    }
+  },
+  {
+    "id": "2279186-94",
+    "parentId": "2279186-86",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Prejuízo com hedge no exterior só com preço de mercado líquido",
+    "summary": "Destaque da bancada do PL para retirar o § 3º do art. 17 da Lei nº 9.430/1996, na redação do art. 32 do substitutivo. Ele só permite que empresas abatam do lucro real e da base da CSLL (contribuição sobre o lucro) perdas com operações de proteção (hedge) feitas com contrapartes no exterior quando o preço vier de mercado com operações suficientes entre terceiros, conforme regra da Receita Federal.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 7 - PL - §3º DO ARTIGO 17 DA LEI 9.430/96, CONSTANTE NO ARTIGO 32 DO SUBST",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13282",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3034350",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2578987"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13282) registra votação nominal eletrônica em 2025-10-29, encerrada em 2025-10-29 às 19:48, com 276 Sim e 125 Não.",
+      "object": "A API registra “Mantido o texto” (276 Sim, 125 Não); o relatório 13282 identifica o destaque 7 do PL sobre o § 3º do art. 17 da Lei nº 9.430/1996, constante do art. 32 do substitutivo.",
+      "text": "O DTQ 7 (PL) pede votação em separado do § 3º do art. 17 da Lei nº 9.430/1996, constante do art. 32 do substitutivo; o substitutivo (SBT 1) traz o parágrafo."
+    }
+  },
+  {
+    "id": "2279186-97",
+    "parentId": "2279186-86",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Pé-de-Meia: natureza de bolsa e fundo com participação da União",
+    "summary": "Destaque da federação PSOL-REDE para retirar o art. 34 do substitutivo, que altera a Lei nº 14.818/2024 (Programa Pé-de-Meia). Ele define o incentivo como bolsa de estudo para alunos do ensino médio público e autoriza a União, respeitadas as disponibilidades orçamentárias e financeiras, a participar de fundo para custear e gerir o incentivo.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 34 no texto.",
+    "noMeaning": "Retirar o art. 34 do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 4 - FDR PSOL-REDE - ARTIGO 34 DO SUBSTITUTIVO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13283",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3034350",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2578975"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13283) registra votação nominal eletrônica em 2025-10-29, encerrada em 2025-10-29 às 20:11, com 269 Sim e 152 Não.",
+      "object": "A API registra “Mantido o texto” (269 Sim, 152 Não); o relatório 13283 identifica o destaque 4 da federação PSOL-REDE sobre o art. 34 do substitutivo.",
+      "text": "O DTQ 4 (PSOL-REDE) pede votação em separado do art. 34 do substitutivo; o substitutivo (SBT 1) traz o artigo, que altera os arts. 1º e 7º da Lei nº 14.818/2024, e o parecer (PRLP 2) o identifica como o Programa Pé-de-Meia."
+    }
+  },
+  {
+    "id": "2279186-99",
+    "parentId": "2279186-86",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Seguro-defeso sem limite da dotação orçamentária",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BLOCO UNIÃO”), com requerimento assinado por Rodrigo Gambale (PODE-SP), para votar a emenda nº 5, de Rodrigo Gambale. Ela retira os §§ 4º a 6º do art. 5º da Lei nº 10.779/2003, incluídos pelo substitutivo, que limitavam a despesa com o seguro-defeso de pescadores à dotação do orçamento e mandavam seguir a ordem de inscrição. O relator, Juscelino Filho, recomendou rejeitar todas as emendas por não integrarem o acordo político.",
+    "decisionLabel": "Emenda aprovada",
+    "yesMeaning": "Aprovar a emenda e retirar os parágrafos.",
+    "noMeaning": "Rejeitar a emenda e manter os parágrafos.",
+    "outcome": "approved",
+    "reportObject": "DTQ 5 - BLOCO UNIÃO - EMENDA DE PLENÁRIO Nº 5",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13284",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3033937",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2578981"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13284) registra votação nominal eletrônica em 2025-10-29, encerrada em 2025-10-29 às 20:24, com 223 Sim e 174 Não.",
+      "object": "A API registra “Aprovada a Emenda de Plenário nº 5” (223 Sim, 174 Não); o relatório 13284 identifica o destaque 5 do bloco União sobre a emenda nº 5.",
+      "text": "O inteiro teor da emenda nº 5 (EMP 5) suprime os §§ 4º, 5º e 6º do art. 5º da Lei nº 10.779/2003, alterada pelo art. 36 do substitutivo; o substitutivo (SBT 1) traz esses parágrafos e o parecer às emendas (PRLE 1) conclui pela rejeição das emendas."
+    }
+  },
+  {
+    "id": "2279186-104",
+    "parentId": "2279186-86",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Compensação de tributos com créditos sem relação com a empresa",
+    "summary": "Destaque da bancada do PL para retirar o art. 37 do substitutivo, que altera o art. 74 da Lei nº 9.430/1996. Ele considera não declaradas as compensações de tributos feitas com base em documento de arrecadação inexistente ou em créditos de PIS/Pasep e Cofins sem relação com as atividades econômicas da empresa.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 37 no texto.",
+    "noMeaning": "Retirar o art. 37 do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 6 - PL - ARTIGO 37 DO SUBSTITUTIVO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13285",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3034350",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2578985"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13285) registra votação nominal eletrônica em 2025-10-29, encerrada em 2025-10-29 às 20:49, com 293 Sim e 143 Não.",
+      "object": "A API registra “Mantido o texto” (293 Sim, 143 Não); o relatório 13285 identifica o destaque 6 do PL sobre o art. 37 do substitutivo.",
+      "text": "O DTQ 6 (PL) pede votação em separado do art. 37 do substitutivo; o substitutivo (SBT 1) traz o artigo, que inclui as alíneas g e h no inciso II do § 12 do art. 74 da Lei nº 9.430/1996."
+    }
+  },
+  {
+    "id": "2279186-107",
+    "parentId": "2279186-86",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Correção pela inflação do custo de imóveis vendidos",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BL. PL, FDR. PT…”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para votar a emenda nº 1, de Caroline De Toni. Ela permitia corrigir o custo de compra de imóveis adquiridos a partir de 1989 pelo índice oficial de inflação no cálculo do imposto de renda sobre o ganho de capital na venda. O relator, Juscelino Filho, recomendou rejeitar todas as emendas por não integrarem o acordo político.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 1 - BL. PL, FDR. PT... - EMENDA DE PLENÁRIO Nº 1",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13286",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2919621",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2517876"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13286) registra votação nominal eletrônica em 2025-10-29, encerrada em 2025-10-29 às 21:04, com 143 Sim e 263 Não.",
+      "object": "A API registra “Rejeitada a Emenda de Plenário nº 1” (143 Sim, 263 Não, 1 abstenção); o relatório 13286 identifica o destaque 1 do bloco do PL sobre a emenda nº 1.",
+      "text": "O inteiro teor da emenda nº 1 (EMP 1) acrescenta o art. 18-A à Lei nº 7.713/1988 com a correção pela inflação; o parecer às emendas (PRLE 1) resume a emenda e conclui pela rejeição."
+    }
+  },
+  {
+    "id": "2318217-81",
+    "parentId": "2318217-77",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Competências da comissão tripartite na versão do Senado",
+    "summary": "Destaque de preferência da federação PSOL-REDE para incluir no substitutivo o art. 15 do texto original vindo do Senado. O artigo lista o que cabe à Comissão Intergestores Tripartite da Educação (Cite) estabelecer, como a assistência técnica e financeira da União a estados e municípios, os parâmetros nacionais de qualidade, as diretrizes do Custo Aluno Qualidade (CAQ) e a suplementação financeira da União.",
+    "decisionLabel": "Inclusão rejeitada",
+    "yesMeaning": "Incluir no substitutivo o art. 15 do texto do Senado.",
+    "noMeaning": "Não incluir o art. 15 do texto do Senado.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 3 - FDR PSOL-REDE - DESTAQUE DE PREFERÊNCIADO(A)ART.15, DO TEXTO ORIGINAL...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13125",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2149911",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2556897"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13125) registra votação nominal eletrônica em 2025-09-03, encerrada em 2025-09-03 às 18:09, com 119 Sim e 310 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “DTQ 3 - FDR PSOL-REDE - DESTAQUE DE PREFERÊNCIADO(A)ART.15, DO TEXTO ORIGINAL...”; o registro 2318217-81 da API traz o mesmo placar.",
+      "text": "O DTQ 3 (PSOL-REDE) pede preferência para o art. 15 do texto original oriundo do Senado, “para que seja incluído no substitutivo”; o inteiro teor do PLP 235/2019 traz o art. 15 com as competências da Cite. A API registra “Rejeitada a inclusão”."
+    }
+  },
+  {
+    "id": "2318217-86",
+    "parentId": "2318217-77",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Resoluções da Cite sobre padrão de qualidade e CAQ",
+    "summary": "Destaque do NOVO para retirar do § 3º do art. 13 a expressão “resoluções para efetivação das pactuações de que tratam os incisos V e VI do caput deste artigo e, quando couber”. Ela manda a Comissão Intergestores Tripartite da Educação (Cite) publicar resoluções para efetivar o que pactuar sobre o padrão mínimo de qualidade do ensino e a metodologia de cálculo do Custo Aluno Qualidade (CAQ).",
+    "decisionLabel": "Expressão mantida",
+    "yesMeaning": "Manter a expressão no texto.",
+    "noMeaning": "Retirar a expressão do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 5 - NOVO - EXPRESSÃO \"RESOLUÇÕES PARA EFETIVAÇÃO DAS PACTUAÇÕES (...)\"",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13126",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2992681",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2556983"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13126) registra votação nominal eletrônica em 2025-09-03, encerrada em 2025-09-03 às 18:24, com 311 Sim e 35 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 5 - NOVO - EXPRESSÃO \"RESOLUÇÕES PARA EFETIVAÇÃO DAS PACTUAÇÕES (...)\"”; o registro 2318217-86 da API traz o mesmo placar.",
+      "text": "O DTQ 5 (NOVO) pede votação em separado da expressão contida no § 3º do art. 13 do substitutivo, com fins de supressão; a subemenda substitutiva (PRLE 1) traz o § 3º, e os incisos V e VI do art. 13 tratam do padrão mínimo de qualidade e da metodologia do CAQ."
+    }
+  },
+  {
+    "id": "2318217-90",
+    "parentId": "2318217-77",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Escolas privadas e comunitárias seguem regras de dados",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BLOCO PL”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para retirar do § 3º do art. 26 a expressão “bem como estabelecimentos educacionais privados e comunitários, no que couber”. Com ela, escolas privadas e comunitárias também ficam obrigadas a seguir as regras da Infraestrutura Nacional de Dados da Educação (INDE), como o uso do CPF como identificador único do estudante.",
+    "decisionLabel": "Expressão mantida",
+    "yesMeaning": "Manter a expressão no texto.",
+    "noMeaning": "Retirar a expressão do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 4 - BLOCO PL - EXPRESSÃO \"BEM COMO ESTABELECIMENTOS EDUCACIONAIS (...)\"",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13127",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2992681",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2556981"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13127) registra votação nominal eletrônica em 2025-09-03, encerrada em 2025-09-03 às 18:44, com 313 Sim e 119 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “DTQ 4 - BLOCO PL - EXPRESSÃO \"BEM COMO ESTABELECIMENTOS EDUCACIONAIS (...)\"”; o registro 2318217-90 da API traz o mesmo placar.",
+      "text": "O DTQ 4 (PL) pede votação em separado da expressão constante do § 3º do art. 26 do substitutivo; a subemenda substitutiva (PRLE 1) traz o art. 26, sobre a INDE, cujo § 3º torna o artigo de observância obrigatória também por esses estabelecimentos."
+    }
+  },
+  {
+    "id": "2318217-93",
+    "parentId": "2318217-77",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda: CAQ calculado com base em redes de bom desempenho",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BLOCO PL”), com requerimento assinado por Pedro Lucas Fernandes (UNIÃO-MA, líder), para votar a emenda nº 10, da deputada Adriana Ventura. Ela mudava o art. 41 para que o Custo Aluno Qualidade (CAQ) fosse calculado a partir do investimento por aluno de redes de ensino que cumprem os padrões mínimos de qualidade e têm desempenho consistente em indicadores de acesso, aprendizagem e trajetória dos estudantes. O relator, Rafael Brito, recomendou rejeitá-la por considerar o texto suficiente.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 6 - BLOCO PL - EMENDA DE PLENÁRIO Nº 10",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13128",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2992599",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2556963"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13128) registra votação nominal eletrônica em 2025-09-03, encerrada em 2025-09-03 às 19:22, com 165 Sim e 276 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 6 - BLOCO PL - EMENDA DE PLENÁRIO Nº 10”; o registro 2318217-93 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda nº 10 (EMP 10) dá nova redação ao art. 41 do substitutivo; o parecer às emendas (PRLE 1) afirma que “as disposições do Substitutivo são suficientes para a regulamentação do CAQ” e conclui pela rejeição."
+    }
+  },
+  {
+    "id": "2358548-81",
+    "parentId": "2358548-89",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Regras de progressão de regime na Lei de Execução Penal",
+    "summary": "Destaque da bancada do PSB para retirar o art. 112 da Lei de Execução Penal na redação do substitutivo do relator, Paulinho da Força. O artigo fixa em 1/6 da pena a regra geral para passar a um regime menos rigoroso, com exceções de 20% a 70% para reincidentes, crimes dos Títulos I e II da Parte Especial do Código Penal com violência ou grave ameaça, crimes hediondos, feminicídio, milícia privada e comando de organização criminosa.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 112 no texto.",
+    "noMeaning": "Retirar o art. 112 do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 6 - PSB - ART. 112 DA LEI Nº 7.210, DE 11 DE JULHO DE 1984, COM REDAÇÃO...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13429",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3064269",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2594487"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13429) registra votação nominal eletrônica em 2025-12-09, encerrada em 2025-12-10 às 02:43, com 218 Sim e 136 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 6 - PSB - ART. 112 DA LEI Nº 7.210, DE 11 DE JULHO DE 1984, COM REDAÇÃO...”; o registro 2358548-81 da API traz o mesmo placar.",
+      "text": "O DTQ 6 (PSB) pede votação em separado do art. 112 da Lei nº 7.210/1984, com a redação do art. 1º do substitutivo; o substitutivo (SBT 1, igual ao do parecer PRLP 2) traz o artigo com o 1/6 e os incisos I a X."
+    }
+  },
+  {
+    "id": "2358548-86",
+    "parentId": "2358548-89",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Regra de 25% só para crimes dos Títulos I e II do Código Penal",
+    "summary": "Destaque da federação PT-PCdoB-PV para retirar a expressão “previstos nos Títulos I e II da Parte Especial do Código Penal” do inciso I do art. 112 da Lei de Execução Penal, no substitutivo. O inciso exige ao menos 25% da pena cumprida para a progressão do condenado primário por esses crimes cometidos com violência ou grave ameaça; segundo o parecer do relator, os dois títulos tratam dos crimes contra a vida e contra o patrimônio.",
+    "decisionLabel": "Expressão mantida",
+    "yesMeaning": "Manter a expressão no texto.",
+    "noMeaning": "Retirar a expressão do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 4 - FDR PT-PCDOB-PV - EXPRESSÃO \"PREVISTOS NOS TÍTULOS I E II DA PARTE(...)\"",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13430",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3063655",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2594352"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13430) registra votação nominal eletrônica em 2025-12-09, encerrada em 2025-12-10 às 02:55, com 208 Sim e 121 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 4 - FDR PT-PCDOB-PV - EXPRESSÃO \"PREVISTOS NOS TÍTULOS I E II DA PARTE(...)\"”; o registro 2358548-86 da API traz o mesmo placar.",
+      "text": "O DTQ 4 pede votação em separado da expressão citada, do inciso I do art. 112 da Lei de Execução Penal, contido no art. 1º do substitutivo; o substitutivo traz o inciso e o parecer (PRLP 2) diz que os Títulos I e II tratam dos crimes contra a vida e contra o patrimônio."
+    }
+  },
+  {
+    "id": "2358548-90",
+    "parentId": "2358548-89",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Remição de pena também no regime domiciliar",
+    "summary": "Destaque da federação PT-PCdoB-PV para retirar o § 9º do art. 126 da Lei de Execução Penal, incluído pelo substitutivo: o cumprimento da pena em regime domiciliar não impede a remição (abatimento) da pena.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 5 - FDR PT-PCDOB-PV - DO § 9° DO ART. 126 DA LEI 7.210/1984 CONSTANTE DO ...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13431",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3064269",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2594370"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13431) registra votação nominal eletrônica em 2025-12-09, encerrada em 2025-12-10 às 03:08, com 230 Sim e 34 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 5 - FDR PT-PCDOB-PV - DO § 9° DO ART. 126 DA LEI 7.210/1984 CONSTANTE DO ...”; o registro 2358548-90 da API traz o mesmo placar.",
+      "text": "O DTQ 5 pede votação em separado do § 9º do art. 126 da Lei nº 7.210/1984, constante do art. 1º do substitutivo, que traz o parágrafo."
+    }
+  },
+  {
+    "id": "2358548-93",
+    "parentId": "2358548-89",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Sem soma de penas para crimes no mesmo contexto",
+    "summary": "Destaque da federação PT-PCdoB-PV para retirar o art. 359-M-A, que o substitutivo acrescenta ao Código Penal. Quando os crimes do capítulo forem cometidos no mesmo contexto, a pena seria aplicada como concurso formal próprio (primeira parte do art. 70), mesmo com desígnios autônomos, sem a soma de penas da segunda parte do art. 70 e do art. 69. Segundo o parecer do relator, a regra afasta a soma das penas de golpe de Estado e de abolição violenta do Estado Democrático de Direito.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 359-M-A no texto.",
+    "noMeaning": "Retirar o art. 359-M-A do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 2 - FDR PT-PCDOB-PV - ART. 359 -M-A DO DECRETO-LEI Nº 2.848/1940, CONST. ...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13432",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3064269",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2594336"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13432) registra votação nominal eletrônica em 2025-12-09, encerrada em 2025-12-10 às 03:22, com 229 Sim e 26 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 2 - FDR PT-PCDOB-PV - ART. 359 -M-A DO DECRETO-LEI Nº 2.848/1940, CONST. ...”; o registro 2358548-93 da API traz o mesmo placar.",
+      "text": "O DTQ 2 pede votação em separado do art. 359-M-A do Decreto-Lei nº 2.848/1940, constante do art. 2º do substitutivo, que traz o artigo; o parecer (PRLP 2) cita a posição contrária à cumulação das penas de golpe de Estado e de abolição violenta do Estado Democrático de Direito."
+    }
+  },
+  {
+    "id": "2358548-96",
+    "parentId": "2358548-89",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Redução de pena para crimes cometidos em multidão",
+    "summary": "Destaque da federação PT-PCdoB-PV para retirar o art. 359-M-B, que o substitutivo acrescenta ao Código Penal: quando os crimes do capítulo forem praticados em contexto de multidão, a pena é reduzida de um terço a dois terços, desde que o agente não tenha praticado ato de financiamento nem exercido papel de liderança.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 359-M-B no texto.",
+    "noMeaning": "Retirar o art. 359-M-B do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 7 - FDR PT-PCDOB-PV - ART. 359-M-B DO DECRETO-LEI Nº 2.848/1940, CONSTANT...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13433",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3064269",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2594536"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13433) registra votação nominal eletrônica em 2025-12-09, encerrada em 2025-12-10 às 03:38, com 231 Sim e 23 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 7 - FDR PT-PCDOB-PV - ART. 359-M-B DO DECRETO-LEI Nº 2.848/1940, CONSTANT...”; o registro 2358548-96 da API traz o mesmo placar.",
+      "text": "O DTQ 7 pede votação em separado do art. 359-M-B do Decreto-Lei nº 2.848/1940, constante do art. 2º do substitutivo, que traz o artigo."
+    }
+  },
+  {
+    "id": "2383019-91",
+    "parentId": "2383019-54",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emendas",
+    "title": "Emendas do Senado: vagas pelo censo e despesa sem aumento real",
+    "summary": "Na votação das emendas do Senado, a Câmara aprovou em conjunto as três emendas, com parecer favorável do relator, Damião Feliciano. A nº 1 manda distribuir as vagas de deputado pelos dados oficiais do último censo demográfico do IBGE e retira os incisos do art. 2º; a nº 2 retira os incisos II e III desse artigo, que, segundo o parecer, previam auditoria dos dados do censo pelo Tribunal de Contas da União (TCU) e a possibilidade de desconsiderá-los; a nº 3 manda manter constante, sem aumento real, na legislatura seguinte, a despesa ligada ao exercício do mandato decorrente do aumento do número de deputados, com base nos valores de 2025 e admitida a atualização monetária.",
+    "decisionLabel": "Emendas aprovadas",
+    "yesMeaning": "Aprovar as emendas nº 1, 2 e 3 do Senado.",
+    "noMeaning": "Rejeitar essas emendas.",
+    "outcome": "approved",
+    "reportObject": "EMENDAS DO SENADO FEDERAL",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12967",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2942200",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2528493"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12967) registra votação nominal eletrônica em 2025-06-25, encerrada em 2025-06-25 às 22:21, com 361 Sim, 36 Não e 30 abstenções.",
+      "object": "O relatório identifica o objeto como “EMENDAS DO SENADO FEDERAL”; o registro 2383019-91 da API traz o mesmo placar.",
+      "text": "O inteiro teor das emendas do Senado (EMS 177/2023, Ofício SF nº 547/25, codteor 2942200) traz as emendas nº 1, 2 e 3. O parecer de Plenário às emendas do Senado (PRLP 2, codteor 2942211) conclui pela aprovação de todas; ele as descreve pela numeração do Senado (emendas nº 1, 2 e 4, com subemendas), que corresponde às emendas nº 3, 2 e 1 do ofício. A tramitação registra uma única votação das emendas, “com parecer pela aprovação”, e em seguida a redação final."
+    }
+  },
+  {
+    "id": "2386051-101",
+    "parentId": "2386051-93",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Bem-estar no campo e normas de segurança do trabalho",
+    "summary": "Destaque da federação PSOL-REDE para retirar o § 5º do art. 9º da Lei nº 8.629/1993, que trata da função social da propriedade rural, na redação da subemenda substitutiva: a exploração que favorece o bem-estar de proprietários e trabalhadores rurais é a que busca atender às necessidades básicas de quem trabalha a terra, observada a partir do respeito às normas de segurança do trabalho.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 6 - FDR PSOL-REDE - § 5º DO ART. 9º DA LEI Nº 8.629/1993...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13357",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3039112",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2582024"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13357) registra votação nominal eletrônica em 2025-11-05, encerrada em 2025-11-05 às 22:12, com 274 Sim e 101 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 6 - FDR PSOL-REDE - § 5º DO ART. 9º DA LEI Nº 8.629/1993...”; o registro 2386051-101 da API traz o mesmo placar.",
+      "text": "O DTQ 6 (PSOL-REDE) pede votação em separado do § 5º do art. 9º da Lei nº 8.629/1993, contido no art. 3º da subemenda substitutiva (PRLE 2), que traz o parágrafo."
+    }
+  },
+  {
+    "id": "2413257-125",
+    "parentId": "2413257-116",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Multa diária a favor da vítima por descumprir medida protetiva",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BL. PL, FDR. PT…”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para votar o art. 21-A da emenda nº 1, do deputado Yury do Paredão: o descumprimento das medidas protetivas poderia levar ao pagamento de multa diária em favor da vítima, fixada pelo juiz conforme a gravidade e cumulativa. A relatora, Rogéria Santos, recomendou rejeitar a emenda por não integrar o acordo político.",
+    "decisionLabel": "Inclusão rejeitada",
+    "yesMeaning": "Incluir a multa diária do art. 21-A no texto.",
+    "noMeaning": "Deixar o art. 21-A de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 4 - BL. PL, FDR. PT ... - ART 21-A DA EMENDA DE PLENÁRIO Nº 1",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12996",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2857063",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2525142"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12996) registra votação nominal eletrônica em 2025-07-08, encerrada em 2025-07-08 às 18:18, com 159 Sim e 243 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 4 - BL. PL, FDR. PT ... - ART 21-A DA EMENDA DE PLENÁRIO Nº 1”; o registro 2413257-125 da API traz o mesmo placar.",
+      "text": "O DTQ 4, assinado pelo líder do PL, pede destaque do art. 21-A da emenda de Plenário nº 1; o inteiro teor da emenda traz o art. 21-A com a multa diária em favor da vítima. O parecer às emendas (PRLE 1) conclui pela rejeição."
+    }
+  },
+  {
+    "id": "2421211-103",
+    "parentId": "2421211-88",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Criação de 160 funções comissionadas no STF",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BL. PL, FDR PT…”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para retirar o art. 1º do substitutivo, que cria 160 funções comissionadas de nível FC-6 no quadro de pessoal do Supremo Tribunal Federal (STF).",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 1º no texto.",
+    "noMeaning": "Retirar o art. 1º do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 3 - BL. PL, FDR PT... - ART. 1º DO SUBSTITUTIVO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13007",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2951580",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2533191"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13007) registra votação nominal eletrônica em 2025-07-09, encerrada em 2025-07-09 às 18:39, com 208 Sim e 174 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 3 - BL. PL, FDR PT... - ART. 1º DO SUBSTITUTIVO”; o registro 2421211-103 da API traz o mesmo placar.",
+      "text": "O DTQ 3 (PL) pede votação em separado do art. 1º do substitutivo constante do PRLP 3; o substitutivo adotado (SBT 1, mesmo texto anexo ao PRLP 3) traz o art. 1º com as 160 funções FC-6. O substitutivo publicado (SBT 1) é imagem escaneada; foi lido por OCR (Vision, do macOS) e conferido contra o texto anexo ao PRLP 3, que tem a mesma redação."
+    }
+  },
+  {
+    "id": "2421211-106",
+    "parentId": "2421211-88",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Criação de 40 cargos de agente da Polícia Judicial no STF",
+    "summary": "Destaque da bancada do NOVO para retirar o art. 2º do substitutivo, que cria no quadro de pessoal do Supremo Tribunal Federal (STF) 40 cargos de Técnico Judiciário, Área Administrativa, Agente da Polícia Judicial.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 2º no texto.",
+    "noMeaning": "Retirar o art. 2º do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 2 - NOVO - ART. 2º DO SUBSTITUTIVO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13008",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2951580",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2533177"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13008) registra votação nominal eletrônica em 2025-07-09, encerrada em 2025-07-09 às 19:12, com 210 Sim e 174 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 2 - NOVO - ART. 2º DO SUBSTITUTIVO”; o registro 2421211-106 da API traz o mesmo placar.",
+      "text": "O DTQ 2 (NOVO) pede votação em separado do art. 2º do substitutivo; o substitutivo adotado (SBT 1, mesmo texto anexo ao PRLP 3) traz o art. 2º com os 40 cargos. O substitutivo publicado (SBT 1) é imagem escaneada; foi lido por OCR (Vision, do macOS) e conferido contra o texto anexo ao PRLP 3, que tem a mesma redação."
+    }
+  },
+  {
+    "id": "2421211-109",
+    "parentId": "2421211-88",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Novas funções do STF condicionadas ao orçamento a partir de 2025",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BL. PL, FDR PT…”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para retirar o parágrafo único do art. 3º do substitutivo, pelo qual a criação das funções comissionadas do art. 1º será implementada a partir de 2025, conforme anexo próprio da lei orçamentária anual e condicionada à sua autorização expressa, nos termos da lei de diretrizes orçamentárias.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 4 - BL. PL, FDR PT... - PARÁGRAFO ÚNICO DO ARTIGO 3º DO SUBSTITUTIVO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13009",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2951580",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2533426"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13009) registra votação nominal eletrônica em 2025-07-09, encerrada em 2025-07-09 às 19:49, com 204 Sim e 162 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 4 - BL. PL, FDR PT... - PARÁGRAFO ÚNICO DO ARTIGO 3º DO SUBSTITUTIVO”; o registro 2421211-109 da API traz o mesmo placar.",
+      "text": "O DTQ 4 (PL) pede votação em separado do parágrafo único do art. 3º do substitutivo; o substitutivo adotado (SBT 1, mesmo texto anexo ao PRLP 3) traz o parágrafo. O substitutivo publicado (SBT 1) é imagem escaneada; foi lido por OCR (Vision, do macOS) e conferido contra o texto anexo ao PRLP 3, que tem a mesma redação."
+    }
+  },
+  {
+    "id": "2432423-93",
+    "parentId": "2432423-88",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Programa nacional de sistemas agroflorestais (PROSAFs)",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BLOCO PL”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para retirar o Capítulo II do texto, que cria o Programa Nacional de Desenvolvimento de Sistemas Agroflorestais de Base Agroecológica (PROSAFs). O programa se destina prioritariamente a agricultores familiares, assentados da reforma agrária e povos e comunidades tradicionais, e lista fontes de financiamento como o Pronaf, o Fundo Clima, o FNMA e os fundos constitucionais.",
+    "decisionLabel": "Capítulo mantido",
+    "yesMeaning": "Manter o Capítulo II no texto.",
+    "noMeaning": "Retirar o Capítulo II do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 2 - BLOCO PL - CAPÍTULO II, DO SUBSTITUTIVO AO PL",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13116",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2987949",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2554310"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13116) registra votação nominal eletrônica em 2025-08-27, encerrada em 2025-08-27 às 22:46, com 243 Sim e 133 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 2 - BLOCO PL - CAPÍTULO II, DO SUBSTITUTIVO AO PL”; o registro 2432423-93 da API traz o mesmo placar.",
+      "text": "O DTQ 2 (PL) pede votação em separado do Capítulo II do substitutivo; a subemenda substitutiva global aprovada, anexa ao parecer às emendas (PRLE 1), traz o Capítulo II (arts. 6º a 15), sobre o PROSAFs. O substitutivo publicado (SBT/SSP) é imagem sem texto extraível; a conferência usou o texto anexo ao PRLE 1, a versão adotada na votação principal."
+    }
+  },
+  {
+    "id": "2438459-115",
+    "parentId": "2438459-113",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "dispositivos",
+    "title": "Trechos do Senado com parecer contrário do relator",
+    "summary": "Na votação do substitutivo do Senado, a Câmara votou em conjunto os dispositivos do texto do Senado com parecer pela rejeição do relator, Mauro Benevides Filho. A lista inclui, entre outros pontos, a retirada da expressão “regulamento único” em vários artigos, mudanças nos arts. 146, 293 e 295 e em outros dispositivos da Lei Complementar nº 214/2025, na Lei Complementar nº 123/2006 e no Código Tributário Nacional. Em vários casos, o parecer restabelece o texto aprovado antes pela Câmara.",
+    "decisionLabel": "Dispositivos rejeitados",
+    "yesMeaning": "Aprovar os dispositivos do Senado com parecer pela rejeição.",
+    "noMeaning": "Rejeitar esses dispositivos, como recomendou o relator.",
+    "outcome": "rejected",
+    "reportObject": "SUBSTITUTIVO COM PARECER PELA REJEIÇÃO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13450",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3068168",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2596895"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13450) registra votação nominal eletrônica em 2025-12-15, encerrada em 2025-12-16 às 00:10, com 77 Sim e 252 Não.",
+      "object": "O relatório identifica o objeto como “SUBSTITUTIVO COM PARECER PELA REJEIÇÃO”; o registro 2438459-115 da API traz o mesmo placar.",
+      "text": "O parecer de Plenário ao substitutivo do Senado (PRLP 8, a última versão) aprova as alterações do Senado, com exceção da lista de modificações que conclui pela rejeição, com restabelecimento do texto da Câmara em vários itens."
+    }
+  },
+  {
+    "id": "2438687-76",
+    "parentId": "2438687-71",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Ação popular ambiental proposta por crianças e adolescentes",
+    "summary": "Destaque da bancada do NOVO para retirar o art. 27 do substitutivo. Ele dava a crianças e adolescentes legitimidade para propor ação popular para anular ato lesivo ao meio ambiente, observadas as regras da lei processual sobre a representação de menores de 16 anos, e afastava para eles o § 3º do art. 1º da Lei nº 4.717/1965. Em caso de ação manifestamente temerária, os pais ou responsáveis pagariam as custas.",
+    "decisionLabel": "Trecho retirado",
+    "yesMeaning": "Manter o art. 27 no texto.",
+    "noMeaning": "Retirar o art. 27 do texto.",
+    "outcome": "removed",
+    "reportObject": "DTQ 2 - NOVO - ART. 27 DO SUBSTITUTIVO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13215",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3023554",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2571564"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13215) registra votação nominal eletrônica em 2025-10-15, encerrada em 2025-10-15 às 23:18, com 169 Sim e 200 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 2 - NOVO - ART. 27 DO SUBSTITUTIVO”; o registro 2438687-76 da API traz o mesmo placar.",
+      "text": "O DTQ 2 (NOVO) pede votação em separado do art. 27 do substitutivo; o substitutivo adotado (SBT 1, mesmo texto anexo ao parecer PRLP 7) traz o art. 27 sobre ação popular. O substitutivo publicado (SBT 1) é imagem escaneada; foi lido por OCR (Vision, do macOS) e conferido contra o texto anexo ao PRLP 7, que tem a mesma redação."
+    }
+  },
+  {
+    "id": "2453934-65",
+    "parentId": "2453934-59",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Avisos nas embalagens de jogos e aparelhos eletrônicos",
+    "summary": "Destaque da bancada do NOVO para retirar o § 2º do novo art. 38-A do Código de Defesa do Consumidor, incluído pelo art. 4º do substitutivo. Ele obriga as embalagens de dispositivos eletrônicos e de jogos (exceto os destinados só à exportação) e pôsteres, painéis, cartazes, jornais, revistas e outros meios físicos de divulgação a mostrar, de forma clara, legível e destacada, a classificação etária indicativa e as advertências sobre os riscos do uso por crianças e adolescentes.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 5 - NOVO - §2º CONTIDO NO ART. 4º DO SUBSTITUTIVO, APRESENTADO AO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12891",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2921081",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2518198"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12891) registra votação nominal eletrônica em 2025-05-28, encerrada em 2025-05-28 às 18:48, com 264 Sim e 110 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 5 - NOVO - §2º CONTIDO NO ART. 4º DO SUBSTITUTIVO, APRESENTADO AO”; o registro 2453934-65 da API traz o mesmo placar.",
+      "text": "O DTQ 5 (NOVO) pede votação em separado do § 2º contido no art. 4º do substitutivo; o substitutivo adotado (SBT 1, mesmo texto anexo ao parecer PRLP 2) traz o § 2º do art. 38-A do Código de Defesa do Consumidor, que também está na redação final (RDF 1). O substitutivo publicado (SBT 1) é imagem escaneada; foi lido por OCR (Vision, do macOS) e conferido contra o texto anexo ao PRLP 2, que tem a mesma redação."
+    }
+  },
+  {
+    "id": "2453934-72",
+    "parentId": "2453934-59",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Normas complementares de publicidade pelo órgão federal",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BLOCO PL”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para retirar o § 3º do novo art. 38-A do Código de Defesa do Consumidor, incluído pelo art. 4º do substitutivo. Ele permitia ao órgão federal competente editar normas complementares com requisitos de publicidade específicos conforme o segmento de mercado, a faixa etária do público, o suporte ou a mídia e a natureza do produto ou serviço.",
+    "decisionLabel": "Trecho retirado",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "removed",
+    "reportObject": "DTQ 6 - BLOCO PL - §3, ART. 38-A, CONSTANTE DO ART. 4º, DA PROPOSIÇÃO, PARA F...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12892",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2921081",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2518220"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12892) registra votação nominal eletrônica em 2025-05-28, encerrada em 2025-05-28 às 19:15, com 152 Sim e 220 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 6 - BLOCO PL - §3, ART. 38-A, CONSTANTE DO ART. 4º, DA PROPOSIÇÃO, PARA F...”; o registro 2453934-72 da API traz o mesmo placar.",
+      "text": "O DTQ 6 (PL) pede votação em separado do § 3º do art. 38-A, constante do art. 4º, para fins de sua supressão; o substitutivo adotado (SBT 1) traz o parágrafo, que não consta da redação final (RDF 1). O substitutivo publicado (SBT 1) é imagem escaneada; foi lido por OCR (Vision, do macOS) e conferido contra o texto anexo ao parecer PRLP 2, que tem a mesma redação."
+    }
+  },
+  {
+    "id": "2454495-151",
+    "parentId": "2454495-144",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Previdência municipal com regras semelhantes às da União",
+    "summary": "Destaque da bancada do NOVO para votar a emenda nº 5 da comissão especial, apresentada pelo deputado Gilson Daniel (PODE-ES) e outros. A emenda obrigava os regimes próprios de previdência social dos Municípios a adotar regras de elegibilidade, de cálculo e de reajuste de benefícios com resultado financeiro e atuarial semelhante ao do regime próprio da União, com prazo de 18 meses para os ajustes; o Município que não os fizesse passaria a seguir as regras da União. O relator, Baleia Rossi, recomendou rejeitá-la.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Aprovar a emenda nº 5.",
+    "noMeaning": "Rejeitar a emenda nº 5.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 6 - NOVO - EMENDA Nº 5.",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13031",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2935205",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2536845"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13031) registra votação nominal eletrônica em 2025-07-15, encerrada em 2025-07-15 às 21:40, com 117 Sim, 335 Não e 3 abstenções.",
+      "object": "O relatório identifica o objeto como “DTQ 6 - NOVO - EMENDA Nº 5.”; o registro 2454495-151 da API traz o mesmo placar.",
+      "text": "O DTQ 6, assinado por Marcel van Hattem (NOVO-RS), pede destaque para a EMC 5 apresentada à PEC 66/2023 no primeiro turno (art. 161, II, do Regimento). O inteiro teor da emenda nº 5 (EMC 5 PEC06623, codteor 2935205) modifica os arts. 1º e 3º da PEC, com o novo art. 40-A da Constituição e o prazo de 18 meses; a complementação de voto do relator na comissão especial (CVO 1, codteor 2957424) conclui pela rejeição da Emenda nº 5."
+    }
+  },
+  {
+    "id": "2454495-154",
+    "parentId": "2454495-144",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Créditos extras de 2025 na base do limite de gastos",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BLOCO PL…”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para retirar do § 18-A do art. 165 da Constituição a expressão “considerados os créditos suplementares e especiais incorporados ao limite de despesa de 2025, e”. O parágrafo define o limite de despesas do Poder Executivo a partir de 2026; a expressão manda contar nesse limite os créditos suplementares e especiais incorporados ao limite de 2025. Numa PEC, o trecho destacado só fica com pelo menos 308 votos Sim.",
+    "decisionLabel": "Expressão mantida",
+    "yesMeaning": "Manter a expressão no texto.",
+    "noMeaning": "Retirar a expressão do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 5 - BLOCO PL...- EXP. \"CONSIDERADOS OS CRÉDITOS SUPLEMENTARES...\"",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13032",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2957840",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2536810"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13032) registra votação nominal eletrônica em 2025-07-15, encerrada em 2025-07-15 às 22:20, com 318 Sim, 144 Não e 2 abstenções.",
+      "object": "O relatório identifica o objeto como “DTQ 5 - BLOCO PL...- EXP. \"CONSIDERADOS OS CRÉDITOS SUPLEMENTARES...\"”; o registro 2454495-154 da API traz o mesmo placar.",
+      "text": "O DTQ 5 (PL), do primeiro turno, pede votação em separado da expressão citada, do § 18-A do art. 165 da Constituição, constante do art. 1º do substitutivo; o substitutivo adotado pela Comissão Especial (SBT-A 1) traz o § 18-A com a expressão."
+    }
+  },
+  {
+    "id": "2454495-171",
+    "parentId": "2454495-166",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Precatórios fora do limite de gastos e da meta fiscal",
+    "summary": "Destaque da bancada do NOVO, no segundo turno, para retirar as mudanças no art. 165 da Constituição feitas pelo art. 1º. Elas tiram do limite de despesas do Poder Executivo, a partir de 2026, os gastos com precatórios e requisições de pequeno valor, redefinem esse limite e passam a incluir essas despesas na meta de resultado primário aos poucos, a partir de 2027, com pelo menos 10% a cada ano; em 2026, o que passar do limite de precatórios não conta na meta. Numa PEC, o trecho destacado só fica com pelo menos 308 votos Sim.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter as mudanças no art. 165.",
+    "noMeaning": "Retirar as mudanças no art. 165.",
+    "outcome": "kept",
+    "reportObject": "DTQ 8 - NOVO - ART. 165 CONTIDO NO ART 1º DA PEC",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13036",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2957635",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2536943"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13036) registra votação nominal eletrônica em 2025-07-15, encerrada em 2025-07-15 às 23:53, com 342 Sim, 126 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “DTQ 8 - NOVO - ART. 165 CONTIDO NO ART 1º DA PEC”; o registro 2454495-171 da API traz o mesmo placar.",
+      "text": "O DTQ 8 (NOVO), do segundo turno, pede votação em separado do art. 165 contido no art. 1º; o substitutivo adotado pela Comissão Especial (SBT-A 1) traz os §§ 18, 18-A, 18-B, 19 e 19-A do art. 165, e a redação final (RDF 1) mantém esse conteúdo, renumerado como §§ 18 a 22."
+    }
+  },
+  {
+    "id": "2456731-75",
+    "parentId": "2456731-71",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Natureza privada do fundo para eventos climáticos",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BL. PL, FDR PT…”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para retirar a expressão “natureza privada e” do art. 6º do substitutivo (PRLP 2). O artigo trata do fundo que a União fica autorizada a integrar para recuperar infraestrutura em áreas afetadas por eventos climáticos extremos e apoiar obras de mitigação e adaptação à mudança do clima, e diz que ele terá natureza privada e patrimônio próprio, separado do dos cotistas e da instituição administradora.",
+    "decisionLabel": "Expressão mantida",
+    "yesMeaning": "Manter a expressão no texto.",
+    "noMeaning": "Retirar a expressão do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 3 - BL. PL, FDR PT...- ART. 6º, EXP. \"NATUREZA PRIVADA E\"...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12826",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2890764",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2499910"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12826) registra votação nominal eletrônica em 2025-04-29, encerrada em 2025-04-29 às 20:28, com 275 Sim e 121 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 3 - BL. PL, FDR PT...- ART. 6º, EXP. \"NATUREZA PRIVADA E\"...”; o registro 2456731-75 da API traz o mesmo placar.",
+      "text": "O DTQ 3 pede votação em separado da expressão “natureza privada e” do art. 6º do PRLP 2; o parecer (PRLP 2) traz o art. 6º e o art. 5º, que define a finalidade do fundo. O substitutivo publicado (SBT/SSP) é imagem sem texto extraível; a conferência usou o texto anexo ao PRLP 2, a versão adotada na votação principal."
+    }
+  },
+  {
+    "id": "2456731-79",
+    "parentId": "2456731-71",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Cotistas não respondem por prejuízos do fundo",
+    "summary": "Destaque da bancada do NOVO para retirar, do § 4º do art. 6º do substitutivo, a expressão pela qual o cotista ou seus agentes públicos não respondem por obrigação ou prejuízo do fundo de apoio à recuperação de infraestrutura após eventos climáticos extremos, exceto o cotista pela integralização das cotas que subscrever.",
+    "decisionLabel": "Expressão mantida",
+    "yesMeaning": "Manter a expressão no texto.",
+    "noMeaning": "Retirar a expressão do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 6 - NOVO - EXPRESSÃO \"O COTISTA OU SEUS AGENTES PÚBLICOS NÃO ...\"...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12827",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2893186",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2501084"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12827) registra votação nominal eletrônica em 2025-04-29, encerrada em 2025-04-29 às 20:44, com 269 Sim e 124 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 6 - NOVO - EXPRESSÃO \"O COTISTA OU SEUS AGENTES PÚBLICOS NÃO ...\"...”; o registro 2456731-79 da API traz o mesmo placar.",
+      "text": "O DTQ 6 (NOVO) pede votação em separado, com vistas à supressão, da expressão citada, contida no § 4º do art. 6º do substitutivo; o parecer (PRLP 2) traz o parágrafo. O substitutivo publicado (SBT/SSP) é imagem sem texto extraível; a conferência usou o texto anexo ao PRLP 2, a versão adotada na votação principal."
+    }
+  },
+  {
+    "id": "2456731-84",
+    "parentId": "2456731-71",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Contratação de estatais sem licitação pelo fundo",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BLOCO PL, FDR PT…”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para retirar o inciso I do art. 11 do substitutivo (PRLP 2), que permite à instituição administradora do fundo para eventos climáticos extremos contratar diretamente, com dispensa de licitação, empresa pública ou sociedade de economia mista para atividades ligadas ao objeto da estatal, desde que o preço seja compatível com o de mercado.",
+    "decisionLabel": "Inciso mantido",
+    "yesMeaning": "Manter o inciso no texto.",
+    "noMeaning": "Retirar o inciso do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 4 - BLOCO PL, FDR PT... - INCISO I DO ART. 11 DO SUBSTITUTIVO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12828",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2888359",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2499931"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12828) registra votação nominal eletrônica em 2025-04-29, encerrada em 2025-04-29 às 21:28, com 266 Sim e 118 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 4 - BLOCO PL, FDR PT... - INCISO I DO ART. 11 DO SUBSTITUTIVO”; o registro 2456731-84 da API traz o mesmo placar.",
+      "text": "O DTQ 4 pede votação em separado do inciso I do art. 11 do PRLP 2; o parecer (PRLP 2) traz o inciso. O substitutivo publicado (SBT/SSP) é imagem sem texto extraível; a conferência usou o texto anexo ao PRLP 2, a versão adotada na votação principal."
+    }
+  },
+  {
+    "id": "2480979-91",
+    "parentId": "2480979-96",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda: critérios para priorizar projetos esportivos",
+    "summary": "A emenda nº 1, do líder da Oposição, Zucco, acrescentava ao art. 8º do substitutivo critérios para a Comissão Técnica priorizar projetos esportivos, como inclusão social, regiões de baixo desenvolvimento e capacidade técnica, e a divulgação dos critérios e resultados em portal oficial. O relator, Orlando Silva, recomendou rejeitá-la por considerar que o texto já tratava desses temas.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Aprovar a emenda.",
+    "noMeaning": "Rejeitar a emenda, como recomendou o relator.",
+    "outcome": "rejected",
+    "reportObject": "EMENDA COM PARECER PELA REJEIÇÃO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13020",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2956238",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2535766"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13020) registra votação nominal eletrônica em 2025-07-14, encerrada em 2025-07-14 às 21:18, com 7 Sim e 407 Não.",
+      "object": "O relatório identifica o objeto como “EMENDA COM PARECER PELA REJEIÇÃO”; o registro 2480979-91 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda de Plenário nº 1 (EMP 1) acrescenta os §§ 1º e 2º ao art. 8º do substitutivo; o parecer às emendas (PEP 1) conclui pela rejeição, por o texto da Comissão Especial já tratar de inclusão social e territórios vulneráveis. Era a única emenda de Plenário apresentada."
+    }
+  },
+  {
+    "id": "2483495-56",
+    "parentId": "2483495-52",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Repasse de R$ 15 bilhões da Política Aldir Blanc",
+    "summary": "Destaque do NOVO para retirar o art. 6º da Lei nº 14.399/2022, que institui a Política Nacional Aldir Blanc de Fomento à Cultura, na redação do art. 4º do substitutivo. O artigo prevê que a União entregue R$ 15 bilhões a estados, Distrito Federal e municípios a partir de 2023, com programação de até R$ 3 bilhões por ano e regras para o recebimento dos recursos.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 6º no texto.",
+    "noMeaning": "Retirar o art. 6º do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 1 - NOVO - ART. 6º CONTIDO NO ART. 4º DO SUBSTITUTIVO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12820",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2891974",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2501207"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12820) registra votação nominal eletrônica em 2025-04-28, encerrada em 2025-04-28 às 22:44, com 266 Sim e 113 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 1 - NOVO - ART. 6º CONTIDO NO ART. 4º DO SUBSTITUTIVO”; o registro 2483495-56 da API traz o mesmo placar.",
+      "text": "O DTQ 1 (NOVO) pede votação em separado do art. 6º contido no art. 4º do substitutivo; o parecer de Plenário (PRLP 1), mantido pela relatora no parecer às emendas (PRLE 2), traz o art. 6º da Lei nº 14.399/2022 com o valor de R$ 15 bilhões."
+    }
+  },
+  {
+    "id": "2483495-59",
+    "parentId": "2483495-52",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Repasse sem fundo de cultura até 2026",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BLOCO PL”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para retirar o § 7º do art. 6º da Lei nº 14.399/2022 (Política Nacional Aldir Blanc), na redação do substitutivo. Ele permite que, até 2026, onde não houver fundo de cultura estadual, distrital ou municipal apto a receber os recursos, o repasse vá para uma estrutura definida pela autoridade competente de cada ente.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 2 - BLOCO PL - §7º DO ARTIGO 6º DA LEI Nº 14.399/2022, ALTERADO ...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12821",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2891974",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2501353"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12821) registra votação nominal eletrônica em 2025-04-28, encerrada em 2025-04-28 às 23:04, com 251 Sim e 117 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 2 - BLOCO PL - §7º DO ARTIGO 6º DA LEI Nº 14.399/2022, ALTERADO ...”; o registro 2483495-59 da API traz o mesmo placar.",
+      "text": "O DTQ 2 (PL) pede votação em separado do § 7º do art. 6º da Lei nº 14.399/2022, alterado pelo art. 4º do substitutivo; o parecer de Plenário (PRLP 1) traz o parágrafo."
+    }
+  },
+  {
+    "id": "2483495-62",
+    "parentId": "2483495-52",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Política Aldir Blanc continua após os R$ 15 bilhões",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BLOCO PL”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para retirar o § 9º do art. 6º da Lei nº 14.399/2022 (Política Nacional Aldir Blanc), na redação do substitutivo. Ele diz que, esgotado o valor de R$ 15 bilhões, a política continua a ser executada, conforme as disponibilidades orçamentárias e financeiras.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 3 - BLOCO PL - §9º DO ARTIGO 6º DA LEI Nº 14.399/2022, ALTERADO ...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12822",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2891974",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2501354"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12822) registra votação nominal eletrônica em 2025-04-28, encerrada em 2025-04-28 às 23:26, com 256 Sim e 123 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “DTQ 3 - BLOCO PL - §9º DO ARTIGO 6º DA LEI Nº 14.399/2022, ALTERADO ...”; o registro 2483495-62 da API traz o mesmo placar.",
+      "text": "O DTQ 3 (PL) pede votação em separado do § 9º do art. 6º da Lei nº 14.399/2022, alterado pelo art. 4º do substitutivo; o parecer de Plenário (PRLP 1) traz o parágrafo."
+    }
+  },
+  {
+    "id": "2486199-35",
+    "parentId": "2486199-32",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Saldos do SUS de até 2023 sem os compromissos originais",
+    "summary": "Destaque da federação PSOL-REDE para retirar o § 1º do art. 5º da Lei Complementar nº 172/2020, na redação do projeto. Ele dispensa os saldos de repasses do Fundo Nacional de Saúde (FNS) aos fundos de saúde locais feitos até 31 de dezembro de 2023 de cumprir o inciso I do art. 2º da lei; segundo o parecer do relator, Hildo Rocha, isso permite usá-los sem a vinculação estrita aos compromissos originalmente firmados.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 1 - FDR PSOL-REDE - DO §1º DO ART. 5º DA LEI COMPLEMENTAR Nº 172 DE 2020...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12752",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2864390",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2487337"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12752) registra votação nominal eletrônica em 2025-03-18, encerrada em 2025-03-18 às 18:32, com 386 Sim e 27 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 1 - FDR PSOL-REDE - DO §1º DO ART. 5º DA LEI COMPLEMENTAR Nº 172 DE 2020...”; o registro 2486199-35 da API traz o mesmo placar.",
+      "text": "O DTQ 1 (PSOL-REDE) pede votação em separado do § 1º do art. 5º da Lei Complementar nº 172/2020, com a redação do art. 1º do PLP 58/2025, cujo texto traz o parágrafo; o parecer (PRLP 1) recomenda aprovar o projeto sem alterações."
+    }
+  },
+  {
+    "id": "2494408-43",
+    "parentId": "2494408-30",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Cargos em comissão criados com cargos efetivos vagos",
+    "summary": "Destaque da bancada do NOVO para retirar o inciso II do art. 193, que transforma cargos efetivos vagos do Poder Executivo federal em 1.955 cargos em comissão e funções de confiança. O artigo transforma ao todo 14.989 cargos vagos; o art. 194 diz que a transformação é feita sem aumento de despesa.",
+    "decisionLabel": "Inciso mantido",
+    "yesMeaning": "Manter o inciso no texto.",
+    "noMeaning": "Retirar o inciso do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 2 - NOVO - INCISO II, DO ART. 193",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12849",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2915591",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2513738"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12849) registra votação nominal eletrônica em 2025-05-21, encerrada em 2025-05-21 às 19:39, com 290 Sim e 134 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 2 - NOVO - INCISO II, DO ART. 193”; o registro 2494408-43 da API traz o mesmo placar.",
+      "text": "O DTQ 2 (NOVO) pede votação em separado do inciso II do art. 193; a subemenda substitutiva do parecer às emendas (PRLE 1) traz o art. 193 com o inciso II."
+    }
+  },
+  {
+    "id": "2497816-47",
+    "parentId": "2497816-44",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Sobras do TRT-2 para criar cargos em comissão e funções",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BLOCO PL”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para retirar o art. 3º, que usa as sobras orçamentárias da transformação de 27 cargos vagos de juiz substituto em 11 de desembargador no Tribunal Regional do Trabalho da 2ª Região (TRT-2) para criar os cargos em comissão e as funções comissionadas do anexo: 22 CJ-1, 11 CJ-2, 11 CJ-3 e 9 FC-5.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 3º no texto.",
+    "noMeaning": "Retirar o art. 3º do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 2 - BLOCO PL - DO ARTIGO 3º, APRESENTADO AO PL",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12938",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2886932",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2525119"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12938) registra votação nominal eletrônica em 2025-06-11, encerrada em 2025-06-11 às 22:32, com 214 Sim e 146 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 2 - BLOCO PL - DO ARTIGO 3º, APRESENTADO AO PL”; o registro 2497816-47 da API traz o mesmo placar.",
+      "text": "O DTQ 2 (PL) pede votação em separado do art. 3º do projeto; o parecer de Plenário conclui pela aprovação do projeto sem substitutivo, e o texto original traz o art. 3º e o anexo único com os cargos."
+    }
+  },
+  {
+    "id": "2497816-50",
+    "parentId": "2497816-44",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Cargos em comissão criados com as sobras do TRT-2",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BLOCO PL”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para retirar do art. 3º a expressão “dos cargos em comissão e”. Ela inclui os cargos em comissão do anexo (22 CJ-1, 11 CJ-2 e 11 CJ-3) entre o que o Tribunal Regional do Trabalho da 2ª Região pode criar com as sobras orçamentárias da transformação de cargos de juiz em cargos de desembargador.",
+    "decisionLabel": "Expressão mantida",
+    "yesMeaning": "Manter a expressão no texto.",
+    "noMeaning": "Retirar a expressão do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 1 - BLOCO PL - EXPRESSÃO \"DOS CARGOS EM COMISSÃO E\" CONSTANTE NO ...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12939",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2934626",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2525116"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12939) registra votação nominal eletrônica em 2025-06-11, encerrada em 2025-06-11 às 22:58, com 226 Sim e 130 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 1 - BLOCO PL - EXPRESSÃO \"DOS CARGOS EM COMISSÃO E\" CONSTANTE NO ...”; o registro 2497816-50 da API traz o mesmo placar.",
+      "text": "O DTQ 1 (PL) pede votação em separado da expressão “dos cargos em comissão e”, constante do art. 3º do projeto; o texto original traz o art. 3º e o anexo único com os cargos."
+    }
+  },
+  {
+    "id": "2524984-37",
+    "parentId": "2524984-33",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Licença compensatória para servidores do TCU com função de confiança",
+    "summary": "Destaque da bancada do NOVO para retirar o art. 17-B da Lei nº 10.356/2001, incluído pelo substitutivo. Ele enquadra os servidores da carreira do Tribunal de Contas da União (TCU) que exercem função de confiança num regime especial de dedicação, com direito a licença compensatória de um dia para cada três a dez dias de efetivo exercício, que pode ser convertida em indenização sem imposto de renda nem contribuição previdenciária.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 17-B no texto.",
+    "noMeaning": "Retirar o art. 17-B do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 1 - NOVO - ART. 17-B CONTIDO NO ART. 1º DO SUBSTITUTIVO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13399",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3052963",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2588938"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13399) registra votação nominal eletrônica em 2025-11-26, encerrada em 2025-11-26 às 21:09, com 313 Sim e 88 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 1 - NOVO - ART. 17-B CONTIDO NO ART. 1º DO SUBSTITUTIVO”; o registro 2524984-37 da API traz o mesmo placar.",
+      "text": "O DTQ 1 (NOVO) pede votação em separado do art. 17-B contido no art. 1º do substitutivo; o parecer de Plenário com o substitutivo (PRLP 2, mesmo documento assinado que o SBT 1) traz o art. 17-B e a licença compensatória."
+    }
+  },
+  {
+    "id": "2530336-46",
+    "parentId": "2530336-43",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Funções do STJ dependem do orçamento a partir de 2025",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BL. PL, FDR. PT…”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para retirar o parágrafo único do art. 2º. Ele diz que a criação das 330 funções comissionadas no Superior Tribunal de Justiça será implementada a partir do exercício de 2025, conforme anexo da lei orçamentária anual e condicionada à autorização expressa da lei de diretrizes orçamentárias.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 4 - BL. PL, FDR. PT... - PARÁGRAFO ÚNICO DO ARTIGO 2º DO PL 3181/2025",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13089",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2946817",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2536013"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13089) registra votação nominal eletrônica em 2025-08-19, encerrada em 2025-08-19 às 19:55, com 230 Sim e 143 Não.",
+      "object": "A API registra “Mantido o texto” (230 Sim, 143 Não); o relatório 13089 identifica o destaque 4 do bloco do PL sobre o parágrafo único do art. 2º do PL 3181/2025.",
+      "text": "O DTQ 4 pede votação em separado do parágrafo único do art. 2º; o texto do projeto (PL 3181/2025), aprovado sem alterações pelo parecer do relator, traz o parágrafo."
+    }
+  },
+  {
+    "id": "2530336-50",
+    "parentId": "2530336-43",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Funções do STJ a partir do orçamento de 2025",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BL. PL, FDR. PT…”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para retirar do parágrafo único do art. 2º a expressão “no exercício financeiro do ano de 2025 e seguintes”, que marca a partir de quando as 330 funções comissionadas do Superior Tribunal de Justiça podem ser implementadas.",
+    "decisionLabel": "Expressão mantida",
+    "yesMeaning": "Manter a expressão no texto.",
+    "noMeaning": "Retirar a expressão do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 3 - BL. PL, FDR. PT... - EXPR. \"NO EXERCICIO FINANCEIRO DO ANO DE 2025...\"",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13090",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2956510",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2536005"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13090) registra votação nominal eletrônica em 2025-08-19, encerrada em 2025-08-19 às 20:23, com 228 Sim e 143 Não.",
+      "object": "A API registra “Mantido o texto” (228 Sim, 143 Não, 1 abstenção); o relatório 13090 identifica o destaque 3 do bloco do PL sobre a expressão “no exercício financeiro do ano de 2025...”.",
+      "text": "O inteiro teor do DTQ 3 pede votação em separado da expressão citada, constante do parágrafo único do art. 2º; o texto do projeto traz a expressão."
+    }
+  },
+  {
+    "id": "2530336-53",
+    "parentId": "2530336-43",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Vigência imediata da lei das funções do STJ",
+    "summary": "Destaque da bancada do NOVO para retirar o art. 4º do projeto que cria 330 funções comissionadas no Superior Tribunal de Justiça. O artigo diz que a lei entra em vigor na data de sua publicação.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 4º no texto.",
+    "noMeaning": "Retirar o art. 4º do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 2 - NOVO - ART. 4º, APRESENTADO AO PL 3181/2025",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13091",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2946817",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2535921"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13091) registra votação nominal eletrônica em 2025-08-19, encerrada em 2025-08-19 às 20:40, com 246 Sim e 146 Não.",
+      "object": "A API registra “Mantido o texto” (246 Sim, 146 Não, 1 abstenção); o relatório 13091 identifica o destaque 2 do NOVO sobre o art. 4º do PL 3181/2025.",
+      "text": "O DTQ 2 (NOVO) pede votação em separado do art. 4º; o texto do projeto (PL 3181/2025) traz o art. 4º, de vigência na data da publicação."
+    }
+  },
+  {
+    "id": "2559194-44",
+    "parentId": "2559194-42",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emendas",
+    "title": "Emendas com parecer contrário do relator",
+    "summary": "A Câmara votou em conjunto as 12 emendas de Plenário ao Código de Defesa do Contribuinte, todas com parecer pela rejeição. Elas tratavam, entre outros temas, das regras para enquadrar uma empresa como devedor contumaz, como o valor mínimo de R$ 15 milhões em débitos, do Selo Sintonia e da autorregularização no Programa Sintonia. O relator, Antonio Carlos Rodrigues, recomendou rejeitar todas porque não integravam o acordo político e para manter o texto recebido do Senado.",
+    "decisionLabel": "Emendas rejeitadas",
+    "yesMeaning": "Aprovar as emendas com parecer pela rejeição.",
+    "noMeaning": "Rejeitar essas emendas, como recomendou o relator.",
+    "outcome": "rejected",
+    "reportObject": "EMENDAS COM PARECER PELA REJEIÇÃO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13424",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3064220",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2594710"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13424) registra votação nominal eletrônica em 2025-12-09, encerrada em 2025-12-09 às 23:32, com 8 Sim e 382 Não.",
+      "object": "O relatório identifica o objeto como “EMENDAS COM PARECER PELA REJEIÇÃO”; o registro 2559194-44 da API traz o mesmo placar.",
+      "text": "O parecer às emendas de Plenário (PRLE 1) resume as 12 emendas e conclui pela rejeição de todas por não integrarem o acordo político, mantendo o texto recebido do Senado."
+    }
+  },
+  {
+    "id": "2576234-41",
+    "parentId": "2576234-34",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Restos a pagar de defesa fora da meta fiscal",
+    "summary": "Destaque da bancada do NOVO para retirar o art. 4º do projeto de lei complementar sobre projetos estratégicos de defesa nacional. O artigo diz que os restos a pagar dessas despesas não serão contabilizados na meta de resultado primário da lei de diretrizes orçamentárias, qualquer que seja o ano em que forem executados.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 4º no texto.",
+    "noMeaning": "Retirar o art. 4º do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 3 - NOVO - ARTIGO 4º",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13315",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3029917",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2580631"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13315) registra votação nominal eletrônica em 2025-11-03, encerrada em 2025-11-03 às 22:22, com 387 Sim e 30 Não.",
+      "object": "A API registra “Mantido o texto” (387 Sim, 30 Não, 1 abstenção); o relatório 13315 identifica o destaque 3 do NOVO sobre o art. 4º.",
+      "text": "O DTQ 3 (NOVO) pede votação em separado do art. 4º do PLP 204/2025; o texto do projeto, aprovado sem alterações pelo parecer do relator (PRLP 1), traz o artigo."
+    }
+  },
+  {
+    "id": "2579832-95",
+    "parentId": "2579832-62",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda: destino de bens de empresas ligadas a facções",
+    "summary": "Destaque da federação PT-PCdoB-PV para votar a emenda nº 33, de Lindbergh Farias e outros líderes. Ela retirava do substitutivo os §§ 8º e 10 do art. 10 e o inciso IV do art. 11, trechos que, entre outros pontos, mandam o dinheiro da venda ou da liquidação de empresas usadas por organizações criminosas para os fundos de segurança pública dos estados ou do Distrito Federal ou para o Fundo Nacional de Segurança Pública, conforme quem investiga o crime. O relator, Guilherme Derrite, recomendou rejeitar todas as emendas de Plenário.",
+    "decisionLabel": "Emenda rejeitada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "rejected",
+    "reportObject": "DTQ 25 - FDR PT-PCDOB-PV - EMENDA DE PLENÁRIO N. 33",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13386",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3049402",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2586535"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13386) registra votação nominal eletrônica em 2025-11-18, encerrada em 2025-11-18 às 21:47, com 142 Sim, 298 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “DTQ 25 - FDR PT-PCDOB-PV - EMENDA DE PLENÁRIO N. 33”; o registro 2579832-95 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda nº 33 (EMP 33) suprime os §§ 8º e 10 do art. 10 e o inciso IV do art. 11 do substitutivo (PRLP 6), que trazem a destinação dos recursos; o parecer às emendas (PRLE 1) resume a emenda e conclui pela rejeição de todas."
+    }
+  },
+  {
+    "id": "2579832-96",
+    "parentId": "2579832-62",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Ação civil para tomar bens ligados ao crime organizado",
+    "summary": "Destaque da federação PT-PCdoB-PV para retirar o Capítulo IV do substitutivo, que cria a ação civil autônoma de perdimento de bens para os crimes do projeto: bens e valores ligados à atividade ilícita podem passar à União, aos estados, ao Distrito Federal ou aos municípios, sem indenização e independentemente do resultado das ações penais. A ação não prescreve.",
+    "decisionLabel": "Capítulo mantido",
+    "yesMeaning": "Manter o capítulo no texto.",
+    "noMeaning": "Retirar o capítulo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 24 - FDR PT-PCDOB-PV - CAPÍTULO IV DO SUBSTITUTIVO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13387",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3049375",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2586557"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13387) registra votação nominal eletrônica em 2025-11-18, encerrada em 2025-11-18 às 22:01, com 298 Sim, 109 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “DTQ 24 - FDR PT-PCDOB-PV - CAPÍTULO IV DO SUBSTITUTIVO”; o registro 2579832-96 da API traz o mesmo placar.",
+      "text": "O DTQ 24 pede votação em separado do Capítulo IV do substitutivo; o substitutivo (PRLP 6) traz o Capítulo IV, “Da Ação Civil de Perdimento de Bens”, com os arts. 12 a 28."
+    }
+  },
+  {
+    "id": "2579832-105",
+    "parentId": "2579832-62",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Emenda: presos provisórios sem direito de votar",
+    "summary": "Destaque da bancada do NOVO para votar a emenda nº 25, de Marcel van Hattem e outros. Ela muda a Lei nº 4.737/1965 (Código Eleitoral) para proibir o alistamento como eleitor de pessoas recolhidas a estabelecimento prisional enquanto durar a prisão, mesmo sem condenação definitiva, e para prever o cancelamento do título de eleitor em caso de prisão provisória. O relator, Guilherme Derrite, recomendou rejeitar todas as emendas de Plenário.",
+    "decisionLabel": "Emenda aprovada",
+    "yesMeaning": "Incluir a emenda no texto.",
+    "noMeaning": "Deixar a emenda de fora.",
+    "outcome": "approved",
+    "reportObject": "DTQ 21 - NOVO - EMENDA DE PLENÁRIO Nº 25",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13390",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3048980",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2586193"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13390) registra votação nominal eletrônica em 2025-11-18, encerrada em 2025-11-18 às 22:26, com 349 Sim, 40 Não e 1 abstenção.",
+      "object": "O relatório identifica o objeto como “DTQ 21 - NOVO - EMENDA DE PLENÁRIO Nº 25”; o registro 2579832-105 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda nº 25 (EMP 25) altera o inciso IV do art. 5º e acrescenta o inciso VI ao art. 71 da Lei nº 4.737/1965; o parecer às emendas (PRLE 1) descreve a emenda como vedação do alistamento de presos, ainda que provisórios, e conclui pela rejeição de todas."
+    }
+  },
+  {
+    "id": "264726-148",
+    "parentId": "264726-144",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Pena maior para disparo com arma de uso proibido",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BL. PL, FDRPT…”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para retirar o § 2º do art. 15 do Estatuto do Desarmamento (Lei nº 10.826/2003), na redação aprovada: se o crime de disparo de arma de fogo for cometido com arma de uso proibido, a pena é de reclusão de 3 a 6 anos, e multa.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 7 - BL. PL, FDRPT.. .- §2º, ART. 15, DA LEI 10.826, CONSTANTE DO ART. 2º",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12933",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2934419",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2524992"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12933) registra votação nominal eletrônica em 2025-06-11, encerrada em 2025-06-11 às 20:36, com 256 Sim e 153 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 7 - BL. PL, FDRPT.. .- §2º, ART. 15, DA LEI 10.826, CONSTANTE DO ART. 2º”; o registro 264726-148 da API traz o mesmo placar.",
+      "text": "O DTQ 7 pede votação em separado, para supressão, do § 2º do art. 15, constante do art. 2º; a subemenda substitutiva global aprovada, anexa ao parecer às emendas (PRLE 1), traz o parágrafo. O substitutivo publicado (SBT/SSP) é imagem sem texto extraível; a conferência usou o texto anexo ao PRLE 1, a versão adotada na votação principal."
+    }
+  },
+  {
+    "id": "264726-157",
+    "parentId": "264726-144",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Pena de 6 a 12 anos com arma de uso proibido",
+    "summary": "Destaque da bancada do NOVO para retirar o § 2º do art. 16 do Estatuto do Desarmamento (Lei nº 10.826/2003), acrescentado pelo texto aprovado: se a posse ou o porte ilegal de arma de uso restrito (caput e § 1º) envolver arma de fogo de uso proibido, a pena é de reclusão de 6 a 12 anos.",
+    "decisionLabel": "Parágrafo mantido",
+    "yesMeaning": "Manter o parágrafo no texto.",
+    "noMeaning": "Retirar o parágrafo do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 5 - NOVO - §2º DO ART. 16 DA LEI 10.826 DE 2003 ACRESCENTADO PELO ART. 2º...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12934",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2934419",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2523723"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12934) registra votação nominal eletrônica em 2025-06-11, encerrada em 2025-06-11 às 20:53, com 249 Sim e 154 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 5 - NOVO - §2º DO ART. 16 DA LEI 10.826 DE 2003 ACRESCENTADO PELO ART. 2º...”; o registro 264726-157 da API traz o mesmo placar.",
+      "text": "O DTQ 5 (NOVO) pede votação em separado do § 2º do art. 16 da Lei nº 10.826/2003, acrescentado pelo art. 2º do substitutivo; a subemenda substitutiva global aprovada, anexa ao parecer às emendas (PRLE 1), traz o parágrafo. O substitutivo publicado (SBT/SSP) é imagem sem texto extraível; a conferência usou o texto anexo ao PRLE 1, a versão adotada na votação principal."
+    }
+  },
+  {
+    "id": "545304-154",
+    "parentId": "545304-134",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Cercos contra vazamento de óleo em embarcações",
+    "summary": "Destaque da bancada do NOVO para retirar o art. 27 do substitutivo. Ele obriga embarcações fundeadas ou atracadas em zonas costeiras, águas continentais ou baías a manter cercos preventivos de contenção durante abastecimento e outras operações com risco de vazamento de óleo, além de monitoramento ambiental, feitos por empresas especializadas cadastradas nos órgãos ambientais estaduais. A regra não vale para embarcações com menos de 5.000 toneladas de porte bruto.",
+    "decisionLabel": "Trecho retirado",
+    "yesMeaning": "Manter o art. 27 no texto.",
+    "noMeaning": "Retirar o art. 27 do texto.",
+    "outcome": "removed",
+    "reportObject": "DTQ 8 - NOVO - ART.27 DO SUBSTITUTIVO APRESENTADO PELO RELATOR...",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13276",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=3034030",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2578775"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13276) registra votação nominal eletrônica em 2025-10-29, encerrada em 2025-10-29 às 17:17, com 173 Sim e 238 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 8 - NOVO - ART.27 DO SUBSTITUTIVO APRESENTADO PELO RELATOR...”; o registro 545304-154 da API traz o mesmo placar.",
+      "text": "O DTQ 8 (NOVO) pede votação em separado do art. 27 do substitutivo do relator; o parecer com o substitutivo (PRLP 13, e também o PRLP 12) traz o art. 27 com essas regras. O parecer às emendas de Plenário concluiu pela rejeição de todas, sem novo texto."
+    }
+  },
+  {
+    "id": "604557-205",
+    "parentId": "604557-191",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Adaptar mineração, pesca, energia e turismo ao ambiente marinho",
+    "summary": "Destaque da bancada do NOVO para retirar o inciso XVIII do art. 5º do substitutivo, que inclui entre as diretrizes da política nacional para o sistema costeiro-marinho a adaptação da regulação de setores como mineração, pesca, energia e turismo às peculiaridades do meio ambiente marinho, em especial em ambientes sensíveis como corais, manguezais e ilhas.",
+    "decisionLabel": "Inciso mantido",
+    "yesMeaning": "Manter o inciso no texto.",
+    "noMeaning": "Retirar o inciso do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ. 5 - NOVO - INCISO XVIII, DO ART. 5º DO SUBSTITUTIVO",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12886",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=2919974",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2517536"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12886) registra votação nominal eletrônica em 2025-05-27, encerrada em 2025-05-27 às 20:55, com 351 Sim e 68 Não.",
+      "object": "A API registra “Mantido o texto” (351 Sim, 68 Não, 1 abstenção); o relatório 12886 identifica o destaque 5 do NOVO sobre o inciso XVIII do art. 5º do substitutivo.",
+      "text": "O DTQ 5 (NOVO) pede votação em separado do inciso XVIII do art. 5º do substitutivo; o substitutivo (SBT 1, que reproduz o texto do parecer PRLP 10) traz o inciso entre as diretrizes da PNGCMar."
+    }
+  },
+  {
+    "id": "622019-76",
+    "parentId": "622019-73",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Despesa dos novos cargos nas dotações do TRT-3",
+    "summary": "Destaque de bloco partidário (no relatório nominal, “BLOCO PL”), com requerimento assinado por Sóstenes Cavalcante (PL-RJ, líder), para retirar o art. 2º do projeto que cria 21 cargos de juiz do trabalho substituto no TRT da 3ª Região (Minas Gerais). O artigo diz que os recursos para executar a lei saem das dotações orçamentárias do próprio tribunal no Orçamento Geral da União.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 2º no texto.",
+    "noMeaning": "Retirar o art. 2º do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 3 - BLOCO PL - ARTIGO 2º",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12944",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=1275249",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2525134"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12944) registra votação nominal eletrônica em 2025-06-11, encerrada em 2025-06-12 às 00:34, com 225 Sim e 117 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 3 - BLOCO PL - ARTIGO 2º”; o registro 622019-76 da API traz o mesmo placar.",
+      "text": "O DTQ 3 (PL) pede votação em separado do art. 2º do PL 7906/2014; o texto do projeto traz o art. 2º, repetido na redação final (RDF 1)."
+    }
+  },
+  {
+    "id": "622019-81",
+    "parentId": "622019-73",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "destaque",
+    "title": "Vigência da lei a partir da publicação",
+    "summary": "Destaque da bancada do NOVO para retirar o art. 4º do projeto que cria 21 cargos de juiz do trabalho substituto no TRT da 3ª Região (Minas Gerais). É a cláusula de vigência: a lei entra em vigor na data de sua publicação.",
+    "decisionLabel": "Artigo mantido",
+    "yesMeaning": "Manter o art. 4º no texto.",
+    "noMeaning": "Retirar o art. 4º do texto.",
+    "outcome": "kept",
+    "reportObject": "DTQ 4 - NOVO - ART. 4º",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12945",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=1275249",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2525139"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12945) registra votação nominal eletrônica em 2025-06-11, encerrada em 2025-06-12 às 00:46, com 197 Sim e 106 Não.",
+      "object": "O relatório identifica o objeto como “DTQ 4 - NOVO - ART. 4º”; o registro 622019-81 da API traz o mesmo placar.",
+      "text": "O DTQ 4 (NOVO) pede votação em separado do art. 4º do PL 7906/2014; o texto do projeto traz o art. 4º (vigência na data de publicação), repetido na redação final (RDF 1)."
+    }
+  },
+  {
+    "id": "2381043-91",
+    "parentId": "2381043-63",
+    "status": "pending",
+    "reason": "Foi votado em 26/6/2025, numa etapa posterior cuja votação do texto principal não está no catálogo; ligá-lo à votação de 2023 seria errado."
+  },
+  {
+    "id": "622019-72",
+    "parentId": "622019-73",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-11",
+    "kind": "emenda",
+    "title": "Criação dos cargos condicionada ao orçamento",
+    "summary": "A Câmara votou a emenda de adequação da Comissão de Finanças e Tributação (CFT) ao projeto que cria 21 cargos de juiz do trabalho substituto no TRT da 3ª Região (Minas Gerais). A emenda reescreve o art. 3º: a criação dos cargos depende de autorização expressa em anexo da lei orçamentária anual, com dotação suficiente para o primeiro provimento; se os recursos bastarem só para parte dos cargos, o saldo deve constar do orçamento do ano em que forem criados e providos.",
+    "decisionLabel": "Emenda aprovada",
+    "yesMeaning": "Aprovar a emenda.",
+    "noMeaning": "Rejeitar a emenda.",
+    "outcome": "approved",
+    "reportObject": "EMENDA SANEADORA DA CFT",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12942",
+      "text": "https://www.camara.leg.br/proposicoesWeb/prop_mostrarintegra?codteor=1289357",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=796716"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12942) registra votação nominal eletrônica em 2025-06-11, encerrada em 2025-06-12 às 00:05, com 214 Sim e 107 Não.",
+      "object": "O relatório identifica o objeto como “EMENDA SANEADORA DA CFT”; o registro 622019-72 da API traz o mesmo placar.",
+      "text": "O inteiro teor da emenda de adequação adotada pela CFT (EMC-A 1) dá nova redação ao art. 3º; a redação final aprovada (RDF 1) traz o mesmo art. 3º. A abertura da votação na API descreve a votação da emenda da CFT com parecer pela aprovação."
+    }
+  }
+]
