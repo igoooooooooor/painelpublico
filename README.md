@@ -63,6 +63,7 @@ python3 -m backend.server --port 8000
 | `make pipeline-status` | Último resultado das atualizações automáticas |
 | `make prod` | Rodar como em produção (cache, só localhost) |
 | `make deploy` / `make deploy-data` | Publicar código / banco e snapshots no servidor; push na `main` já publica o código ([Publicação](docs/deploy.md)) |
+| `make deploy-reviews` | Enviar só as revisões do Placar ao servidor, sem tocar o banco ([Publicação](docs/deploy.md)) |
 | `make publish-data` | Publicar banco, snapshots e revisões do Placar como release de dados no GitHub; `DRY_RUN=1` só monta o pacote; no servidor sai todo mês ([Dados e SQLite](docs/data.md#publicar-a-base)) |
 | `make deploy-status` | Ver se o site está no ar |
 
