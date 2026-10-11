@@ -140,7 +140,7 @@ def expand_mandate_cost(record, urls):
 
 
 def _mandate_cost(identifier, profile_path):
-    """Only the approved Câmara composition over the current mandate (Feb/2023–Jul/2026), per profile."""
+    """Only the approved Câmara composition over the current mandate (from Feb/2023 to the snapshot's last month), per profile."""
     if not re.fullmatch(r'camara:\d+', identifier):
         return None
     snapshot = _load(profile_path.parent / 'mandate-cost.json')
@@ -148,7 +148,9 @@ def _mandate_cost(identifier, profile_path):
     result = records.get(identifier) if isinstance(records, dict) else None
     if (not isinstance(result, dict) or result.get('id') != identifier
             or result.get('house') != 'camara' or result.get('periodStart') != '2023-02'
-            or result.get('periodEnd') != '2026-07'):
+            or not isinstance(result.get('periodEnd'), str)
+            or not re.fullmatch(r'20\d{2}-(0[1-9]|1[0-2])', result['periodEnd'])
+            or not '2023-02' <= result['periodEnd'] <= '2027-01'):
         return None
     urls = snapshot.get('urls')
     return expand_mandate_cost(deepcopy(result), urls if isinstance(urls, list) else [])

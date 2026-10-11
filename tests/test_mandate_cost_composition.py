@@ -128,6 +128,19 @@ class MandatePeriodTests(unittest.TestCase):
         from ingest.mandate_cost_composition import PERIODS
         self.assertEqual((PERIODS[0], PERIODS[-1], len(PERIODS)), ('2023-02', '2026-07', 42))
 
+    def test_period_ends_at_the_last_month_with_all_four_parts_published(self):
+        from ingest.mandate_cost_composition import last_published_month, periods_through
+        published = {'quota': {'available': 470}, 'office': {'available': 503, 'unavailable': 10},
+                     'payroll': {'partial': 497}, 'housing': {'available': 507}}
+        coverage = {'2026-07': published, '2026-08': {**published, 'office': {'unavailable': 513}},
+                    '2026-09': {**published, 'office': {'unavailable': 513}, 'payroll': {'complete': 513}}}
+        self.assertEqual(last_published_month(coverage), 7)
+        coverage['2026-08'] = published
+        self.assertEqual(last_published_month(coverage), 8)
+        self.assertEqual(periods_through(8)[-1], '2026-08')
+        with self.assertRaises(ValueError):
+            last_published_month({'2026-01': {**published, 'office': {'unavailable': 513}}})
+
     def test_confirmed_office_gap_keeps_the_month_with_the_part_empty(self):
         row = compose_month(self.parts, self.service['2024-12'], '2024-12')
         self.assertTrue(row['eligible'])
@@ -207,3 +220,6 @@ class MandateSnapshotApiTests(unittest.TestCase):
             self.assertEqual(result['mandateCost']['monthlyAverageCents'], 12000)
             self.assertIsNone(profile('senado:1', root / 'perfis.json'))
             self.assertIsNone(profile('camara:2', root / 'perfis.json'))
+            for end, accepted in (('2026-09', True), ('2027-01', True), ('2027-02', False), ('2026-13', False)):
+                (root / 'mandate-cost.json').write_text(json.dumps({'profiles': {'camara:1': {**record, 'periodEnd': end}}}))
+                self.assertEqual(profile('camara:1', root / 'perfis.json') is not None, accepted, end)

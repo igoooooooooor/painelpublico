@@ -1,16 +1,26 @@
-/* Custo do mandato atual na Câmara (fev/2023–jul/2026), a partir da página individual de remuneração,
-   da cota e da verba do gabinete. Valores da época, em centavos. */
+/* Custo do mandato atual na Câmara (fev/2023 até o último mês do snapshot), a partir da página individual
+   de remuneração, da cota e da verba do gabinete. Valores da época, em centavos. */
 const PROFILE_COST_START = '2023-02';
-const PROFILE_COST_END = '2026-07';
+const PROFILE_COST_MANDATE_END = '2027-01';
 const PROFILE_COST_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const PROFILE_COST_LONG = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-const PROFILE_COST_PERIODS = new Set(Array.from({ length: 48 }, (_, index) => {
+const PROFILE_COST_PERIODS = new Set(Array.from({ length: 60 }, (_, index) => {
   const year = 2023 + Math.floor(index / 12);
   return `${year}-${String(index % 12 + 1).padStart(2, '0')}`;
-}).filter(period => period >= PROFILE_COST_START && period <= PROFILE_COST_END));
+}).filter(period => period >= PROFILE_COST_START && period <= PROFILE_COST_MANDATE_END));
 const profileCostLabel = period => `${PROFILE_COST_SHORT[Number(period.slice(5)) - 1]}/${period.slice(0, 4)}`;
 const PROFILE_COST_MONTHS = Object.fromEntries([...PROFILE_COST_PERIODS].map(period => [period, profileCostLabel(period)]));
-const PROFILE_COST_RANGE = `${profileCostLabel(PROFILE_COST_START)}–${profileCostLabel(PROFILE_COST_END)}`;
+const profileCostLongLabel = period => `${PROFILE_COST_LONG[Number(period.slice(5)) - 1]} de ${period.slice(0, 4)}`;
+/* Fim do período: o último mês do snapshot (último mês com as quatro partes publicadas). */
+function profileCostEnd(cost) {
+  if (PROFILE_COST_PERIODS.has(cost?.periodEnd)) return cost.periodEnd;
+  const months = cost?.months && typeof cost.months === 'object' ? Object.keys(cost.months) : [];
+  return months.filter(period => PROFILE_COST_PERIODS.has(period)).sort().at(-1) || null;
+}
+function profileCostRange(cost) {
+  const end = profileCostEnd(cost);
+  return end ? `${profileCostLabel(PROFILE_COST_START)}–${profileCostLabel(end)}` : `desde ${profileCostLabel(PROFILE_COST_START)}`;
+}
 const PROFILE_COST_PARTS = [
   ['office', 'Verba do gabinete', 'Verba do gabinete'],
   ['remuneration', 'Salário bruto', 'Página de remuneração'],
@@ -166,7 +176,8 @@ function profileCostAnswer(cost) {
       ${profileCostStackedComposition(values, cost.monthlyAverageCents, PROFILE_COST_PARTS.map(([, label]) => label))}
       <p class="citizen-cost-period">${esc(profileCostMonthList(used))} em exercício</p>`;
   } else if (profileCostAllOutside(cost)) {
-    principal = '<p class="citizen-cost-unavailable">Não estava no mandato entre fevereiro de 2023 e julho de 2026.</p>';
+    const end = profileCostEnd(cost);
+    principal = `<p class="citizen-cost-unavailable">Não estava no mandato entre ${esc(profileCostLongLabel(PROFILE_COST_START))}${end ? ` e ${esc(profileCostLongLabel(end))}` : ''}.</p>`;
   } else {
     const values = PROFILE_COST_PARTS.map(([key]) => partOf(key).averageCents);
     const scale = Math.max(0, ...values.filter(profileCostInteger));
@@ -174,7 +185,7 @@ function profileCostAnswer(cost) {
       const months = profileCostPeriods(partOf(entry[0]).months);
       return profileCostPartRow(entry, partOf(entry[0]), values[index], scale, months.length ? `média de ${profileCostMonthList(months)}` : '', cost?.id);
     }).join('');
-    principal = `<p class="citizen-cost-unavailable">Sem média mensal para o mandato (${PROFILE_COST_RANGE}).</p>
+    principal = `<p class="citizen-cost-unavailable">Sem média mensal para o mandato (${esc(profileCostRange(cost))}).</p>
       <p class="citizen-cost-period">Em nenhum mês do mandato as quatro partes abaixo foram publicadas juntas. Veja cada parte com seus próprios meses.</p>`;
   }
   return `<article class="card profile-cost-breakdown" data-profile-cost-house="camara">
@@ -276,7 +287,7 @@ function profileCostDetails(cost) {
   const inventoryMonths = profileCostPeriods(cost.payrollInventoryPartialMonths);
   const inventory = inventoryMonths.length
     ? `<p class="muted citizen-cost-footnote">Nota: em ${esc(profileCostMonthList(inventoryMonths, { count: false }))}, o inventário mensal da Câmara lista folhas complementares sem identificar a qual deputado(a) pertencem. A média usa o que a página individual de remuneração publica para esta pessoa.</p>` : '';
-  return `<section class="citizen-detail-part citizen-cost-details"><h3 class="k">Custo do mandato mês a mês · ${PROFILE_COST_RANGE}</h3>
+  return `<section class="citizen-detail-part citizen-cost-details"><h3 class="k">Custo do mandato mês a mês · ${esc(profileCostRange(cost))}</h3>
     ${profileCostChristmasLine(cost)}
     <p class="citizen-cost-note">Soma salário bruto, auxílios, cota parlamentar e verba do gabinete. Fichas de senadores(as) mostram as despesas do Senado à parte, com partes diferentes; os números não são comparáveis. Valores da época, sem correção pela inflação.${profileCostGapNote(cost)} Fora da conta: encargos do gabinete e apartamento funcional. Detalhes e fontes de cada mês em “Ver mais”.</p>
     <p class="muted">Como calculamos: em cada mês em exercício, somamos a remuneração bruta de todas as tabelas da página individual (normal, complementares), os auxílios dessa mesma página, a cota parlamentar sem o complemento de moradia e a verba do gabinete. A média usa só os meses com as quatro partes publicadas; meses parciais não são estimados para o mês inteiro. Se a Câmara não publicou uma parte para ninguém naquele mês, o mês entra com essa parte vazia e a média dela usa os outros meses. O 13º fica à parte. Diárias e vantagens indenizatórias não entram. Valores da época, sem correção pela inflação, arredondados para baixo ao centavo.</p>

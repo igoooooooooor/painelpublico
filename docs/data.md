@@ -578,6 +578,14 @@ individual) e `chamber-service-{ano}.json` (exercício, reconstruído offline do
 mesmo histórico em cache). 2026 segue a regra da Fase 3. Mesmas exigências por
 mês: exercício confirmado e as quatro partes.
 
+Desde 11/10/2026, o fim do período não é fixo: `ingest/mandate_cost_composition.py` usa o
+último mês de 2026 em que a auditoria encontrou as quatro partes publicadas para ao menos um
+deputado, e grava esse mês em `periodEnd` e `periods`. API e tela leem o período do snapshot
+(limite: jan/2027, fim do mandato). Em 11/10/2026, a página da Câmara ainda publicava a verba de
+gabinete só até julho, então o período continuou fev/2023–jul/2026. Para avançar, colete de novo os
+perfis (verba de gabinete) e as fontes do custo, rode `python3 -m ingest.mandate_cost_composition` e
+publique com `make deploy-data`.
+
 ```sh
 for year in 2023 2024 2025; do python3 ingest/chamber_service.py --year $year --months 1-12; done
 python3 ingest/chamber_payroll.py --collect --year 2023 --months 2-12 --output data/snapshots/chamber-payroll-2023.json

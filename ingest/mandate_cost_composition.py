@@ -18,17 +18,37 @@ from ingest.mandate_cost_audit import (COMPLEMENT_CATEGORY, build as build_audit
                                       observed_payroll_components)
 
 ROOT = Path(__file__).resolve().parents[1]
-# Mandato atual (legislatura 57) até o último mês com as quatro partes publicadas em 2026.
+# Mandato atual (legislatura 57). O fim do período é o último mês de 2026 em que a fonte
+# publicou as quatro partes (ver last_published_month); o padrão abaixo vale para os testes.
 MANDATE_START = '2023-02'
+MANDATE_END = '2027-01'
 CURRENT_YEAR = 2026
 CURRENT_LAST_MONTH = 7
 HISTORY_YEARS = (2023, 2024, 2025)
-PERIODS = tuple(
-    f'{year}-{month:02d}'
-    for year in (*HISTORY_YEARS, CURRENT_YEAR)
-    for month in range(1, (CURRENT_LAST_MONTH if year == CURRENT_YEAR else 12) + 1)
-    if f'{year}-{month:02d}' >= MANDATE_START
-)
+AUDIT_PARTS = ('quota', 'office', 'payroll', 'housing')
+
+
+def periods_through(last_month):
+    return tuple(
+        f'{year}-{month:02d}'
+        for year in (*HISTORY_YEARS, CURRENT_YEAR)
+        for month in range(1, (last_month if year == CURRENT_YEAR else 12) + 1)
+        if MANDATE_START <= f'{year}-{month:02d}' <= MANDATE_END
+    )
+
+
+def last_published_month(coverage):
+    """Último mês do ano corrente em que cada parte foi publicada para ao menos um deputado."""
+    published = [int(period[5:]) for period, parts in (coverage or {}).items()
+                 if period.startswith(f'{CURRENT_YEAR}-')
+                 and all(any(status != 'unavailable' and count for status, count in parts.get(part, {}).items())
+                         for part in AUDIT_PARTS)]
+    if not published:
+        raise ValueError(f'Nenhum mês de {CURRENT_YEAR} com as quatro partes publicadas.')
+    return max(published)
+
+
+PERIODS = periods_through(CURRENT_LAST_MONTH)
 # Lacunas confirmadas na própria fonte para todos os deputados: o mês entra na média
 # com as partes publicadas e a parte ausente fica vazia, sem virar zero.
 SOURCE_GAPS = {'2024-12': ('office',)}
@@ -129,11 +149,11 @@ def principal(months, used):
     return math.floor(total)
 
 
-def compose_person(person, service):
+def compose_person(person, service, periods=PERIODS):
     if person.get('house') != 'camara':
         return None
     months = {period: compose_month(person['parts'], service.get('months', {}).get(period, {}), period)
-              for period in PERIODS}
+              for period in periods}
     used = [period for period, row in months.items() if row['eligible']]
     summaries = {}
     for part in PARTS:
@@ -152,7 +172,7 @@ def compose_person(person, service):
     complement_months = [p for p, r in months.items() if r['exercise'] == 'in_office' and r['complementSignedCents'] is not None]
     christmas_months = [p for p, r in months.items() if r['exercise'] == 'in_office' and r['christmasBonusCents'] is not None]
     inventory_months = [p for p, r in months.items() if p in used and (r['payrollInventory'] or {}).get('status') == 'partial']
-    return {'id': person['id'], 'house': 'camara', 'periodStart': PERIODS[0], 'periodEnd': PERIODS[-1],
+    return {'id': person['id'], 'house': 'camara', 'periodStart': periods[0], 'periodEnd': periods[-1],
             'months': months, 'usedMonths': used,
             'monthlyAverageCents': principal(months, used),
             'sourceGapMonths': {p: months[p]['sourceGaps'] for p in used if months[p]['sourceGaps']},
@@ -278,7 +298,8 @@ def compact(people):
 
 
 def build(root=ROOT):
-    audit = build_audit(root, 2026)
+    audit = build_audit(root, CURRENT_YEAR)
+    periods = periods_through(last_published_month(audit['coverage']['camara']['months']))
     path = root / 'data/snapshots/chamber-service.json'
     service = json.loads(path.read_text()) if path.exists() else {}
     from ingest.chamber_quota_audit import build_audit as audit_quota
@@ -297,11 +318,11 @@ def build(root=ROOT):
             person['parts'][part] = {**rows, **person['parts'].get(part, {})}
         current = service.get('profiles', {}).get(identifier, {})
         months = {**old_service[identifier], **current.get('months', {})}
-        people[identifier] = compose_person(person, {**current, 'months': months})
+        people[identifier] = compose_person(person, {**current, 'months': months}, periods)
     coverage = {'profiles': len(people), 'withPrincipal': sum(p['monthlyAverageCents'] is not None for p in people.values())}
     urls = compact(people)
     return {'schemaVersion': 4, 'generatedAt': datetime.now(timezone.utc).isoformat(),
-            'periods': list(PERIODS), 'urls': urls, 'profiles': people,
+            'periods': list(periods), 'urls': urls, 'profiles': people,
             'quotaVerification': {key: quota_check.get(key) for key in ('completeSnapshot', 'sourceArchiveSha256', 'sourceFetchedAt')},
             'coverage': coverage}
 

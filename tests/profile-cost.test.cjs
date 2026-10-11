@@ -71,6 +71,23 @@ test('outside the mandate is neither zero nor missing data', () => {
   assert.doesNotMatch(html, /Custa em média/);
 });
 
+test('the period ends at the snapshot month, not at a fixed month', () => {
+  const { profileCostAnswer, profileCostDetails } = load();
+  const cost = costFixture();
+  const period = '2026-09';
+  cost.months[period] = { ...cost.months['2026-07'], period, christmasBonusCents: null,
+    sources: Object.fromEntries(['remuneration', 'allowances', 'quota', 'office'].map(key => [key, { url: payrollUrl(period), period }])) };
+  cost.periodEnd = period;
+  cost.usedMonths = [...PERIODS, period];
+  for (const part of Object.values(cost.parts)) part.sources.push({ url: payrollUrl(period), period });
+  assert.match(profileCostAnswer(cost), /Ver as notas de set\/2026/);
+  assert.match(profileCostDetails(cost), /Custo do mandato mês a mês · fev\/2023–set\/2026/);
+  assert.match(profileCostDetails(cost), /data-cost-month="2026-09"/);
+  const outside = costFixture({ used: [], exercise: 'outside_mandate' });
+  outside.periodEnd = period;
+  assert.match(profileCostAnswer(outside), /entre fevereiro de 2023 e setembro de 2026/);
+});
+
 test('without a month with all four parts there is no average, only parts and the reason', () => {
   const { profileCostAnswer } = load();
   const html = profileCostAnswer(costFixture({ used: [] }));
@@ -93,7 +110,7 @@ test('month ranges cross years and the mandate period is named', () => {
   const { profileCostMonthList, profileCostAnswer, profileCostDetails } = load();
   assert.equal(profileCostMonthList(['2023-02', '2023-03', '2024-11', '2025-01', '2025-02']),
     'fev/2023–mar/2023, nov/2024, jan/2025–fev/2025, 5 meses');
-  assert.equal(profileCostMonthList(['2023-01', '2026-08']), 'nenhum mês');
+  assert.equal(profileCostMonthList(['2023-01', '2027-02']), 'nenhum mês');
   const html = profileCostAnswer(costFixture());
   assert.match(html, /mandato 2023–2027/);
   assert.match(profileCostDetails(costFixture()), /Valores da época, sem correção pela inflação/);
