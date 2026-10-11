@@ -640,7 +640,9 @@ sempre ou só quando o parecer a traz.
 Desde 11/10/2026, a atualização semanal do servidor refaz o inventário do ano corrente até o dia e
 grava `data/reviews/editorial-queue.md`: candidatos sem revisão em nenhum
 `chamber-vote-reviews-*.json`, pendentes com motivo e os alertas de tipo do inventário. Um candidato
-novo gera e-mail. A fila só aponta trabalho; conferir método, objeto e texto, escrever a revisão e
+novo gera e-mail e um rascunho em `chamber-vote-reviews-draft-<data>.json`, com os campos
+objetivos (ID, data, proposição, placar, link da ficha) preenchidos, o julgamento em branco e
+`status: draft`, recusado pelo catálogo; rascunhos já editados não são sobrescritos. A fila só aponta trabalho; conferir método, objeto e texto, escrever a revisão e
 rodar `make collect-votes THROUGH=<data>` continuam sendo etapas de uma pessoa, e o catálogo não muda
 sem isso. Ver [Publicação](deploy.md#job-semanal-e-fila-editorial).
 

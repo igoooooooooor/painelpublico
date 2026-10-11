@@ -102,3 +102,33 @@ class SenateOfficePilotTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class AutoAcceptTests(unittest.TestCase):
+    def test_unique_exact_name_is_accepted_and_ambiguous_names_wait_for_review(self):
+        from datetime import datetime
+        with tempfile.TemporaryDirectory() as temp:
+            map_path = Path(temp) / 'map.json'
+            auto_path = Path(temp) / 'auto.json'
+            map_path.write_text(json.dumps({'offices': [
+                {'id': 'senado:1', 'name': 'Fulano de Tal', 'office': 'Fulano de Tal', 'checkedAt': '2026-10-09'}]}), encoding='utf-8')
+            rows = [row('PARLAMENTAR', OFFICE, '46.366,19'),
+                    row('PARLAMENTAR', 'Gabinete da Senadora Nova Pessoa', '46.366,19'),
+                    row('PARLAMENTAR', 'Gabinete do Senador Nome Repetido', '46.366,19'),
+                    row('PARLAMENTAR', 'Gabinete do Senador Sem Cadastro', '46.366,19')]
+            people = {'senado:1': 'Fulano de Tal', 'senado:9': 'Nova Pessoa', 'senado:10': 'Nome Repetido', 'senado:11': 'Nome Repetido'}
+            accepted, review = pilot.auto_accept(people, fetcher=lambda period: csv_bytes(rows), map_path=map_path,
+                                                 auto_path=auto_path, periods=['2026-09'], today=datetime(2026, 10, 11))
+            self.assertEqual([(e['id'], e['office'], e['checkedAt']) for e in accepted], [('senado:9', 'Nova Pessoa', '2026-10-11')])
+            self.assertEqual(sorted(item['office'] for item in review), ['Nome Repetido', 'Sem Cadastro'])
+            offices, entries = pilot.load_map(map_path, auto_path)
+            self.assertEqual(offices['senado:9'], 'Nova Pessoa')
+            self.assertTrue(entries[-1]['auto'])
+            # Segunda execução: nada novo e nenhuma duplicata.
+            accepted, _ = pilot.auto_accept(people, fetcher=lambda period: csv_bytes(rows), map_path=map_path,
+                                            auto_path=auto_path, periods=['2026-09'])
+            self.assertEqual(accepted, [])
+            self.assertEqual(len(json.loads(auto_path.read_text())['offices']), 1)
+            # A tabela manual prevalece sobre uma entrada automática com o mesmo ID.
+            auto_path.write_text(json.dumps({'offices': [{'id': 'senado:1', 'name': 'x', 'office': 'Outra', 'checkedAt': '2026-10-11'}]}))
+            self.assertEqual(pilot.load_map(map_path, auto_path)[0], {'senado:1': 'Fulano de Tal'})

@@ -792,7 +792,7 @@ def monthly_steps(config: PipelineConfig) -> list[tuple[str, tuple[str, ...], in
     steps += [
         ("chamber-mandate-history", ("ingest/chamber_mandate_history.py", "--collect"), MONTHLY_TOOL_TIMEOUT_SECONDS),
         ("mandate-cost", ("-m", "ingest.mandate_cost_composition"), SNAPSHOT_TIMEOUT_SECONDS),
-        ("senate-office-pilot", ("ingest/senate_office_pilot.py",), SNAPSHOT_TIMEOUT_SECONDS),
+        ("senate-office-pilot", ("ingest/senate_office_pilot.py", "--auto-accept"), SNAPSHOT_TIMEOUT_SECONDS),
         ("senate-cost", ("ingest/senate_cost.py", "--collect"), SNAPSHOT_TIMEOUT_SECONDS),
         ("senate-attendance", ("ingest/senate_attendance.py", "--collect"), MONTHLY_TOOL_TIMEOUT_SECONDS),
         ("senate-activity", ("ingest/senate_activity.py", "--collect", "--mandate"), SNAPSHOT_TIMEOUT_SECONDS),

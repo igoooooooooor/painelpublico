@@ -68,6 +68,7 @@ dist/           app gerado, ignorado no Git
 
 ## Convenções
 
+- [Operação](docs/operations.md): como o dado chega ao site, os jobs automáticos, o que cada e-mail significa e o que ainda depende de uma pessoa. Comece por aqui para manter o projeto.
 - [Arquitetura](docs/architecture.md): divisão de responsabilidades e fluxo dos dados.
 - [Design system](docs/design-system.md): componentes, temas e bordas neutras.
 - [Dados e SQLite](docs/data.md): fontes, limitações, importação e backups.

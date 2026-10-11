@@ -68,6 +68,30 @@ class EditorialQueueTests(unittest.TestCase):
         self.assertTrue(second['attention'])
         self.assertIn('"novos": []', editorial_queue.summary_line(second))
 
+    def test_drafts_are_prefilled_kept_when_edited_and_dropped_when_reviewed(self):
+        candidate = {**entry('5-1', '2026-10-09'), 'targetPropositions': [{'id': 77, 'siglaTipo': 'PLP', 'numero': 9, 'ano': 2026}]}
+        self.inventory('2026-10-11', [entry('1-1', '2026-09-30'), candidate])
+        self.write(self.reviews / 'chamber-vote-reviews-2026-10-09.json', [{'id': '1-1', 'status': 'confirmed', 'reviewedAt': '2026-10-09'}])
+        queue = editorial_queue.build_queue(self.root, self.today)
+        draft_path = self.reviews / 'chamber-vote-reviews-draft-2026-10-11.json'
+        drafts = json.loads(draft_path.read_text(encoding='utf-8'))
+        self.assertEqual(queue['scoreboard']['drafts'], {'file': draft_path.name, 'total': 1, 'added': ['5-1'], 'removed': []})
+        self.assertEqual(drafts[0]['status'], 'draft')
+        self.assertEqual(drafts[0]['sources']['proposition'], 'https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=77')
+        self.assertEqual(drafts[0]['inventory']['proposition'], 'PLP 9/2026')
+        self.assertIsNone(drafts[0]['title'])
+        self.assertIn('rascunhos', editorial_queue.summary_line(queue))
+        # A pessoa começa a editar: o rascunho não é sobrescrito na execução seguinte.
+        drafts[0]['title'] = 'Em edição'
+        draft_path.write_text(json.dumps(drafts), encoding='utf-8')
+        editorial_queue.build_queue(self.root, self.today)
+        self.assertEqual(json.loads(draft_path.read_text())[0]['title'], 'Em edição')
+        # Revisão registrada: o rascunho sai do arquivo.
+        self.write(self.reviews / 'chamber-vote-reviews-2026-10-11.json', [{'id': '5-1', 'status': 'pending', 'reason': 'conferir'}])
+        queue = editorial_queue.build_queue(self.root, self.today)
+        self.assertEqual(json.loads(draft_path.read_text()), [])
+        self.assertEqual(queue['scoreboard']['drafts']['removed'], ['5-1'])
+
     def test_missing_inventory_is_reported_not_zero(self):
         queue = editorial_queue.build_queue(self.root, self.today)
         self.assertEqual(queue['scoreboard']['status'], 'unavailable')

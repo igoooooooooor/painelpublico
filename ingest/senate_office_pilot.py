@@ -45,6 +45,9 @@ if str(ROOT) not in sys.path:
 from ingest.senate_payroll_pilot import EXPECTED_FIELDS, USER_AGENT  # noqa: E402
 
 MAP_PATH = Path(__file__).with_name('senate_office_map.json')
+# Correspondências aceitas sozinhas (nome da lotação igual ao nome único do cadastro), fora do Git:
+# a tabela versionada continua sendo a conferida à mão e prevalece em caso de conflito.
+AUTO_MAP_PATH = ROOT / 'data' / 'snapshots' / 'senate-office-map-auto.json'
 DEFAULT_OUTPUT = Path('data/snapshots/senate-office-pilot.json')
 CSV_URL = 'https://www.senado.leg.br/transparencia/LAI/secrh/SF_ConsultaRemuneracaoServidoresParlamentares_{period}.csv'
 from ingest import periods  # noqa: E402
@@ -156,8 +159,16 @@ def aggregate_month(rows, offices):
     return out
 
 
-def load_map(path: Path = MAP_PATH):
-    entries = json.loads(path.read_text(encoding='utf-8'))['offices']
+def load_map(path: Path = MAP_PATH, auto_path: Path | None = AUTO_MAP_PATH):
+    """Tabela conferida à mão mais, quando existe, a de aceitação automática; a manual prevalece."""
+    entries = list(json.loads(path.read_text(encoding='utf-8'))['offices'])
+    if auto_path is not None and auto_path.exists():
+        ids = {e['id'] for e in entries}
+        offices = {fold(e['office']) for e in entries}
+        for entry in json.loads(auto_path.read_text(encoding='utf-8')).get('offices', []):
+            if entry.get('id') in ids or fold(entry.get('office', '')) in offices:
+                continue
+            entries.append(entry)
     if len({e['id'] for e in entries}) != len(entries) or len({fold(e['office']) for e in entries}) != len(entries):
         raise PilotError('Tabela com ID ou lotação repetidos')
     for entry in entries:
@@ -246,15 +257,53 @@ def suggest(people, fetcher=fetch, map_path: Path = MAP_PATH, periods=COMPETENCE
             for name, months in sorted(found.items())]
 
 
+def auto_accept(people, fetcher=fetch, map_path: Path = MAP_PATH, auto_path: Path = AUTO_MAP_PATH,
+                periods=COMPETENCES, today=None):
+    """Aceita sozinho a lotação cujo nome é igual ao de exatamente uma pessoa do cadastro ainda sem
+    gabinete; o resto fica para conferência à mão. Devolve (aceitas, para conferir)."""
+    existing = json.loads(auto_path.read_text(encoding='utf-8')) if auto_path.exists() else {'offices': []}
+    mapped = set(load_map(map_path, auto_path)[0])
+    accepted, review = [], []
+    stamp = (today or datetime.now()).strftime('%Y-%m-%d')
+    for item in suggest(people, fetcher=fetcher, map_path=map_path, periods=periods):
+        matches = [identifier for identifier in item['exactMatches'] if identifier not in mapped]
+        if len(matches) == 1 and len(item['exactMatches']) == 1:
+            identifier = matches[0]
+            accepted.append({'id': identifier, 'name': people[identifier], 'office': item['office'], 'checkedAt': stamp,
+                             'evidence': (f'Nome da lotação igual ao nome parlamentar único do cadastro; aceito automaticamente '
+                                          f'em {stamp}; lotação presente em {len(item["months"])} meses '
+                                          f'({item["months"][0]} a {item["months"][-1]}).'), 'auto': True})
+            mapped.add(identifier)
+        else:
+            review.append(item)
+    if accepted:
+        existing['offices'] = [*existing.get('offices', []), *accepted]
+        existing['note'] = 'Correspondências aceitas automaticamente por nome único; a tabela conferida à mão prevalece.'
+        write_atomic(auto_path, existing)
+    return accepted, review
+
+
+def _people_from_database():
+    import sqlite3
+    db = sqlite3.connect(f'file:{ROOT / "data" / "na-lupa.sqlite3"}?mode=ro', uri=True)
+    return dict(db.execute("SELECT id,name FROM authorities WHERE id LIKE 'senado:%' AND role='senador'"))
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--output', type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument('--suggest', action='store_true', help='lista lotações fora da tabela, para conferência à mão')
+    parser.add_argument('--auto-accept', action='store_true',
+                        help='aceita sozinho lotações com nome igual ao de uma única pessoa do cadastro (data/snapshots/senate-office-map-auto.json)')
     args = parser.parse_args(argv)
+    if args.auto_accept:
+        accepted, review = auto_accept(_people_from_database())
+        for entry in accepted:
+            print(f"aceito: {entry['id']} ({entry['name']}) ← {entry['office']}")
+        for item in review:
+            print(f"conferir à mão: {item['office']} ({len(item['months'])} meses); nome igual: {', '.join(item['exactMatches']) or 'nenhum'}")
     if args.suggest:
-        import sqlite3
-        db = sqlite3.connect(f'file:{ROOT / "data" / "na-lupa.sqlite3"}?mode=ro', uri=True)
-        people = dict(db.execute("SELECT id,name FROM authorities WHERE id LIKE 'senado:%' AND role='senador'"))
+        people = _people_from_database()
         for item in suggest(people):
             print(f"{item['office']}: {item['months'][0]}–{item['months'][-1]} ({len(item['months'])} meses); "
                   f"cadastro com nome igual: {', '.join(item['exactMatches']) or 'nenhum'}")

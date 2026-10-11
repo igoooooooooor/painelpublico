@@ -109,8 +109,11 @@ custa pouco. A ordem:
 2. `payroll-<ano>`, `housing-<ano>` e `service-<ano>` para cada ano do mandato (folha individual, moradia e
    exercício da Câmara; meses já encerrados), `chamber-mandate-history` (gabinete dos anos anteriores e
    presença do ano corrente) e `mandate-cost` (composição da média).
-3. `senate-office-pilot`, `senate-cost`, `senate-attendance` (PDFs do Diário; precisa de `pdfplumber`,
-   instalado no venv pelo deploy), `senate-activity`, `senate-participation` e `tenure`.
+3. `senate-office-pilot` (com `--auto-accept`: senador novo cujo nome de lotação é igual ao nome
+   único do cadastro entra sozinho em `data/snapshots/senate-office-map-auto.json`; a tabela
+   versionada `ingest/senate_office_map.json` prevalece), `senate-cost`, `senate-attendance` (PDFs do
+   Diário; precisa de `pdfplumber`, instalado no venv pelo deploy), `senate-activity`,
+   `senate-participation` e `tenure`.
 4. `state-tax-revenue` e `build`, que remonta `dist/index.html` com a presença e os impostos estaduais novos.
 
 Uma etapa que falha deixa a execução parcial, com e-mail, e as seguintes continuam; só a importação
@@ -130,7 +133,9 @@ Os insumos ficam em `/opt/painel/data/snapshots` e não são apagados pelo `make
 (`ingest.chamber_vote_inventory --collect`, cerca de 70 consultas) e monta a fila editorial
 (`ingest/editorial_queue.py`) em `/opt/painel/data/reviews/editorial-queue.md` e `.json`. A fila cruza
 os candidatos do inventário com todas as revisões locais e lista os sem revisão, os pendentes com
-motivo e os alertas de tipo do inventário; também avisa sobre os arquivos mantidos à mão
+motivo e os alertas de tipo do inventário, e grava para cada candidato sem revisão um rascunho em
+`chamber-vote-reviews-draft-<data>.json`, com ID, data, proposição, placar e links preenchidos e
+`status: draft`, que o catálogo recusa até uma pessoa julgar; também avisa sobre os arquivos mantidos à mão
 (`arrecadacao.json` com mais de 60 dias, senador da lista atual sem gabinete em
 `ingest/senate_office_map.json`, contas municipais com exercício atrasado a partir de julho e a
 fotografia das eleições antes do segundo turno). Nada é publicado: o catálogo do Placar continua

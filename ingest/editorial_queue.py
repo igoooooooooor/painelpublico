@@ -10,6 +10,11 @@ Duas coisas são conferidas, sem rede:
    gabinetes do Senado (``ingest/senate_office_map.json``) contra a lista atual de senadores, o exercício
    das contas municipais e a fotografia das eleições de 2026 depois do segundo turno.
 
+Para cada candidato sem revisão, um rascunho entra em ``chamber-vote-reviews-draft-<data>.json``
+com os campos objetivos preenchidos (ID, data, proposição, placar, links); os campos de texto e a
+evidência ficam vazios e o ``status`` é ``draft``, que o catálogo recusa: só uma pessoa o muda para
+``confirmed``, ``excluded`` ou ``pending``. Rascunhos já editados não são sobrescritos.
+
 Nada aqui publica: a saída é ``data/reviews/editorial-queue.json`` e ``.md`` e uma linha ``resumo:`` no
 terminal, que a atualização semanal usa para avisar por e-mail quando há novidade.
 """
@@ -118,12 +123,63 @@ def scoreboard_queue(reviews_dir: Path, year: int) -> dict:
             value = guard.get(key)
             if isinstance(value, list) and value:
                 guard_alerts.append({key: value[:20]})
+    period = inventory.get('period') or {}
+    entries_by_id = {str(entry.get('id')): entry for entry in inventory['entries'] if isinstance(entry, dict)}
+    drafts = write_drafts(reviews_dir, str(period.get('end') or path.stem[-10:]), unreviewed, entries_by_id)
     return {
-        'status': 'ok', 'inventory': {'file': path.name, 'period': inventory.get('period'),
+        'status': 'ok', 'inventory': {'file': path.name, 'period': period,
                                       'generatedAt': inventory.get('generatedAt'), 'listComplete': inventory.get('listComplete')},
         'counts': counts, 'unreviewed': unreviewed, 'pending': pending, 'typeGuardAlerts': guard_alerts,
-        'reviewFiles': sorted({review['file'] for review in reviews.values()}),
+        'reviewFiles': sorted({review['file'] for review in reviews.values()}), 'drafts': drafts,
     }
+
+
+FICHA_URL = 'https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao={}'
+DRAFT_STATUS = 'draft'
+
+
+def review_draft(entry: dict) -> dict:
+    """Rascunho de revisão com o que o inventário já sabe; o julgamento fica em branco."""
+    targets = entry.get('targetPropositions') or []
+    target = targets[0] if len(targets) == 1 and isinstance(targets[0], dict) else None
+    label = (f"{target.get('siglaTipo')} {target.get('numero')}/{target.get('ano')}" if target else None)
+    return {
+        'id': entry.get('id'), 'status': DRAFT_STATUS, 'reviewedAt': None,
+        'title': None, 'summary': None, 'decisionLabel': None, 'yesMeaning': None, 'noMeaning': None,
+        'sources': {
+            'rollCall': None, 'text': None, 'decision': None,
+            'proposition': FICHA_URL.format(target['id']) if target and target.get('id') else None,
+        },
+        'evidence': {'method': None, 'object': None, 'text': None},
+        'inventory': {
+            'date': entry.get('date'), 'category': entry.get('category'), 'method': entry.get('method'),
+            'proposition': label, 'recordedTally': entry.get('recordedTally'),
+            'description': ' '.join(str(entry.get('description') or '').split())[:600],
+            'reviewIssues': entry.get('reviewIssues', []), 'sourceUrl': entry.get('sourceUrl'),
+        },
+        'howTo': ('Confira o relatório nominal e cole o link em sources.rollCall; escreva title, summary, decisionLabel, '
+                  'yesMeaning e noMeaning em linguagem simples; registre evidence.method/object/text; mude status para '
+                  'confirmed, excluded (com reason, reviewedAt, sources e evidence) ou pending (com reason). '
+                  'Depois copie para chamber-vote-reviews-<data>.json e rode make collect-votes THROUGH=<data>.'),
+    }
+
+
+def write_drafts(reviews_dir: Path, inventory_end: str, unreviewed: list[dict], entries_by_id: dict[str, dict]) -> dict:
+    """Mantém um arquivo de rascunhos por inventário: acrescenta os novos, preserva os editados e retira os revisados."""
+    path = reviews_dir / f'chamber-vote-reviews-draft-{inventory_end}.json'
+    existing = _read_json(path, [])
+    existing = [item for item in existing if isinstance(item, dict) and isinstance(item.get('id'), str)] if isinstance(existing, list) else []
+    wanted = {item['id'] for item in unreviewed}
+    kept = [item for item in existing if item['id'] in wanted]
+    known = {item['id'] for item in kept}
+    added = [review_draft(entries_by_id[item['id']]) for item in unreviewed if item['id'] not in known and item['id'] in entries_by_id]
+    drafts = sorted([*kept, *added], key=lambda item: (item.get('inventory', {}).get('date') or '', item['id']), reverse=True)
+    if drafts or path.exists():
+        temp = path.with_suffix('.json.tmp')
+        temp.write_text(json.dumps(drafts, ensure_ascii=False, indent=1) + '\n', encoding='utf-8')
+        temp.replace(path)
+    return {'file': path.name, 'total': len(drafts), 'added': [item['id'] for item in added],
+            'removed': [item['id'] for item in existing if item['id'] not in wanted]}
 
 
 def _parse_any_date(value: Any) -> date | None:
@@ -158,14 +214,16 @@ def manual_file_warnings(root: Path, reference: date) -> list[dict]:
 
     roster = _read_json(root / 'data' / 'imports' / 'legislative.json', {})
     office_map = _read_json(root / 'ingest' / 'senate_office_map.json', {})
-    mapped = {entry.get('id') for entry in office_map.get('offices', []) if isinstance(entry, dict)} if isinstance(office_map, dict) else set()
+    auto_map = _read_json(snapshots / 'senate-office-map-auto.json', {}) or {}
+    mapped = {entry.get('id') for table in (office_map, auto_map) if isinstance(table, dict)
+              for entry in table.get('offices', []) if isinstance(entry, dict)}
     if isinstance(roster, dict) and mapped:
         missing = sorted(
             f"{row.get('id')} ({row.get('name')})" for row in roster.get('authorities', [])
             if isinstance(row, dict) and row.get('sourceId') == ROSTER_SENATE_SOURCE and row.get('id') not in mapped)
         if missing:
             warnings.append({'file': 'ingest/senate_office_map.json', 'issue': f'{len(missing)} senador(es) da lista atual sem gabinete na tabela',
-                             'action': 'Rode python3 ingest/senate_office_pilot.py --suggest e confira a lotação à mão: ' + ', '.join(missing[:10])})
+                             'action': 'Nome diferente do cadastro (os iguais entram sozinhos no job mensal). Rode python3 ingest/senate_office_pilot.py --suggest e confira a lotação à mão: ' + ', '.join(missing[:10])})
 
     accounts = _read_json(snapshots / 'accounts.json')
     expected_year = reference.year - 1
@@ -196,6 +254,9 @@ def render_markdown(queue: dict) -> str:
                   f"{counts['pending']} pendentes com motivo, **{counts['unreviewed']} sem revisão**.", '']
         if queue.get('newSinceLastRun'):
             lines += [f"Novos desde a fila anterior: {', '.join(queue['newSinceLastRun'])}", '']
+        if board.get('drafts', {}).get('total'):
+            lines += [f"Rascunhos de revisão com os campos objetivos preenchidos: `{board['drafts']['file']}` "
+                      f"({board['drafts']['total']}); falta o julgamento e o status.", '']
         if board['unreviewed']:
             lines += ['| Data | ID | Categoria | Método | Proposição | Descrição |', '| --- | --- | --- | --- | --- | --- |']
             for item in board['unreviewed']:
@@ -242,6 +303,7 @@ def summary_line(queue: dict) -> str:
     return 'resumo: ' + json.dumps({
         'placar': board['status'], 'candidatos': counts.get('candidates'), 'semRevisao': counts.get('unreviewed'),
         'pendentes': counts.get('pending'), 'novos': queue['newSinceLastRun'],
+        'rascunhos': (board.get('drafts') or {}).get('file'),
         'arquivosManuais': [w['file'] for w in queue['manualFiles']], 'atencao': queue['attention'],
     }, ensure_ascii=False)
 
