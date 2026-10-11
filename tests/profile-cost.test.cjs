@@ -47,6 +47,7 @@ test('principal keeps the average and parts while linking to methodology in deta
   assert.match(html, /Custa em média/);
   assert.match(html, /R\$\s?220\.619,19/);
   assert.match(html, /jan\/2026–jul\/2026, 7 meses/);
+  assert.match(html, /Só entram meses com salário, auxílios, cota e verba de gabinete publicados\./);
   assert.match(profileCostDetails(costFixture()), /13º salário em junho de 2026: <b class="mono">R\$\s?22\.709,97<\/b>/);
   assert.match(html, /data-profile-open="expenses">Como calculamos/);
   assert.doesNotMatch(html, /class="citizen-cost-note"|13º salário/);

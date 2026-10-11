@@ -174,7 +174,7 @@ function profileCostAnswer(cost) {
     principal = `<div class="profile-cost-total"><span>Custa em média</span><b class="mono">${esc(profileCostShort(cost.monthlyAverageCents))}</b><span>por mês</span></div>
       <p class="citizen-cost-exact">Valor exato: <span class="mono">${esc(amount)}</span> por mês</p>
       ${profileCostStackedComposition(values, cost.monthlyAverageCents, PROFILE_COST_PARTS.map(([, label]) => label))}
-      <p class="citizen-cost-period">${esc(profileCostMonthList(used))} em exercício</p>`;
+      <p class="citizen-cost-period">${esc(profileCostMonthList(used))} em exercício. Só entram meses com salário, auxílios, cota e verba de gabinete publicados.</p>`;
   } else if (profileCostAllOutside(cost)) {
     const end = profileCostEnd(cost);
     principal = `<p class="citizen-cost-unavailable">Não estava no mandato entre ${esc(profileCostLongLabel(PROFILE_COST_START))}${end ? ` e ${esc(profileCostLongLabel(end))}` : ''}.</p>`;
