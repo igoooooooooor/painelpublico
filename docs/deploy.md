@@ -116,6 +116,9 @@ custa pouco. A ordem:
    Diário; precisa de `pdfplumber`, instalado no venv pelo deploy), `senate-activity`,
    `senate-participation` e `tenure`.
 4. `state-tax-revenue` e `build`, que remonta `dist/index.html` com a presença e os impostos estaduais novos.
+5. `publish-data`, só com `PAINEL_DATA_RELEASE=1` em `/etc/painel/pipeline.env`: publica banco, snapshots e
+   revisões do Placar como release de dados no GitHub, com a tag `data-<data>` e o token de `PAINEL_GITHUB_TOKEN`
+   ([Dados e SQLite](data.md#publicar-a-base)). Em `--dry-run`, só monta o pacote em `data/releases/`.
 
 Uma etapa que falha deixa a execução parcial, com e-mail, e as seguintes continuam; só a importação
 do histórico no banco pode marcar a execução como falha, sem tocar o banco publicado. `--only a,b` e

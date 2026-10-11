@@ -5,17 +5,24 @@ Uso: python3 scripts/publish_data.py [--tag data-AAAA-MM-DD] [--dry-run]
 O pacote reproduz o que `make deploy-data` envia ao servidor: cópia consistente do SQLite (compactada
 após VACUUM), os snapshots complementares que o site lê (sem os insumos de deploy/snapshots-local-only.txt)
 e as revisões humanas do Placar. `--dry-run` monta o pacote em data/releases/<tag>/ sem publicar.
+
+A publicação usa a API REST do GitHub, só com a biblioteca padrão. O token vem de PAINEL_GITHUB_TOKEN,
+GH_TOKEN ou GITHUB_TOKEN (permissão de conteúdo no repositório) ou, no computador de quem mantém o
+projeto, de `gh auth token`. O job mensal do servidor roda este script quando PAINEL_DATA_RELEASE=1.
 """
 import argparse
 import fnmatch
 import gzip
 import hashlib
 import json
+import os
 import shutil
 import sqlite3
 import subprocess
 import sys
 import tarfile
+import urllib.error
+import urllib.request
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -33,7 +40,14 @@ REVIEW_PATTERNS = ('chamber-vote-reviews-*.json', 'chamber-vote-segment-reviews-
 VOTES_INDEX = 'chamber-votes.json'
 VOTE_DETAILS_DIRECTORY = 'chamber-vote-details'
 DRAFT_SUFFIX = '.draft.json'
-SITE_URL = 'https://github.com/igoooooooooor/painelpublico'
+GITHUB_REPO = 'igoooooooooor/painelpublico'
+DEFAULT_BRANCH = 'main'
+API_URL = 'https://api.github.com'
+UPLOADS_URL = 'https://uploads.github.com'
+TAG_PREFIX = 'data-'
+TOKEN_VARIABLES = ('PAINEL_GITHUB_TOKEN', 'GH_TOKEN', 'GITHUB_TOKEN')
+DATA_LICENSE = 'CC BY 4.0'
+DATA_LICENSE_URL = 'https://creativecommons.org/licenses/by/4.0/deed.pt-br'
 
 
 def read_patterns(path):
@@ -262,8 +276,12 @@ def write_notes(out_dir, tag, manifest, has_reviews):
         'são critérios de triagem, não conclusões sobre conduta.',
         '',
         'Recoletar uma fonte pode produzir outro retrato: use a tag para citar esta fotografia. O pacote é distribuído sem garantia, '
-        'como está. O código do projeto está sob licença MIT; os dados pertencem às respectivas fontes públicas e seguem as '
-        'condições de uso de cada órgão. Veja o `LEGAL-NOTICE.md` do repositório.',
+        'como está.',
+        '',
+        f'**Licença:** esta compilação (banco, snapshots e revisões) está sob [{DATA_LICENSE}]({DATA_LICENSE_URL}): use, copie, '
+        'modifique e redistribua para qualquer fim, inclusive comercial, citando "Painel Público" e o link do release. '
+        'As informações em si são públicas e pertencem às respectivas fontes; o código do projeto está sob licença MIT. '
+        'Veja o `LEGAL-NOTICE.md` do repositório.',
         '',
     ]
     path = Path(out_dir) / 'NOTES.md'
@@ -297,30 +315,85 @@ def build_package(tag, db_path=DEFAULT_DB, snapshots_dir=DEFAULT_SNAPSHOTS, revi
     return out_dir, files + [manifest_path], notes_path
 
 
-def _run_gh(args, **kwargs):
-    return subprocess.run(['gh', *args], cwd=ROOT, text=True, **kwargs)
+def github_token(environ=None):
+    """Token do GitHub: variáveis de ambiente ou, como alternativa local, `gh auth token`."""
+    environ = os.environ if environ is None else environ
+    for name in TOKEN_VARIABLES:
+        if environ.get(name):
+            return environ[name].strip()
+    if shutil.which('gh'):
+        try:
+            result = subprocess.run(['gh', 'auth', 'token'], capture_output=True, text=True, check=False)
+        except OSError:
+            result = None
+        if result is not None and result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    return None
 
 
-def check_gh():
-    if shutil.which('gh') is None:
-        raise SystemExit('O comando gh (GitHub CLI) não está instalado: https://cli.github.com/')
-    status = _run_gh(['auth', 'status'], capture_output=True)
-    if status.returncode != 0:
-        raise SystemExit('gh não está autenticado; rode `gh auth login`.\n' + (status.stderr or status.stdout))
+def _request(url, token, method='GET', data=None, content_type=None, content_length=None):
+    headers = {'Accept': 'application/vnd.github+json', 'Authorization': f'Bearer {token}',
+               'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'painelpublico-publish-data'}
+    if content_type:
+        headers['Content-Type'] = content_type
+    if content_length is not None:
+        headers['Content-Length'] = str(content_length)
+    request = urllib.request.Request(url, data=data, method=method, headers=headers)
+    with urllib.request.urlopen(request, timeout=600) as response:
+        body = response.read()
+    return json.loads(body.decode('utf-8')) if body else {}
 
 
-def release_exists(tag):
-    return _run_gh(['release', 'view', tag], capture_output=True).returncode == 0
+def check_token(token):
+    if not token:
+        raise SystemExit('Sem token do GitHub: defina PAINEL_GITHUB_TOKEN (ou GH_TOKEN/GITHUB_TOKEN) ou rode `gh auth login`.')
 
 
-def publish_release(tag, files, notes_path, title=None):
-    if release_exists(tag):
+def release_exists(tag, token, repo=GITHUB_REPO, request=_request):
+    try:
+        request(f'{API_URL}/repos/{repo}/releases/tags/{tag}', token)
+    except urllib.error.HTTPError as error:
+        if error.code == 404:
+            return False
+        raise SystemExit(f'GitHub respondeu {error.code} ao consultar o release {tag}: {error.read().decode("utf-8", "replace")[:300]}')
+    return True
+
+
+def _content_type(path):
+    name = Path(path).name
+    if name.endswith('.json'):
+        return 'application/json'
+    if name.endswith('.gz'):
+        return 'application/gzip'
+    return 'application/octet-stream'
+
+
+def publish_release(tag, files, notes_path, title=None, token=None, repo=GITHUB_REPO, branch=DEFAULT_BRANCH,
+                    request=_request, log=print):
+    """Cria o release (e a tag, no último commit do branch) e anexa os arquivos pela API REST."""
+    check_token(token)
+    if release_exists(tag, token, repo, request):
         raise SystemExit(f'O release {tag} já existe no GitHub. Escolha outra tag (TAG=...) ou apague o release antes.')
-    command = ['release', 'create', tag, *[str(path) for path in files],
-               '--title', title or f'Dados {tag}', '--notes-file', str(notes_path)]
-    result = _run_gh(command)
-    if result.returncode != 0:
-        raise SystemExit(f'gh release create falhou (código {result.returncode}).')
+    payload = json.dumps({'tag_name': tag, 'target_commitish': branch, 'name': title or f'Dados {tag}',
+                          'body': Path(notes_path).read_text(encoding='utf-8'), 'draft': False, 'prerelease': False}).encode('utf-8')
+    try:
+        release = request(f'{API_URL}/repos/{repo}/releases', token, method='POST', data=payload,
+                          content_type='application/json')
+    except urllib.error.HTTPError as error:
+        raise SystemExit(f'GitHub respondeu {error.code} ao criar o release {tag}: {error.read().decode("utf-8", "replace")[:300]}')
+    upload_url = release['upload_url'].split('{', 1)[0]
+    for path in files:
+        path = Path(path)
+        log(f'enviando {path.name}')
+        with open(path, 'rb') as handle:
+            try:
+                request(f'{upload_url}?name={path.name}', token, method='POST', data=handle,
+                        content_type=_content_type(path), content_length=path.stat().st_size)
+            except urllib.error.HTTPError as error:
+                raise SystemExit(f'GitHub respondeu {error.code} ao enviar {path.name}: '
+                                 f'{error.read().decode("utf-8", "replace")[:300]}. O release {tag} ficou incompleto; '
+                                 'apague-o no GitHub e rode de novo.')
+    return release.get('html_url') or f'https://github.com/{repo}/releases/tag/{tag}'
 
 
 def default_tag(today=None):
@@ -339,9 +412,13 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     tag = args.tag or default_tag()
+    if not tag.startswith(TAG_PREFIX):
+        raise SystemExit(f'A tag de dados precisa começar com {TAG_PREFIX!r} (ex.: {default_tag()}).')
+    token = None
     if not args.dry_run:
-        check_gh()
-        if release_exists(tag):
+        token = github_token()
+        check_token(token)
+        if release_exists(tag, token):
             raise SystemExit(f'O release {tag} já existe no GitHub. Escolha outra tag (TAG=...) ou apague o release antes.')
 
     out_dir, files, notes_path = build_package(tag, args.db, args.snapshots, args.reviews, args.output, commit=git_commit())
@@ -349,8 +426,8 @@ def main(argv=None):
         print(f'Pacote montado em {out_dir} (dry-run, nada publicado). Notas em {notes_path}.')
         return 0
 
-    publish_release(tag, files, notes_path, args.title)
-    print(f'Release {tag} publicado. Pacote local em {out_dir}.')
+    url = publish_release(tag, files, notes_path, args.title, token=token)
+    print(f'Release {tag} publicado: {url}. Pacote local em {out_dir}.')
     return 0
 
 

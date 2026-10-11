@@ -1,5 +1,6 @@
 import gzip
 import importlib.util
+import io
 import json
 import sqlite3
 import tarfile
@@ -103,6 +104,7 @@ class PublishDataTests(unittest.TestCase):
             self.assertIn("PAINEL_DB=na-lupa-data-2026-10-11.sqlite3 PAINEL_SNAPSHOTS=snapshots make dev", text)
             self.assertIn("2 arquivos de revisão", text)
             self.assertIn("LEGAL-NOTICE.md", text)
+            self.assertIn("CC BY 4.0", text)
 
     def test_package_without_reviews_skips_the_archive(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -138,13 +140,13 @@ class PublishDataTests(unittest.TestCase):
             db_path = root / "na-lupa.sqlite3"
             make_database(db_path)
             snapshots, reviews = make_tree(root)
-            with patch.object(PUBLISH, "check_gh") as check_gh, patch.object(PUBLISH, "publish_release") as publish, \
+            with patch.object(PUBLISH, "github_token") as github_token, patch.object(PUBLISH, "publish_release") as publish, \
                     patch.object(PUBLISH, "release_exists") as exists, patch("builtins.print"):
                 code = PUBLISH.main(["--dry-run", "--tag", "data-2026-10-11", "--db", str(db_path),
                                      "--snapshots", str(snapshots), "--reviews", str(reviews),
                                      "--output", str(root / "releases")])
             self.assertEqual(code, 0)
-            check_gh.assert_not_called()
+            github_token.assert_not_called()
             exists.assert_not_called()
             publish.assert_not_called()
             self.assertTrue((root / "releases" / "data-2026-10-11" / "manifest.json").exists())
@@ -155,7 +157,8 @@ class PublishDataTests(unittest.TestCase):
             db_path = root / "na-lupa.sqlite3"
             make_database(db_path)
             snapshots, reviews = make_tree(root)
-            with patch.object(PUBLISH, "check_gh"), patch.object(PUBLISH, "release_exists", return_value=True), \
+            with patch.object(PUBLISH, "github_token", return_value="token"), \
+                    patch.object(PUBLISH, "release_exists", return_value=True), \
                     patch.object(PUBLISH, "publish_release") as publish:
                 with self.assertRaises(SystemExit) as raised:
                     PUBLISH.main(["--tag", "data-2026-10-11", "--db", str(db_path), "--snapshots", str(snapshots),
@@ -181,6 +184,62 @@ class PublishDataTests(unittest.TestCase):
     def test_counts_use_brazilian_thousands_separator(self):
         self.assertEqual(PUBLISH._count(127850), "127.850")
         self.assertEqual(PUBLISH._count(765), "765")
+
+    def test_main_refuses_a_tag_without_the_data_prefix(self):
+        with self.assertRaises(SystemExit) as raised:
+            PUBLISH.main(["--dry-run", "--tag", "v1.0"])
+        self.assertIn("data-", str(raised.exception))
+
+    def test_github_token_prefers_environment_over_gh(self):
+        self.assertEqual(PUBLISH.github_token({"PAINEL_GITHUB_TOKEN": " abc "}), "abc")
+        self.assertEqual(PUBLISH.github_token({"GH_TOKEN": "ghs"}), "ghs")
+        with patch.object(PUBLISH.shutil, "which", return_value=None):
+            self.assertIsNone(PUBLISH.github_token({}))
+        with self.assertRaises(SystemExit):
+            PUBLISH.check_token(None)
+
+    def test_publish_release_creates_the_release_and_uploads_each_file(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            notes = root / "NOTES.md"
+            notes.write_text("# notas", encoding="utf-8")
+            files = [root / "manifest.json", root / "na-lupa-data-2026-10-11.sqlite3.gz"]
+            for path in files:
+                path.write_bytes(b"conteudo")
+            calls = []
+
+            def request(url, token, method="GET", data=None, content_type=None, content_length=None):
+                payload = data.read() if hasattr(data, "read") else data
+                calls.append((method, url, token, payload, content_type, content_length))
+                if url.endswith("/releases/tags/data-2026-10-11"):
+                    raise PUBLISH.urllib.error.HTTPError(url, 404, "Not Found", {}, io.BytesIO(b""))
+                if url.endswith("/releases") and method == "POST":
+                    return {"upload_url": "https://uploads.test/repos/x/y/releases/7/assets{?name,label}",
+                            "html_url": "https://github.com/x/y/releases/tag/data-2026-10-11"}
+                return {}
+
+            url = PUBLISH.publish_release("data-2026-10-11", files, notes, token="tok", repo="x/y", request=request,
+                                          log=lambda _m: None)
+            self.assertEqual(url, "https://github.com/x/y/releases/tag/data-2026-10-11")
+            self.assertEqual(calls[0][:3], ("GET", f"{PUBLISH.API_URL}/repos/x/y/releases/tags/data-2026-10-11", "tok"))
+            created = json.loads(calls[1][3])
+            self.assertEqual(calls[1][:2], ("POST", f"{PUBLISH.API_URL}/repos/x/y/releases"))
+            self.assertEqual((created["tag_name"], created["target_commitish"], created["name"], created["body"]),
+                             ("data-2026-10-11", "main", "Dados data-2026-10-11", "# notas"))
+            self.assertEqual([call[1] for call in calls[2:]], [
+                "https://uploads.test/repos/x/y/releases/7/assets?name=manifest.json",
+                "https://uploads.test/repos/x/y/releases/7/assets?name=na-lupa-data-2026-10-11.sqlite3.gz"])
+            self.assertEqual([call[4] for call in calls[2:]], ["application/json", "application/gzip"])
+            self.assertEqual([call[5] for call in calls[2:]], [8, 8])
+            self.assertEqual(calls[2][3], b"conteudo")
+
+    def test_publish_release_refuses_an_existing_tag(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            notes = Path(temp_dir) / "NOTES.md"
+            notes.write_text("x", encoding="utf-8")
+            with self.assertRaises(SystemExit) as raised:
+                PUBLISH.publish_release("data-2026-10-11", [], notes, token="tok", request=lambda *a, **k: {})
+            self.assertIn("já existe", str(raised.exception))
 
     def test_default_tag_uses_the_date(self):
         from datetime import date

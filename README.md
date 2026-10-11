@@ -23,7 +23,7 @@ Abra [localhost:8000](http://127.0.0.1:8000/). `make dev` gera `dist/index.html`
 
 A base já existente em `data/na-lupa.sqlite3` é preservada. Este repositório publica somente código, testes e documentação: banco, snapshots complementares, downloads e credenciais são locais.
 
-**Em um clone novo**, `make check`, `make build` e `make dev` não dependem de `editorial.json` nem de snapshots privados. `make db-init` prepara um banco vazio; para consultar a base parlamentar completa, baixe o release de dados mais recente (`make publish-data` gera um) ou obtenha os arquivos normalizados e importe-os conforme [Dados e SQLite](docs/data.md#publicar-a-base). O build não baixa dados. Presença, votos e perfis são complementos opcionais, coletados manualmente; no servidor, a cota do ano corrente é atualizada todo dia por um timer do systemd.
+**Em um clone novo**, `make fetch-data` baixa o [release de dados](https://github.com/igoooooooooor/painelpublico/releases) mais recente (banco, snapshots e revisões do Placar, com conferência de SHA-256), instala em `data/` e monta a página; depois, `make dev`. Sem rede, `make check`, `make build` e `make dev` funcionam com `make db-init` (banco vazio) e sem snapshots. O build não baixa dados. No servidor, a cota do ano corrente é atualizada todo dia e o release de dados sai todo mês por timers do systemd. Para assumir o projeto do zero, siga [Continuidade](docs/continuity.md).
 
 Sem Make:
 
@@ -39,6 +39,7 @@ python3 -m backend.server --port 8000
 | `make dev PORT=8001` | Rodar em outra porta |
 | `make build` | Gerar HTML em `dist/` |
 | `make check` | Build, sintaxe e testes locais |
+| `make fetch-data` | Baixar o release de dados mais recente, instalar em `data/` e montar a página; `TAG=data-AAAA-MM-DD` escolhe outro, `FORCE=1` substitui o banco |
 | `make db-init` | Criar/atualizar esquema sem apagar dados |
 | `make db-check` | Conferir integridade e cobertura numérica |
 | `make db-backup` | Backup SQLite consistente e datado |
@@ -62,7 +63,7 @@ python3 -m backend.server --port 8000
 | `make pipeline-status` | Último resultado das atualizações automáticas |
 | `make prod` | Rodar como em produção (cache, só localhost) |
 | `make deploy` / `make deploy-data` | Publicar código / banco e snapshots no servidor; push na `main` já publica o código ([Publicação](docs/deploy.md)) |
-| `make publish-data` | Publicar banco, snapshots e revisões do Placar como release de dados no GitHub; `DRY_RUN=1` só monta o pacote ([Dados e SQLite](docs/data.md#publicar-a-base)) |
+| `make publish-data` | Publicar banco, snapshots e revisões do Placar como release de dados no GitHub; `DRY_RUN=1` só monta o pacote; no servidor sai todo mês ([Dados e SQLite](docs/data.md#publicar-a-base)) |
 | `make deploy-status` | Ver se o site está no ar |
 
 ## Estrutura
@@ -84,6 +85,7 @@ dist/           app gerado, ignorado no Git
 - [Arquitetura](docs/architecture.md): divisão de responsabilidades e fluxo dos dados.
 - [Design system](docs/design-system.md): componentes, temas e bordas neutras.
 - [Dados e SQLite](docs/data.md): fontes, limitações, importação e backups.
+- [Continuidade](docs/continuity.md): como assumir o projeto do zero, o que é automático e o que depende de uma pessoa.
 - [Alertas da cota](docs/alerts.md): regras, prazos, cobertura, simulação e decisões registradas.
 - [Contribuição](CONTRIBUTING.md): branches curtas, commits por finalidade e verificações.
 - [Próximas etapas](docs/roadmap.md): expansão planejada, separada da cobertura entregue.
@@ -92,4 +94,4 @@ O servidor usa `127.0.0.1` por padrão e serve somente o app e a API. O código 
 
 ## Licença
 
-Código sob a [licença MIT](LICENSE). Os dados exibidos pertencem às fontes públicas indicadas em [Dados e SQLite](docs/data.md); veja também o [Aviso legal](LEGAL-NOTICE.md).
+Código sob a [licença MIT](LICENSE). Os [releases de dados](https://github.com/igoooooooooor/painelpublico/releases) estão sob [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.pt-br); as informações pertencem às fontes públicas indicadas em [Dados e SQLite](docs/data.md). Veja também o [Aviso legal](LEGAL-NOTICE.md).
