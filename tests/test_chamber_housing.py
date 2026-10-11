@@ -435,3 +435,15 @@ class ChamberHousingTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DefaultMonthsTests(unittest.TestCase):
+    def test_default_months_follow_the_requested_year(self):
+        from unittest.mock import patch
+        seen = {}
+        def fake_build(**kwargs):
+            seen.update(kwargs)
+            return {"profiles": {}}, {}
+        with patch.object(housing, "build_snapshot", fake_build), patch("builtins.print"):
+            housing.main(["--year", "2023"])
+        self.assertEqual(seen["months"], tuple(range(2, 13)))

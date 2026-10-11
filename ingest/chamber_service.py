@@ -582,7 +582,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.refresh and not args.collect:
         parser.error("--refresh requires --collect")
     try:
-        months = parse_months(args.months)
+        months = parse_months(args.months) if args.months else closed_months(args.year)
         snapshot, failures = build_snapshot(
             year=args.year,
             months=months,

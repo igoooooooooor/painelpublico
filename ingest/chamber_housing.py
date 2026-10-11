@@ -877,7 +877,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--year", type=int, default=DEFAULT_YEAR, help="ano da consulta (padrão: ano corrente)")
     parser.add_argument(
-        "--months", type=parse_months, default=DEFAULT_MONTHS,
+        "--months", type=parse_months, default=None,
         help="meses separados por vírgula ou intervalos como 1-9 (padrão: meses já encerrados do ano)",
     )
     parser.add_argument(
@@ -891,7 +891,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--limit must be greater than zero")
     try:
         snapshot, failures = build_snapshot(
-            year=args.year, months=args.months, collect=args.collect, limit=args.limit,
+            # Sem --months: os meses já encerrados do ano pedido (em 2023, a partir de fevereiro).
+            year=args.year, months=args.months or closed_months(args.year), collect=args.collect, limit=args.limit,
             refresh=args.refresh,
         )
     except (OSError, ValueError) as exc:
