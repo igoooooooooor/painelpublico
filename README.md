@@ -54,10 +54,12 @@ python3 -m backend.server --port 8000
 | `make collect-amendments YEAR=2026` | Coletar emendas por município e ano da proposta; valores empenhados e pagos separados |
 | `make collect-cities` | Coletar a base nacional de Minha cidade (IBGE e TSE); reconstrução offline em [Dados e SQLite](docs/data.md) |
 | `make collect-elections` | Ligar a lista atual às candidaturas de 2026 no TSE; depois rode `make build` |
-| `make collect-mandate-cost` | Coletar folha e moradia do ano corrente para o custo do mandato; depois `python3 -m ingest.mandate_cost_composition` ([Dados e SQLite](docs/data.md)) |
-| `make collect-mandate-history` | Coletar 2023–2025 e recompor o custo do mandato desde fev/2023 (faça `make db-backup` antes) |
+| `make collect-mandate-cost` | Coletar folha e moradia da Câmara nos meses já encerrados do ano, para o custo do mandato |
+| `make collect-mandate-history` | Coletar os anos fechados do mandato na Câmara e recompor a média (faça `make db-backup` antes) |
 | `make update-daily` | Atualização diária da cota: coleta, importa em cópia, verifica e publica; no servidor roda por timer ([Publicação](docs/deploy.md)) |
-| `make pipeline-status` | Último resultado da atualização diária |
+| `make update-weekly` | Inventário do Plenário e fila editorial do Placar; no servidor roda por timer |
+| `make update-monthly` | Custo do mandato, histórico da cota, Senado e página; no servidor roda por timer |
+| `make pipeline-status` | Último resultado das atualizações automáticas |
 | `make prod` | Rodar como em produção (cache, só localhost) |
 | `make deploy` / `make deploy-data` | Publicar código / banco e snapshots no servidor; push na `main` já publica o código ([Publicação](docs/deploy.md)) |
 | `make deploy-status` | Ver se o site está no ar |
