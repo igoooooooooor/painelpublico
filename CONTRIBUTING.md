@@ -3,23 +3,22 @@
 ## Branches e commits
 
 - `main`: versão validada compartilhada no GitHub.
-- Branch curta por tarefa: `codex/feature-name`, `codex/fix-name` ou `codex/chore-name`.
-- Não precisamos de `develop`, release branches ou Gitflow neste estágio.
+- Branch curta por tarefa: `feat/feature-name`, `fix/fix-name` ou `chore/chore-name`.
 - Commits pequenos e coerentes: `feat: ...`, `fix: ...`, `refactor: ...`, `docs: ...`, `test: ...`, `chore: ...`. Descrição clara em inglês; o prefixo indica o tipo.
 - Execute `make check`, revise `git diff --check` e confira a interface antes de integrar. Use fast-forward quando possível; evite reescrever histórico compartilhado.
 - Não versionar qualquer conteúdo de `data/` (inclusive snapshots complementares), SQLite, downloads, caches, backups, `.env`, chaves ou `dist/`. Versione somente modelos sem credenciais, como `.env.example`.
 - Antes de enviar, revise `git diff --cached` e `git diff --cached --name-only`. Adicione arquivos explicitamente e envie apenas a branch de trabalho; nunca use `git push --all`, `--mirror` ou publique branches de arquivo local. Remover um segredo do último commit não o remove dos anteriores.
 
 ```sh
-git switch -c codex/change-name
+git switch -c feat/change-name
 make check
 git add <changed-files>
 git commit -m "feat: describe delivered behavior"
 git switch main
-git merge --ff-only codex/change-name
+git merge --ff-only feat/change-name
 ```
 
-O remoto é `https://github.com/igor05k/painelpublico.git`. Publicação de repositório e deploy são decisões separadas. O histórico público começa com a exportação revisada do código; o histórico anterior com dados fica somente no ambiente local.
+O remoto é `https://github.com/igoooooooooor/painelpublico.git`. Publicação de repositório e deploy são decisões separadas. O histórico público começa com a exportação revisada do código; o histórico anterior com dados fica somente no ambiente local.
 
 `make check` monta a interface sem snapshots privados e roda as verificações de sintaxe e testes locais. Os testes não fazem downloads nem dependem de `data/snapshots/editorial.json`.
 
