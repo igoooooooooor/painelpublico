@@ -56,7 +56,8 @@ def make_release_files(directory):
 
 
 def fake_release(directory, tag=TAG, **extra):
-    assets = [{"name": path.name, "browser_download_url": f"file://{path}"} for path in sorted(Path(directory).iterdir())]
+    assets = [{"name": path.name, "url": f"file://{path}", "browser_download_url": f"https://example.test/stale/{path.name}"}
+              for path in sorted(Path(directory).iterdir())]
     return {"tag_name": tag, "created_at": "2026-10-11T00:00:00Z", "html_url": f"https://example.test/{tag}",
             "draft": False, "prerelease": False, "assets": assets, **extra}
 
@@ -65,6 +66,13 @@ def local_downloader(url, destination, token=None, log=print):
     source = Path(url[len("file://"):])
     Path(destination).write_bytes(source.read_bytes())
     return Path(destination)
+
+
+class AssetUrlTests(unittest.TestCase):
+    def test_prefers_the_api_asset_url_over_the_name_based_download_link(self):
+        self.assertEqual(FETCH.asset_url({"url": "https://api/assets/1", "browser_download_url": "https://x/by-name"}),
+                         "https://api/assets/1")
+        self.assertEqual(FETCH.asset_url({"browser_download_url": "https://x/by-name"}), "https://x/by-name")
 
 
 class SelectReleaseTests(unittest.TestCase):

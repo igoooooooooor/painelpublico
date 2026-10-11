@@ -62,6 +62,11 @@ def get_json(url, token=None):
         raise FetchError(f'Sem acesso a {url}: {error.reason}') from error
 
 
+def asset_url(asset):
+    """URL do asset pela API (por ID): a URL por nome pode servir um arquivo antigo logo após um release refeito."""
+    return asset.get('url') or asset['browser_download_url']
+
+
 def download(url, destination, token=None, log=print):
     destination = Path(destination)
     request = urllib.request.Request(url, headers={**_headers(token), 'Accept': 'application/octet-stream'})
@@ -203,7 +208,7 @@ def fetch(tag=None, data_dir=DEFAULT_DATA_DIR, force=False, repo=GITHUB_REPO, to
     log(f'release {tag} ({release.get("html_url", "")})')
     download_dir = Path(data_dir) / 'releases' / tag
     download_dir.mkdir(parents=True, exist_ok=True)
-    manifest_path = downloader(assets['manifest.json']['browser_download_url'], download_dir / 'manifest.json', token, log)
+    manifest_path = downloader(asset_url(assets['manifest.json']), download_dir / 'manifest.json', token, log)
     manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
     for entry in manifest.get('files', []):
         asset = assets.get(entry['name'])
@@ -213,7 +218,7 @@ def fetch(tag=None, data_dir=DEFAULT_DATA_DIR, force=False, repo=GITHUB_REPO, to
         if target.is_file() and target.stat().st_size == entry['bytes'] and sha256_of(target) == entry['sha256']:
             log(f'  {entry["name"]}: já baixado e conferido')
             continue
-        downloader(asset['browser_download_url'], target, token, log)
+        downloader(asset_url(asset), target, token, log)
     found = verify_manifest(download_dir, manifest)
     summary = install_package(found, data_dir, force=force, log=log)
     if not keep_downloads:
