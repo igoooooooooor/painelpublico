@@ -952,7 +952,7 @@ def main(argv=None) -> int:
             max_expense_drop=args.max_expense_drop,
         )
         status = run_daily(config)
-        return 0 if status["result"] == "ok" else 1
+        return 0 if status["result"] != "failed" else 1
     if args.command == "monthly":
         names = lambda value: tuple(item.strip() for item in value.split(",") if item.strip())  # noqa: E731
         config = PipelineConfig(
@@ -961,11 +961,11 @@ def main(argv=None) -> int:
             period=parse_period(args.period) if args.period else None, only=names(args.only), skip=names(args.skip),
         )
         status = run_monthly(config)
-        return 0 if status["result"] == "ok" else 1
+        return 0 if status["result"] != "failed" else 1
     if args.command == "weekly":
         names = lambda value: tuple(item.strip() for item in value.split(",") if item.strip())  # noqa: E731
         status = run_weekly(PipelineConfig(data_dir=data_dir, db_path=db_path, job="weekly", only=names(args.only), skip=names(args.skip)))
-        return 0 if status["result"] == "ok" else 1
+        return 0 if status["result"] != "failed" else 1
     unit = getattr(args, "unit", "") or ""
     config = PipelineConfig(data_dir=data_dir, db_path=db_path,
                             job=next((job for job in ("monthly", "weekly") if job in unit), "daily"))

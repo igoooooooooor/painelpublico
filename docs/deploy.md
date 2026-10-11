@@ -36,7 +36,8 @@ visitante → Cloudflare (HTTPS, cache, proteção) → túnel → 127.0.0.1:800
 | O que mudou | Comando |
 |---|---|
 | Código ou telas | `make deploy` |
-| Banco ou snapshots (nova coleta/importação) | `make db-check` e depois `make deploy-data` (alias `deploy-db`). Os snapshots listados em `deploy/snapshots-local-only.txt` (insumos do custo do mandato) não são enviados; o servidor produz os seus no job mensal e eles ficam lá |
+| Banco ou snapshots (nova coleta/importação) | `make db-check` e depois `make deploy-data` (alias `deploy-db`). Os snapshots listados em `deploy/snapshots-local-only.txt` (insumos do custo do mandato) não são enviados; o servidor produz os seus no job mensal e eles ficam lá. Também envia as revisões do Placar (`data/reviews/chamber-vote-reviews-*.json` e `chamber-vote-segment-reviews-*.json`), que a fila editorial do servidor precisa para saber o que já foi revisado |
+| Revisões novas do Placar | `make deploy-data` (envia só o que mudou); sem isso, a fila semanal do servidor conta essas votações como sem revisão |
 | Cota do ano corrente | Nada: `painel-ingest.timer` atualiza no servidor todo dia (abaixo). `make deploy-data` continua válido para publicar uma base local, e substitui a do servidor |
 | Ver se está no ar | `make deploy-status` |
 
@@ -86,7 +87,7 @@ Ativar (uma vez), depois do `make deploy`, que instala as unidades:
 ```sh
 sudo install -m 0600 /opt/painel/app/deploy/pipeline.env.example /etc/painel/pipeline.env
 sudo nano /etc/painel/pipeline.env                      # destinatário e SMTP (Gmail: senha de app)
-sudo systemctl start painel-ingest.service && sudo journalctl -u painel-ingest -n 50   # primeira execução, assistida
+sudo systemctl start painel-ingest.service && sudo journalctl -u painel-ingest -n 50   # primeira execução, assistida; "parcial" sai com código 0
 sudo systemctl enable --now painel-ingest.timer painel-ingest-weekly.timer painel-ingest-monthly.timer
 ```
 
@@ -123,7 +124,8 @@ do histórico no banco pode marcar a execução como falha, sem tocar o banco pu
 
 Em um servidor novo, a primeira execução mensal coleta o histórico desde fevereiro de 2023 (folha e
 moradia de 513 deputados por 45 meses) e pode levar algumas horas; o timeout da unidade é 12 h. Rode-a
-assistida: `sudo systemctl start painel-ingest-monthly.service` e `journalctl -u painel-ingest-monthly -f`.
+assistida: `sudo systemctl start --no-block painel-ingest-monthly.service` e `journalctl -u painel-ingest-monthly -f`
+(sem `--no-block`, o `start` de uma unidade `oneshot` só devolve o terminal quando ela termina).
 Os insumos ficam em `/opt/painel/data/snapshots` e não são apagados pelo `make deploy-data`.
 
 ### Job semanal e fila editorial

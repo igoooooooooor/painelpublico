@@ -13,11 +13,15 @@ from fractions import Fraction
 import math
 import json
 from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from ingest.mandate_cost_audit import (COMPLEMENT_CATEGORY, build as build_audit, cents,
                                       observed_payroll_components)
 
-ROOT = Path(__file__).resolve().parents[1]
 from ingest import periods  # noqa: E402
 from ingest.periods import current_year, history_years, next_legislature_start  # noqa: E402
 

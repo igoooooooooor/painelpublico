@@ -28,6 +28,8 @@ from urllib.request import Request, urlopen
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 from ingest.periods import closed_months, current_year, parse_months as _parse_month_list  # noqa: E402
 
 # Padrões derivados da data: ano corrente e meses já encerrados (ver ingest/periods.py).

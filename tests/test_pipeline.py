@@ -380,6 +380,23 @@ class PipelineTests(unittest.TestCase):
         self.assertIn('painel-ingest.service falhou', self.sent[-1][1])
         self.assertIn('2025', self.sent[-1][2])
 
+    def test_cli_exit_code_is_zero_for_partial_and_one_for_failed(self):
+        self.collector_exit = 1
+        unavailable = document(senate_status='unavailable')
+        unavailable['expenses'] = [e for e in unavailable['expenses'] if e['sourceId'] != 'senado_ceaps']
+        self.next_document = unavailable
+        with mock.patch.object(pipeline, 'run_collector', self.fake_collector), \
+                mock.patch.object(pipeline, 'run_snapshot_collector', self.fake_snapshot_collector), \
+                mock.patch.object(pipeline, 'send_mail', self.fake_mail), redirect_stdout(StringIO()):
+            code = pipeline.main(['--db', str(self.config.db_path), '--data-dir', str(self.config.data_dir), 'daily', '--year', str(YEAR)])
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(self.config.status_path.read_text())['result'], 'partial')
+        self.next_document = document(period='2025')
+        with mock.patch.object(pipeline, 'run_collector', self.fake_collector), \
+                mock.patch.object(pipeline, 'send_mail', self.fake_mail), redirect_stdout(StringIO()):
+            code = pipeline.main(['--db', str(self.config.db_path), '--data-dir', str(self.config.data_dir), 'daily', '--year', str(YEAR)])
+        self.assertEqual(code, 1)
+
     def test_cli_status_reports_last_run(self):
         self.run_daily()
         out = StringIO()

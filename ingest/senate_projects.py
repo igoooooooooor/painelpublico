@@ -23,12 +23,12 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlencode, urlsplit
 from urllib.request import Request, urlopen
 
-from ingest import periods  # noqa: E402
-
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+from ingest import periods  # noqa: E402
 IMPORT_PATH = ROOT / "data" / "imports" / "legislative.json"
 RAW_CACHE = ROOT / "data" / "raw" / "senado-projetos"
 DEFAULT_OUTPUT = ROOT / "data" / "snapshots" / "senado-projetos.json"

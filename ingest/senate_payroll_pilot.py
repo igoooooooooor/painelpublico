@@ -22,6 +22,8 @@ from urllib.request import Request, urlopen
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 ROSTER_PATH = Path("data/imports/legislative.json")
 DEFAULT_CACHE = Path("data/raw/mandate-cost/senate-pilot/csv-schema.json")
 DEFAULT_OUTPUT = Path("data/snapshots/senate-payroll-pilot.json")

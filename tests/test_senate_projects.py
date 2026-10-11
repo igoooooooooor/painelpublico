@@ -160,7 +160,7 @@ class SenateProjectsTests(unittest.TestCase):
                 root=root, collect=True, request_json=request, today=date(2024, 1, 5)
             )
             projects = snapshot['profiles']['senado:5322']['projetos']
-            self.assertEqual(calls, [('2023-02-01', '2023-12-31'), ('2024-01-01', '2024-01-05')])
+            self.assertEqual(sorted(calls), [('2023-02-01', '2023-12-31'), ('2024-01-01', '2024-01-05')])  # consultas em paralelo: ordem varia
             self.assertEqual(snapshot['year'], 2024)
             self.assertEqual((snapshot['startDate'], snapshot['endDate']), ('2023-02-01', '2024-01-05'))
             self.assertEqual((projects['status'], projects['total']), ('imported', 1))
