@@ -218,6 +218,10 @@ def fetch(tag=None, data_dir=DEFAULT_DATA_DIR, force=False, repo=GITHUB_REPO, to
     summary = install_package(found, data_dir, force=force, log=log)
     if not keep_downloads:
         shutil.rmtree(download_dir, ignore_errors=True)
+        try:
+            download_dir.parent.rmdir()  # só se ficou vazia
+        except OSError:
+            pass
     summary['tag'] = tag
     return summary
 

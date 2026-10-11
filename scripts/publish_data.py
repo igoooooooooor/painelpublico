@@ -168,14 +168,15 @@ def package_snapshots(snapshots_dir, out_dir, tag, local_only_patterns=()):
 
 
 def package_reviews(reviews_dir, out_dir, tag):
-    """Revisões humanas do Placar (sem rascunhos). Devolve (None, []) quando não há nenhuma."""
+    """Revisões humanas do Placar na raiz da pasta (sem rascunhos nem auditorias). Devolve (None, []) quando não há nenhuma."""
     reviews_dir = Path(reviews_dir)
     packed = Path(out_dir) / f'reviews-{tag}.tar.gz'
     packed.unlink(missing_ok=True)
     if not reviews_dir.is_dir():
         return None, []
     with tarfile.open(packed, 'w:gz', compresslevel=9) as archive:
-        added = _add_tree(archive, reviews_dir, 'reviews', lambda relative: is_review_file(relative.name))
+        # Só a raiz de data/reviews/: as subpastas guardam auditorias e cópias intermediárias.
+        added = _add_tree(archive, reviews_dir, 'reviews', lambda relative: len(relative.parts) == 1 and is_review_file(relative.name))
     if not added:
         packed.unlink(missing_ok=True)
         return None, []

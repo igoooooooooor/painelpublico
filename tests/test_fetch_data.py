@@ -105,7 +105,7 @@ class FetchTests(unittest.TestCase):
             self.assertTrue((data_dir / "snapshots" / "arrecadacao.json").exists(), "arquivos locais sem equivalente ficam")
             self.assertTrue((data_dir / "snapshots" / "chamber-vote-details" / "aaa" / "1-2.json").exists())
             self.assertTrue((data_dir / "reviews" / "chamber-vote-reviews-2026-10-09.json").exists())
-            self.assertFalse((data_dir / "releases" / TAG).exists(), "downloads são apagados por padrão")
+            self.assertFalse((data_dir / "releases").exists(), "downloads são apagados por padrão, com a pasta")
             self.assertFalse(any(path.name.startswith(".") for path in data_dir.iterdir()), "sem temporários sobrando")
 
     def test_existing_database_requires_force_and_is_kept_as_backup(self):

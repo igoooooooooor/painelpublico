@@ -50,6 +50,8 @@ def make_tree(root):
     (reviews / "chamber-vote-segment-reviews-2026-10-09.json").write_text("[]", encoding="utf-8")
     (reviews / "chamber-vote-reviews-2023-12-31.draft.json").write_text("[]", encoding="utf-8")
     (reviews / "scoreboard-audit-2025.json").write_text("{}", encoding="utf-8")
+    (reviews / "scoreboard-audit-2025").mkdir()
+    (reviews / "scoreboard-audit-2025" / "chamber-vote-reviews-2026-10-09.json").write_text("[]", encoding="utf-8")
     return snapshots, reviews
 
 
