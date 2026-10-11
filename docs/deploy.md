@@ -36,8 +36,8 @@ visitante → Cloudflare (HTTPS, cache, proteção) → túnel → 127.0.0.1:800
 | O que mudou | Comando |
 |---|---|
 | Código ou telas | `make deploy` |
-| Banco ou snapshots (nova coleta/importação) | `make db-check` e depois `make deploy-data` (alias `deploy-db`). Os snapshots listados em `deploy/snapshots-local-only.txt` (insumos do custo do mandato) não são enviados; o servidor produz os seus no job mensal e eles ficam lá. Também envia as revisões do Placar (`data/reviews/chamber-vote-reviews-*.json` e `chamber-vote-segment-reviews-*.json`), que a fila editorial do servidor precisa para saber o que já foi revisado |
-| Revisões novas do Placar | `make deploy-reviews`: envia só `data/reviews/`, sem tocar o banco; depois `sudo systemctl start painel-ingest-weekly.service` no servidor. Sem isso, a fila semanal conta essas votações como sem revisão |
+| Banco ou snapshots (nova coleta/importação) | `make db-check` e depois `make deploy-data` (alias `deploy-db`). Os snapshots listados em `deploy/snapshots-local-only.txt` (insumos do custo do mandato) não são enviados; o servidor produz os seus no job mensal e eles ficam lá. As revisões do Placar não passam por aqui: estão em `reviews/`, no Git |
+| Revisões novas do Placar | Nada à parte: elas ficam em `reviews/`, no Git, e vão com o código no push na `main`. O semanal seguinte já as vê; para antecipar, `sudo systemctl start painel-ingest-weekly.service` no servidor |
 | Cota do ano corrente | Nada: `painel-ingest.timer` atualiza no servidor todo dia (abaixo). `make deploy-data` continua válido para publicar uma base local, e substitui a do servidor |
 | Ver se está no ar | `make deploy-status` |
 

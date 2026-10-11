@@ -92,6 +92,21 @@ class EditorialQueueTests(unittest.TestCase):
         self.assertEqual(json.loads(draft_path.read_text()), [])
         self.assertEqual(queue['scoreboard']['drafts']['removed'], ['5-1'])
 
+    def test_versioned_reviews_folder_is_read_and_wins_over_the_local_copy(self):
+        from ingest.review_paths import find_review, review_files
+        self.inventory('2026-10-11', [entry('1-1', '2026-09-30'), entry('2-1', '2026-10-01')])
+        repo = self.root / 'reviews'
+        repo.mkdir()
+        self.write(repo / 'chamber-vote-reviews-2026-10-09.json', [{'id': '1-1', 'status': 'confirmed', 'reviewedAt': '2026-10-09'}])
+        self.write(self.reviews / 'chamber-vote-reviews-2026-10-09.json', [{'id': '1-1', 'status': 'pending', 'reason': 'cópia antiga'}])
+        self.write(self.reviews / 'chamber-vote-reviews-2026-10-10.json', [{'id': '2-1', 'status': 'excluded', 'reason': 'antiga'}])
+        queue = editorial_queue.build_queue(self.root, self.today)
+        counts = queue['scoreboard']['counts']
+        self.assertEqual((counts['confirmed'], counts['excluded'], counts['unreviewed']), (1, 1, 0))
+        self.assertEqual(find_review(self.root, 'chamber-vote-reviews-2026-10-09.json'), repo / 'chamber-vote-reviews-2026-10-09.json')
+        self.assertEqual(find_review(self.root, 'chamber-vote-reviews-2026-10-10.json'), self.reviews / 'chamber-vote-reviews-2026-10-10.json')
+        self.assertEqual(sorted(review_files(self.root)), ['chamber-vote-reviews-2026-10-09.json', 'chamber-vote-reviews-2026-10-10.json'])
+
     def test_missing_inventory_is_reported_not_zero(self):
         queue = editorial_queue.build_queue(self.root, self.today)
         self.assertEqual(queue['scoreboard']['status'], 'unavailable')

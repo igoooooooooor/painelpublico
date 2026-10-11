@@ -101,24 +101,19 @@ O job semanal escreve `data/reviews/editorial-queue.md` e manda por e-mail quand
   (`PAINEL_MANDATE_START`), porque apaga o mandato anterior das fichas enquanto não existir a tela
   de histórico. Roteiro em [Publicação](deploy.md#troca-de-legislatura-roteiro-para-1º22027).
 
-### Por que as revisões do Placar não estão no servidor
+### Onde ficam as revisões do Placar
 
-As revisões são arquivos JSON escritos à mão em `data/reviews/`, no computador de quem revisa.
-Elas não estão no Git, porque toda a pasta `data/` fica fora do repositório, e não são
-coletadas de fonte nenhuma, porque são uma decisão editorial, não um dado oficial. Logo,
-nenhum job as cria e nenhum deploy as copia por padrão.
+As revisões são decisões editoriais escritas à mão, não dados coletados. Desde 11/10/2026 elas
+moram em `reviews/`, na raiz do repositório, versionadas no Git: revisar é commitar, e o deploy
+automático leva o arquivo ao servidor junto com o código, sem comando à parte. Isso também torna
+a revisão pública e auditável, com histórico. A pasta `data/reviews/` fica só com o que os jobs
+geram (inventário, rascunhos e fila) e continua sendo lida como alternativa para revisões antigas
+que ainda não foram movidas; com nome igual, a cópia versionada prevalece.
 
-O job semanal roda no servidor e pergunta "quais candidatos já têm revisão?" olhando a pasta
-`data/reviews/` de lá. Em um servidor que nunca recebeu as revisões, a resposta é nenhuma, e a
-fila lista todos os candidatos como sem revisão. Isso não é perda de dado: o catálogo publicado
-do Placar continua igual, porque ele vem dos snapshots, não da fila.
-
-Para o servidor saber o que já foi revisado, copie as revisões uma vez e sempre que fizer uma
-nova: `make deploy-reviews` envia só esses arquivos, sem tocar o banco nem os snapshots do
-servidor. Depois, `sudo systemctl start painel-ingest-weekly.service` lá refaz a fila. O
-comando é separado do `make deploy-data` de propósito: este também substitui o banco do
-servidor pela cópia local, e o banco do servidor é atualizado todo dia pelo job diário, ficando
-mais novo que a cópia local.
+Antes de 11/10 as revisões viviam só no computador de quem revisava, e por isso a primeira fila
+do servidor listou todas as votações como sem revisão. Para migrar: mova os arquivos
+`chamber-vote-reviews-*.json` e `chamber-vote-segment-reviews-*.json` de `data/reviews/` para
+`reviews/`, commite e faça o push.
 
 ## Como adicionar uma fonte nova ao pipeline
 

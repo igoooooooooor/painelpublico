@@ -222,8 +222,8 @@ Os votos individuais são conciliados com Sim, Não, Abstenção quando publicad
 e Total. Presidência e obstrução ficam separadas; pessoas sem linha na fonte
 não recebem um voto inventado.
 
-A revisão fica em `data/reviews/chamber-vote-reviews-2026-10-09.json`, fora do
-Git, com ID, status, data da revisão, título, resumo, significados de Sim/Não,
+A revisão fica em `reviews/chamber-vote-reviews-2026-10-09.json`, versionada no Git
+desde 11/10/2026 (antes, em `data/reviews/`, ainda lida como alternativa), com ID, status, data da revisão, título, resumo, significados de Sim/Não,
 links oficiais e evidências do método e da versão. Status `pending` exige um
 motivo e não publica o item. Status `excluded` exige motivo, data, fonte oficial
 e evidência; também não publica o item. A cobertura separa publicadas, excluídas
@@ -469,7 +469,7 @@ soma obstruções ao total (PL 3.954/2023); o Placar usa o total do relatório.
 
 O índice conjunto exige anos contíguos: 2023 só entra no site junto com 2024 e
 2025. A revisão de 2023 e as evidências ficam em
-`data/reviews/chamber-vote-reviews-2023-12-31.json` e
+`reviews/chamber-vote-reviews-2023-12-31.json` e
 `data/reviews/scoreboard-audit-2023/`, fora do Git.
 
 ## Levantamento de 2024

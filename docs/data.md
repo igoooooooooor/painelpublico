@@ -107,7 +107,7 @@ do ano nem do mandato. Campo não publicado,
 inclusive abstenção ou tema, permanece ausente.
 
 `make collect-votes THROUGH=2026-10-09` lê as revisões locais em
-`data/reviews/chamber-vote-reviews-2026-10-09.json` (e, quando existir,
+`reviews/chamber-vote-reviews-2026-10-09.json` (e, quando existir,
 `data/reviews/chamber-vote-segment-reviews-2026-10-09.json`, com destaques e emendas da
 mesma sessão; ver [Metodologia do Placar](voting-scoreboard.md)) e gera
 `data/snapshots/chamber-votes.json` e `data/snapshots/chamber-vote-details/`.

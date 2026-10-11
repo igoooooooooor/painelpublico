@@ -33,7 +33,8 @@ from backend.database import backup_database  # noqa: E402
 
 DEFAULT_DB = ROOT / 'data' / 'na-lupa.sqlite3'
 DEFAULT_SNAPSHOTS = ROOT / 'data' / 'snapshots'
-DEFAULT_REVIEWS = ROOT / 'data' / 'reviews'
+# Revisões versionadas em reviews/ desde 11/10/2026 (ingest/review_paths.py); data/reviews/ guarda só os gerados.
+DEFAULT_REVIEWS = ROOT / 'reviews'
 DEFAULT_OUTPUT = ROOT / 'data' / 'releases'
 LOCAL_ONLY_PATTERNS = ROOT / 'deploy' / 'snapshots-local-only.txt'
 REVIEW_PATTERNS = ('chamber-vote-reviews-*.json', 'chamber-vote-segment-reviews-*.json')
@@ -407,7 +408,7 @@ def main(argv=None):
     parser.add_argument('--title', default=None, help='título do release (padrão: "Dados <tag>")')
     parser.add_argument('--db', default=DEFAULT_DB, help='banco SQLite (padrão: data/na-lupa.sqlite3)')
     parser.add_argument('--snapshots', default=DEFAULT_SNAPSHOTS, help='pasta de snapshots (padrão: data/snapshots)')
-    parser.add_argument('--reviews', default=DEFAULT_REVIEWS, help='pasta de revisões (padrão: data/reviews)')
+    parser.add_argument('--reviews', default=DEFAULT_REVIEWS, help='pasta de revisões (padrão: reviews/, versionada)')
     parser.add_argument('--output', default=DEFAULT_OUTPUT, help='onde montar o pacote (padrão: data/releases)')
     parser.add_argument('--dry-run', action='store_true', help='só monta o pacote, sem publicar')
     args = parser.parse_args(argv)

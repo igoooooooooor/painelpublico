@@ -23,6 +23,7 @@ from ingest.chamber_vote_rules import _recorded_partial_tally, classify_vote
 from ingest.chamber_vote_segments import build_segments
 from ingest.chamber_vote_report import identify_participants, parse_roll_call
 from ingest.project_status import _atomic_bytes, _json_bytes, _valid_date, request_bytes, utc_now
+from ingest.review_paths import find_review
 
 VOTE_ID = re.compile(r'[0-9]+-[0-9]+')
 CHOICES = {'Sim': 'Sim', 'Não': 'Não', 'Abstenção': 'Abstenção',
@@ -426,13 +427,14 @@ def main(argv=None):
     try:
         parts, entries, caches, segment_reviews = [], {}, {}, []
         for through in throughs:
-            reviews_path = args.reviews or args.root / 'data' / 'reviews' / f'chamber-vote-reviews-{through}.json'
+            # Revisões versionadas em reviews/, com data/reviews/ como alternativa (ingest/review_paths.py).
+            reviews_path = args.reviews or find_review(args.root, f'chamber-vote-reviews-{through}.json')
             inventory = json.loads((args.root / 'data' / 'reviews' / f'chamber-vote-inventory-{through}.json').read_text())
             reviews = json.loads(reviews_path.read_text())
             parts.append(build_catalogue(inventory, reviews, root=args.root, collect=args.collect, refresh=args.refresh))
             # Destaques e emendas revisados do período; ligados depois de juntar os anos, porque podem
             # pertencer a uma votação principal de um ano anterior.
-            segments_path = args.root / 'data' / 'reviews' / f'chamber-vote-segment-reviews-{through}.json'
+            segments_path = find_review(args.root, f'chamber-vote-segment-reviews-{through}.json')
             if segments_path.exists():
                 segment_reviews.extend(json.loads(segments_path.read_text()))
             cache = (args.root / 'data' / 'raw' / 'chamber-vote-inventory'

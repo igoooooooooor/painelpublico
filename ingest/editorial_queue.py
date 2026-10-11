@@ -3,7 +3,8 @@
 Duas coisas são conferidas, sem rede:
 
 1. **Placar.** O inventário mais recente do ano corrente (``data/reviews/chamber-vote-inventory-<data>.json``)
-   é cruzado com todas as revisões locais (``chamber-vote-reviews-*.json``). Candidato sem revisão é
+   é cruzado com todas as revisões (``reviews/chamber-vote-reviews-*.json``, versionadas, e as antigas em
+   ``data/reviews/``). Candidato sem revisão é
    trabalho pendente; revisão ``pending`` continua listada com o motivo. O alerta de tipos do inventário
    (``typeGuard``) é repetido aqui, porque um turno de PEC classificado como emenda some da fila em silêncio.
 2. **Arquivos mantidos à mão.** ``arrecadacao.json`` (arrecadação federal, com ``ate``), a tabela de
@@ -33,6 +34,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from ingest.periods import today as reference_today  # noqa: E402
+from ingest.review_paths import review_files  # noqa: E402
 
 REVIEWS_DIR = ROOT / 'data' / 'reviews'
 QUEUE_NAME = 'editorial-queue'
@@ -69,11 +71,13 @@ def latest_inventory(reviews_dir: Path, year: int) -> tuple[Path, dict] | None:
     return path, payload
 
 
-def load_reviews(reviews_dir: Path) -> dict[str, dict]:
-    """Todas as revisões locais, por ID de votação; a revisão de data mais recente prevalece."""
+def load_reviews(reviews_dir: Path, root: Path | None = None) -> dict[str, dict]:
+    """Todas as revisões, por ID de votação: as versionadas em ``reviews/`` e as locais em ``data/reviews/``
+    (ingest/review_paths.py); entre arquivos, a data mais recente prevalece."""
     reviews: dict[str, dict] = {}
-    for stamp, path in sorted((REVIEW_PATTERN.search(p.name).group(1), p)
-                              for p in reviews_dir.glob('chamber-vote-reviews-*.json') if REVIEW_PATTERN.search(p.name)):
+    files = review_files(root) if root is not None else {p.name: p for p in reviews_dir.glob('chamber-vote-reviews-*.json')}
+    for stamp, path in sorted((REVIEW_PATTERN.search(name).group(1), path)
+                              for name, path in files.items() if REVIEW_PATTERN.search(name)):
         payload = _read_json(path, [])
         if not isinstance(payload, list):
             continue
@@ -93,13 +97,13 @@ def _entry_summary(entry: dict) -> dict:
     }
 
 
-def scoreboard_queue(reviews_dir: Path, year: int) -> dict:
+def scoreboard_queue(reviews_dir: Path, year: int, root: Path | None = None) -> dict:
     found = latest_inventory(reviews_dir, year)
     if found is None:
         return {'status': 'unavailable', 'detail': f'Nenhum inventário de {year} em {reviews_dir}.',
                 'unreviewed': [], 'pending': [], 'counts': {}}
     path, inventory = found
-    reviews = load_reviews(reviews_dir)
+    reviews = load_reviews(reviews_dir, root)
     unreviewed, pending, counts = [], [], {'candidates': 0, 'confirmed': 0, 'excluded': 0, 'pending': 0, 'unreviewed': 0}
     for entry in inventory['entries']:
         if not isinstance(entry, dict) or not entry.get('candidate'):
@@ -160,7 +164,7 @@ def review_draft(entry: dict) -> dict:
         'howTo': ('Confira o relatório nominal e cole o link em sources.rollCall; escreva title, summary, decisionLabel, '
                   'yesMeaning e noMeaning em linguagem simples; registre evidence.method/object/text; mude status para '
                   'confirmed, excluded (com reason, reviewedAt, sources e evidence) ou pending (com reason). '
-                  'Depois copie para chamber-vote-reviews-<data>.json e rode make collect-votes THROUGH=<data>.'),
+                  'Depois copie para reviews/chamber-vote-reviews-<data>.json, rode make collect-votes THROUGH=<data> e commite.'),
     }
 
 
@@ -280,7 +284,7 @@ def build_queue(root: Path = ROOT, reference: date | None = None, output_dir: Pa
     reference = reference or reference_today()
     reviews_dir = output_dir or (root / 'data' / 'reviews')
     previous = _read_json(reviews_dir / f'{QUEUE_NAME}.json', {})
-    board = scoreboard_queue(reviews_dir, reference.year)
+    board = scoreboard_queue(reviews_dir, reference.year, root)
     previous_ids = {item.get('id') for item in (previous.get('scoreboard') or {}).get('unreviewed', [])} if isinstance(previous, dict) else set()
     new_ids = sorted(item['id'] for item in board['unreviewed'] if item['id'] not in previous_ids)
     queue = {
