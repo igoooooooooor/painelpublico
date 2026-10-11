@@ -28,7 +28,9 @@ if str(ROOT) not in sys.path:
 
 from ingest import accounts
 
-YEAR = 2025
+from ingest.periods import current_year  # noqa: E402
+
+YEAR = current_year() - 1
 FINBRA_URL = "https://siconfi.tesouro.gov.br/siconfi/pages/public/consulta_finbra/finbra_list.jsf"
 CSV_FIELDS = (
     "Instituição", "Cod.IBGE", "UF", "População", "Coluna", "Conta",

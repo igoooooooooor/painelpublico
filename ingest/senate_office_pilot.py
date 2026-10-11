@@ -36,6 +36,7 @@ import sys
 import tempfile
 import time
 import unicodedata
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -46,8 +47,13 @@ from ingest.senate_payroll_pilot import EXPECTED_FIELDS, USER_AGENT  # noqa: E40
 MAP_PATH = Path(__file__).with_name('senate_office_map.json')
 DEFAULT_OUTPUT = Path('data/snapshots/senate-office-pilot.json')
 CSV_URL = 'https://www.senado.leg.br/transparencia/LAI/secrh/SF_ConsultaRemuneracaoServidoresParlamentares_{period}.csv'
+from ingest.periods import previous_month  # noqa: E402
+
 MANDATE_START = (2023, 2)
-LAST_PUBLISHED = (2026, 9)
+# Último mês pedido: o anterior ao corrente. Os meses mais recentes podem ainda não estar publicados
+# (404): até dois meses finais ausentes ficam registrados como não publicados, sem interromper a coleta.
+LAST_PUBLISHED = previous_month()
+UNPUBLISHED_TAIL_MONTHS = 2
 
 
 def competences(until=LAST_PUBLISHED):
@@ -175,17 +181,28 @@ def fetch(period: str, attempts: int = 3) -> bytes:
 def build(fetcher=fetch, map_path: Path = MAP_PATH, competences=COMPETENCES):
     offices, entries = load_map(map_path)
     months, sources = {}, []
-    for period in competences:
-        raw = fetcher(period)
+    unpublished = []
+    for index, period in enumerate(competences):
+        try:
+            raw = fetcher(period)
+        except HTTPError as error:
+            if error.code == 404 and index >= len(competences) - UNPUBLISHED_TAIL_MONTHS:
+                unpublished.append(period)
+                sources.append({'competence': period, 'url': CSV_URL.format(period=period.replace('-', '')),
+                                'status': 'not_published'})
+                continue
+            raise
         updated, rows = parse_csv(raw)
         sources.append({'competence': period, 'url': CSV_URL.format(period=period.replace('-', '')),
                         'sha256': hashlib.sha256(raw).hexdigest(), 'sourceUpdatedAt': updated, 'rows': len(rows)})
         months[period] = aggregate_month(rows, offices)
         del rows, raw  # nada das linhas sai desta função
+    if len(unpublished) == len(competences):
+        raise PilotError('Nenhum mês publicado no período pedido.')
     senators = []
     for entry in entries:
         identifier = entry['id']
-        series = [{'competence': period, **months[period][identifier]} for period in competences]
+        series = [{'competence': period, **months[period][identifier]} for period in competences if period in months]
         senators.append({'id': identifier, 'name': entry['name'], 'office': entry['office'], 'months': series})
     return {
         'schemaVersion': 1,
@@ -199,7 +216,7 @@ def build(fetcher=fetch, map_path: Path = MAP_PATH, competences=COMPETENCES):
             'linking': 'Tabela conferida em ingest/senate_office_map.json; sem correspondência aproximada.',
             'sharedOffice': 'Suplente em exercício e titular licenciado(a) com linhas na mesma lotação: subsídio do mês sem dono (mais_de_uma_linha).',
         },
-        'sources': sources, 'senators': senators,
+        'sources': sources, 'senators': senators, 'unpublished': unpublished,
     }
 
 

@@ -38,7 +38,9 @@ ATTENDANCE_GUIDE_URL = (
 USER_AGENT = "QuantoCusta/1.0 (public-data importer)"
 HTTP_TIMEOUT = 45
 HTTP_RETRIES = 1
-YEAR = 2026
+from ingest.periods import current_year  # noqa: E402
+
+YEAR = current_year()
 MANDATE_START = date(2023, 2, 1)
 
 
@@ -785,7 +787,7 @@ def build_mandate_snapshot(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Gera snapshot local de votações nominais do Senado")
-    parser.add_argument("--year", type=int, default=YEAR, help="ano do recorte (somente 2026)")
+    parser.add_argument("--year", type=int, default=YEAR, help="ano do recorte (padrão: ano corrente)")
     parser.add_argument("--mandate", action="store_true", help="inclui votações desde 1º de fevereiro de 2023")
     parser.add_argument("--through", type=date.fromisoformat, help="limita o recorte a YYYY-MM-DD")
     parser.add_argument("--collect", action="store_true", help="consulta a API oficial se o cache estiver ausente")

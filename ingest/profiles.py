@@ -35,6 +35,9 @@ RAW_PROFILES = ROOT / "data" / "raw" / "profiles"
 DEFAULT_OUTPUT = ROOT / "data" / "snapshots" / "perfis.json"
 SENATE_XML = RAW_LEGISLATIVE / "senadores-atual.xml"
 
+from ingest.periods import current_year  # noqa: E402
+
+CURRENT_YEAR = current_year()
 CHAMBER_API = "https://dadosabertos.camara.leg.br/api/v2"
 CHAMBER_LIST_URL = f"{CHAMBER_API}/deputados?itens=100&pagina=1"
 CHAMBER_PROJECTS_PERIOD = "PL, PLP e PEC apresentados desde 2023-02-01"
@@ -128,7 +131,7 @@ def _chamber(authority_id: str) -> tuple[str, str]:
 def _profile_page(authority: dict[str, Any]) -> str:
     chamber, identifier = _chamber(str(authority["id"]))
     if chamber == "camara":
-        return f"https://www.camara.leg.br/deputados/{identifier}?ano=2026"
+        return f"https://www.camara.leg.br/deputados/{identifier}?ano={CURRENT_YEAR}"
     return SENATE_PROFILE_PAGE.format(identifier)
 
 
@@ -626,18 +629,18 @@ def _office_section(authority: dict[str, Any], raw_root: Path, collect: bool, re
         return {
             "status": "unavailable", "amount": None, "months": {},
             "staffActive": None, "staffYear": None, "sourceUpdatedAt": None,
-            "sourceUrl": None, "fetchedAt": None, "period": "2026",
+            "sourceUrl": None, "fetchedAt": None, "period": str(CURRENT_YEAR),
             "detail": "A fonte de gabinete integrada nesta etapa é exclusiva da Câmara.",
         }
     try:
         from ingest.profile_office import load_office
         _, identifier = _chamber(str(authority["id"]))
-        return load_office(identifier, raw_root, collect=collect, refresh=refresh, year=2026)
+        return load_office(identifier, raw_root, collect=collect, refresh=refresh, year=CURRENT_YEAR)
     except Exception as error:
         return {
             "status": "unavailable", "amount": None, "months": {},
             "staffActive": None, "staffYear": None, "sourceUpdatedAt": None,
-            "sourceUrl": None, "fetchedAt": None, "period": "2026",
+            "sourceUrl": None, "fetchedAt": None, "period": str(CURRENT_YEAR),
             "detail": f"Coletor de gabinete indisponível ({type(error).__name__}).",
         }
 

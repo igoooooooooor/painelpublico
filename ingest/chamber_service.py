@@ -28,8 +28,11 @@ from urllib.request import Request, urlopen
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_YEAR = 2026
-DEFAULT_MONTHS = tuple(range(1, 10))
+from ingest.periods import closed_months, current_year, parse_months as _parse_month_list  # noqa: E402
+
+# Padrões derivados da data: ano corrente e meses já encerrados (ver ingest/periods.py).
+DEFAULT_YEAR = current_year()
+DEFAULT_MONTHS = closed_months(DEFAULT_YEAR)
 ROSTER_SOURCE_ID = "camara_deputies_current"
 SOURCE_LABEL = "Câmara dos Deputados — períodos de exercício parlamentar"
 SOURCE_BASE_URL = "https://www.camara.gov.br/SitCamaraWS/Deputados.asmx/ObterDetalhesDeputado"

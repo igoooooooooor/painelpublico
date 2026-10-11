@@ -519,8 +519,8 @@ remanescente no log do Codex e o comando utilizado; não se declara ausência
 absoluta de registros em todos os logs.
 
 ```sh
-python3 ingest/chamber_service.py --collect --year 2026 --months 1-9
-python3 ingest/chamber_service.py --year 2026 --months 1-9  # offline
+python3 ingest/chamber_service.py --collect            # ano corrente, meses já encerrados
+python3 ingest/chamber_service.py --year 2026 --months 1-9  # offline, recorte explícito
 python3 ingest/chamber_quota_audit.py                      # offline, banco somente leitura
 python3 -m ingest.mandate_cost_composition                 # offline
 make build
@@ -604,6 +604,16 @@ dos arquivos por ano da seção anterior, mais `chamber-payroll-{ano}.json` (fol
 individual) e `chamber-service-{ano}.json` (exercício, reconstruído offline do
 mesmo histórico em cache). 2026 segue a regra da Fase 3. Mesmas exigências por
 mês: exercício confirmado e as quatro partes.
+
+**Fim da janela derivado da data (desde 11/10/2026).** O último mês da composição deixou de ser
+fixo (`jul/2026`) e passou a ser o último mês cujo prazo de 90 dias para apresentar as notas da cota
+já encerrou na data da execução, a mesma regra dos [alertas](alerts.md): em 11/10/2026 é junho; a
+partir de 29/10, julho. Meses posteriores entram sozinhos a cada virada, sempre com a exigência das
+quatro partes. Os anos fechados do histórico, os meses já encerrados do ano corrente (`--months`),
+o último mês publicado da folha do Senado e a legislatura em vigor também são derivados da data em
+`ingest/periods.py`; `PAINEL_TODAY=AAAA-MM-DD` fixa a data de referência para reconstruir uma
+fotografia antiga. Na folha do Senado, até dois meses finais ainda não publicados (404) ficam
+registrados como `not_published`, sem interromper a coleta.
 
 ```sh
 for year in 2023 2024 2025; do python3 ingest/chamber_service.py --year $year --months 1-12; done

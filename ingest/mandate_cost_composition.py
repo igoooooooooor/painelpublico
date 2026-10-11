@@ -18,17 +18,30 @@ from ingest.mandate_cost_audit import (COMPLEMENT_CATEGORY, build as build_audit
                                       observed_payroll_components)
 
 ROOT = Path(__file__).resolve().parents[1]
-# Mandato atual (legislatura 57) até o último mês com as quatro partes publicadas em 2026.
+from ingest.periods import current_year, history_years, quota_closed_through, today  # noqa: E402
+
+# Mandato atual (legislatura 57) até o último mês cujo prazo de apresentação das notas da cota já
+# encerrou (90 dias após o mês; a mesma regra dos alertas). Até 11/10/2026 o limite era fixo em jul/2026.
+# PAINEL_TODAY=AAAA-MM-DD fixa a data de referência para reconstruções reproduzíveis.
 MANDATE_START = '2023-02'
-CURRENT_YEAR = 2026
-CURRENT_LAST_MONTH = 7
-HISTORY_YEARS = (2023, 2024, 2025)
-PERIODS = tuple(
-    f'{year}-{month:02d}'
-    for year in (*HISTORY_YEARS, CURRENT_YEAR)
-    for month in range(1, (CURRENT_LAST_MONTH if year == CURRENT_YEAR else 12) + 1)
-    if f'{year}-{month:02d}' >= MANDATE_START
-)
+CURRENT_YEAR = current_year()
+CURRENT_LAST_MONTH = quota_closed_through()[1] if quota_closed_through()[0] == CURRENT_YEAR else 0
+HISTORY_YEARS = history_years()
+
+
+def periods(reference=None) -> tuple[str, ...]:
+    """Meses do mandato até o último com prazo da cota encerrado na data de referência."""
+    reference = reference or today()
+    end_year, end_month = quota_closed_through(reference)
+    return tuple(
+        f'{year}-{month:02d}'
+        for year in range(int(MANDATE_START[:4]), end_year + 1)
+        for month in range(1, (end_month if year == end_year else 12) + 1)
+        if f'{year}-{month:02d}' >= MANDATE_START
+    )
+
+
+PERIODS = periods()
 # Lacunas confirmadas na própria fonte para todos os deputados: o mês entra na média
 # com as partes publicadas e a parte ausente fica vazia, sem virar zero.
 SOURCE_GAPS = {'2024-12': ('office',)}
@@ -278,11 +291,11 @@ def compact(people):
 
 
 def build(root=ROOT):
-    audit = build_audit(root, 2026)
+    audit = build_audit(root, CURRENT_YEAR)
     path = root / 'data/snapshots/chamber-service.json'
     service = json.loads(path.read_text()) if path.exists() else {}
     from ingest.chamber_quota_audit import build_audit as audit_quota
-    archive = root / 'data/raw/legislative/camara-2026.csv.zip'
+    archive = root / f'data/raw/legislative/camara-{CURRENT_YEAR}.csv.zip'
     quota_check = audit_quota(archive, root / 'data/na-lupa.sqlite3')['currentRoster']['sourceCompleteness'] if archive.exists() else {}
     for identifier, person in audit['profiles'].items():
         for period, row in person['parts']['quota'].items():

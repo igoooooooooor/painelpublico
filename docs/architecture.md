@@ -96,7 +96,7 @@ local e pela verificação de cobertura nacional.
 Os coletores de folha, moradia e exercício mantêm caches minimizados e snapshots
 locais. `ingest/chamber_quota_audit.py` reconcilia o arquivo CEAP com os registros
 importados, sem alterar o banco. `ingest/mandate_cost_composition.py` gera a
-composição aprovada de janeiro–julho/2026 e os motivos de exclusão de meses.
+composição do mandato até o último mês com prazo da cota encerrado (regra em `ingest/periods.py`) e os motivos de exclusão de meses.
 `backend/profiles.py` carrega `mandate-cost.json` pelo cache de mtime e anexa
 somente o registro da pessoa solicitada, exclusivamente para a Câmara e o período
 aprovado. Visitantes não iniciam coleta nem cálculo sobre o arquivo CEAP.

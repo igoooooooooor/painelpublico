@@ -70,7 +70,10 @@ arquivos anuais de 2023 até o ano corrente (dezenas de MB cada, lidos um por ve
 caches. Confira na primeira execução a linha `conciliacao:` do log dessa etapa (ou `projectsArchive` em
 `perfis.json`), que compara a lista de projetos dos arquivos com a da consulta antiga por deputado.
 
-Só uma execução por vez (lock em `data/status/pipeline.lock`). Os limites da guarda de regressão
+Os coletores derivam ano, meses encerrados e legislatura da data (`ingest/periods.py`), então as
+viradas de mês e de ano não exigem edição de código; `PAINEL_TODAY=AAAA-MM-DD` no ambiente fixa a
+data de referência quando for preciso reproduzir uma fotografia antiga. Só uma execução por vez
+(lock em `data/status/pipeline.lock`). Os limites da guarda de regressão
 são argumentos do comando (`--max-roster-drop`, `--max-expense-drop`); quando uma queda for legítima,
 rode uma vez à mão com limites maiores, confira e deixe o timer seguir. O banco, os backups e os
 caches ficam em `/opt/painel/data`; `/opt/painel/app/data` é um link para essa pasta, criado pelo

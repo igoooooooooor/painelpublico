@@ -137,7 +137,11 @@ def observed_payroll_components(observation):
     return result
 
 
-def build(root=ROOT, year=2026, months=tuple(range(1, 10))):
+def build(root=ROOT, year=None, months=None):
+    """Sem ``year``/``months``: ano corrente e meses já encerrados (ingest/periods.py)."""
+    from ingest.periods import closed_months, current_year
+    year = year or current_year()
+    months = tuple(months) if months is not None else closed_months(year)
     profiles = read_json(root / 'data/snapshots/perfis.json').get('profiles', {})
     people = existing_parts(root / 'data/na-lupa.sqlite3', profiles, year, months)
     # Preserve collector observations with their own schemas and provenance.
@@ -182,7 +186,7 @@ def build(root=ROOT, year=2026, months=tuple(range(1, 10))):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--year', type=int, default=2026)
+    parser.add_argument('--year', type=int, default=None, help='padrão: ano corrente')
     parser.add_argument('--root', type=Path, default=ROOT)
     args = parser.parse_args()
     result = build(args.root, args.year)

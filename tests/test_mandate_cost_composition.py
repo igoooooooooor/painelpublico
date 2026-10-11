@@ -124,9 +124,14 @@ class MandatePeriodTests(unittest.TestCase):
                                                 'sourceStatus': 'imported', 'amountCents': office}
             self.service[period] = {'period': period, 'status': 'in_office', 'daysInOffice': 30}
 
-    def test_period_covers_the_mandate_until_july_2026(self):
-        from ingest.mandate_cost_composition import PERIODS
-        self.assertEqual((PERIODS[0], PERIODS[-1], len(PERIODS)), ('2023-02', '2026-07', 42))
+    def test_period_covers_the_mandate_until_the_last_month_with_closed_quota_deadline(self):
+        from datetime import date
+        from ingest.mandate_cost_composition import periods
+        # 90 dias após o fim do mês (regra dos alertas): em 11/10/2026, junho; em 29/10/2026, julho.
+        window = periods(date(2026, 10, 11))
+        self.assertEqual((window[0], window[-1], len(window)), ('2023-02', '2026-06', 41))
+        self.assertEqual(periods(date(2026, 10, 29))[-1], '2026-07')
+        self.assertEqual(periods(date(2027, 2, 1))[-1], '2026-10')
 
     def test_confirmed_office_gap_keeps_the_month_with_the_part_empty(self):
         row = compose_month(self.parts, self.service['2024-12'], '2024-12')
@@ -166,6 +171,12 @@ class MandatePeriodTests(unittest.TestCase):
 
 class CompactSnapshotTests(unittest.TestCase):
     def test_compact_snapshot_expands_back_to_the_full_record(self):
+        from unittest import mock
+        from ingest import mandate_cost_composition
+        # Janela fixa no teste: o módulo deriva a sua da data de hoje.
+        patched = mock.patch.object(mandate_cost_composition, 'PERIODS', ('2026-06', '2026-07'))
+        patched.start()
+        self.addCleanup(patched.stop)
         import copy
         from backend.profiles import expand_mandate_cost
         from ingest.mandate_cost_composition import compact
