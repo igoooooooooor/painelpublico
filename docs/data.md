@@ -22,7 +22,7 @@ make import
 make db-check
 ```
 
-No servidor, essa sequência roda sozinha todo dia para o ano corrente, com backup, cópia de trabalho, guarda de regressão e aviso por e-mail: `python3 -m ingest.pipeline daily` (`make update-daily`), descrito em [Publicação](deploy.md#atualização-automática-dos-dados). Os demais coletores desta página continuam manuais.
+No servidor, essa sequência roda sozinha todo dia para o ano corrente, com backup, cópia de trabalho, guarda de regressão e aviso por e-mail: `python3 -m ingest.pipeline daily` (`make update-daily`), descrito em [Publicação](deploy.md#atualização-automática-dos-dados). O job mensal (`make update-monthly`) encadeia os coletores do custo do mandato, o histórico da cota, o Senado e a remontagem da página. O semanal (`make update-weekly`) refaz o inventário do Placar e monta a fila editorial, que também avisa sobre `arrecadacao.json`, a tabela de gabinetes do Senado, o exercício das contas municipais e as eleições; Placar, Minha cidade e eleições continuam decisões de uma pessoa.
 
 Os importadores atuais usam apenas a biblioteca padrão do Python. Downloads podem ser grandes. Os snapshots normalizados ficam em `data/imports/`, e os originais/cache em `data/raw/`. Nem todos os brutos são retidos; preserve os normalizados se precisar reconstruir exatamente a mesma fotografia. Recoletar uma fonte pode produzir outro retrato.
 
@@ -52,7 +52,26 @@ make build
 institucional, mandato, projetos e gabinete; respostas de detalhe com CPF e outros dados pessoais não são
 salvas integralmente. A coleta usa no máximo quatro consultas concorrentes. Falhas preservam a última
 observação disponível e sua data, com indicação de falha; não produzem valor zero. `--limit N` permite
-uma coleta curta de diagnóstico. Nenhum desses comandos agenda atualizações.
+uma coleta curta de diagnóstico. No servidor, a atualização diária roda `--collect` depois da cota
+([Publicação](deploy.md#atualização-automática-dos-dados)).
+
+**Projetos pelos arquivos anuais (desde 11/10/2026).** Com `--collect`, os projetos de cada deputado(a)
+vêm dos arquivos anuais da Câmara (`ingest/chamber_projects.py`), e não mais de uma consulta paginada por
+deputado: `arquivos/proposicoes/json/proposicoes-{ano}.json` (tipo, número, ementa e data de apresentação,
+o mesmo arquivo da situação dos projetos) e `arquivos/proposicoesAutores/json/proposicoesAutores-{ano}.json`
+(uma linha por assinatura, com `idDeputadoAutor` e `proponente`). O recorte é o mesmo — PL, PLP e PEC
+apresentados desde 1/2/2023, com coautorias — mas cada projeto é guardado uma vez e cada ficha lista os
+seus. Os arquivos ficam em `data/raw/projetos-situacao/camara/`; anos fechados ficam em cache e só o
+ano corrente é baixado de novo, por GET condicional (`If-None-Match`/`If-Modified-Since`), quando o cache
+passa de 20 horas (`--archive-max-age-hours`). Ano indisponível torna a seção parcial, sem total, e a
+observação completa anterior é preservada como desatualizada. Cada item ganha `apresentadaEm` e
+`proponente` (assinatura principal ou coautoria); a seção traz `method: arquivos-anuais`. Sem rede, o
+snapshot usa os caches das fichas; `--projects-source archive` reconstrói pelos arquivos em cache e
+`--projects-source api` mantém a consulta por deputado para diagnóstico. Na primeira coleta com o método
+novo, `projectsArchive.conciliacao` no snapshot (e a linha `conciliacao:` no terminal) compara, por
+deputado, a lista anterior da consulta por deputado com a dos arquivos: a equivalência entre os dois
+caminhos oficiais ainda não foi verificada com dados reais e deve ser conferida nessa execução antes de
+aceitar diferenças.
 
 Os coletores de perfis continuam sendo a fonte manual dos complementos para a lista completa; contatos, projetos, gabinete e presença têm a cobertura registrada em seus snapshots. A arrecadação federal (`arrecadacao.json`) é outro complemento atualizado manualmente, com fonte e data: use as receitas administradas pela Receita Federal (impostos e contribuições), não o total das receitas federais, que inclui receitas de outros órgãos que não são tributos. A estadual (`state-tax-revenue.json`) vem de `python3 -m ingest.state_tax_revenue`: soma ICMS, IPVA e ITCD do Anexo 3 do RREO (Siconfi) dos 27 estados, do último bimestre em que todos entregaram, antes das transferências aos municípios e do Fundeb; estado sem relatório não vira zero, e o build só usa o arquivo com os 27. Impostos municipais ainda ficam de fora, porque cidades pequenas só detalham a receita mensal a cada semestre. Os geradores da página e dos PDFs da amostra editorial foram removidos. `ingest/editorial/requirements.txt` só é necessário para as ferramentas opcionais de passagens e agregação eleitoral; não é requisito do app nem do build.
 
@@ -175,7 +194,7 @@ A reconciliação de 7/10/2026 reprocessa essa mesma fotografia do XML (`Metadad
 
 Há reembolsos associados a 509 dos deputados e 79 dos registros do Senado. Os demais devem aparecer como dados ausentes, não como zero. Outros 54 deputados e 10 registros do Senado têm notas em 2026 mas não estão nas listas atuais, como suplentes que deixaram o exercício: as fichas e os alertas deles continuam acessíveis, com o rótulo "fora da lista atual", e não entram em contagens, médias nem listas. A lista, o Placar e as comparações abrem a mesma ficha parlamentar. Os antigos detalhes e PDF de dez deputados e a análise editorial de despesas foram removidos.
 
-`frontend/scripts/profile-data.js` concentra a leitura do snapshot complementar, presença e votos. Contatos e situação da Câmara vêm do detalhe oficial de cada deputado; verba e equipe de gabinete vêm da página oficial, com ano, meses publicados e data de atualização. Projetos da Câmara abrangem PL, PLP e PEC apresentados desde 1/2/2023: total só é confirmado quando todas as páginas da consulta são lidas. O resumo dessa API não fornece a situação atual; a coleta separada da Etapa 3, descrita abaixo, consulta os IDs já listados e preserva lacunas. Contatos e participação/exercício do Senado vêm do XML reconciliado. Autoria do Senado usa a API substituta `/dadosabertos/processo`, com o filtro `codigoParlamentarAutor` validado; a cobertura está detalhada abaixo. Gabinete do Senado ainda não tem fonte integrada.
+`frontend/scripts/profile-data.js` concentra a leitura do snapshot complementar, presença e votos. Contatos e situação da Câmara vêm do detalhe oficial de cada deputado; verba e equipe de gabinete vêm da página oficial, com ano, meses publicados e data de atualização. Projetos da Câmara abrangem PL, PLP e PEC apresentados desde 1/2/2023, lidos dos arquivos anuais da Câmara (ver "Projetos pelos arquivos anuais", acima): total só é confirmado quando todos os anos foram lidos. O resumo dessa API não fornece a situação atual; a coleta separada da Etapa 3, descrita abaixo, consulta os IDs já listados e preserva lacunas. Contatos e participação/exercício do Senado vêm do XML reconciliado. Autoria do Senado usa a API substituta `/dadosabertos/processo`, com o filtro `codigoParlamentarAutor` validado; a cobertura está detalhada abaixo. Gabinete do Senado ainda não tem fonte integrada.
 
 Na coleta de 7/10/2026, o complemento contém os 595 IDs da lista: 513 deputados e 82 registros do Senado. Na Câmara, há e-mail para 513, telefone/endereço para 512, gasto de gabinete para 512 e equipe ativa para 512; dois perfis têm a seção de gabinete parcial. A consulta de projetos concluiu a paginação dos 513 perfis (quatro com zero resultados no recorte): são 35.746 associações entre autor e projeto, correspondentes a 19.878 IDs de proposição distintos, pois há coautorias. No Senado, o XML da fotografia de 6/10 informa e-mail para 78 e telefone para 80; 81 registros têm ao menos um desses contatos. Campos não publicados continuam sem valor. Essas contagens não ampliam o recorte de despesas no SQLite.
 
@@ -314,10 +333,18 @@ Não há ampliação do período de autoria nem substituição do snapshot origi
 make collect-project-status
 # Atualização explícita de todas as consultas:
 python3 ingest/project_status.py --collect --refresh
+# Só o que mudou: arquivos anuais vencidos (ano corrente após 20 h, anos fechados após uma semana) e
+# detalhes cujo andamento no arquivo é posterior à consulta; é o que a atualização diária roda.
+python3 ingest/project_status.py --collect --max-age-hours 20 --closed-year-max-age-hours 168
 # Reconstrução sem rede, mantendo a data real das consultas em cache:
 python3 ingest/project_status.py
 make build
 ```
+
+Sem `--max-age-hours`, um arquivo anual em cache nunca é baixado de novo e as situações ficam
+congeladas na data da primeira coleta. Com as validades, os arquivos são pedidos por GET condicional e um
+`304 Not Modified` só renova a data do cache. Um detalhe individual em cache é reconsultado quando o
+arquivo anual mostra `ultimoStatus.data` posterior à data da consulta; os demais ficam como estão.
 
 Os arquivos brutos e seus metadados (URL, data da consulta e SHA-256) ficam em
 `data/raw/projetos-situacao/`. O snapshot `data/snapshots/projetos-situacao.json`
@@ -411,7 +438,7 @@ No arquivo gerado pelo TSE em 07/10/2026 16:30:39 (1º turno), 551 dos 595 regis
 como senadores eleitos em 2022, com mandato até 2031; a ficha diz que a candidatura não foi encontrada, sem concluir que a
 pessoa não concorreu. Dos 551, 347 aparecem como eleitos (por QP, por média ou majoritários), 125 como suplentes, 69 como não
 eleitos, 6 no 2º turno de 25/10/2026 e 4 sem resultado no arquivo (`#NULO`). A ficha mostra um selo curto no cabeçalho e a frase
-completa, com fonte, data e método, em "Fontes e datas". O 2º turno exige nova coleta depois de 25/10.
+completa, com fonte, data e método, em "Fontes e datas". O 2º turno exige nova coleta depois de 25/10; o job semanal faz isso sozinho assim que o TSE regenera o arquivo ([eventos com data](deploy.md#eventos-com-data)).
 
 O snapshot `data/snapshots/eleicoes-2026.json` guarda só cargo, UF, número, nome de urna, partido, turno e situação de cada
 candidatura ligada, além de fonte, método e cobertura. `/api/c/perfil/<id>` o anexa à ficha como `eleicao2026`.
@@ -492,8 +519,8 @@ remanescente no log do Codex e o comando utilizado; não se declara ausência
 absoluta de registros em todos os logs.
 
 ```sh
-python3 ingest/chamber_service.py --collect --year 2026 --months 1-9
-python3 ingest/chamber_service.py --year 2026 --months 1-9  # offline
+python3 ingest/chamber_service.py --collect            # ano corrente, meses já encerrados
+python3 ingest/chamber_service.py --year 2026 --months 1-9  # offline, recorte explícito
 python3 ingest/chamber_quota_audit.py                      # offline, banco somente leitura
 python3 -m ingest.mandate_cost_composition                 # offline
 make build
@@ -585,6 +612,12 @@ deputado, e grava esse mês em `periodEnd` e `periods`. API e tela leem o perío
 gabinete só até julho, então o período continuou fev/2023–jul/2026. Para avançar, colete de novo os
 perfis (verba de gabinete) e as fontes do custo, rode `python3 -m ingest.mandate_cost_composition` e
 publique com `make deploy-data`.
+
+**Datas derivadas (desde 11/10/2026).** Os anos fechados do histórico, os meses já encerrados do ano
+corrente (`--months`), o último mês publicado da folha do Senado, o fim do mandato e a legislatura em vigor
+são derivados da data em `ingest/periods.py`; `PAINEL_TODAY=AAAA-MM-DD` fixa a data de referência para
+reconstruir uma fotografia antiga. Na folha do Senado, até dois meses finais ainda não publicados (404)
+ficam registrados como `not_published`, sem interromper a coleta.
 
 ```sh
 for year in 2023 2024 2025; do python3 ingest/chamber_service.py --year $year --months 1-12; done
@@ -813,7 +846,7 @@ Nesta leitura não houve totais inválidos, candidatos desconhecidos nem código
 municipais sem correspondência. Foram identificadas 6.749 candidaturas federais
 não eleitas nos votos, excluídas do destaque público.
 
-`--collect` completa caches; `--collect --refresh` atualiza fontes já guardadas.
+`--collect` completa caches; `--collect --refresh` atualiza fontes já guardadas; `--collect --refresh-election` atualiza só candidaturas e votos de 2026, por GET condicional (um `304` mantém o cache).
 Sem `--collect`, não há chamadas de rede. Respostas IBGE vazias ou inválidas não
 substituem caches válidos; uma falha de atualização mantém os dados anteriores e
 seu aviso. População de período anterior não substitui um cache mais recente por

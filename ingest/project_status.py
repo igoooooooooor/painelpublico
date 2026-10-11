@@ -16,6 +16,8 @@ import re
 import sys
 import tempfile
 import time
+from typing import NamedTuple
+from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -69,6 +71,55 @@ def request_bytes(url):
             time.sleep(0.5)
 
 
+class ArchiveResponse(NamedTuple):
+    """Resposta de um arquivo anual: 304 devolve conteúdo None e mantém o cache."""
+    status: int
+    content: bytes | None
+    last_modified: str | None
+    etag: str | None
+
+
+def request_archive(url, headers=None):
+    """GET condicional dos arquivos anuais (dezenas de MB): 304 evita baixar de novo o que não mudou."""
+    global _last_request
+    for attempt in range(2):
+        try:
+            time.sleep(max(0, 0.2 - (time.monotonic() - _last_request)))
+            _last_request = time.monotonic()
+            request = Request(url, headers={'Accept': 'application/json', 'User-Agent': 'QuantoCusta/1.0 (project-status collector)',
+                                            **(headers or {})})
+            try:
+                with urlopen(request, timeout=600) as response:
+                    return ArchiveResponse(response.status, response.read(), response.headers.get('Last-Modified'),
+                                           response.headers.get('ETag'))
+            except HTTPError as error:
+                if error.code == 304:
+                    return ArchiveResponse(304, None, None, None)
+                raise
+        except (OSError, TimeoutError):
+            if attempt:
+                raise
+            time.sleep(0.5)
+
+
+def _conditional_headers(meta):
+    headers = {}
+    if isinstance(meta, dict):
+        if meta.get('etag'):
+            headers['If-None-Match'] = meta['etag']
+        if meta.get('lastModified'):
+            headers['If-Modified-Since'] = meta['lastModified']
+    return headers
+
+
+def cache_age_hours(meta, now=None):
+    try:
+        consulted = datetime.fromisoformat(str(meta.get('consultadoEm')).replace('Z', '+00:00'))
+    except (AttributeError, ValueError, TypeError):
+        return None
+    return ((now or datetime.now(timezone.utc)) - consulted).total_seconds() / 3600
+
+
 def _valid_date(value):
     try:
         return isinstance(value, str) and datetime.fromisoformat(value.replace('Z', '+00:00')).tzinfo is not None
@@ -92,24 +143,47 @@ def _read_cache(path, url, validate):
         return None
 
 
-def cached_json(url, path, *, collect=False, refresh=False, request=request_bytes, validate=lambda value: isinstance(value, (dict, list))):
+def cached_json(url, path, *, collect=False, refresh=False, request=request_bytes, validate=lambda value: isinstance(value, (dict, list)),
+                max_age_hours=None, fetch=None):
+    """Lê o cache validado por hash; consulta a fonte só com ``collect`` e quando falta cache, ``refresh`` ou o cache
+    passou de ``max_age_hours``. Com ``fetch`` (GET condicional), um 304 renova a data do cache sem baixar de novo."""
     previous = _read_cache(path, url, validate)
-    if previous and not refresh:
+    expired = bool(previous) and max_age_hours is not None and (cache_age_hours(previous[1]) or 0) > max_age_hours
+    if previous and not refresh and not expired:
         return (*previous, None)
     if not collect:
         return (*previous, None) if previous else (None, None, 'Consulta ainda não coletada ou cache inválido.')
     try:
-        content = request(url)
+        extra = {}
+        if fetch is not None:
+            response = fetch(url, _conditional_headers(previous[1]) if previous else {})
+            if response.status == 304 and previous:
+                meta = {**previous[1], 'consultadoEm': utc_now(), 'notModified': True}
+                _atomic_bytes(path.with_suffix('.meta.json'), _json_bytes(meta))
+                return previous[0], meta, None
+            content = response.content
+            extra = {key: value for key, value in (('lastModified', response.last_modified), ('etag', response.etag)) if value}
+        else:
+            content = request(url)
         payload = json.loads(content)
         if not validate(payload):
             raise ValueError('Resposta oficial fora do contrato esperado')
-        meta = {'sourceUrl': url, 'consultadoEm': utc_now(), 'sha256': hashlib.sha256(content).hexdigest()}
+        meta = {'sourceUrl': url, 'consultadoEm': utc_now(), 'sha256': hashlib.sha256(content).hexdigest(), **extra}
         _atomic_bytes(path, content)
         _atomic_bytes(path.with_suffix('.meta.json'), _json_bytes(meta))
         return payload, meta, None
     except (OSError, TimeoutError, ValueError) as error:
         message = f'Falha na consulta ({type(error).__name__}); a observação anterior, se disponível, foi preservada.'
         return (*previous, message) if previous else (None, None, message)
+
+
+def detail_outdated(path, url, archive_stamp):
+    """Um detalhe em cache fica desatualizado quando o arquivo anual mostra andamento posterior à consulta."""
+    cached = _read_cache(path, url, lambda value: isinstance(value, dict))
+    if not cached:
+        return False
+    consulted = str(cached[1].get('consultadoEm') or '')[:10]
+    return bool(archive_stamp) and str(archive_stamp)[:10] > consulted
 
 
 def project_targets(snapshot_dir):
@@ -150,16 +224,20 @@ def _annotate(record, meta, error):
     return record
 
 
-def _chamber_statuses(targets, raw, options):
+def _chamber_statuses(targets, raw, options, archive=None):
     years = sorted({int(match.group(1)) for item in targets.values()
                     if (match := re.search(r'/(\d{4})\b', str(item.get('titulo', ''))))})
     records, matched, sources = {}, {}, []
+    archive = archive or {}
+    current_year = datetime.now().year
     for year in years:
-        if year < 1900 or year > datetime.now().year:
+        if year < 1900 or year > current_year:
             continue
         url = f'{CHAMBER}/arquivos/proposicoes/json/proposicoes-{year}.json'
+        max_age = archive.get('max_age_hours') if year == current_year else archive.get('closed_year_max_age_hours')
         payload, meta, error = cached_json(url, raw / 'camara' / f'proposicoes-{year}.json',
-            validate=lambda p: isinstance(p, dict) and isinstance(p.get('dados'), list), **options)
+            validate=lambda p: isinstance(p, dict) and isinstance(p.get('dados'), list), max_age_hours=max_age,
+            fetch=archive.get('fetch'), **options)
         sources.append({'sourceUrl': url, 'consultadoEm': meta.get('consultadoEm') if meta else None, 'detail': error})
         if payload is None:
             continue
@@ -186,9 +264,14 @@ def _chamber_statuses(targets, raw, options):
             record = unavailable(source_url, 'Projeto não encontrado nos arquivos anuais disponíveis.')
         # Detalhes só para IDs ausentes e para a referência normativa direta.
         if not observation or project_status_chamber.needs_detail(row) or record.get('grupo') in ('lei', 'emenda'):
-            payload, meta, error = cached_json(source_url, raw / 'camara' / f'projeto-{identifier}.json',
+            detail_path = raw / 'camara' / f'projeto-{identifier}.json'
+            # Só o que mudou: o detalhe é reconsultado quando o arquivo anual mostra andamento posterior à consulta.
+            detail_options = dict(options)
+            if observation and detail_outdated(detail_path, source_url, observation[0]):
+                detail_options['refresh'] = True
+            payload, meta, error = cached_json(source_url, detail_path,
                 validate=lambda p: isinstance(p, dict) and isinstance(p.get('dados'), dict)
-                    and str(p['dados'].get('id')) == identifier, **options)
+                    and str(p['dados'].get('id')) == identifier, **detail_options)
             if payload is not None and not error:
                 record = _annotate(project_status_chamber.normalize_status(payload['dados'], meta['consultadoEm'], source_url), meta, error)
             elif observation:
@@ -204,7 +287,7 @@ def _chamber_statuses(targets, raw, options):
     return records, sources
 
 
-def _senate_statuses(targets, raw, options):
+def _senate_statuses(targets, raw, options, archive=None):
     identifiers = sorted(targets, key=int)
     records, sources = {}, []
     for start in range(0, len(identifiers), 100):
@@ -242,17 +325,21 @@ def _senate_statuses(targets, raw, options):
     return records, sources
 
 
-def build_snapshot(*, root=ROOT, collect=False, refresh=False, request=request_bytes):
+def build_snapshot(*, root=ROOT, collect=False, refresh=False, request=request_bytes, fetch=None,
+                   max_age_hours=None, closed_year_max_age_hours=None):
+    """``max_age_hours`` e ``closed_year_max_age_hours`` reconsultam os arquivos anuais da Câmara (ano corrente e
+    anos fechados) quando o cache passa dessa idade; ``fetch`` habilita o GET condicional desses arquivos."""
     if refresh and not collect:
         raise ValueError('--refresh exige --collect')
     snapshot_dir = root / 'data' / 'snapshots'
     targets = project_targets(snapshot_dir)
     raw = root / 'data' / 'raw' / 'projetos-situacao'
     options = {'collect': collect, 'refresh': refresh, 'request': request}
+    archive = {'fetch': fetch, 'max_age_hours': max_age_hours, 'closed_year_max_age_hours': closed_year_max_age_hours}
     records, sources = {}, []
     for chamber, builder in (('camara', _chamber_statuses), ('senado', _senate_statuses)):
         if targets[chamber]:
-            house_records, house_sources = builder(targets[chamber], raw, options)
+            house_records, house_sources = builder(targets[chamber], raw, options, archive)
             records.update(house_records)
             sources.extend(house_sources)
     output = snapshot_dir / 'projetos-situacao.json'
@@ -283,9 +370,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--collect', action='store_true', help='consultar fontes oficiais quando falta cache')
     parser.add_argument('--refresh', action='store_true', help='atualizar todas as consultas e preservar observação anterior em falhas')
+    parser.add_argument('--max-age-hours', type=float, default=None,
+                        help='com --collect, reconsulta o arquivo anual do ano corrente quando o cache passa desta idade (ex.: 20)')
+    parser.add_argument('--closed-year-max-age-hours', type=float, default=None,
+                        help='idem para os anos fechados, cujos projetos ainda tramitam (ex.: 168, uma semana)')
     args = parser.parse_args()
     try:
-        result = build_snapshot(collect=args.collect, refresh=args.refresh)
+        result = build_snapshot(collect=args.collect, refresh=args.refresh, fetch=request_archive if args.collect else None,
+                                max_age_hours=args.max_age_hours, closed_year_max_age_hours=args.closed_year_max_age_hours)
     except (OSError, ValueError) as error:
         print(str(error), file=sys.stderr)
         return 1

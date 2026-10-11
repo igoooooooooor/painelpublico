@@ -23,6 +23,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlencode, urlsplit
 from urllib.request import Request, urlopen
 
+from ingest import periods  # noqa: E402
+
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -272,12 +274,13 @@ def _parse_projects(
 
 def fetch_senate_projects(
     authority_id: str,
-    year: int = 2026,
+    year: int | None = None,
     request_json: Callable[[str], Any] = _request_json,
     today: date | None = None,
     start_date: date | None = None,
 ) -> dict[str, Any]:
     """Fetch all matching rows; this API response is an unpaginated JSON array."""
+    year = year or (today or date.today()).year
     url = _project_url(authority_id, year, today, start_date)
     try:
         rows = request_json(url)
@@ -428,11 +431,12 @@ def build_snapshot(
     output: Path | None = None,
     collect: bool = False,
     refresh: bool = False,
-    year: int = 2026,
+    year: int | None = None,
     limit: int | None = None,
     request_json: Callable[[str], Any] = _request_json,
     today: date | None = None,
 ) -> tuple[dict[str, Any], dict[str, int]]:
+    year = year or (today or date.today()).year
     import_path = root / "data" / "imports" / "legislative.json"
     try:
         roster_payload = json.loads(import_path.read_text(encoding="utf-8"))
@@ -487,7 +491,7 @@ def build_snapshot(
     return snapshot, stats
 
 
-MANDATE_START = date(2023, 2, 1)
+MANDATE_START = periods.MANDATE_START
 
 
 def _mandate_year_ranges(end_date: date) -> list[tuple[int, date, date]]:
@@ -748,7 +752,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--collect", action="store_true", help="consulta a API oficial do Senado")
     parser.add_argument("--refresh", action="store_true", help="atualiza também caches completos")
-    parser.add_argument("--year", type=int, default=2026, help="ano de apresentação (padrão: 2026)")
+    parser.add_argument("--year", type=int, default=None, help="ano de apresentação (padrão: ano corrente)")
     parser.add_argument("--limit", type=int, help="limita o diagnóstico aos primeiros N senadores")
     parser.add_argument("--mandate", action="store_true", help="agrega o mandato atual desde 2023-02-01")
     parser.add_argument("--through", help="data final do mandato em AAAA-MM-DD (com --mandate)")

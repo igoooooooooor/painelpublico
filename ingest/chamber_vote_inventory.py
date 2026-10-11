@@ -233,10 +233,11 @@ def _omission_audit(listed, details, start, through, cache, *, collect, refresh,
                           'as decisões reais foram registradas.'}
 
 
-def collect_inventory(*, root=ROOT, start=date(2026, 1, 1), through=None, collect=False,
+def collect_inventory(*, root=ROOT, start=None, through=None, collect=False,
                       refresh=False, detail_limit=40, participant_limit=10, audit_unknown=False,
                       audit_omissions=False, request=request_bytes):
     through = through or date.today()
+    start = start or date(through.year, 1, 1)
     if (start.year != through.year or start > through or detail_limit < 0 or participant_limit < 0):
         raise ValueError('Período ou limites inválidos para o inventário anual.')
     cache = Path(root) / 'data' / 'raw' / 'chamber-vote-inventory' / f'{start}_{through}'
@@ -422,7 +423,7 @@ def render_report(inventory):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--year', type=int, default=2026)
+    parser.add_argument('--year', type=int, default=None, help='padrão: ano corrente')
     parser.add_argument('--start', type=date.fromisoformat,
                         help='Primeiro dia consultado; padrão 1º/1 do ano (use 2023-02-01 para o início do mandato).')
     parser.add_argument('--through', type=date.fromisoformat,
@@ -437,6 +438,7 @@ def main(argv=None):
                         help='Cruza a lista com eventos, pautas e votações por proposição do Plenário.')
     parser.add_argument('--root', type=Path, default=ROOT)
     args = parser.parse_args(argv)
+    args.year = args.year or (args.through or args.start or date.today()).year
     args.start = args.start or date(args.year, 1, 1)
     args.through = args.through or min(date.today(), date(args.year, 12, 31))
     if args.start.year != args.year:

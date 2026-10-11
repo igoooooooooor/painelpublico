@@ -23,7 +23,9 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-YEAR = 2026
+from ingest.periods import current_year  # noqa: E402
+
+YEAR = current_year()
 DOWNLOAD_TIMEOUT = 180
 USER_AGENT = "QuantoCusta/1.0 (public-data importer)"
 SOURCE_URL = "https://portaldatransparencia.gov.br/download-de-dados/emendas-parlamentares/UNICO"
@@ -670,7 +672,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Monta uma fotografia municipal de emendas parlamentares")
     parser.add_argument("--collect", action="store_true", help="atualiza a fonte oficial em data/raw e monta o snapshot")
     parser.add_argument("--refresh", action="store_true", help="força o download; exige --collect")
-    parser.add_argument("--year", type=int, default=YEAR, help="ano da proposta da emenda (padrão: 2026)")
+    parser.add_argument("--year", type=int, default=YEAR, help="ano da proposta da emenda (padrão: ano corrente)")
     args = parser.parse_args(argv)
     if args.refresh and not args.collect:
         parser.error("--refresh exige --collect")

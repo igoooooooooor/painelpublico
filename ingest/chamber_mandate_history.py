@@ -28,9 +28,13 @@ if str(ROOT) not in sys.path:
 from ingest.chamber_housing import load_roster  # noqa: E402
 from ingest.profile_office import load_office  # noqa: E402
 
-MANDATE_START = "2023-02"
-DEFAULT_YEARS = (2023, 2024, 2025)
-CURRENT_YEAR = 2026
+from ingest import periods  # noqa: E402
+from ingest.periods import current_year, history_years  # noqa: E402
+
+MANDATE_START = periods.MANDATE_START.strftime("%Y-%m")
+# Anos fechados do mandato e ano corrente, derivados da data (ingest/periods.py).
+DEFAULT_YEARS = history_years()
+CURRENT_YEAR = current_year()
 PRESENCE_URL = "https://www.camara.leg.br/deputados/{deputy_id}/presenca-plenario/{year}"
 USER_AGENT = "Mozilla/5.0 (PainelPublico)"
 DAY_PATTERN = re.compile(
@@ -228,8 +232,8 @@ def parse_years(value: str) -> tuple[int, ...]:
         years = tuple(int(part) for part in value.split(",") if part.strip())
     except ValueError as exc:
         raise argparse.ArgumentTypeError("years must be comma-separated integers") from exc
-    if not years or any(year < 2023 or year > 2025 for year in years):
-        raise argparse.ArgumentTypeError("years must be between 2023 and 2025")
+    if not years or any(year < DEFAULT_YEARS[0] or year >= CURRENT_YEAR for year in years):
+        raise argparse.ArgumentTypeError(f"years must be between {DEFAULT_YEARS[0]} and {CURRENT_YEAR - 1}")
     return years
 
 
@@ -237,7 +241,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--collect", action="store_true", help="consulta as páginas oficiais que faltam")
     parser.add_argument("--refresh", action="store_true", help="refaz páginas já coletadas; requer --collect")
-    parser.add_argument("--years", type=parse_years, default=DEFAULT_YEARS, help="anos (padrão: 2023,2024,2025)")
+    parser.add_argument("--years", type=parse_years, default=DEFAULT_YEARS,
+                        help="anos fechados do mandato (padrão: %s)" % ",".join(map(str, DEFAULT_YEARS)))
     parser.add_argument("--limit", type=int, help="limita a coleta aos primeiros N deputados da lista")
     args = parser.parse_args(argv)
     if args.refresh and not args.collect:

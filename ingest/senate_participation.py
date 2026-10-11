@@ -30,13 +30,16 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+from ingest import periods  # noqa: E402
 from ingest import senate_cost  # noqa: E402
 from ingest.senate_office_pilot import USER_AGENT, write_atomic  # noqa: E402
 
 ACTIVITY_PATH = ROOT / 'data' / 'snapshots' / 'senado-atividade.json'
 OUTPUT = ROOT / 'data' / 'snapshots' / 'senate-participation.json'
 LEAVES_DIR = ROOT / 'data' / 'raw' / 'senado-licencas'
-LEAVES_URL = 'https://legis.senado.leg.br/dadosabertos/senador/{code}/licencas.json?dataInicio=20230201'
+LEAVES_URL = ('https://legis.senado.leg.br/dadosabertos/senador/{code}/licencas.json?dataInicio='
+              + periods.MANDATE_START.strftime('%Y%m%d'))
 VOTED = {'Sim', 'Não', 'Abstenção', 'Presidente (art. 51 RISF)'}
 PRESENT_NO_VOTE = 'Presente – Não registrou voto'
 NOT_PRESENT = 'Não Compareceu'
@@ -81,7 +84,7 @@ def leaves(code: str, collect: bool):
     items = senate_cost._as_list((parliamentarian.get('Licencas') or {}).get('Licenca'))
     out = []
     for item in items:
-        if item.get('DataInicio') and item['DataInicio'] >= '2023-02-01':
+        if item.get('DataInicio') and item['DataInicio'] >= periods.MANDATE_START.isoformat():
             out.append({'start': item['DataInicio'][:10], 'end': (item.get('DataFim') or item.get('DataFimPrevista') or '')[:10] or None,
                         'type': item.get('DescricaoTipoAfastamento') or item.get('SiglaTipoAfastamento')})
     return sorted(out, key=lambda leave: leave['start'], reverse=True)

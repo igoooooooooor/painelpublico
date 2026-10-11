@@ -124,9 +124,10 @@ class MandatePeriodTests(unittest.TestCase):
                                                 'sourceStatus': 'imported', 'amountCents': office}
             self.service[period] = {'period': period, 'status': 'in_office', 'daysInOffice': 30}
 
-    def test_period_covers_the_mandate_until_july_2026(self):
-        from ingest.mandate_cost_composition import PERIODS
-        self.assertEqual((PERIODS[0], PERIODS[-1], len(PERIODS)), ('2023-02', '2026-07', 42))
+    def test_default_period_and_mandate_end_are_derived_from_the_date(self):
+        from ingest.mandate_cost_composition import MANDATE_END, MANDATE_START, PERIODS
+        self.assertEqual((MANDATE_START, MANDATE_END), ('2023-02', '2027-01'))
+        self.assertEqual((PERIODS[0], PERIODS[-1]), ('2023-02', '2026-07'))
 
     def test_period_ends_at_the_last_month_with_all_four_parts_published(self):
         from ingest.mandate_cost_composition import last_published_month, periods_through
@@ -179,6 +180,12 @@ class MandatePeriodTests(unittest.TestCase):
 
 class CompactSnapshotTests(unittest.TestCase):
     def test_compact_snapshot_expands_back_to_the_full_record(self):
+        from unittest import mock
+        from ingest import mandate_cost_composition
+        # Janela fixa no teste: o módulo deriva a sua da data de hoje.
+        patched = mock.patch.object(mandate_cost_composition, 'PERIODS', ('2026-06', '2026-07'))
+        patched.start()
+        self.addCleanup(patched.stop)
         import copy
         from backend.profiles import expand_mandate_cost
         from ingest.mandate_cost_composition import compact

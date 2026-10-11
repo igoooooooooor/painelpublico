@@ -899,7 +899,7 @@ def _load_previous_snapshot(path: Path) -> dict[str, Any]:
 
 def build_snapshot(
     root: Path = ROOT,
-    year: int = 2026,
+    year: int | None = None,
     months: Iterable[int] | None = None,
     collect: bool = False,
     refresh: bool = False,
@@ -909,6 +909,7 @@ def build_snapshot(
 ) -> tuple[dict[str, Any], dict[str, int]]:
     if refresh and not collect:
         raise ValueError("--refresh requer --collect")
+    year = year or date.today().year
     if year < 2000:
         raise ValueError("Ano inválido")
     selected_months = sorted(set(months if months is not None else parse_months(None, year)))
@@ -1102,7 +1103,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--collect", action="store_true", help="consulta as fontes oficiais; sem isso, usa somente caches locais")
     parser.add_argument("--refresh", action="store_true", help="força nova consulta; exige --collect")
-    parser.add_argument("--year", type=int, default=2026)
+    parser.add_argument("--year", type=int, default=None, help="padrão: ano corrente")
     parser.add_argument("--months", help="meses como 1-9, 1..9 ou 1,2,3; por padrão, meses completos disponíveis")
     parser.add_argument("--limit", type=int, help="limita o número de perfis (amostra)")
     parser.add_argument("--ids", help="IDs públicos da Câmara separados por vírgula; aceita 220661 ou camara:220661")

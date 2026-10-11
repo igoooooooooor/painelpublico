@@ -1,5 +1,5 @@
-# Snapshots que só servem para montar mandate-cost.json e presenca.json localmente.
-# O servidor não os lê; `make deploy-data` não os envia e apaga cópias antigas na VPS.
+# Insumos de mandate-cost.json e presenca.json. `make deploy-data` não os envia: o servidor produz os seus
+# no job mensal (painel-ingest-monthly.timer) e eles ficam lá; o site não os lê diretamente.
 chamber-payroll*.json
 chamber-housing*.json
 chamber-service*.json

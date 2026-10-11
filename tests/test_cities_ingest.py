@@ -306,3 +306,45 @@ class CitiesIngestTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ElectionRefreshTests(unittest.TestCase):
+    """--refresh-election baixa só candidaturas e votos de 2026, por GET condicional; 304 mantém o cache."""
+
+    def test_refresh_keys_only_touch_election_sources_and_304_keeps_files(self):
+        import io
+        import json
+        import tempfile
+        import zipfile
+        from urllib.error import HTTPError
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            where = cities.paths(root)
+            for key in ("municipalities", "population", "crosswalk", "municipal_candidates", "state_candidates"):
+                where[key].parent.mkdir(parents=True, exist_ok=True)
+                where[key].write_text("[]", encoding="utf-8")
+                where[f"{key}_meta"].write_text(json.dumps({"fetchedAt": "2026-10-07T00:00:00+00:00", "status": "available",
+                                                            "lastModified": "Wed, 07 Oct 2026 19:30:00 GMT"}), encoding="utf-8")
+            buffer = io.BytesIO()
+            with zipfile.ZipFile(buffer, "w") as archive:
+                archive.writestr("votacao_candidato_munzona_2026_SP.csv", "x")
+            where["votes"].write_bytes(buffer.getvalue())
+            where["votes_meta"].write_text(json.dumps({"fetchedAt": "2026-10-07T00:00:00+00:00", "status": "available",
+                                                       "lastModified": "Wed, 07 Oct 2026 20:00:00 GMT"}), encoding="utf-8")
+            requested = []
+
+            def not_modified(request, timeout=0):
+                requested.append((request.full_url, request.get_header("If-modified-since")))
+                raise HTTPError(request.full_url, 304, "Not Modified", {}, None)
+
+            with patch.object(cities, "urlopen", not_modified):
+                outcomes = cities._fetch_sources(where, refresh_keys=cities.ELECTION_SOURCES)
+            self.assertEqual(outcomes["stateCandidates"], "available")
+            self.assertEqual(outcomes["votes"], "available")
+            self.assertEqual(outcomes["municipalCandidates"], "cached")
+            self.assertEqual(sorted(url for url, _ in requested),
+                             sorted([cities.TSE_CANDIDATES_URL.format(year=cities.YEAR), cities.TSE_VOTES_URL]))
+            self.assertTrue(all(since for _, since in requested))
+            self.assertTrue(json.loads(where["votes_meta"].read_text())["notModified"])
+            self.assertEqual(where["votes"].read_bytes(), buffer.getvalue())

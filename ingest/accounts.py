@@ -27,7 +27,10 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-YEAR = 2025
+from ingest.periods import current_year  # noqa: E402
+
+# Último exercício encerrado (a DCA do ano anterior é publicada ao longo do ano corrente).
+YEAR = current_year() - 1
 USER_AGENT = "QuantoCusta/1.0 (public-data importer)"
 DOWNLOAD_TIMEOUT = 90
 REQUEST_INTERVAL_SECONDS = 1.05
@@ -1070,7 +1073,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Monta uma fotografia offline das contas municipais no Siconfi")
     parser.add_argument("--collect", action="store_true", help="consulta caches locais e completa ausências na API oficial")
     parser.add_argument("--refresh", action="store_true", help="refaz as consultas já armazenadas; exige --collect")
-    parser.add_argument("--year", type=int, default=YEAR, help="exercício DCA (padrão: 2025)")
+    parser.add_argument("--year", type=int, default=YEAR, help="exercício DCA (padrão: ano anterior)")
     args = parser.parse_args(argv)
     if args.refresh and not args.collect:
         parser.error("--refresh exige --collect")

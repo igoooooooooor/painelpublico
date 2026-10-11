@@ -2,7 +2,15 @@
 
 O comando ``daily`` executa a atualização diária da cota (Câmara e Senado) do ano corrente:
 coleta, importa em uma cópia de trabalho do banco, verifica integridade e regressão, publica a
-cópia por troca atômica e avisa por e-mail. Cada etapa fica registrada em ``data/status/``.
+cópia por troca atômica e avisa por e-mail. Depois do banco, atualiza os snapshots das fichas
+(projetos pelos arquivos anuais da Câmara), a situação dos projetos e a autoria e as votações do
+Senado. O comando ``monthly`` roda a cadeia mensal do custo do mandato e do Senado (folha, moradia,
+exercício, gabinete e presença da Câmara, histórico da cota no banco, composição do custo, folha,
+exercício, presença, participação e tempo de mandato do Senado, impostos estaduais) e remonta a
+página. O comando ``weekly`` refaz o inventário de votações do Plenário, monta a fila editorial do
+Placar e dos arquivos mantidos à mão e executa os eventos com data pendentes (recoleta das eleições
+após o segundo turno), avisando quando há trabalho novo para uma pessoa. Cada etapa fica registrada
+em ``data/status/<job>.json``.
 
 Regras do orquestrador:
 
@@ -14,7 +22,9 @@ Regras do orquestrador:
 - falha ou resultado parcial gera aviso por e-mail quando o SMTP está configurado.
 
 Uso:
-    python3 -m ingest.pipeline daily [--dry-run] [--year AAAA]
+    python3 -m ingest.pipeline daily [--dry-run] [--year AAAA] [--db-only]
+    python3 -m ingest.pipeline monthly [--dry-run] [--period AAAA-MM] [--only a,b] [--skip c]
+    python3 -m ingest.pipeline weekly
     python3 -m ingest.pipeline status
     python3 -m ingest.pipeline test-mail
     python3 -m ingest.pipeline notify-failure --unit painel-ingest.service
@@ -47,10 +57,22 @@ if str(ROOT) not in sys.path:
 from backend.config import DB_PATH, ROSTER_SOURCES  # noqa: E402
 from backend.database import backup_database, check_database  # noqa: E402
 from backend.public_store import import_documents  # noqa: E402
+from ingest import calendar_events  # noqa: E402
+from ingest.periods import current_year, history_years, legislature_turnover, parse_period, previous_month, today as reference_today  # noqa: E402
 
 QUOTA_SOURCES = ("camara_ceap", "senado_ceaps")
 DAILY_BACKUP_PREFIX = "na-lupa-daily-"
 COLLECTOR_TIMEOUT_SECONDS = 1800
+SNAPSHOT_TIMEOUT_SECONDS = 3600
+# Etapas mensais podem levar horas na primeira execução (histórico de folha e moradia desde 2023).
+MONTHLY_TOOL_TIMEOUT_SECONDS = 4 * 3600
+LOCK_WAIT_SECONDS = 1800
+TURNOVER_ROSTER_DROP = 0.5
+JOB_LABELS = {"daily": "diária", "monthly": "mensal", "weekly": "semanal"}
+# Validade dos arquivos anuais da Câmara na situação dos projetos: ano corrente a cada execução diária;
+# anos fechados (projetos antigos ainda tramitam) uma vez por semana.
+ARCHIVE_MAX_AGE_HOURS = 20
+CLOSED_YEAR_MAX_AGE_HOURS = 24 * 7
 MAIL_SUBJECT_PREFIX = "[Painel Público]"
 RESULT_LABELS = {"ok": "concluída", "partial": "parcial", "failed": "FALHOU"}
 
@@ -71,8 +93,14 @@ class PipelineError(RuntimeError):
 class PipelineConfig:
     data_dir: Path = ROOT / "data"
     db_path: Path = DB_PATH
-    year: int = field(default_factory=lambda: utc_now().year)
+    year: int = field(default_factory=current_year)
     dry_run: bool = False
+    db_only: bool = False
+    job: str = "daily"
+    period: tuple[int, int] | None = None
+    only: tuple[str, ...] = ()
+    skip: tuple[str, ...] = ()
+    lock_wait_seconds: int = LOCK_WAIT_SECONDS
     keep_backups: int = 7
     max_roster_drop: float = 0.05
     max_expense_drop: float = 0.10
@@ -105,19 +133,25 @@ class PipelineConfig:
 
     @property
     def status_path(self) -> Path:
-        return self.status_dir / "daily.json"
+        return self.status_dir / f"{self.job}.json"
 
     @property
     def history_path(self) -> Path:
-        return self.status_dir / "daily-history.jsonl"
+        return self.status_dir / f"{self.job}-history.jsonl"
+
+    def wants(self, step_name: str) -> bool:
+        """Filtro --only/--skip por nome de etapa (prefixo: ``payroll`` cobre ``payroll-2026``)."""
+        if self.only and not any(step_name == name or step_name.startswith(name + "-") for name in self.only):
+            return False
+        return not any(step_name == name or step_name.startswith(name + "-") for name in self.skip)
 
 
 class Run:
     """Registro de uma execução: etapas, resultado e gravação atômica do status."""
 
-    def __init__(self, config: PipelineConfig, job: str = "daily"):
+    def __init__(self, config: PipelineConfig, job: str | None = None):
         self.config = config
-        self.job = job
+        self.job = job or config.job
         self.started = utc_now()
         self.steps: list[dict] = []
         self.result = "ok"
@@ -138,6 +172,7 @@ class Run:
             "job": self.job,
             "result": self.result,
             "year": self.config.year,
+            "period": f"{self.config.period[0]:04d}-{self.config.period[1]:02d}" if self.config.period else None,
             "dryRun": self.config.dry_run,
             "startedAt": self.started.isoformat(timespec="seconds"),
             "finishedAt": finished.isoformat(timespec="seconds"),
@@ -205,23 +240,30 @@ def _atomic_json(path: Path, payload) -> None:
 # ---- Lock -------------------------------------------------------------------------------------
 
 class Lock:
-    """Lock de arquivo não bloqueante; uma segunda execução simultânea é recusada."""
+    """Lock de arquivo compartilhado pelos jobs: espera até ``wait_seconds`` por outra execução e então recusa."""
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, wait_seconds: int = 0, poll_seconds: float = 15.0):
         self.path = path
+        self.wait_seconds = wait_seconds
+        self.poll_seconds = poll_seconds
         self.handle = None
 
     def __enter__(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.handle = self.path.open("a+")
-        try:
-            fcntl.flock(self.handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except OSError as error:
-            self.handle.close()
-            self.handle = None
-            raise PipelineError(
-                f"Outra execução do pipeline está em andamento (lock em {self.path})."
-            ) from error
+        deadline = time.monotonic() + self.wait_seconds
+        while True:
+            try:
+                fcntl.flock(self.handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except OSError as error:
+                if time.monotonic() >= deadline:
+                    self.handle.close()
+                    self.handle = None
+                    raise PipelineError(
+                        f"Outra execução do pipeline está em andamento (lock em {self.path})."
+                    ) from error
+                time.sleep(self.poll_seconds)
         self.handle.seek(0)
         self.handle.truncate()
         self.handle.write(f"{os.getpid()} {utc_now().isoformat(timespec='seconds')}\n")
@@ -354,10 +396,36 @@ def import_into_work(run: Run) -> dict:
         return counts
 
 
+def import_history_into_work(run: Run) -> None:
+    """Notas de anos anteriores (fev/2023 até o ano passado) importadas na cópia de trabalho, nunca no banco em uso."""
+    config = run.config
+    with run.step("import-history") as step:
+        completed = run_snapshot_collector(config, ("-m", "backend.quota_history", "--db", str(config.work_db)),
+                                           timeout=MONTHLY_TOOL_TIMEOUT_SECONDS)
+        stderr_tail = (completed.stderr or "").strip().splitlines()[-5:]
+        step.detail(exitCode=completed.returncode, stderrTail=stderr_tail)
+        if completed.returncode != 0:
+            raise PipelineError(f"Importação do histórico da cota terminou com código {completed.returncode}: "
+                                + " | ".join(stderr_tail))
+
+
+def publish_database(run: Run, importer, statuses: dict | None = None) -> None:
+    """Backup, cópia de trabalho, importação, verificação e troca atômica, nesta ordem."""
+    config = run.config
+    try:
+        backup(run)
+        stage(run)
+        importer(run)
+        verify(run, statuses or {})
+        publish(run)
+    finally:
+        cleanup(config)
+
+
 def _counts(db_path: Path) -> dict:
     """Contagens usadas no guarda de regressão; banco ausente conta como vazio."""
     result = {"roster": {sid: 0 for sid in ROSTER_SOURCES}, "expenses": {sid: 0 for sid in QUOTA_SOURCES},
-              "authorities": 0, "snapshotAt": None}
+              "authorities": 0, "historyNotes": 0, "snapshotAt": None}
     if not Path(db_path).is_file():
         return result
     with closing(sqlite3.connect(db_path, timeout=30)) as db:
@@ -370,6 +438,8 @@ def _counts(db_path: Path) -> dict:
                 result["expenses"][sid] = db.execute("SELECT COUNT(*) FROM expenses WHERE sourceId=?", (sid,)).fetchone()[0]
         if "authorities" in tables:
             result["authorities"] = db.execute("SELECT COUNT(*) FROM authorities").fetchone()[0]
+        if "quota_history_notes" in tables:
+            result["historyNotes"] = db.execute("SELECT COUNT(*) FROM quota_history_notes").fetchone()[0]
         if "meta" in tables:
             row = db.execute("SELECT value FROM meta WHERE key='snapshotAt'").fetchone()
             result["snapshotAt"] = row[0] if row else None
@@ -379,20 +449,26 @@ def _counts(db_path: Path) -> dict:
 def regression_problems(before: dict, after: dict, config: PipelineConfig, statuses: dict) -> list[str]:
     """Quedas acima do limite não são publicadas; fontes indisponíveis mantêm o valor anterior e passam."""
     problems = []
+    # Nos primeiros 45 dias de uma legislatura a lista oficial cresce a cada posse: uma lista menor que a
+    # anterior não é regressão, e o limite da queda fica relaxado (nunca aceita lista vazia).
+    roster_limit = TURNOVER_ROSTER_DROP if legislature_turnover(reference_today()) else config.max_roster_drop
     for sid in ROSTER_SOURCES:
         old, new = before["roster"][sid], after["roster"][sid]
         if statuses.get(sid) != "imported":
             continue
         if new == 0 and old > 0:
             problems.append(f"lista {sid} ficou vazia (antes {old})")
-        elif old and (old - new) / old > config.max_roster_drop:
-            problems.append(f"lista {sid} caiu de {old} para {new} (limite {config.max_roster_drop:.0%})")
+        elif old and (old - new) / old > roster_limit:
+            problems.append(f"lista {sid} caiu de {old} para {new} (limite {roster_limit:.0%})")
     for sid in QUOTA_SOURCES:
         old, new = before["expenses"][sid], after["expenses"][sid]
         if statuses.get(sid) not in ("imported", "partial"):
             continue
         if old and (old - new) / old > config.max_expense_drop:
             problems.append(f"notas {sid} caíram de {old} para {new} (limite {config.max_expense_drop:.0%})")
+    old, new = before["historyNotes"], after["historyNotes"]
+    if old and (old - new) / old > config.max_expense_drop:
+        problems.append(f"notas do histórico caíram de {old} para {new} (limite {config.max_expense_drop:.0%})")
     return problems
 
 
@@ -410,9 +486,11 @@ def verify(run: Run, statuses: dict) -> dict:
         if problems:
             raise PipelineError("Regressão detectada, publicação recusada: " + "; ".join(problems))
         run.summary.update({
-            "roster": after["roster"], "expenses": after["expenses"],
+            "roster": after["roster"], "expenses": after["expenses"], "historyNotes": after["historyNotes"],
             "snapshotAt": after["snapshotAt"], "previousSnapshotAt": before["snapshotAt"],
         })
+        if legislature_turnover(reference_today()):
+            run.summary["turnover"] = "início de legislatura: guarda da lista oficial relaxada por 45 dias"
         return after
 
 
@@ -432,6 +510,70 @@ def publish(run: Run) -> None:
         config.db_path.parent.mkdir(parents=True, exist_ok=True)
         _replace_file(config.work_db, config.db_path)
         step.detail(published=str(config.db_path))
+
+
+# ---- Snapshots das fichas (depois do banco) ---------------------------------------------------
+
+SNAPSHOT_STEPS = (
+    # (nome da etapa, argumentos depois do interpretador, texto no stdout que indica resultado parcial)
+    ("profiles", ("ingest/profiles.py", "--collect"), "completo=False"),
+    ("project-status", ("ingest/project_status.py", "--collect", "--max-age-hours", str(ARCHIVE_MAX_AGE_HOURS),
+                        "--closed-year-max-age-hours", str(CLOSED_YEAR_MAX_AGE_HOURS)), None),
+    ("senate-projects", ("ingest/senate_projects.py", "--collect", "--mandate"), None),
+    ("senate-activity", ("ingest/senate_activity.py", "--collect", "--mandate"), None),
+)
+
+
+def run_snapshot_collector(config: PipelineConfig, arguments: tuple[str, ...],
+                           timeout: int = SNAPSHOT_TIMEOUT_SECONDS) -> subprocess.CompletedProcess:
+    """Executa um coletor em subprocesso (``-m módulo`` ou caminho de script); substituível nos testes."""
+    if arguments[0] == "-m":
+        command = [config.python, *arguments]
+    else:
+        command = [config.python, str(ROOT / arguments[0]), *arguments[1:]]
+    log("ferramenta: " + " ".join(arguments))
+    return subprocess.run(
+        command, cwd=ROOT, capture_output=True, text=True, timeout=timeout,
+        env={**config.environ, "PYTHONUNBUFFERED": "1"},
+    )
+
+
+def run_tool(run: Run, name: str, arguments: tuple[str, ...], *, partial_marker: str | None = None,
+             timeout: int = SNAPSHOT_TIMEOUT_SECONDS, environ: dict | None = None, failure: str = "partial") -> bool:
+    """Roda um coletor como etapa. Falha vira resultado parcial (padrão) e a execução segue: cada coletor
+    preserva o snapshot anterior sozinho. Devolve True quando a etapa terminou sem ressalva."""
+    config = run.config
+    if not config.wants(name):
+        return False
+    with run.step(name) as step:
+        tool_config = config if environ is None else PipelineConfig(**{**config.__dict__, "environ": {**config.environ, **environ}})
+        try:
+            completed = run_snapshot_collector(tool_config, arguments, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            step.partial(f"Coletor excedeu {timeout}s; saída anterior preservada.")
+            return False
+        stdout_tail = (completed.stdout or "").strip().splitlines()[-6:]
+        stderr_tail = (completed.stderr or "").strip().splitlines()[-5:]
+        step.detail(exitCode=completed.returncode, stdoutTail=stdout_tail, stderrTail=stderr_tail)
+        if completed.returncode != 0:
+            message = (f"Coletor terminou com código {completed.returncode}; saída anterior preservada. "
+                       + " | ".join(stderr_tail or stdout_tail))
+            if failure == "failed":
+                raise PipelineError(message)
+            step.partial(message)
+            return False
+        if partial_marker and any(partial_marker in line for line in stdout_tail):
+            step.partial("Arquivos anuais incompletos; observações anteriores preservadas nas fichas afetadas.")
+            return False
+        return True
+
+
+def update_snapshots(run: Run) -> None:
+    """Snapshots diários depois do banco publicado: perfis, situação dos projetos, Senado."""
+    if run.config.db_only:
+        return
+    for name, arguments, partial_marker in SNAPSHOT_STEPS:
+        run_tool(run, name, arguments, partial_marker=partial_marker)
 
 
 def _replace_file(source: Path, destination: Path) -> None:
@@ -508,7 +650,8 @@ def compose_report(status: dict) -> tuple[str, str]:
     """Assunto e corpo em texto puro, legíveis no celular."""
     label = RESULT_LABELS.get(status["result"], status["result"])
     day = status["startedAt"][:10]
-    subject = f"{MAIL_SUBJECT_PREFIX} Atualização diária {label} em {day}"
+    job = JOB_LABELS.get(status.get("job"), status.get("job"))
+    subject = f"{MAIL_SUBJECT_PREFIX} Atualização {job} {label} em {day}"
     lines = [
         f"Resultado: {label}",
         f"Início: {status['startedAt']}   Fim: {status['finishedAt']}   Duração: {status['seconds']}s",
@@ -525,8 +668,32 @@ def compose_report(status: dict) -> tuple[str, str]:
             lines.append(f"  lista {sid}: {count}")
         for sid, count in (summary.get("expenses") or {}).items():
             lines.append(f"  notas {sid}: {count}")
+        if summary.get("historyNotes"):
+            lines.append(f"  notas do histórico: {summary['historyNotes']}")
         if summary.get("snapshotAt"):
             lines.append(f"  snapshotAt: {summary['snapshotAt']} (anterior: {summary.get('previousSnapshotAt')})")
+    if status.get("period"):
+        lines.append(f"Período de referência: {status['period']}")
+    if summary.get("turnover"):
+        lines.append(f"Aviso: {summary['turnover']}")
+    events = summary.get("events")
+    if events:
+        lines += ["", "Eventos com data:"]
+        for event in events.get("events", []):
+            lines.append(f"  {event['id']}: {event['status']} — {event['detail']}")
+    editorial = summary.get("editorial")
+    if editorial:
+        lines += ["", "Fila editorial:"]
+        if editorial.get("placar") == "ok":
+            lines.append(f"  Placar: {editorial.get('candidatos')} candidatos no inventário, "
+                         f"{editorial.get('semRevisao')} sem revisão, {editorial.get('pendentes')} pendentes com motivo")
+            if editorial.get("novos"):
+                lines.append("  Novos sem revisão desde a fila anterior: " + ", ".join(editorial["novos"]))
+        else:
+            lines.append(f"  Placar: inventário indisponível ({editorial.get('placar')})")
+        for warning in editorial.get("arquivosManuais") or []:
+            lines.append(f"  Arquivo mantido à mão: {warning}")
+        lines.append("  Detalhes: data/reviews/editorial-queue.md no servidor")
     lines += ["", "Etapas:"]
     for step in status.get("steps", []):
         line = f"  {step['name']}: {step['status']} ({step.get('seconds', '?')}s)"
@@ -535,7 +702,7 @@ def compose_report(status: dict) -> tuple[str, str]:
         lines.append(line)
         if step.get("sources"):
             lines.append("    fontes: " + ", ".join(f"{k}={v}" for k, v in step["sources"].items()))
-    lines += ["", "Status completo: data/status/daily.json no servidor."]
+    lines += ["", f"Status completo: data/status/{status.get('job', 'daily')}.json no servidor."]
     return subject, "\n".join(lines) + "\n"
 
 
@@ -544,7 +711,9 @@ def notify(run: Run, status: dict, mail_sender=send_mail) -> None:
     config = run.config
     record = {"name": "notify", "status": "ok", "startedAt": utc_now().isoformat(timespec="seconds")}
     mail = MailConfig.from_environ(config.environ)
-    should_mail = status["result"] != "ok" or (mail is not None and mail.on_success)
+    summary = status.get("summary") or {}
+    attention = bool(summary.get("editorial", {}).get("atencao") or summary.get("events", {}).get("attention"))
+    should_mail = status["result"] != "ok" or attention or (mail is not None and mail.on_success)
     if mail is None:
         record["mail"] = "não configurado (PAINEL_MAIL_TO e PAINEL_SMTP_HOST)"
         if status["result"] != "ok":
@@ -560,7 +729,8 @@ def notify(run: Run, status: dict, mail_sender=send_mail) -> None:
             log(record["mail"])
     else:
         record["mail"] = "sucesso sem aviso (PAINEL_MAIL_ON_SUCCESS desligado)"
-    ping_url = config.environ.get("PAINEL_HEALTHCHECK_URL")
+    ping_url = config.environ.get({"monthly": "PAINEL_HEALTHCHECK_URL_MONTHLY", "weekly": "PAINEL_HEALTHCHECK_URL_WEEKLY"}
+                                  .get(run.job, "PAINEL_HEALTHCHECK_URL"))
     if ping_url:
         record["ping"] = ping(ping_url if status["result"] == "ok" else ping_url.rstrip("/") + "/fail")
     record["finishedAt"] = utc_now().isoformat(timespec="seconds")
@@ -580,21 +750,15 @@ def ping(url: str) -> str:
 
 def run_daily(config: PipelineConfig, mail_sender=send_mail) -> dict:
     """Executa a atualização diária e devolve o status gravado. Nunca levanta exceção por falha de etapa."""
-    run = Run(config)
+    run = Run(config, "daily")
     log(f"atualização diária de {config.year}" + (" (dry-run)" if config.dry_run else ""))
     try:
-        with Lock(config.lock_path):
-            try:
-                collect(run)
-                payload = validate_document(run)
-                statuses = {s["id"]: s.get("status") for s in payload["sources"]}
-                backup(run)
-                stage(run)
-                import_into_work(run)
-                verify(run, statuses)
-                publish(run)
-            finally:
-                cleanup(config)
+        with Lock(config.lock_path, config.lock_wait_seconds):
+            collect(run)
+            payload = validate_document(run)
+            statuses = {s["id"]: s.get("status") for s in payload["sources"]}
+            publish_database(run, import_into_work, statuses)
+            update_snapshots(run)
     except PipelineError as error:
         run.error = str(error)
         run.downgrade("failed")
@@ -606,6 +770,119 @@ def run_daily(config: PipelineConfig, mail_sender=send_mail) -> dict:
     status = run.write(history=True)
     log(f"resultado: {RESULT_LABELS.get(status['result'], status['result'])}")
     return status
+
+
+def monthly_steps(config: PipelineConfig) -> list[tuple[str, tuple[str, ...], int]]:
+    """Cadeia mensal, na ordem de dependência. ``(nome, argumentos, timeout)``."""
+    reference = reference_today()
+    current = reference.year
+    years = (*history_years(reference), current)
+    steps: list[tuple[str, tuple[str, ...], int]] = []
+    for year in history_years(reference):
+        steps.append((f"legislative-{year}", ("ingest/legislative.py", "--year", str(year), "--output",
+                                               f"data/raw/legislative/history/legislative-{year}.json"), SNAPSHOT_TIMEOUT_SECONDS))
+    steps.append(("quota-history", ("ingest/quota_history.py",), SNAPSHOT_TIMEOUT_SECONDS))
+    for year in years:
+        payroll: tuple[str, ...] = ("ingest/chamber_payroll.py", "--collect", "--year", str(year))
+        if year != current:
+            payroll += ("--output", f"data/snapshots/chamber-payroll-{year}.json")
+        steps.append((f"payroll-{year}", payroll, MONTHLY_TOOL_TIMEOUT_SECONDS))
+        steps.append((f"housing-{year}", ("ingest/chamber_housing.py", "--collect", "--year", str(year)), MONTHLY_TOOL_TIMEOUT_SECONDS))
+        steps.append((f"service-{year}", ("ingest/chamber_service.py", "--collect", "--year", str(year)), MONTHLY_TOOL_TIMEOUT_SECONDS))
+    steps += [
+        ("chamber-mandate-history", ("ingest/chamber_mandate_history.py", "--collect"), MONTHLY_TOOL_TIMEOUT_SECONDS),
+        ("mandate-cost", ("-m", "ingest.mandate_cost_composition"), SNAPSHOT_TIMEOUT_SECONDS),
+        ("senate-office-pilot", ("ingest/senate_office_pilot.py",), SNAPSHOT_TIMEOUT_SECONDS),
+        ("senate-cost", ("ingest/senate_cost.py", "--collect"), SNAPSHOT_TIMEOUT_SECONDS),
+        ("senate-attendance", ("ingest/senate_attendance.py", "--collect"), MONTHLY_TOOL_TIMEOUT_SECONDS),
+        ("senate-activity", ("ingest/senate_activity.py", "--collect", "--mandate"), SNAPSHOT_TIMEOUT_SECONDS),
+        ("senate-participation", ("ingest/senate_participation.py", "--collect"), SNAPSHOT_TIMEOUT_SECONDS),
+        ("tenure", ("ingest/tenure.py", "--collect"), SNAPSHOT_TIMEOUT_SECONDS),
+        ("state-tax-revenue", ("-m", "ingest.state_tax_revenue"), SNAPSHOT_TIMEOUT_SECONDS),
+        ("build", ("scripts/build.py",), SNAPSHOT_TIMEOUT_SECONDS),
+    ]
+    return steps
+
+
+def run_monthly(config: PipelineConfig, mail_sender=send_mail) -> dict:
+    """Cadeia mensal do custo do mandato e do Senado. Cada coletor é retomável e preserva a saída anterior;
+    só o histórico da cota passa pelo banco, com o mesmo backup, cópia, verificação e troca atômica."""
+    config = PipelineConfig(**{**config.__dict__, "job": "monthly",
+                               "period": config.period or previous_month(reference_today())})
+    run = Run(config, "monthly")
+    log(f"atualização mensal (referência {config.period[0]:04d}-{config.period[1]:02d})"
+        + (" (dry-run)" if config.dry_run else ""))
+    try:
+        with Lock(config.lock_path, config.lock_wait_seconds):
+            for name, arguments, timeout in monthly_steps(config):
+                if name == "quota-history":
+                    if run_tool(run, name, arguments, timeout=timeout) and config.wants("import-history"):
+                        try:
+                            publish_database(run, import_history_into_work)
+                        except PipelineError as error:
+                            run.error = str(error)
+                            run.downgrade("failed")
+                    continue
+                run_tool(run, name, arguments, timeout=timeout)
+    except PipelineError as error:
+        run.error = str(error)
+        run.downgrade("failed")
+    except Exception as error:  # noqa: BLE001 - qualquer falha inesperada vira status e aviso
+        run.error = f"{type(error).__name__}: {error}\n{traceback.format_exc()}"
+        run.downgrade("failed")
+    status = run.write()
+    notify(run, status, mail_sender=mail_sender)
+    status = run.write(history=True)
+    log(f"resultado: {RESULT_LABELS.get(status['result'], status['result'])}")
+    return status
+
+
+def run_weekly(config: PipelineConfig, mail_sender=send_mail) -> dict:
+    """Inventário do Plenário do ano corrente até hoje e fila editorial. Avisa quando há trabalho novo."""
+    config = PipelineConfig(**{**config.__dict__, "job": "weekly"})
+    run = Run(config, "weekly")
+    reference = reference_today()
+    log(f"atualização semanal (inventário até {reference.isoformat()})")
+    try:
+        with Lock(config.lock_path, config.lock_wait_seconds):
+            run_tool(run, "vote-inventory", ("-m", "ingest.chamber_vote_inventory", "--collect", "--year", str(reference.year),
+                                             "--through", reference.isoformat()))
+            if config.wants("editorial-queue"):
+                with run.step("editorial-queue") as step:
+                    completed = run_snapshot_collector(config, ("-m", "ingest.editorial_queue"))
+                    stdout_lines = (completed.stdout or "").strip().splitlines()
+                    step.detail(exitCode=completed.returncode, stdoutTail=stdout_lines[-4:],
+                                stderrTail=(completed.stderr or "").strip().splitlines()[-5:])
+                    if completed.returncode != 0:
+                        raise PipelineError("Fila editorial não gerada: código " + str(completed.returncode))
+                    summary_text = next((line[len("resumo: "):] for line in stdout_lines if line.startswith("resumo: ")), None)
+                    if summary_text:
+                        run.summary["editorial"] = json.loads(summary_text)
+            run_due_events(run, reference)
+    except PipelineError as error:
+        run.error = str(error)
+        run.downgrade("failed")
+    except Exception as error:  # noqa: BLE001
+        run.error = f"{type(error).__name__}: {error}\n{traceback.format_exc()}"
+        run.downgrade("failed")
+    status = run.write()
+    notify(run, status, mail_sender=mail_sender)
+    status = run.write(history=True)
+    log(f"resultado: {RESULT_LABELS.get(status['result'], status['result'])}")
+    return status
+
+
+def run_due_events(run: Run, reference) -> None:
+    """Executa as ações dos eventos com data pendentes e registra o estado de todos no resumo."""
+    config = run.config
+    events = calendar_events.pending_events(ROOT, reference)
+    for event in events:
+        for action in event.get("actions") or []:
+            if event["status"] == "due":
+                run_tool(run, action["name"], tuple(action["arguments"]), timeout=MONTHLY_TOOL_TIMEOUT_SECONDS)
+    if any(event.get("actions") and event["status"] == "due" for event in events):
+        events = calendar_events.pending_events(ROOT, reference)
+    run.summary["events"] = calendar_events.summary(events)
 
 
 def read_status(config: PipelineConfig) -> dict | None:
@@ -624,7 +901,7 @@ def notify_failure(config: PipelineConfig, unit: str, mail_sender=send_mail) -> 
         if status.get("error"):
             lines += ["", status["error"]]
     else:
-        lines.append("Nenhum status gravado em data/status/daily.json.")
+        lines.append(f"Nenhum status gravado em data/status/{config.job}.json.")
     lines += ["", f"Veja: journalctl -u {unit} -n 100"]
     if mail is None:
         print("\n".join(lines))
@@ -642,10 +919,22 @@ def _build_parser() -> argparse.ArgumentParser:
     daily = commands.add_parser("daily", help="coleta e importa a cota do ano corrente")
     daily.add_argument("--year", type=int, default=None)
     daily.add_argument("--dry-run", action="store_true", help="faz tudo, menos substituir o banco publicado")
+    daily.add_argument("--db-only", action="store_true", help="só a cota no banco; não atualiza perfis nem situação dos projetos")
     daily.add_argument("--keep-backups", type=int, default=7)
     daily.add_argument("--max-roster-drop", type=float, default=0.05)
     daily.add_argument("--max-expense-drop", type=float, default=0.10)
-    commands.add_parser("status", help="imprime o último status gravado")
+    monthly = commands.add_parser("monthly", help="cadeia mensal do custo do mandato e do Senado")
+    monthly.add_argument("--period", type=str, default=None, help="mês de referência AAAA-MM (padrão: o anterior)")
+    monthly.add_argument("--dry-run", action="store_true", help="faz tudo, menos substituir o banco publicado")
+    monthly.add_argument("--only", type=str, default="", help="só estas etapas (nomes separados por vírgula)")
+    monthly.add_argument("--skip", type=str, default="", help="pula estas etapas")
+    monthly.add_argument("--keep-backups", type=int, default=7)
+    monthly.add_argument("--max-roster-drop", type=float, default=0.05)
+    monthly.add_argument("--max-expense-drop", type=float, default=0.10)
+    weekly = commands.add_parser("weekly", help="inventário do Plenário e fila editorial do Placar")
+    weekly.add_argument("--only", type=str, default="", help="só estas etapas (vote-inventory, editorial-queue)")
+    weekly.add_argument("--skip", type=str, default="")
+    commands.add_parser("status", help="imprime o último status gravado de cada job")
     commands.add_parser("test-mail", help="envia um e-mail de teste com a configuração atual")
     failure = commands.add_parser("notify-failure", help="aviso de último recurso, usado pelo systemd OnFailure")
     failure.add_argument("--unit", default="painel-ingest.service")
@@ -658,20 +947,34 @@ def main(argv=None) -> int:
     db_path = args.db if args.db.is_absolute() else ROOT / args.db
     if args.command == "daily":
         config = PipelineConfig(
-            data_dir=data_dir, db_path=db_path, year=args.year or utc_now().year, dry_run=args.dry_run,
+            data_dir=data_dir, db_path=db_path, year=args.year or utc_now().year, dry_run=args.dry_run, db_only=args.db_only,
             keep_backups=args.keep_backups, max_roster_drop=args.max_roster_drop,
             max_expense_drop=args.max_expense_drop,
         )
         status = run_daily(config)
         return 0 if status["result"] == "ok" else 1
-    config = PipelineConfig(data_dir=data_dir, db_path=db_path)
-    if args.command == "status":
-        status = read_status(config)
-        if status is None:
-            print(json.dumps({"status": "nunca executado", "path": str(config.status_path)}, ensure_ascii=False))
-            return 1
-        print(json.dumps(status, ensure_ascii=False, indent=2))
+    if args.command == "monthly":
+        names = lambda value: tuple(item.strip() for item in value.split(",") if item.strip())  # noqa: E731
+        config = PipelineConfig(
+            data_dir=data_dir, db_path=db_path, dry_run=args.dry_run, keep_backups=args.keep_backups,
+            max_roster_drop=args.max_roster_drop, max_expense_drop=args.max_expense_drop, job="monthly",
+            period=parse_period(args.period) if args.period else None, only=names(args.only), skip=names(args.skip),
+        )
+        status = run_monthly(config)
         return 0 if status["result"] == "ok" else 1
+    if args.command == "weekly":
+        names = lambda value: tuple(item.strip() for item in value.split(",") if item.strip())  # noqa: E731
+        status = run_weekly(PipelineConfig(data_dir=data_dir, db_path=db_path, job="weekly", only=names(args.only), skip=names(args.skip)))
+        return 0 if status["result"] == "ok" else 1
+    unit = getattr(args, "unit", "") or ""
+    config = PipelineConfig(data_dir=data_dir, db_path=db_path,
+                            job=next((job for job in ("monthly", "weekly") if job in unit), "daily"))
+    if args.command == "status":
+        statuses = {}
+        for job in ("daily", "weekly", "monthly"):
+            statuses[job] = read_status(PipelineConfig(data_dir=data_dir, db_path=db_path, job=job)) or {"status": "nunca executado"}
+        print(json.dumps(statuses, ensure_ascii=False, indent=2))
+        return 0 if all(s.get("result") == "ok" for s in statuses.values()) else 1
     if args.command == "test-mail":
         mail = MailConfig.from_environ(config.environ)
         if mail is None:

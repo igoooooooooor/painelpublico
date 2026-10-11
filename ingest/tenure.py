@@ -32,7 +32,10 @@ from ingest.senate_office_pilot import USER_AGENT, write_atomic  # noqa: E402
 OUTPUT = ROOT / 'data' / 'snapshots' / 'tenure.json'
 CHAMBER_DIR = ROOT / 'data' / 'raw' / 'camara-historico'
 CHAMBER_URL = 'https://dadosabertos.camara.leg.br/api/v2/deputados/{code}/historico'
-CURRENT_LEGISLATURE = 57
+from ingest.periods import legislature as _legislature_now, legislature_start as _legislature_start  # noqa: E402
+
+# Legislatura em vigor na data (57ª de fev/2023 a jan/2027), derivada de ingest/periods.py.
+CURRENT_LEGISLATURE = _legislature_now()
 
 
 def _day(value):
@@ -64,7 +67,7 @@ def senate_since(payload) -> str | None:
 
 def legislature_start(legislature: int) -> date:
     """1º de fevereiro do ano de início da legislatura (57ª: 2023; a cada 4 anos)."""
-    return date(2023 - 4 * (CURRENT_LEGISLATURE - legislature), 2, 1)
+    return _legislature_start(legislature)
 
 
 def chamber_since(entries) -> str | None:

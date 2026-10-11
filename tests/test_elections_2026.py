@@ -127,3 +127,26 @@ class Elections2026Tests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ConditionalDownloadTests(unittest.TestCase):
+    def test_304_keeps_the_cached_zip(self):
+        import json
+        import tempfile
+        from urllib.error import HTTPError
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as temp:
+            zip_path, meta_path = Path(temp) / "consulta_cand_2026.zip", Path(temp) / "consulta_cand_2026.meta.json"
+            zip_path.write_bytes(b"cached")
+            meta_path.write_text(json.dumps({"lastModified": "Wed, 07 Oct 2026 19:30:00 GMT", "fetchedAt": "2026-10-07"}))
+            seen = {}
+
+            def not_modified(request, timeout=0):
+                seen["since"] = request.get_header("If-modified-since")
+                raise HTTPError(request.full_url, 304, "Not Modified", {}, None)
+
+            with patch.object(el, "urlopen", not_modified):
+                el.download_candidates(zip_path, meta_path)
+            self.assertEqual(seen["since"], "Wed, 07 Oct 2026 19:30:00 GMT")
+            self.assertEqual(zip_path.read_bytes(), b"cached")
+            self.assertTrue(json.loads(meta_path.read_text())["notModified"])

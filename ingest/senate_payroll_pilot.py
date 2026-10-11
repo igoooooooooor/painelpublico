@@ -25,9 +25,13 @@ ROOT = Path(__file__).resolve().parents[1]
 ROSTER_PATH = Path("data/imports/legislative.json")
 DEFAULT_CACHE = Path("data/raw/mandate-cost/senate-pilot/csv-schema.json")
 DEFAULT_OUTPUT = Path("data/snapshots/senate-payroll-pilot.json")
+from ingest.periods import previous_month  # noqa: E402
+
+# Competência do piloto: o mês anterior ao corrente (antes era fixa em 2026-09).
+COMPETENCE = "{:04d}-{:02d}".format(*previous_month())
 CSV_URL = (
     "https://www.senado.leg.br/transparencia/LAI/secrh/"
-    "SF_ConsultaRemuneracaoServidoresParlamentares_202609.csv"
+    f"SF_ConsultaRemuneracaoServidoresParlamentares_{COMPETENCE.replace('-', '')}.csv"
 )
 CSV_INDEX_URL = "https://www.senado.leg.br/transparencia/rh/servidores/consulta_remuneracao.asp"
 SENATE_ROSTER_URL = "https://legis.senado.leg.br/dadosabertos/senador/lista/atual"
@@ -36,7 +40,6 @@ INDIVIDUAL_GUIDE_URL = (
     "senadores/posso-consultar-o-contracheque-de-um-senador"
 )
 USER_AGENT = "QuantoCusta/1.0 (public-data importer)"
-COMPETENCE = "2026-09"
 MAX_SENATORS = 10
 SOURCE_ID = "senado_senators_current"
 SENATOR_ID = re.compile(r"^senado:(\d+)$")

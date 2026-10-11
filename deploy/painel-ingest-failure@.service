@@ -1,6 +1,7 @@
-# Acionado por OnFailure= de painel-ingest.service: envia o aviso quando o pipeline não conseguiu avisar sozinho.
+# Modelo acionado por OnFailure= das unidades painel-ingest*.service (%i = unidade que falhou): envia o aviso
+# quando o pipeline não conseguiu avisar sozinho.
 [Unit]
-Description=Painel Público: aviso de falha da atualização
+Description=Painel Público: aviso de falha de %i
 
 [Service]
 Type=oneshot
@@ -8,7 +9,7 @@ User=painel
 WorkingDirectory=/opt/painel/app
 Environment=PAINEL_DB=/opt/painel/data/na-lupa.sqlite3
 EnvironmentFile=-/etc/painel/pipeline.env
-ExecStart=/usr/bin/python3 -m ingest.pipeline notify-failure --unit painel-ingest.service
+ExecStart=/opt/painel/venv/bin/python3 -m ingest.pipeline notify-failure --unit %i
 NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true

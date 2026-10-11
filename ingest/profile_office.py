@@ -17,7 +17,12 @@ def number(value):
     return float(Decimal(value.replace('.', '').replace(',', '.')))
 
 
-def parse_office(content, source_url, fetched_at, year=2026):
+def _year(year):
+    return year or dt.date.today().year
+
+
+def parse_office(content, source_url, fetched_at, year=None):
+    year = _year(year)
     cleaned = re.sub(r'<script\b.*?</script>|<style\b.*?</style>', ' ', content, flags=re.S | re.I)
     text = re.sub(r'\s+', ' ', html.unescape(re.sub(r'<[^>]+>', ' ', cleaned)))
     start = re.search(r'Verba de gabinete\s*\?', text)
@@ -42,7 +47,8 @@ def parse_office(content, source_url, fetched_at, year=2026):
     }
 
 
-def load_office(deputy_id, raw_dir: Path, collect=False, refresh=False, year=2026):
+def load_office(deputy_id, raw_dir: Path, collect=False, refresh=False, year=None):
+    year = _year(year)
     deputy_id = str(deputy_id).removeprefix('camara:')
     if not deputy_id.isdigit():
         raise ValueError('Código de deputado inválido')

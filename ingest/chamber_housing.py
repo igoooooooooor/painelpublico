@@ -30,8 +30,11 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-DEFAULT_YEAR = 2026
-DEFAULT_MONTHS = tuple(range(1, 10))
+from ingest.periods import closed_months, current_year, parse_months as _parse_month_list  # noqa: E402
+
+# Padrões derivados da data: ano corrente e meses já encerrados (ver ingest/periods.py).
+DEFAULT_YEAR = current_year()
+DEFAULT_MONTHS = closed_months(DEFAULT_YEAR)
 LEGISLATURE = 57
 PAGE_SIZE = 20
 PAGE_LIMIT = 100
@@ -858,15 +861,11 @@ def build_snapshot(
 
 
 def parse_months(value: str) -> tuple[int, ...]:
+    """Lista (``1,2,3``) ou intervalos (``1-9``); sem duplicatas."""
     try:
-        months = tuple(int(item.strip()) for item in value.split(",") if item.strip())
+        return _parse_month_list(value)
     except ValueError as exc:
-        raise argparse.ArgumentTypeError("months must be comma-separated integers") from exc
-    if not months or any(month < 1 or month > 12 for month in months):
-        raise argparse.ArgumentTypeError("months must contain values from 1 to 12")
-    if len(set(months)) != len(months):
-        raise argparse.ArgumentTypeError("months must not contain duplicates")
-    return months
+        raise argparse.ArgumentTypeError(str(exc)) from exc
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -876,10 +875,10 @@ def main(argv: list[str] | None = None) -> int:
         "--refresh", action="store_true",
         help="refaz as páginas dos meses selecionados; requer --collect",
     )
-    parser.add_argument("--year", type=int, default=DEFAULT_YEAR, help="ano da consulta (padrão: 2026)")
+    parser.add_argument("--year", type=int, default=DEFAULT_YEAR, help="ano da consulta (padrão: ano corrente)")
     parser.add_argument(
         "--months", type=parse_months, default=DEFAULT_MONTHS,
-        help="meses separados por vírgula (padrão: 1,2,...,9)",
+        help="meses separados por vírgula ou intervalos como 1-9 (padrão: meses já encerrados do ano)",
     )
     parser.add_argument(
         "--limit", type=int,

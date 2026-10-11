@@ -38,9 +38,12 @@ if str(ROOT) not in sys.path:
 IMPORT_PATH = ROOT / "data" / "imports" / "legislative.json"
 RAW_DIR = ROOT / "data" / "raw" / "senado-presenca"
 DEFAULT_OUTPUT = ROOT / "data" / "snapshots" / "senado-presenca.json"
-YEAR = 2026
+from ingest import periods  # noqa: E402
+from ingest.periods import current_year, previous_month  # noqa: E402
+
+YEAR = current_year()
 # Mandato atual: a coleta padrão vai de fev/2023 até hoje; --year coleta um ano só.
-MANDATE_START = date(2023, 2, 1)
+MANDATE_START = periods.MANDATE_START
 # Nomes como aparecem nas listas do Diário, diferentes do cadastro, conferidos em 9/10/2026.
 DIARY_NAME_ALIASES = {
     "Mauro Carvalho Jr.": "senado:6362",  # cadastro: MAURO CARVALHO JUNIOR
@@ -1218,10 +1221,14 @@ def build_snapshot(
     cache_root = root / "data" / "raw" / "senado-presenca"
     month_caches: list[dict[str, Any]] = []
     errors: list[str] = []
+    reference = today or date.today()
+    # A agenda do mês corrente e a do anterior mudam a cada sessão: com --collect são relidas sempre;
+    # os meses mais antigos só com --refresh. Os cadernos do Diário continuam em cache por código.
+    recent = {(reference.year, reference.month), previous_month(reference)}
     for cache_year, month in _months(period_start, period_end):
         path = _month_cache_path(cache_root, cache_year, month)
         if collect:
-            cache, error = _collect_month(cache_year, month, cache_root, request, refresh)
+            cache, error = _collect_month(cache_year, month, cache_root, request, refresh or (cache_year, month) in recent)
             if error:
                 errors.append(error)
         else:

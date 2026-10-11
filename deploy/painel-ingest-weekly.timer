@@ -1,0 +1,12 @@
+# Segunda-feira, 3h de Brasília: a semana de sessões anterior já está na API.
+[Unit]
+Description=Painel Público: timer do inventário semanal
+
+[Timer]
+OnCalendar=Mon *-*-* 03:00:00 America/Sao_Paulo
+RandomizedDelaySec=20min
+Persistent=true
+Unit=painel-ingest-weekly.service
+
+[Install]
+WantedBy=timers.target

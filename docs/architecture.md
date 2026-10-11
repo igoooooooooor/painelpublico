@@ -20,7 +20,10 @@ fontes públicas → ingest/ → data/imports/ → importação transacional →
 - `frontend/scripts/app.script.js`: estado e roteamento. `home-view.js` mostra resumos consultados no SQLite; os outros scripts agrupam as áreas de políticos, alertas, presença, comparações e partidos.
 - `frontend/scripts/profile-data.js`: identidade canônica e leitura compartilhada de contatos, projetos, gabinete, presença, votos e eleição de 2026. Cada ficha pede seu complemento em `/api/c/perfil/<id>` quando disponível, sem embutir todos os perfis no HTML; salário de referência é separado de pagamento individual.
 - `scripts/build.py`: montagem determinística, com ordem de CSS e JavaScript explícita. O build não precisa de snapshots locais; os quatro resumos do Placar vêm de metadados versionados em `frontend/data/votes.json`.
-- `ingest/pipeline.py`: orquestrador da atualização automática (coleta da cota, importação em cópia, verificação, publicação atômica e aviso). Roda no servidor por `deploy/painel-ingest.timer`.
+- `ingest/pipeline.py`: orquestrador da atualização automática (coleta da cota, importação em cópia, verificação, publicação atômica, perfis, situação dos projetos e aviso). Roda no servidor por `deploy/painel-ingest.timer`.
+- `ingest/calendar_events.py`: eventos com data (segundo turno, troca de legislatura), sem rede; o job semanal executa as ações pendentes.
+- `ingest/editorial_queue.py`: fila editorial sem rede (candidatos do Placar sem revisão e arquivos mantidos à mão), gerada pelo job semanal; nunca publica.
+- `ingest/chamber_projects.py`: projetos de cada deputado(a) a partir dos arquivos anuais da Câmara, compartilhados com a situação dos projetos; usado por `ingest/profiles.py --collect`.
 - `ingest/`: adaptadores atuais. `ingest/editorial/`: comandos manuais que guardam respostas oficiais em cache e montam complementos de presença e votos; não definem o roster usado pela aplicação.
 - `data/snapshots/`: complementos locais opcionais, não a base parlamentar. Toda a pasta `data/`, incluindo `imports/`, `raw/`, SQLite e snapshots, fica fora do Git.
 - `tests/`: verificações Python e Node sem acesso à rede; bancos temporários nos testes.
@@ -95,7 +98,7 @@ local e pela verificação de cobertura nacional.
 Os coletores de folha, moradia e exercício mantêm caches minimizados e snapshots
 locais. `ingest/chamber_quota_audit.py` reconcilia o arquivo CEAP com os registros
 importados, sem alterar o banco. `ingest/mandate_cost_composition.py` gera a
-composição aprovada de janeiro–julho/2026 e os motivos de exclusão de meses.
+composição do mandato até o último mês com prazo da cota encerrado (regra em `ingest/periods.py`) e os motivos de exclusão de meses.
 `backend/profiles.py` carrega `mandate-cost.json` pelo cache de mtime e anexa
 somente o registro da pessoa solicitada, exclusivamente para a Câmara e o período
 aprovado. Visitantes não iniciam coleta nem cálculo sobre o arquivo CEAP.

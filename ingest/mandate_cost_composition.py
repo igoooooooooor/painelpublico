@@ -18,13 +18,19 @@ from ingest.mandate_cost_audit import (COMPLEMENT_CATEGORY, build as build_audit
                                       observed_payroll_components)
 
 ROOT = Path(__file__).resolve().parents[1]
-# Mandato atual (legislatura 57). O fim do período é o último mês de 2026 em que a fonte
+from ingest import periods  # noqa: E402
+from ingest.periods import current_year, history_years, next_legislature_start  # noqa: E402
+
+# Mandato atual (legislatura 57). O fim do período é o último mês do ano corrente em que a fonte
 # publicou as quatro partes (ver last_published_month); o padrão abaixo vale para os testes.
-MANDATE_START = '2023-02'
-MANDATE_END = '2027-01'
-CURRENT_YEAR = 2026
+# Início, ano corrente, anos fechados e fim do mandato vêm da data (ingest/periods.py);
+# PAINEL_TODAY=AAAA-MM-DD fixa a data de referência para reconstruções reproduzíveis.
+MANDATE_START = periods.MANDATE_START.strftime('%Y-%m')
+_mandate_end = next_legislature_start()
+MANDATE_END = f'{_mandate_end.year - (1 if _mandate_end.month == 1 else 0)}-{(_mandate_end.month - 2) % 12 + 1:02d}'
+CURRENT_YEAR = current_year()
 CURRENT_LAST_MONTH = 7
-HISTORY_YEARS = (2023, 2024, 2025)
+HISTORY_YEARS = history_years()
 AUDIT_PARTS = ('quota', 'office', 'payroll', 'housing')
 
 
@@ -303,7 +309,7 @@ def build(root=ROOT):
     path = root / 'data/snapshots/chamber-service.json'
     service = json.loads(path.read_text()) if path.exists() else {}
     from ingest.chamber_quota_audit import build_audit as audit_quota
-    archive = root / 'data/raw/legislative/camara-2026.csv.zip'
+    archive = root / f'data/raw/legislative/camara-{CURRENT_YEAR}.csv.zip'
     quota_check = audit_quota(archive, root / 'data/na-lupa.sqlite3')['currentRoster']['sourceCompleteness'] if archive.exists() else {}
     for identifier, person in audit['profiles'].items():
         for period, row in person['parts']['quota'].items():
