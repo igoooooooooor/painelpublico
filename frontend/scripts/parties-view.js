@@ -54,7 +54,7 @@ function partyVotes(partyCode, chamber = 'camara') {
       // Totais ausentes (sem arquivo de detalhe) ou partido sem linha ficam sem maioria, nunca zero votos.
       const totals = item.partyTotals ? item.partyTotals[partyVoteKey(partyCode)] : null;
       const yesCount = totals?.yes || 0, noCount = totals?.no || 0;
-      return { vote: { id: item.id, titulo: item.title, proposicao: item.proposition, data: item.date, outcome: item.outcome }, yesCount, noCount,
+      return { vote: { id: item.id, titulo: item.title, proposicao: item.proposition, data: item.date }, yesCount, noCount,
         otherCount: totals?.other || 0, majority: partyVoteMajority(yesCount, noCount) };
     });
   }
@@ -111,14 +111,8 @@ function partyVoteChip(record) {
   return `<span class="vchip ${className}">${esc(record.majority.toLowerCase())}</span><small class="party-score mono">${record.yesCount}–${record.noCount}</small>`;
 }
 
-/* Do lado vencedor: votações em que a maioria da bancada (Sim ou Não) coincidiu com o resultado final. */
-function partyWinningSide(votes) {
-  const decided = votes.filter(record => ['Sim', 'Não'].includes(record.majority) && ['approved', 'rejected'].includes(record.vote.outcome));
-  const wins = decided.filter(record => (record.majority === 'Sim') === (record.vote.outcome === 'approved')).length;
-  return decided.length ? { wins, total: decided.length } : null;
-}
 /* Cartão para compartilhar a comparação de partidos, no mesmo desenho da comparação de políticos: um card por
-   partido (cota e presença dos deputados(as), para onde vai a cota, lado vencedor) e os votos das bancadas.
+   partido (cota e presença dos deputados(as), para onde vai a cota, unidade nas votações) e os votos das bancadas.
    Etiquetas só para fatos comparáveis (cota menor, presença maior); alertas sem destaque. */
 function partyShareCard(a, b) {
   const parties = [a, b];
@@ -131,7 +125,7 @@ function partyShareCard(a, b) {
   const perTen = party => { const alerts = (party.deputado?.alertas || 0) + (party.senador?.alertas || 0); const members = (party.deputado?.comDados || 0) + (party.senador?.comDados || 0);
     return members ? (alerts / members * 10).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : 'Sem dados'; };
   const people = parties.map((party, index) => {
-    const side = partyWinningSide(votes[index]);
+    const unity = partyVoteAlignment(votes[index]);
     const categories = party.cotaCategorias?.total > 0 ? party.cotaCategorias.itens.map(item => ({ name: item.nome, share: item.valor / party.cotaCategorias.total })) : [];
     return {
       name: party.sigla,
@@ -143,8 +137,7 @@ function partyShareCard(a, b) {
           tag: presenceWinner === index ? 'mais presente' : '', behind: presenceWinner !== null && presenceWinner !== index },
       ],
       categories,
-      meter: { label: 'Do lado vencedor nas votações', share: side ? side.wins / side.total : null,
-        note: side ? `maioria votou como o resultado · ${side.wins} de ${side.total}` : 'sem votações com maioria da bancada' },
+      meter: { label: 'Unidade nas votações', share: unity, note: 'deputados(as) votando com a maioria da bancada' },
     };
   });
   const majorities = votes.map(list => new Map(list.filter(record => ['Sim', 'Não'].includes(record.majority)).map(record => [record.vote.id, record.majority])));
