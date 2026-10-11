@@ -52,7 +52,26 @@ make build
 institucional, mandato, projetos e gabinete; respostas de detalhe com CPF e outros dados pessoais não são
 salvas integralmente. A coleta usa no máximo quatro consultas concorrentes. Falhas preservam a última
 observação disponível e sua data, com indicação de falha; não produzem valor zero. `--limit N` permite
-uma coleta curta de diagnóstico. Nenhum desses comandos agenda atualizações.
+uma coleta curta de diagnóstico. No servidor, a atualização diária roda `--collect` depois da cota
+([Publicação](deploy.md#atualização-automática-dos-dados)).
+
+**Projetos pelos arquivos anuais (desde 11/10/2026).** Com `--collect`, os projetos de cada deputado(a)
+vêm dos arquivos anuais da Câmara (`ingest/chamber_projects.py`), e não mais de uma consulta paginada por
+deputado: `arquivos/proposicoes/json/proposicoes-{ano}.json` (tipo, número, ementa e data de apresentação,
+o mesmo arquivo da situação dos projetos) e `arquivos/proposicoesAutores/json/proposicoesAutores-{ano}.json`
+(uma linha por assinatura, com `idDeputadoAutor` e `proponente`). O recorte é o mesmo — PL, PLP e PEC
+apresentados desde 1/2/2023, com coautorias — mas cada projeto é guardado uma vez e cada ficha lista os
+seus. Os arquivos ficam em `data/raw/projetos-situacao/camara/`; anos fechados ficam em cache e só o
+ano corrente é baixado de novo, por GET condicional (`If-None-Match`/`If-Modified-Since`), quando o cache
+passa de 20 horas (`--archive-max-age-hours`). Ano indisponível torna a seção parcial, sem total, e a
+observação completa anterior é preservada como desatualizada. Cada item ganha `apresentadaEm` e
+`proponente` (assinatura principal ou coautoria); a seção traz `method: arquivos-anuais`. Sem rede, o
+snapshot usa os caches das fichas; `--projects-source archive` reconstrói pelos arquivos em cache e
+`--projects-source api` mantém a consulta por deputado para diagnóstico. Na primeira coleta com o método
+novo, `projectsArchive.conciliacao` no snapshot (e a linha `conciliacao:` no terminal) compara, por
+deputado, a lista anterior da consulta por deputado com a dos arquivos: a equivalência entre os dois
+caminhos oficiais ainda não foi verificada com dados reais e deve ser conferida nessa execução antes de
+aceitar diferenças.
 
 Os coletores de perfis continuam sendo a fonte manual dos complementos para a lista completa; contatos, projetos, gabinete e presença têm a cobertura registrada em seus snapshots. A arrecadação federal (`arrecadacao.json`) é outro complemento atualizado manualmente, com fonte e data: use as receitas administradas pela Receita Federal (impostos e contribuições), não o total das receitas federais, que inclui receitas de outros órgãos que não são tributos. A estadual (`state-tax-revenue.json`) vem de `python3 -m ingest.state_tax_revenue`: soma ICMS, IPVA e ITCD do Anexo 3 do RREO (Siconfi) dos 27 estados, do último bimestre em que todos entregaram, antes das transferências aos municípios e do Fundeb; estado sem relatório não vira zero, e o build só usa o arquivo com os 27. Impostos municipais ainda ficam de fora, porque cidades pequenas só detalham a receita mensal a cada semestre. Os geradores da página e dos PDFs da amostra editorial foram removidos. `ingest/editorial/requirements.txt` só é necessário para as ferramentas opcionais de passagens e agregação eleitoral; não é requisito do app nem do build.
 
@@ -175,7 +194,7 @@ A reconciliação de 7/10/2026 reprocessa essa mesma fotografia do XML (`Metadad
 
 Há reembolsos associados a 509 dos deputados e 79 dos registros do Senado. Os demais devem aparecer como dados ausentes, não como zero. Outros 54 deputados e 10 registros do Senado têm notas em 2026 mas não estão nas listas atuais, como suplentes que deixaram o exercício: as fichas e os alertas deles continuam acessíveis, com o rótulo "fora da lista atual", e não entram em contagens, médias nem listas. A lista, o Placar e as comparações abrem a mesma ficha parlamentar. Os antigos detalhes e PDF de dez deputados e a análise editorial de despesas foram removidos.
 
-`frontend/scripts/profile-data.js` concentra a leitura do snapshot complementar, presença e votos. Contatos e situação da Câmara vêm do detalhe oficial de cada deputado; verba e equipe de gabinete vêm da página oficial, com ano, meses publicados e data de atualização. Projetos da Câmara abrangem PL, PLP e PEC apresentados desde 1/2/2023: total só é confirmado quando todas as páginas da consulta são lidas. O resumo dessa API não fornece a situação atual; a coleta separada da Etapa 3, descrita abaixo, consulta os IDs já listados e preserva lacunas. Contatos e participação/exercício do Senado vêm do XML reconciliado. Autoria do Senado usa a API substituta `/dadosabertos/processo`, com o filtro `codigoParlamentarAutor` validado; a cobertura está detalhada abaixo. Gabinete do Senado ainda não tem fonte integrada.
+`frontend/scripts/profile-data.js` concentra a leitura do snapshot complementar, presença e votos. Contatos e situação da Câmara vêm do detalhe oficial de cada deputado; verba e equipe de gabinete vêm da página oficial, com ano, meses publicados e data de atualização. Projetos da Câmara abrangem PL, PLP e PEC apresentados desde 1/2/2023, lidos dos arquivos anuais da Câmara (ver "Projetos pelos arquivos anuais", acima): total só é confirmado quando todos os anos foram lidos. O resumo dessa API não fornece a situação atual; a coleta separada da Etapa 3, descrita abaixo, consulta os IDs já listados e preserva lacunas. Contatos e participação/exercício do Senado vêm do XML reconciliado. Autoria do Senado usa a API substituta `/dadosabertos/processo`, com o filtro `codigoParlamentarAutor` validado; a cobertura está detalhada abaixo. Gabinete do Senado ainda não tem fonte integrada.
 
 Na coleta de 7/10/2026, o complemento contém os 595 IDs da lista: 513 deputados e 82 registros do Senado. Na Câmara, há e-mail para 513, telefone/endereço para 512, gasto de gabinete para 512 e equipe ativa para 512; dois perfis têm a seção de gabinete parcial. A consulta de projetos concluiu a paginação dos 513 perfis (quatro com zero resultados no recorte): são 35.746 associações entre autor e projeto, correspondentes a 19.878 IDs de proposição distintos, pois há coautorias. No Senado, o XML da fotografia de 6/10 informa e-mail para 78 e telefone para 80; 81 registros têm ao menos um desses contatos. Campos não publicados continuam sem valor. Essas contagens não ampliam o recorte de despesas no SQLite.
 
@@ -314,10 +333,18 @@ Não há ampliação do período de autoria nem substituição do snapshot origi
 make collect-project-status
 # Atualização explícita de todas as consultas:
 python3 ingest/project_status.py --collect --refresh
+# Só o que mudou: arquivos anuais vencidos (ano corrente após 20 h, anos fechados após uma semana) e
+# detalhes cujo andamento no arquivo é posterior à consulta; é o que a atualização diária roda.
+python3 ingest/project_status.py --collect --max-age-hours 20 --closed-year-max-age-hours 168
 # Reconstrução sem rede, mantendo a data real das consultas em cache:
 python3 ingest/project_status.py
 make build
 ```
+
+Sem `--max-age-hours`, um arquivo anual em cache nunca é baixado de novo e as situações ficam
+congeladas na data da primeira coleta. Com as validades, os arquivos são pedidos por GET condicional e um
+`304 Not Modified` só renova a data do cache. Um detalhe individual em cache é reconsultado quando o
+arquivo anual mostra `ultimoStatus.data` posterior à data da consulta; os demais ficam como estão.
 
 Os arquivos brutos e seus metadados (URL, data da consulta e SHA-256) ficam em
 `data/raw/projetos-situacao/`. O snapshot `data/snapshots/projetos-situacao.json`

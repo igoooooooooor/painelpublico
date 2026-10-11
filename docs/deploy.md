@@ -44,8 +44,9 @@ Logs: `ssh SERVIDOR journalctl -u painel -f`.
 
 ## Atualização automática dos dados
 
-A cota da Câmara e do Senado do ano corrente é atualizada todo dia no próprio servidor por
-`painel-ingest.timer` (5h40 de Brasília, com até 15 min de atraso aleatório). O timer chama
+A cota da Câmara e do Senado do ano corrente, os projetos e a situação dos projetos são atualizados
+todo dia no próprio servidor por `painel-ingest.timer` (5h40 de Brasília, com até 15 min de atraso
+aleatório). O timer chama
 `python3 -m ingest.pipeline daily`, que executa, nesta ordem, e grava cada etapa em
 `/opt/painel/data/status/daily.json` (histórico em `daily-history.jsonl`):
 
@@ -58,7 +59,16 @@ A cota da Câmara e do Senado do ano corrente é atualizada todo dia no próprio
 | `import` | Importação transacional na cópia (`backend.public_store`) | Transação desfeita; interrompe |
 | `verify` | `quick_check`, chaves estrangeiras, versão do esquema e **guarda de regressão**: lista oficial caindo mais de 5% ou notas caindo mais de 10% não são publicadas | Interrompe; a cópia é descartada |
 | `publish` | Troca atômica do arquivo do banco (`os.replace`); o cache do site invalida sozinho pela data do arquivo | Recusa se houver `-journal`/`-wal` pendente ao lado do banco |
+| `profiles` | `ingest/profiles.py --collect`: contatos e gabinete que faltam no cache e projetos pelos arquivos anuais da Câmara (só o ano corrente é baixado de novo) | Execução **parcial**; o coletor preserva as observações anteriores das fichas |
+| `project-status` | `ingest/project_status.py --collect` com validade dos arquivos anuais (20 h o ano corrente, uma semana os fechados) e detalhes só para andamentos novos | Execução **parcial**; o snapshot anterior fica |
 | `notify` | E-mail em falha e parcial (sucesso só com `PAINEL_MAIL_ON_SUCCESS=1`) e ping opcional no monitor | Falha de envio fica registrada no status |
+
+As duas etapas de snapshot rodam depois do banco publicado e não o desfazem. `--db-only` (ou
+`make update-daily DB_ONLY=1`) pula as duas. Na primeira execução no servidor, que não tem os caches de
+`data/raw/`, a etapa `profiles` consulta o detalhe e a página de gabinete dos 513 deputados e baixa os
+arquivos anuais de 2023 até o ano corrente (dezenas de MB cada, lidos um por vez); as seguintes usam os
+caches. Confira na primeira execução a linha `conciliacao:` do log dessa etapa (ou `projectsArchive` em
+`perfis.json`), que compara a lista de projetos dos arquivos com a da consulta antiga por deputado.
 
 Só uma execução por vez (lock em `data/status/pipeline.lock`). Os limites da guarda de regressão
 são argumentos do comando (`--max-roster-drop`, `--max-expense-drop`); quando uma queda for legítima,
@@ -78,7 +88,7 @@ sudo systemctl enable --now painel-ingest.timer
 Acompanhar: `systemctl list-timers painel-ingest.timer`, `journalctl -u painel-ingest -n 100`
 e `make deploy-status`, que mostra o último resultado. Teste do e-mail no servidor:
 `cd /opt/painel/app && sudo -u painel env $(sudo cat /etc/painel/pipeline.env | xargs) python3 -m ingest.pipeline test-mail`.
-Localmente, `make update-daily DRY_RUN=1` faz tudo, menos trocar o banco.
+Localmente, `make update-daily DRY_RUN=1` faz tudo, menos trocar o banco (os snapshots das fichas são atualizados normalmente; use `DB_ONLY=1` para evitar).
 
 Se o processo morrer sem gravar status (timeout de 2 h, falta de memória), `painel-ingest-failure.service`
 envia o aviso de último recurso. O e-mail não detecta o timer que deixou de disparar; para isso,

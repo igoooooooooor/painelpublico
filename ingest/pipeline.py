@@ -2,7 +2,9 @@
 
 O comando ``daily`` executa a atualização diária da cota (Câmara e Senado) do ano corrente:
 coleta, importa em uma cópia de trabalho do banco, verifica integridade e regressão, publica a
-cópia por troca atômica e avisa por e-mail. Cada etapa fica registrada em ``data/status/``.
+cópia por troca atômica e avisa por e-mail. Depois do banco, atualiza os snapshots das fichas
+(projetos pelos arquivos anuais da Câmara) e a situação dos projetos. Cada etapa fica registrada
+em ``data/status/``.
 
 Regras do orquestrador:
 
@@ -14,7 +16,7 @@ Regras do orquestrador:
 - falha ou resultado parcial gera aviso por e-mail quando o SMTP está configurado.
 
 Uso:
-    python3 -m ingest.pipeline daily [--dry-run] [--year AAAA]
+    python3 -m ingest.pipeline daily [--dry-run] [--year AAAA] [--db-only]
     python3 -m ingest.pipeline status
     python3 -m ingest.pipeline test-mail
     python3 -m ingest.pipeline notify-failure --unit painel-ingest.service
@@ -51,6 +53,11 @@ from backend.public_store import import_documents  # noqa: E402
 QUOTA_SOURCES = ("camara_ceap", "senado_ceaps")
 DAILY_BACKUP_PREFIX = "na-lupa-daily-"
 COLLECTOR_TIMEOUT_SECONDS = 1800
+SNAPSHOT_TIMEOUT_SECONDS = 3600
+# Validade dos arquivos anuais da Câmara na situação dos projetos: ano corrente a cada execução diária;
+# anos fechados (projetos antigos ainda tramitam) uma vez por semana.
+ARCHIVE_MAX_AGE_HOURS = 20
+CLOSED_YEAR_MAX_AGE_HOURS = 24 * 7
 MAIL_SUBJECT_PREFIX = "[Painel Público]"
 RESULT_LABELS = {"ok": "concluída", "partial": "parcial", "failed": "FALHOU"}
 
@@ -73,6 +80,7 @@ class PipelineConfig:
     db_path: Path = DB_PATH
     year: int = field(default_factory=lambda: utc_now().year)
     dry_run: bool = False
+    db_only: bool = False
     keep_backups: int = 7
     max_roster_drop: float = 0.05
     max_expense_drop: float = 0.10
@@ -434,6 +442,49 @@ def publish(run: Run) -> None:
         step.detail(published=str(config.db_path))
 
 
+# ---- Snapshots das fichas (depois do banco) ---------------------------------------------------
+
+SNAPSHOT_STEPS = (
+    # (nome da etapa, argumentos depois do interpretador, texto no stdout que indica resultado parcial)
+    ("profiles", ("ingest/profiles.py", "--collect"), "completo=False"),
+    ("project-status", ("ingest/project_status.py", "--collect", "--max-age-hours", str(ARCHIVE_MAX_AGE_HOURS),
+                        "--closed-year-max-age-hours", str(CLOSED_YEAR_MAX_AGE_HOURS)), None),
+)
+
+
+def run_snapshot_collector(config: PipelineConfig, arguments: tuple[str, ...]) -> subprocess.CompletedProcess:
+    """Executa um coletor de snapshot em subprocesso; substituível nos testes."""
+    command = [config.python, *(str(ROOT / arguments[0]), *arguments[1:])]
+    log("snapshot: " + " ".join(arguments))
+    return subprocess.run(
+        command, cwd=ROOT, capture_output=True, text=True, timeout=SNAPSHOT_TIMEOUT_SECONDS,
+        env={**config.environ, "PYTHONUNBUFFERED": "1"},
+    )
+
+
+def update_snapshots(run: Run) -> None:
+    """Perfis (projetos pelos arquivos anuais) e situação dos projetos. Falha aqui não desfaz o banco já
+    publicado: cada coletor preserva o snapshot anterior sozinho, e a execução fica parcial."""
+    config = run.config
+    if config.db_only:
+        return
+    for name, arguments, partial_marker in SNAPSHOT_STEPS:
+        with run.step(name) as step:
+            try:
+                completed = run_snapshot_collector(config, arguments)
+            except subprocess.TimeoutExpired:
+                step.partial(f"Coletor excedeu {SNAPSHOT_TIMEOUT_SECONDS}s; snapshot anterior preservado.")
+                continue
+            stdout_tail = (completed.stdout or "").strip().splitlines()[-6:]
+            stderr_tail = (completed.stderr or "").strip().splitlines()[-5:]
+            step.detail(exitCode=completed.returncode, stdoutTail=stdout_tail, stderrTail=stderr_tail)
+            if completed.returncode != 0:
+                step.partial(f"Coletor terminou com código {completed.returncode}; snapshot anterior preservado. "
+                             + " | ".join(stderr_tail or stdout_tail))
+            elif partial_marker and any(partial_marker in line for line in stdout_tail):
+                step.partial("Arquivos anuais incompletos; observações anteriores preservadas nas fichas afetadas.")
+
+
 def _replace_file(source: Path, destination: Path) -> None:
     """``os.replace`` atômico; em sistemas de arquivos diferentes, copia ao lado e então troca."""
     try:
@@ -593,6 +644,7 @@ def run_daily(config: PipelineConfig, mail_sender=send_mail) -> dict:
                 import_into_work(run)
                 verify(run, statuses)
                 publish(run)
+                update_snapshots(run)
             finally:
                 cleanup(config)
     except PipelineError as error:
@@ -642,6 +694,7 @@ def _build_parser() -> argparse.ArgumentParser:
     daily = commands.add_parser("daily", help="coleta e importa a cota do ano corrente")
     daily.add_argument("--year", type=int, default=None)
     daily.add_argument("--dry-run", action="store_true", help="faz tudo, menos substituir o banco publicado")
+    daily.add_argument("--db-only", action="store_true", help="só a cota no banco; não atualiza perfis nem situação dos projetos")
     daily.add_argument("--keep-backups", type=int, default=7)
     daily.add_argument("--max-roster-drop", type=float, default=0.05)
     daily.add_argument("--max-expense-drop", type=float, default=0.10)
@@ -658,7 +711,7 @@ def main(argv=None) -> int:
     db_path = args.db if args.db.is_absolute() else ROOT / args.db
     if args.command == "daily":
         config = PipelineConfig(
-            data_dir=data_dir, db_path=db_path, year=args.year or utc_now().year, dry_run=args.dry_run,
+            data_dir=data_dir, db_path=db_path, year=args.year or utc_now().year, dry_run=args.dry_run, db_only=args.db_only,
             keep_backups=args.keep_backups, max_roster_drop=args.max_roster_drop,
             max_expense_drop=args.max_expense_drop,
         )

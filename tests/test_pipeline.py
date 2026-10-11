@@ -53,6 +53,8 @@ class PipelineTests(unittest.TestCase):
         self.sent = []
         self.collector_exit = 0
         self.next_document = document()
+        self.snapshot_calls = []
+        self.snapshot_results = {'ingest/profiles.py': (0, 'arquivos anuais: completo=True projetos=4\nsnapshot perfis=8')}
 
     def tearDown(self):
         self.temp.cleanup()
@@ -66,8 +68,16 @@ class PipelineTests(unittest.TestCase):
     def fake_mail(self, mail, subject, body):
         self.sent.append((mail, subject, body))
 
+    # Os coletores de snapshot (perfis e situação) também são subprocessos; aqui respondem conforme combinado.
+    def fake_snapshot_collector(self, config, arguments):
+        self.snapshot_calls.append(arguments)
+        code, stdout = self.snapshot_results.get(arguments[0], (0, ''))
+        return subprocess.CompletedProcess(list(arguments), code, stdout=stdout, stderr='')
+
     def run_daily(self, config=None):
-        with mock.patch.object(pipeline, 'run_collector', self.fake_collector), redirect_stdout(StringIO()):
+        with mock.patch.object(pipeline, 'run_collector', self.fake_collector), \
+                mock.patch.object(pipeline, 'run_snapshot_collector', self.fake_snapshot_collector), \
+                redirect_stdout(StringIO()):
             return pipeline.run_daily(config or self.config, mail_sender=self.fake_mail)
 
     def counts(self):
@@ -81,7 +91,10 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(status['result'], 'ok', status)
         self.assertEqual(self.counts(), (8, 32))
         self.assertEqual([s['name'] for s in status['steps']],
-                         ['collect', 'validate', 'backup', 'stage', 'import', 'verify', 'publish', 'notify'])
+                         ['collect', 'validate', 'backup', 'stage', 'import', 'verify', 'publish',
+                          'profiles', 'project-status', 'notify'])
+        self.assertEqual([call[0] for call in self.snapshot_calls], ['ingest/profiles.py', 'ingest/project_status.py'])
+        self.assertIn('--max-age-hours', self.snapshot_calls[1])
         self.assertEqual(status['summary']['roster'], {'camara_deputies_current': 5, 'senado_senators_current': 3})
         self.assertEqual(json.loads(self.config.status_path.read_text())['result'], 'ok')
         self.assertEqual(len(self.config.history_path.read_text().splitlines()), 1)
@@ -153,7 +166,7 @@ class PipelineTests(unittest.TestCase):
         status = self.run_daily(pipeline.PipelineConfig(**{**self.config.__dict__, 'dry_run': True}))
         self.assertEqual(status['result'], 'ok')
         self.assertEqual(self.counts(), (8, 32))
-        self.assertIn('dry-run', status['steps'][-2]['skipped'])
+        self.assertIn('dry-run', next(s for s in status['steps'] if s['name'] == 'publish')['skipped'])
 
     def test_pending_journal_blocks_publication(self):
         self.run_daily()
@@ -169,6 +182,29 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(status['result'], 'failed')
         self.assertIn('em andamento', status['error'])
         self.assertEqual(status['steps'], [{**status['steps'][0]}])  # só o registro de aviso
+
+    def test_snapshot_collectors_run_after_publish_and_failures_are_partial(self):
+        self.snapshot_results['ingest/project_status.py'] = (1, 'Nenhuma situação consultada disponível')
+        status = self.run_daily()
+        self.assertEqual(status['result'], 'partial')
+        self.assertEqual(self.counts(), (8, 32))
+        statuses = {s['name']: s['status'] for s in status['steps']}
+        self.assertEqual((statuses['publish'], statuses['profiles'], statuses['project-status']), ('ok', 'ok', 'partial'))
+        self.assertIn('código 1', self.sent[0][2])
+        # Arquivos anuais incompletos: perfis avisam no stdout e a execução fica parcial.
+        self.sent.clear()
+        self.snapshot_results = {'ingest/profiles.py': (0, 'arquivos anuais: completo=False projetos=4')}
+        status = self.run_daily()
+        self.assertEqual(status['result'], 'partial')
+        self.assertIn('Arquivos anuais incompletos', self.sent[0][2])
+        # Falha do banco pula os snapshots; --db-only também.
+        self.snapshot_calls.clear()
+        self.next_document = document(period='2025')
+        self.run_daily()
+        self.assertEqual(self.snapshot_calls, [])
+        self.next_document = document()
+        self.run_daily(pipeline.PipelineConfig(**{**self.config.__dict__, 'db_only': True}))
+        self.assertEqual(self.snapshot_calls, [])
 
     def test_mail_config_and_report(self):
         self.assertIsNone(pipeline.MailConfig.from_environ({}))

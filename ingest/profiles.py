@@ -327,6 +327,8 @@ def _clean_mandate(value: Any) -> dict[str, Any] | None:
         result["detail"] = detail
     if value.get("stale") is True:
         result["stale"] = True
+    if value.get("method") == "arquivos-anuais":
+        result["method"] = "arquivos-anuais"
     return result
 
 
@@ -342,13 +344,19 @@ def _clean_projects(value: Any) -> dict[str, Any] | None:
             identifier = _text(str(item.get("id") or ""), 60)
             if not identifier:
                 continue
-            items.append({
+            cleaned = {
                 "id": identifier,
                 "titulo": _text(item.get("titulo"), 300),
                 "ementa": _text(item.get("ementa"), 12000),
                 "situacao": _text(item.get("situacao"), 300),
                 "url": _official_url(item.get("url")),
-            })
+            }
+            # Campos dos arquivos anuais (ingest/chamber_projects.py); ausentes na consulta por deputado.
+            if _text(item.get("apresentadaEm"), 10):
+                cleaned["apresentadaEm"] = _text(item.get("apresentadaEm"), 10)
+            if isinstance(item.get("proponente"), bool):
+                cleaned["proponente"] = item["proponente"]
+            items.append(cleaned)
     total = value.get("total")
     if isinstance(total, bool) or not isinstance(total, int) or total < 0:
         total = None
@@ -365,6 +373,8 @@ def _clean_projects(value: Any) -> dict[str, Any] | None:
         result["detail"] = detail
     if value.get("stale") is True:
         result["stale"] = True
+    if value.get("method") == "arquivos-anuais":
+        result["method"] = "arquivos-anuais"
     return result
 
 
@@ -600,6 +610,17 @@ def _keep_project_observation(
     return refreshed
 
 
+def _reconcile_projects(previous: dict[str, Any] | None, refreshed: dict[str, Any]) -> dict[str, Any] | None:
+    """Compara a lista anterior completa (consulta por deputado) com a dos arquivos anuais."""
+    if not isinstance(previous, dict) or previous.get("status") != "imported" or refreshed.get("status") != "imported":
+        return None
+    if previous.get("method") == "arquivos-anuais":
+        return None
+    before = {str(item.get("id")) for item in previous.get("items", []) if isinstance(item, dict)}
+    after = {str(item.get("id")) for item in refreshed.get("items", []) if isinstance(item, dict)}
+    return {"anterior": len(before), "arquivos": len(after), "soNaConsulta": sorted(before - after), "soNosArquivos": sorted(after - before)}
+
+
 def _office_section(authority: dict[str, Any], raw_root: Path, collect: bool, refresh: bool) -> dict[str, Any]:
     if authority.get("role") != "deputado":
         return {
@@ -629,9 +650,11 @@ def build_profile(
     raw_root: Path = RAW_PROFILES,
     collect: bool = False,
     refresh: bool = False,
+    archive_sections: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     authority_id = str(authority["id"])
     chamber, identifier = _chamber(authority_id)
+    archive_projects = (archive_sections or {}).get(identifier) if chamber == "camara" else None
     source_id = authority.get("sourceId")
     roster_stamp = _text(sources.get(str(source_id), {}).get("fetchedAt"), 40)
     official_profile_url = _profile_page(authority)
@@ -678,9 +701,18 @@ def build_profile(
         photo = cache["photo"]
     base["photo"] = photo
 
+    if archive_projects is not None:
+        # Projetos pelos arquivos anuais: substituem a consulta por deputado; uma leitura incompleta
+        # preserva a observação anterior completa. A conciliação registra diferenças com a consulta antiga.
+        previous = cache.get("projetos")
+        projects = _keep_project_observation(previous, archive_projects)
+        base["_reconciliation"] = _reconcile_projects(previous, archive_projects)
+        if collect:
+            _write_profile_cache(authority_id, {"contact": contact, "mandato": mandate, "projetos": projects, "photo": photo}, raw_root)
+
     if collect and chamber == "camara":
         needs_collect = refresh or not cache.get("contact") or cache["contact"].get("status") == "unavailable"
-        needs_projects = (
+        needs_projects = archive_projects is None and (
             refresh or not cache.get("projetos") or cache["projetos"].get("status") != "imported"
         )
         if needs_collect:
@@ -724,13 +756,33 @@ def build_profile(
     return base
 
 
+def _load_project_archive(
+    root: Path, roster: list[dict[str, Any]], collect: bool, refresh: bool, max_age_hours: float | None,
+) -> tuple[dict[str, dict[str, Any]], dict[str, Any] | None]:
+    """Seções de projetos pelos arquivos anuais da Câmara, por identificador de deputado."""
+    from ingest import chamber_projects, project_status
+
+    identifiers = [_chamber(str(row["id"]))[1] for row in roster if row.get("role") == "deputado"]
+    if not identifiers:
+        return {}, None
+    archive = chamber_projects.load_archives(
+        root, collect=collect, refresh=refresh, max_age_hours=max_age_hours,
+        fetch=project_status.request_archive if collect else None,
+    )
+    return chamber_projects.sections_by_deputy(identifiers, archive), chamber_projects.summary(archive)
+
+
 def build_snapshot(
     root: Path = ROOT,
     output: Path | None = None,
     collect: bool = False,
     refresh: bool = False,
     limit: int | None = None,
+    projects_source: str = "auto",
+    archive_max_age_hours: float | None = None,
 ) -> tuple[dict[str, Any], dict[str, int]]:
+    """``projects_source``: ``auto`` usa os arquivos anuais da Câmara ao coletar e os caches das fichas
+    sem rede; ``archive`` força os arquivos anuais também sem rede; ``api`` mantém a consulta por deputado."""
     import_path = root / "data" / "imports" / "legislative.json"
     payload = _json_from_path(import_path)
     if not isinstance(payload, dict):
@@ -742,6 +794,14 @@ def build_snapshot(
         sources, root / "data" / "raw" / "legislative" / "senadores-atual.xml"
     )
     raw_root = root / "data" / "raw" / "profiles"
+    archive_sections: dict[str, dict[str, Any]] = {}
+    archive_summary = None
+    if projects_source == "archive" or (projects_source == "auto" and collect):
+        from ingest.chamber_projects import DEFAULT_MAX_AGE_HOURS
+        archive_sections, archive_summary = _load_project_archive(
+            root, roster, collect, refresh,
+            DEFAULT_MAX_AGE_HOURS if archive_max_age_hours is None else archive_max_age_hours,
+        )
     profiles: list[dict[str, Any]] = []
     collect_targets = roster[:limit] if limit is not None else roster
     target_ids = {row["id"] for row in collect_targets} if collect else set()
@@ -754,6 +814,7 @@ def build_snapshot(
             senate_profiles,
             raw_root=raw_root,
             collect=False,
+            archive_sections=archive_sections if not collect else None,
         ))
     if collect and target_ids:
         with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
@@ -767,6 +828,7 @@ def build_snapshot(
                     raw_root,
                     True,
                     refresh,
+                    archive_sections,
                 ): authority["id"]
                 for authority in collect_targets
             }
@@ -784,7 +846,10 @@ def build_snapshot(
                 done += 1
                 print(f"perfis consultados: {done}/{len(target_ids)}")
     generated = utc_now()
+    reconciliation = _summarize_reconciliation(profiles)
     snapshot = {"generatedAt": generated, "profiles": {profile["id"]: profile for profile in profiles}}
+    if archive_summary is not None:
+        snapshot["projectsArchive"] = {**archive_summary, "conciliacao": reconciliation}
     destination = output or (root / "data" / "snapshots" / "perfis.json")
     _atomic_json(destination, snapshot)
     projects = sum(len(profile["projetos"].get("items", [])) for profile in profiles)
@@ -796,7 +861,31 @@ def build_snapshot(
         "projects": projects,
         "snapshotBytes": destination.stat().st_size,
     }
+    if archive_summary is not None:
+        stats["projectsArchive"] = archive_summary
+        stats["reconciliation"] = reconciliation
     return snapshot, stats
+
+
+def _summarize_reconciliation(profiles: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """Retira a conciliação por ficha e resume: quantos deputados comparados e quantos divergem."""
+    compared = differing = only_api = only_archive = 0
+    examples: list[dict[str, Any]] = []
+    for profile in profiles:
+        comparison = profile.pop("_reconciliation", None)
+        if not comparison:
+            continue
+        compared += 1
+        if comparison["soNaConsulta"] or comparison["soNosArquivos"]:
+            differing += 1
+            only_api += len(comparison["soNaConsulta"])
+            only_archive += len(comparison["soNosArquivos"])
+            if len(examples) < 20:
+                examples.append({"id": profile["id"], **comparison})
+    if not compared:
+        return None
+    return {"deputadosComparados": compared, "deputadosDivergentes": differing,
+            "projetosSoNaConsulta": only_api, "projetosSoNosArquivos": only_archive, "exemplos": examples}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -805,6 +894,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--refresh", action="store_true", help="refaz dados que já têm cache")
     parser.add_argument("--limit", type=int, help="limita perfis que fazem consultas; o snapshot mantém todos")
     parser.add_argument("--output", type=Path, help="caminho do snapshot JSON de saída")
+    parser.add_argument("--projects-source", choices=("auto", "archive", "api"), default="auto",
+                        help="auto: arquivos anuais da Câmara ao coletar; archive: também sem rede; api: consulta por deputado")
+    parser.add_argument("--archive-max-age-hours", type=float, default=None,
+                        help="validade do cache do arquivo anual do ano corrente (padrão: 20 horas)")
     args = parser.parse_args(argv)
     if args.limit is not None and args.limit < 1:
         parser.error("--limit deve ser pelo menos 1")
@@ -819,7 +912,20 @@ def main(argv: list[str] | None = None) -> int:
         collect=args.collect,
         refresh=args.refresh,
         limit=args.limit,
+        projects_source=args.projects_source,
+        archive_max_age_hours=args.archive_max_age_hours,
     )
+    if stats.get("projectsArchive"):
+        archive = stats["projectsArchive"]
+        print(
+            "arquivos anuais:",
+            f"completo={archive['complete']}",
+            f"projetos={archive['projetosDistintos']}",
+            f"associacoes={archive['associacoes']}",
+            f"deputadosComAssinatura={archive['deputadosComAssinatura']}",
+        )
+        if stats.get("reconciliation"):
+            print("conciliacao:", json.dumps(stats["reconciliation"], ensure_ascii=False))
     print(
         "snapshot",
         f"perfis={stats['profiles']}",

@@ -144,3 +144,49 @@ class ProjectStatusCollectionTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ArchiveFreshnessTests(ProjectStatusCollectionTests):
+    """Arquivos anuais com validade e detalhes reconsultados só quando o andamento é posterior à consulta."""
+
+    def test_annual_archive_expires_by_age_and_details_follow_newer_steps(self):
+        from datetime import datetime, timedelta, timezone
+        from ingest import project_status_chamber
+        self.archive_stamp = '2026-10-01'
+        calls = []
+        def request(url):
+            calls.append(url)
+            if '/api/v2/proposicoes/11' in url:
+                return encoded({'dados': {'id': 11, 'siglaTipo': 'PL', 'statusProposicao': {
+                    'dataHora': self.archive_stamp + 'T10:00', 'descricaoSituacao': 'Pronta para pauta'}}})
+            if '/arquivos/' in url:
+                return encoded({'dados': [
+                    {'id': 10, 'siglaTipo': 'PL', 'ultimoStatus': {'data': '2026-10-01', 'descricaoSituacao': 'Arquivada'}},
+                    {'id': 11, 'siglaTipo': 'PL', 'ultimoStatus': {'data': self.archive_stamp, 'descricaoSituacao': 'Pronta para pauta'}},
+                ]})
+            return self.request(url)
+        archive_url = project_status.CHAMBER + '/arquivos/proposicoes/json/proposicoes-2026.json'
+        detail_url = project_status.CHAMBER + '/api/v2/proposicoes/11'
+        with patch.object(project_status_chamber, 'needs_detail', side_effect=lambda row: str(row.get('id')) == '11'):
+            project_status.build_snapshot(root=self.root, collect=True, request=request, max_age_hours=20)
+            self.assertEqual(calls.count(archive_url), 1)
+            self.assertEqual(calls.count(detail_url), 1)
+            # Dentro da validade: nem o arquivo nem o detalhe são reconsultados.
+            project_status.build_snapshot(root=self.root, collect=True, request=request, max_age_hours=20)
+            self.assertEqual((calls.count(archive_url), calls.count(detail_url)), (1, 1))
+            # Cache vencido e andamento posterior à consulta do detalhe: arquivo e detalhe reconsultados.
+            meta_path = self.root / 'data' / 'raw' / 'projetos-situacao' / 'camara' / 'proposicoes-2026.meta.json'
+            meta = json.loads(meta_path.read_text())
+            meta['consultadoEm'] = (datetime.now(timezone.utc) - timedelta(hours=30)).replace(microsecond=0).isoformat()
+            meta_path.write_text(json.dumps(meta))
+            self.archive_stamp = '2099-01-01'
+            snapshot = project_status.build_snapshot(root=self.root, collect=True, request=request, max_age_hours=20)
+            self.assertEqual((calls.count(archive_url), calls.count(detail_url)), (2, 2))
+            self.assertEqual(snapshot['projects']['camara:11']['atualizadoEm'][:4], '2099')
+            # Vencido de novo, mas sem andamento posterior à consulta do detalhe: só o arquivo volta a ser lido.
+            self.archive_stamp = '2026-10-01'
+            meta = json.loads(meta_path.read_text())
+            meta['consultadoEm'] = (datetime.now(timezone.utc) - timedelta(hours=30)).replace(microsecond=0).isoformat()
+            meta_path.write_text(json.dumps(meta))
+            project_status.build_snapshot(root=self.root, collect=True, request=request, max_age_hours=20)
+            self.assertEqual((calls.count(archive_url), calls.count(detail_url)), (3, 2))

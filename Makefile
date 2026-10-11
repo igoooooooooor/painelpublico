@@ -72,9 +72,10 @@ import:
 collect-legislative:
 	$(PYTHON) ingest/legislative.py --year $(or $(YEAR),2026)
 
-# Atualização automática (ver docs/deploy.md). DRY_RUN=1 faz tudo, menos trocar o banco publicado.
+# Atualização automática (ver docs/deploy.md). DRY_RUN=1 faz tudo, menos trocar o banco publicado;
+# DB_ONLY=1 pula perfis e situação dos projetos.
 update-daily:
-	$(PYTHON) -m ingest.pipeline daily $(if $(YEAR),--year $(YEAR),) $(if $(DRY_RUN),--dry-run,)
+	$(PYTHON) -m ingest.pipeline daily $(if $(YEAR),--year $(YEAR),) $(if $(DRY_RUN),--dry-run,) $(if $(DB_ONLY),--db-only,)
 
 pipeline-status:
 	$(PYTHON) -m ingest.pipeline status

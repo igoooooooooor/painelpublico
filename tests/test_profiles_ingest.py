@@ -1,4 +1,5 @@
 import json
+from datetime import date as datetime_date
 from pathlib import Path
 import tempfile
 import unittest
@@ -175,3 +176,85 @@ class ProfileIngestTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ProjectArchiveIntegrationTests(unittest.TestCase):
+    """Projetos pelos arquivos anuais da Câmara dentro do snapshot de fichas."""
+
+    def setUp(self):
+        from ingest import chamber_projects, project_status
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        imports = self.root / 'data' / 'imports'
+        imports.mkdir(parents=True)
+        (imports / 'legislative.json').write_text(json.dumps({
+            'sources': [{'id': 'camara_deputies_current', 'fetchedAt': '2026-10-11T00:00:00+00:00'}],
+            'authorities': [{'id': 'camara:100', 'name': 'Deputado Cem', 'role': 'deputado', 'sourceId': 'camara_deputies_current'}],
+        }), encoding='utf-8')
+        raw = self.root / 'data' / 'raw' / 'projetos-situacao' / 'camara'
+        rows = {2026: ([{'id': 5, 'siglaTipo': 'PL', 'numero': 7, 'ano': 2026, 'ementa': 'Nova', 'dataApresentacao': '2026-02-02T09:00'}],
+                       [{'idProposicao': 5, 'idDeputadoAutor': 100, 'proponente': 1}])}
+        for year in chamber_projects.archive_years(datetime_date(2026, 10, 11)):
+            propositions, signatures = rows.get(year, ([], []))
+            for url, name, dados in ((chamber_projects.PROPOSITIONS_URL.format(year=year), f'proposicoes-{year}.json', propositions),
+                                     (chamber_projects.AUTHORS_URL.format(year=year), f'proposicoesAutores-{year}.json', signatures)):
+                project_status.cached_json(url, raw / name, collect=True, request=lambda _u, d=dados: json.dumps({'dados': d}).encode())
+        self.raw_profiles = self.root / 'data' / 'raw' / 'profiles'
+        self.api_projects = {
+            'status': 'imported', 'period': profiles.CHAMBER_PROJECTS_PERIOD, 'fetchedAt': '2026-09-01T00:00:00+00:00',
+            'sourceUrl': profiles._project_list_url('camara:100'), 'total': 2,
+            'items': [{'id': '5', 'titulo': 'PL 7/2026', 'ementa': 'Nova', 'situacao': None, 'url': None},
+                      {'id': '99', 'titulo': 'PL 99/2025', 'ementa': 'Só na consulta antiga', 'situacao': None, 'url': None}],
+        }
+        contact = {'email': 'cem@camara.leg.br', 'telefones': [], 'endereco': None, 'redes': [], 'status': 'imported',
+                   'sourceUrl': 'https://dadosabertos.camara.leg.br/api/v2/deputados/100', 'fetchedAt': '2026-09-01T00:00:00+00:00'}
+        profiles._write_profile_cache('camara:100', {'contact': contact, 'mandato': profiles._empty_mandate(contact['sourceUrl']),
+                                                     'projetos': self.api_projects, 'photo': None}, self.raw_profiles)
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def build(self, **kwargs):
+        with patch.object(profiles, '_office_section', return_value={'status': 'unavailable'}), \
+                patch.object(profiles, '_request_json', side_effect=RuntimeError('sem rede no teste')), \
+                patch('builtins.print'):
+            return profiles.build_snapshot(self.root, self.root / 'perfis.json', **kwargs)
+
+    def test_offline_default_keeps_cache_and_archive_mode_rebuilds_with_reconciliation(self):
+        snapshot, stats = self.build()
+        self.assertEqual([item['id'] for item in snapshot['profiles']['camara:100']['projetos']['items']], ['5', '99'])
+        self.assertNotIn('projectsArchive', snapshot)
+
+        snapshot, stats = self.build(projects_source='archive')
+        section = snapshot['profiles']['camara:100']['projetos']
+        self.assertEqual((section['status'], section['total'], section['method']), ('imported', 1, 'arquivos-anuais'))
+        self.assertEqual(section['items'][0]['apresentadaEm'], '2026-02-02')
+        self.assertTrue(section['items'][0]['proponente'])
+        self.assertEqual(section['sourceUrl'], 'https://dadosabertos.camara.leg.br/swagger/api.html#staticfile')
+        archive = snapshot['projectsArchive']
+        self.assertEqual((archive['complete'], archive['projetosDistintos'], archive['associacoes']), (True, 1, 1))
+        self.assertEqual(archive['conciliacao'], {
+            'deputadosComparados': 1, 'deputadosDivergentes': 1, 'projetosSoNaConsulta': 1, 'projetosSoNosArquivos': 0,
+            'exemplos': [{'id': 'camara:100', 'anterior': 2, 'arquivos': 1, 'soNaConsulta': ['99'], 'soNosArquivos': []}]})
+        self.assertNotIn('_reconciliation', snapshot['profiles']['camara:100'])
+        # Sem rede, o cache da ficha não foi reescrito.
+        self.assertEqual(profiles._read_profile_cache('camara:100', self.raw_profiles)['projetos']['total'], 2)
+
+    def test_collect_writes_archive_projects_to_cache_without_per_deputy_queries(self):
+        snapshot, stats = self.build(collect=True)
+        self.assertEqual(stats['projectsArchive']['method'], 'arquivos-anuais')
+        cached = profiles._read_profile_cache('camara:100', self.raw_profiles)['projetos']
+        self.assertEqual((cached['status'], cached['total'], cached['method']), ('imported', 1, 'arquivos-anuais'))
+        self.assertEqual(cached['items'][0]['apresentadaEm'], '2026-02-02')
+        self.assertTrue(cached['items'][0]['proponente'])
+        # Nova execução: a conciliação não se repete, pois a observação anterior já veio dos arquivos.
+        snapshot, stats = self.build(collect=True)
+        self.assertIsNone(snapshot['projectsArchive']['conciliacao'])
+        # Arquivo de um ano ausente: a observação completa anterior é preservada e marcada como desatualizada.
+        for name in ('proposicoes-2024.json', 'proposicoes-2024.meta.json'):
+            (self.root / 'data' / 'raw' / 'projetos-situacao' / 'camara' / name).unlink()
+        snapshot, stats = self.build(collect=True)
+        section = snapshot['profiles']['camara:100']['projetos']
+        self.assertEqual((section['status'], section['total'], section.get('stale')), ('imported', 1, True))
+        self.assertIn('2024', section['detail'])
+        self.assertFalse(stats['projectsArchive']['complete'])
