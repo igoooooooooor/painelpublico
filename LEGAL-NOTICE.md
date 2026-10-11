@@ -41,3 +41,5 @@ O site não tem cadastro nem anúncios.
 ## Licença
 
 O código deste repositório está sob a [licença MIT](LICENSE). A licença cobre o código, não os dados: as informações exibidas pertencem às respectivas fontes públicas, e nomes e marcas de órgãos pertencem a eles.
+
+Os releases de dados publicados no GitHub (`make publish-data`) reúnem essas informações como estão nas fontes, sem garantia, e cada uma segue as condições de uso do órgão que a publicou. A licença dessa compilação ainda não foi definida; enquanto isso, cite a fonte oficial e o release usado.

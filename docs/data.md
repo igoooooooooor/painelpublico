@@ -124,6 +124,26 @@ A API pagina os resumos e carrega os votos individuais por decisão. A home,
 fichas, partidos e comparações mantêm as quatro seleções originais. Um clone
 sem catálogo mostra essas seleções com a limitação explícita.
 
+## Publicar a base
+
+O repositório publica só código; a base vai para o público como **release de dados no GitHub**, com tag datada:
+
+```sh
+make publish-data                      # tag data-AAAA-MM-DD de hoje
+make publish-data TAG=data-2026-10-11  # tag explícita
+make publish-data DRY_RUN=1            # só monta o pacote em data/releases/<tag>/, sem publicar
+```
+
+`scripts/publish_data.py` monta em `data/releases/<tag>/` o mesmo conjunto que `make deploy-data` envia ao servidor:
+
+- `na-lupa-<tag>.sqlite3.gz`: cópia consistente do banco pela API de backup do SQLite, com `VACUUM` na cópia e gzip. O banco de origem não é tocado.
+- `snapshots-<tag>.tar.gz`: `data/snapshots/`, menos os insumos listados em `deploy/snapshots-local-only.txt` (folha, moradia e auditorias do custo do mandato, que o site não lê) e menos as gerações antigas de `chamber-vote-details/`: só entra a apontada por `detailsVersion` em `chamber-votes.json`.
+- `reviews-<tag>.tar.gz`: `chamber-vote-reviews-*.json` e `chamber-vote-segment-reviews-*.json` de `data/reviews/`, sem rascunhos (`.draft.json`). São as decisões humanas do Placar, que nenhum coletor reconstrói; sem elas, `make collect-vote-inventory` só produz o inventário bruto.
+- `manifest.json`: SHA-256 e tamanho de cada arquivo, versão do esquema, contagem por tabela, lista dos snapshots e revisões e o commit em que o pacote foi gerado.
+- `NOTES.md`: notas do release em pt-BR, com conteúdo, como usar, fontes e limites. Vão como descrição do release.
+
+Os brutos de `data/raw/`, `data/imports/`, backups e a fila editorial ficam de fora. O comando exige `gh` autenticado (`gh auth login`), recusa uma tag que já tenha release e cria a tag no último commit da `main` remota, então publique o código antes dos dados. Quem baixa usa `PAINEL_DB` e `PAINEL_SNAPSHOTS` para rodar o site sobre o pacote, ou abre o SQLite em qualquer cliente. Recoletar uma fonte pode produzir outro retrato; a tag identifica a fotografia. Antes de cada release, confira o que mudou no esquema e nos snapshots desde o anterior e revise `NOTES.md` gerado; a licença dos dados ainda não foi definida (ver [Aviso legal](../LEGAL-NOTICE.md)).
+
 ## Base e recursos
 
 O esquema normalizado contém `sources(id,label,url,scope,period,status,detail,fetchedAt)`,

@@ -23,7 +23,7 @@ Abra [localhost:8000](http://127.0.0.1:8000/). `make dev` gera `dist/index.html`
 
 A base já existente em `data/na-lupa.sqlite3` é preservada. Este repositório publica somente código, testes e documentação: banco, snapshots complementares, downloads e credenciais são locais.
 
-**Em um clone novo**, `make check`, `make build` e `make dev` não dependem de `editorial.json` nem de snapshots privados. `make db-init` prepara um banco vazio; para consultar a base parlamentar completa, obtenha os arquivos normalizados e importe-os conforme [Dados e SQLite](docs/data.md). O build não baixa dados. Presença, votos e perfis são complementos opcionais, coletados manualmente; no servidor, a cota do ano corrente é atualizada todo dia por um timer do systemd.
+**Em um clone novo**, `make check`, `make build` e `make dev` não dependem de `editorial.json` nem de snapshots privados. `make db-init` prepara um banco vazio; para consultar a base parlamentar completa, baixe o release de dados mais recente (`make publish-data` gera um) ou obtenha os arquivos normalizados e importe-os conforme [Dados e SQLite](docs/data.md#publicar-a-base). O build não baixa dados. Presença, votos e perfis são complementos opcionais, coletados manualmente; no servidor, a cota do ano corrente é atualizada todo dia por um timer do systemd.
 
 Sem Make:
 
@@ -62,6 +62,7 @@ python3 -m backend.server --port 8000
 | `make pipeline-status` | Último resultado das atualizações automáticas |
 | `make prod` | Rodar como em produção (cache, só localhost) |
 | `make deploy` / `make deploy-data` | Publicar código / banco e snapshots no servidor; push na `main` já publica o código ([Publicação](docs/deploy.md)) |
+| `make publish-data` | Publicar banco, snapshots e revisões do Placar como release de dados no GitHub; `DRY_RUN=1` só monta o pacote ([Dados e SQLite](docs/data.md#publicar-a-base)) |
 | `make deploy-status` | Ver se o site está no ar |
 
 ## Estrutura

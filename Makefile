@@ -8,7 +8,7 @@ CURRENT_YEAR := $(shell date +%Y)
 HISTORY_YEARS := $(shell seq 2023 $$(( $(CURRENT_YEAR) - 1 )))
 
 
-.PHONY: ci deploy-data remote-build collect-vote-inventory collect-votes update-daily update-monthly update-weekly pipeline-status pipeline-test-mail
+.PHONY: ci deploy-data publish-data remote-build collect-vote-inventory collect-votes update-daily update-monthly update-weekly pipeline-status pipeline-test-mail
 .PHONY: help build dev prod test check db-init db-check db-backup import collect-legislative collect-profiles collect-senate collect-senate-mandate collect-project-status collect-elections collect-cities collect-amendments collect-accounts collect-mandate-cost audit-mandate-cost collect-mandate-history collect-senate-cost collect-tenure collect-senate-participation deploy deploy-db deploy-status
 help:
 	@echo "make dev                Gera o app e inicia em localhost:8000"
@@ -35,6 +35,7 @@ help:
 	@echo "make prod               Roda como em produção (cache, só localhost)"
 	@echo "make deploy SERVER=...  Testa e publica o código no servidor"
 	@echo "make deploy-data SERVER=...  Envia banco e snapshots (alias: deploy-db)"
+	@echo "make publish-data [TAG=data-AAAA-MM-DD]  Publica banco, snapshots e revisões do Placar como release no GitHub (DRY_RUN=1 só empacota)"
 	@echo "make ci                 Sintaxe e testes sem dados privados (CI)"
 	@echo "make update-daily       Atualização diária da cota: coleta, importa, verifica e publica (docs/deploy.md)"
 	@echo "make update-monthly     Cadeia mensal: custo do mandato, histórico da cota, Senado e página (docs/deploy.md)"
@@ -195,6 +196,11 @@ deploy-data:
 	@echo "Banco e snapshots publicados; página remontada e serviço reiniciado."
 
 deploy-db: deploy-data
+
+# Release público de dados no GitHub (docs/data.md#publicar-a-base). Monta o pacote em data/releases/<tag>/
+# e anexa ao release; DRY_RUN=1 só monta. O release cria a tag no último commit da main remota.
+publish-data:
+	$(PYTHON) scripts/publish_data.py $(if $(TAG),--tag $(TAG),) $(if $(TITLE),--title "$(TITLE)",) $(if $(DRY_RUN),--dry-run,)
 
 deploy-status:
 	$(SSH) $(SERVER) 'systemctl is-active painel && curl -fsS http://127.0.0.1:8000/healthz && echo'
