@@ -83,8 +83,7 @@ Para ver o estado sem e-mail: `make deploy-status` do seu computador, ou
 
 O job semanal escreve `data/reviews/editorial-queue.md` e manda por e-mail quando há novidade.
 
-- **Revisar votações do Placar.** As revisões ficam no seu computador e vão para o servidor com
-  `make deploy-reviews` (só elas, sem tocar o banco); sem isso, a fila do servidor conta tudo como sem revisão. Para cada candidato sem revisão, o semanal gera um rascunho em
+- **Revisar votações do Placar.** Para cada candidato sem revisão, o semanal gera um rascunho em
   `data/reviews/chamber-vote-reviews-draft-<data>.json` com os campos objetivos já preenchidos
   (ID, data, proposição, placar, links da API e da ficha). Falta conferir o relatório nominal,
   colar o link dele em `sources.rollCall`, escrever `title`, `summary`, `decisionLabel`,
@@ -101,6 +100,25 @@ O job semanal escreve `data/reviews/editorial-queue.md` e manda por e-mail quand
 - **Troca de legislatura (1º/2/2027).** Iniciar o novo recorte do mandato é decisão explícita
   (`PAINEL_MANDATE_START`), porque apaga o mandato anterior das fichas enquanto não existir a tela
   de histórico. Roteiro em [Publicação](deploy.md#troca-de-legislatura-roteiro-para-1º22027).
+
+### Por que as revisões do Placar não estão no servidor
+
+As revisões são arquivos JSON escritos à mão em `data/reviews/`, no computador de quem revisa.
+Elas não estão no Git, porque toda a pasta `data/` fica fora do repositório, e não são
+coletadas de fonte nenhuma, porque são uma decisão editorial, não um dado oficial. Logo,
+nenhum job as cria e nenhum deploy as copia por padrão.
+
+O job semanal roda no servidor e pergunta "quais candidatos já têm revisão?" olhando a pasta
+`data/reviews/` de lá. Em um servidor que nunca recebeu as revisões, a resposta é nenhuma, e a
+fila lista todos os candidatos como sem revisão. Isso não é perda de dado: o catálogo publicado
+do Placar continua igual, porque ele vem dos snapshots, não da fila.
+
+Para o servidor saber o que já foi revisado, copie as revisões uma vez e sempre que fizer uma
+nova: `make deploy-reviews` envia só esses arquivos, sem tocar o banco nem os snapshots do
+servidor. Depois, `sudo systemctl start painel-ingest-weekly.service` lá refaz a fila. O
+comando é separado do `make deploy-data` de propósito: este também substitui o banco do
+servidor pela cópia local, e o banco do servidor é atualizado todo dia pelo job diário, ficando
+mais novo que a cópia local.
 
 ## Como adicionar uma fonte nova ao pipeline
 
