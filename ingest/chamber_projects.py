@@ -30,15 +30,15 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from ingest import project_status  # noqa: E402
+from ingest import periods, project_status  # noqa: E402
 
 CHAMBER = 'https://dadosabertos.camara.leg.br'
 PROPOSITIONS_URL = CHAMBER + '/arquivos/proposicoes/json/proposicoes-{year}.json'
 AUTHORS_URL = CHAMBER + '/arquivos/proposicoesAutores/json/proposicoesAutores-{year}.json'
 ARCHIVE_PAGE = 'https://dadosabertos.camara.leg.br/swagger/api.html#staticfile'
 PROJECT_TYPES = ('PL', 'PLP', 'PEC')
-PERIOD_START = date(2023, 2, 1)
-PERIOD_LABEL = 'PL, PLP e PEC apresentados desde 2023-02-01'
+PERIOD_START = periods.MANDATE_START
+PERIOD_LABEL = f'PL, PLP e PEC apresentados desde {PERIOD_START.isoformat()}'
 DEFAULT_MAX_AGE_HOURS = 20.0
 
 

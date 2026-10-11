@@ -301,6 +301,48 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(status['result'], 'failed')
         self.assertIn('Fila editorial não gerada', status['error'])
 
+    def test_weekly_runs_due_events_and_reports_them(self):
+        self.snapshot_results['ingest.editorial_queue'] = (0, 'resumo: {"placar": "ok", "candidatos": 1, "semRevisao": 0, '
+                                                            '"pendentes": 0, "novos": [], "arquivosManuais": [], "atencao": false}')
+        due = {'id': 'second-round-2026', 'date': '2026-10-25', 'label': 'Segundo turno', 'status': 'due', 'detail': 'pendente',
+               'actions': [{'name': 'event-elections', 'arguments': ['ingest/elections_2026.py', '--collect']}]}
+        done = {**due, 'status': 'done', 'detail': 'feito'}
+        done.pop('actions')
+        quiet = {'id': 'legislature-58', 'date': '2027-02-01', 'label': 'Troca', 'status': 'not_due', 'detail': 'posse'}
+        answers = iter([[due, quiet], [done, quiet]])
+        with mock.patch.object(pipeline.calendar_events, 'pending_events', side_effect=lambda *a, **k: next(answers)), \
+                mock.patch.object(pipeline, 'run_snapshot_collector', self.fake_snapshot_collector), redirect_stdout(StringIO()):
+            status = pipeline.run_weekly(self.config, mail_sender=self.fake_mail)
+        self.assertEqual(status['result'], 'ok')
+        self.assertEqual([s['name'] for s in status['steps']], ['vote-inventory', 'editorial-queue', 'event-elections', 'notify'])
+        self.assertEqual(self.snapshot_calls[-1], ('ingest/elections_2026.py', '--collect'))
+        self.assertEqual(status['summary']['events']['events'][0]['status'], 'done')
+        self.assertEqual(self.sent, [])  # sem pendência restante, sem aviso
+        # Evento que continua pendente (fonte ainda não regenerada) avisa.
+        self.sent.clear()
+        answers = iter([[due, quiet], [due, quiet]])
+        with mock.patch.object(pipeline.calendar_events, 'pending_events', side_effect=lambda *a, **k: next(answers)), \
+                mock.patch.object(pipeline, 'run_snapshot_collector', self.fake_snapshot_collector), redirect_stdout(StringIO()):
+            pipeline.run_weekly(self.config, mail_sender=self.fake_mail)
+        self.assertEqual(len(self.sent), 1)
+        self.assertIn('second-round-2026: due', self.sent[0][2])
+
+    def test_roster_guard_relaxes_in_the_first_weeks_of_a_legislature(self):
+        self.run_daily()
+        self.next_document = document(deputies=3, expenses_per_person=7)  # lista 40% menor: recusada em dia comum
+        self.assertEqual(self.run_daily()['result'], 'failed')
+        with mock.patch.dict('os.environ', {'PAINEL_TODAY': '2027-02-10'}):
+            status = self.run_daily()
+        self.assertEqual(status['result'], 'ok', status['error'])
+        self.assertIn('legislatura', status['summary']['turnover'])
+        self.assertEqual(self.counts()[0], 6)
+        # Lista vazia continua sem substituir a anterior (regra da importação), mesmo na janela.
+        self.next_document = document(deputies=0, chamber_status='unavailable', expenses_per_person=7)
+        with mock.patch.dict('os.environ', {'PAINEL_TODAY': '2027-02-10'}):
+            status = self.run_daily()
+        self.assertEqual(status['result'], 'partial')
+        self.assertEqual(self.counts()[0], 6)
+
     def test_mail_config_and_report(self):
         self.assertIsNone(pipeline.MailConfig.from_environ({}))
         mail = pipeline.MailConfig.from_environ({'PAINEL_MAIL_TO': 'a@x.br, b@x.br', 'PAINEL_SMTP_HOST': 'smtp.x.br',

@@ -20,9 +20,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+from ingest import periods  # noqa: E402
 from ingest.periods import history_years  # noqa: E402
 
-MANDATE_START = (2023, 2)
+MANDATE_START = (periods.MANDATE_START.year, periods.MANDATE_START.month)
 # Anos fechados do mandato, derivados da data (ingest/periods.py).
 YEARS = history_years()
 # Casa → (fonte no arquivo anual, prefixo do arquivo agregado, nome padrão da fonte).

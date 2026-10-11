@@ -7,9 +7,10 @@ cópia por troca atômica e avisa por e-mail. Depois do banco, atualiza os snaps
 Senado. O comando ``monthly`` roda a cadeia mensal do custo do mandato e do Senado (folha, moradia,
 exercício, gabinete e presença da Câmara, histórico da cota no banco, composição do custo, folha,
 exercício, presença, participação e tempo de mandato do Senado, impostos estaduais) e remonta a
-página. O comando ``weekly`` refaz o inventário de votações do Plenário e monta a fila editorial do
-Placar e dos arquivos mantidos à mão, avisando quando há trabalho novo para uma pessoa. Cada etapa
-fica registrada em ``data/status/<job>.json``.
+página. O comando ``weekly`` refaz o inventário de votações do Plenário, monta a fila editorial do
+Placar e dos arquivos mantidos à mão e executa os eventos com data pendentes (recoleta das eleições
+após o segundo turno), avisando quando há trabalho novo para uma pessoa. Cada etapa fica registrada
+em ``data/status/<job>.json``.
 
 Regras do orquestrador:
 
@@ -56,7 +57,8 @@ if str(ROOT) not in sys.path:
 from backend.config import DB_PATH, ROSTER_SOURCES  # noqa: E402
 from backend.database import backup_database, check_database  # noqa: E402
 from backend.public_store import import_documents  # noqa: E402
-from ingest.periods import current_year, history_years, parse_period, previous_month, today as reference_today  # noqa: E402
+from ingest import calendar_events  # noqa: E402
+from ingest.periods import current_year, history_years, legislature_turnover, parse_period, previous_month, today as reference_today  # noqa: E402
 
 QUOTA_SOURCES = ("camara_ceap", "senado_ceaps")
 DAILY_BACKUP_PREFIX = "na-lupa-daily-"
@@ -65,6 +67,7 @@ SNAPSHOT_TIMEOUT_SECONDS = 3600
 # Etapas mensais podem levar horas na primeira execução (histórico de folha e moradia desde 2023).
 MONTHLY_TOOL_TIMEOUT_SECONDS = 4 * 3600
 LOCK_WAIT_SECONDS = 1800
+TURNOVER_ROSTER_DROP = 0.5
 JOB_LABELS = {"daily": "diária", "monthly": "mensal", "weekly": "semanal"}
 # Validade dos arquivos anuais da Câmara na situação dos projetos: ano corrente a cada execução diária;
 # anos fechados (projetos antigos ainda tramitam) uma vez por semana.
@@ -446,14 +449,17 @@ def _counts(db_path: Path) -> dict:
 def regression_problems(before: dict, after: dict, config: PipelineConfig, statuses: dict) -> list[str]:
     """Quedas acima do limite não são publicadas; fontes indisponíveis mantêm o valor anterior e passam."""
     problems = []
+    # Nos primeiros 45 dias de uma legislatura a lista oficial cresce a cada posse: uma lista menor que a
+    # anterior não é regressão, e o limite da queda fica relaxado (nunca aceita lista vazia).
+    roster_limit = TURNOVER_ROSTER_DROP if legislature_turnover(reference_today()) else config.max_roster_drop
     for sid in ROSTER_SOURCES:
         old, new = before["roster"][sid], after["roster"][sid]
         if statuses.get(sid) != "imported":
             continue
         if new == 0 and old > 0:
             problems.append(f"lista {sid} ficou vazia (antes {old})")
-        elif old and (old - new) / old > config.max_roster_drop:
-            problems.append(f"lista {sid} caiu de {old} para {new} (limite {config.max_roster_drop:.0%})")
+        elif old and (old - new) / old > roster_limit:
+            problems.append(f"lista {sid} caiu de {old} para {new} (limite {roster_limit:.0%})")
     for sid in QUOTA_SOURCES:
         old, new = before["expenses"][sid], after["expenses"][sid]
         if statuses.get(sid) not in ("imported", "partial"):
@@ -483,6 +489,8 @@ def verify(run: Run, statuses: dict) -> dict:
             "roster": after["roster"], "expenses": after["expenses"], "historyNotes": after["historyNotes"],
             "snapshotAt": after["snapshotAt"], "previousSnapshotAt": before["snapshotAt"],
         })
+        if legislature_turnover(reference_today()):
+            run.summary["turnover"] = "início de legislatura: guarda da lista oficial relaxada por 45 dias"
         return after
 
 
@@ -666,6 +674,13 @@ def compose_report(status: dict) -> tuple[str, str]:
             lines.append(f"  snapshotAt: {summary['snapshotAt']} (anterior: {summary.get('previousSnapshotAt')})")
     if status.get("period"):
         lines.append(f"Período de referência: {status['period']}")
+    if summary.get("turnover"):
+        lines.append(f"Aviso: {summary['turnover']}")
+    events = summary.get("events")
+    if events:
+        lines += ["", "Eventos com data:"]
+        for event in events.get("events", []):
+            lines.append(f"  {event['id']}: {event['status']} — {event['detail']}")
     editorial = summary.get("editorial")
     if editorial:
         lines += ["", "Fila editorial:"]
@@ -696,7 +711,8 @@ def notify(run: Run, status: dict, mail_sender=send_mail) -> None:
     config = run.config
     record = {"name": "notify", "status": "ok", "startedAt": utc_now().isoformat(timespec="seconds")}
     mail = MailConfig.from_environ(config.environ)
-    attention = bool((status.get("summary") or {}).get("editorial", {}).get("atencao"))
+    summary = status.get("summary") or {}
+    attention = bool(summary.get("editorial", {}).get("atencao") or summary.get("events", {}).get("attention"))
     should_mail = status["result"] != "ok" or attention or (mail is not None and mail.on_success)
     if mail is None:
         record["mail"] = "não configurado (PAINEL_MAIL_TO e PAINEL_SMTP_HOST)"
@@ -842,6 +858,7 @@ def run_weekly(config: PipelineConfig, mail_sender=send_mail) -> dict:
                     summary_text = next((line[len("resumo: "):] for line in stdout_lines if line.startswith("resumo: ")), None)
                     if summary_text:
                         run.summary["editorial"] = json.loads(summary_text)
+            run_due_events(run, reference)
     except PipelineError as error:
         run.error = str(error)
         run.downgrade("failed")
@@ -853,6 +870,19 @@ def run_weekly(config: PipelineConfig, mail_sender=send_mail) -> dict:
     status = run.write(history=True)
     log(f"resultado: {RESULT_LABELS.get(status['result'], status['result'])}")
     return status
+
+
+def run_due_events(run: Run, reference) -> None:
+    """Executa as ações dos eventos com data pendentes e registra o estado de todos no resumo."""
+    config = run.config
+    events = calendar_events.pending_events(ROOT, reference)
+    for event in events:
+        for action in event.get("actions") or []:
+            if event["status"] == "due":
+                run_tool(run, action["name"], tuple(action["arguments"]), timeout=MONTHLY_TOOL_TIMEOUT_SECONDS)
+    if any(event.get("actions") and event["status"] == "due" for event in events):
+        events = calendar_events.pending_events(ROOT, reference)
+    run.summary["events"] = calendar_events.summary(events)
 
 
 def read_status(config: PipelineConfig) -> dict | None:

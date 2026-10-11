@@ -10,10 +10,29 @@ from datetime import date
 import os
 import re
 
-# Mandato atual: legislatura 57 da Câmara, a partir de 1º de fevereiro de 2023; mesmo recorte no Senado.
-MANDATE_START = date(2023, 2, 1)
+# Legislatura 57 da Câmara começou em 1º de fevereiro de 2023; a cada quatro anos começa outra.
+LEGISLATURE_ANCHOR = date(2023, 2, 1)
 MANDATE_LEGISLATURE = 57
 LEGISLATURE_YEARS = 4
+
+
+def _mandate_start() -> date:
+    """Início do recorte "mandato atual" usado por todos os coletores (o mesmo no Senado).
+
+    Fica em 1º/2/2023 até uma decisão explícita: a troca para a legislatura seguinte apaga o recorte
+    anterior das fichas e, por isso, não é automática. ``PAINEL_MANDATE_START=AAAA-MM-DD`` muda o
+    recorte em um único lugar (ver docs/deploy.md, "Troca de legislatura").
+    """
+    value = os.environ.get("PAINEL_MANDATE_START")
+    if value:
+        try:
+            return date.fromisoformat(value.strip())
+        except ValueError as error:
+            raise ValueError(f"PAINEL_MANDATE_START inválida: {value!r} (use AAAA-MM-DD)") from error
+    return LEGISLATURE_ANCHOR
+
+
+MANDATE_START = _mandate_start()
 # Prazo oficial da Câmara para apresentar a nota da cota: 90 dias após o mês da despesa (ver docs/alerts.md).
 CHAMBER_QUOTA_DEADLINE_DAYS = 90
 
@@ -75,13 +94,26 @@ def quota_closed_through(reference: date | None = None, deadline_days: int = CHA
 def legislature(reference: date | None = None) -> int:
     """Número da legislatura da Câmara em vigor na data (57ª: fev/2023 a jan/2027)."""
     reference = reference or today()
-    months = (reference.year - MANDATE_START.year) * 12 + reference.month - MANDATE_START.month
+    months = (reference.year - LEGISLATURE_ANCHOR.year) * 12 + reference.month - LEGISLATURE_ANCHOR.month
     return MANDATE_LEGISLATURE + months // (12 * LEGISLATURE_YEARS)
 
 
 def legislature_start(number: int) -> date:
     """1º de fevereiro do ano em que a legislatura começou."""
-    return date(MANDATE_START.year + LEGISLATURE_YEARS * (number - MANDATE_LEGISLATURE), MANDATE_START.month, 1)
+    return date(LEGISLATURE_ANCHOR.year + LEGISLATURE_YEARS * (number - MANDATE_LEGISLATURE), LEGISLATURE_ANCHOR.month, 1)
+
+
+def next_legislature_start(reference: date | None = None) -> date:
+    """Posse da próxima legislatura depois da data de referência."""
+    return legislature_start(legislature(reference or today()) + 1)
+
+
+def legislature_turnover(reference: date | None = None, days_after: int = 45) -> bool:
+    """Verdadeiro nos primeiros ``days_after`` dias de uma legislatura, quando a lista oficial ainda muda
+    (posses, suplentes) e uma queda na contagem não é regressão."""
+    reference = reference or today()
+    start = legislature_start(legislature(reference))
+    return 0 <= (reference - start).days < days_after
 
 
 def parse_months(value: str | None, default: tuple[int, ...] | None = None) -> tuple[int, ...]:

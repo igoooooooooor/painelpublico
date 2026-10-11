@@ -18,12 +18,13 @@ from ingest.mandate_cost_audit import (COMPLEMENT_CATEGORY, build as build_audit
                                       observed_payroll_components)
 
 ROOT = Path(__file__).resolve().parents[1]
+from ingest import periods  # noqa: E402
 from ingest.periods import current_year, history_years, quota_closed_through, today  # noqa: E402
 
 # Mandato atual (legislatura 57) até o último mês cujo prazo de apresentação das notas da cota já
 # encerrou (90 dias após o mês; a mesma regra dos alertas). Até 11/10/2026 o limite era fixo em jul/2026.
 # PAINEL_TODAY=AAAA-MM-DD fixa a data de referência para reconstruções reproduzíveis.
-MANDATE_START = '2023-02'
+MANDATE_START = periods.MANDATE_START.strftime('%Y-%m')
 CURRENT_YEAR = current_year()
 CURRENT_LAST_MONTH = quota_closed_through()[1] if quota_closed_through()[0] == CURRENT_YEAR else 0
 HISTORY_YEARS = history_years()

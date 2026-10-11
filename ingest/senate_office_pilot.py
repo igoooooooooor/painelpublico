@@ -47,9 +47,10 @@ from ingest.senate_payroll_pilot import EXPECTED_FIELDS, USER_AGENT  # noqa: E40
 MAP_PATH = Path(__file__).with_name('senate_office_map.json')
 DEFAULT_OUTPUT = Path('data/snapshots/senate-office-pilot.json')
 CSV_URL = 'https://www.senado.leg.br/transparencia/LAI/secrh/SF_ConsultaRemuneracaoServidoresParlamentares_{period}.csv'
+from ingest import periods  # noqa: E402
 from ingest.periods import previous_month  # noqa: E402
 
-MANDATE_START = (2023, 2)
+MANDATE_START = (periods.MANDATE_START.year, periods.MANDATE_START.month)
 # Último mês pedido: o anterior ao corrente. Os meses mais recentes podem ainda não estar publicados
 # (404): até dois meses finais ausentes ficam registrados como não publicados, sem interromper a coleta.
 LAST_PUBLISHED = previous_month()

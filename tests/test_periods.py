@@ -35,6 +35,20 @@ class PeriodTests(unittest.TestCase):
         self.assertEqual(periods.quota_closed_through(date(2026, 10, 28)), (2026, 6))
         self.assertEqual(periods.quota_closed_through(date(2027, 2, 1)), (2026, 10))
 
+    def test_mandate_start_override_and_turnover_window(self):
+        import importlib
+        with mock.patch.dict(os.environ, {'PAINEL_MANDATE_START': '2027-02-01'}):
+            self.assertEqual(periods._mandate_start(), date(2027, 2, 1))
+        with mock.patch.dict(os.environ, {'PAINEL_MANDATE_START': 'x'}), self.assertRaises(ValueError):
+            periods._mandate_start()
+        self.assertEqual(periods.MANDATE_START, date(2023, 2, 1))
+        self.assertEqual(periods.next_legislature_start(date(2026, 10, 11)), date(2027, 2, 1))
+        self.assertTrue(periods.legislature_turnover(date(2027, 2, 1)))
+        self.assertTrue(periods.legislature_turnover(date(2027, 3, 17)))
+        self.assertFalse(periods.legislature_turnover(date(2027, 3, 18)))
+        self.assertFalse(periods.legislature_turnover(date(2026, 10, 11)))
+        importlib.reload(periods)
+
     def test_legislature_number_and_start(self):
         self.assertEqual(periods.legislature(date(2026, 10, 11)), 57)
         self.assertEqual(periods.legislature(date(2027, 1, 31)), 57)

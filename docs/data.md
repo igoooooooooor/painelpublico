@@ -438,7 +438,7 @@ No arquivo gerado pelo TSE em 07/10/2026 16:30:39 (1º turno), 551 dos 595 regis
 como senadores eleitos em 2022, com mandato até 2031; a ficha diz que a candidatura não foi encontrada, sem concluir que a
 pessoa não concorreu. Dos 551, 347 aparecem como eleitos (por QP, por média ou majoritários), 125 como suplentes, 69 como não
 eleitos, 6 no 2º turno de 25/10/2026 e 4 sem resultado no arquivo (`#NULO`). A ficha mostra um selo curto no cabeçalho e a frase
-completa, com fonte, data e método, em "Fontes e datas". O 2º turno exige nova coleta depois de 25/10.
+completa, com fonte, data e método, em "Fontes e datas". O 2º turno exige nova coleta depois de 25/10; o job semanal faz isso sozinho assim que o TSE regenera o arquivo ([eventos com data](deploy.md#eventos-com-data)).
 
 O snapshot `data/snapshots/eleicoes-2026.json` guarda só cargo, UF, número, nome de urna, partido, turno e situação de cada
 candidatura ligada, além de fonte, método e cobertura. `/api/c/perfil/<id>` o anexa à ficha como `eleicao2026`.
@@ -842,7 +842,7 @@ Nesta leitura não houve totais inválidos, candidatos desconhecidos nem código
 municipais sem correspondência. Foram identificadas 6.749 candidaturas federais
 não eleitas nos votos, excluídas do destaque público.
 
-`--collect` completa caches; `--collect --refresh` atualiza fontes já guardadas.
+`--collect` completa caches; `--collect --refresh` atualiza fontes já guardadas; `--collect --refresh-election` atualiza só candidaturas e votos de 2026, por GET condicional (um `304` mantém o cache).
 Sem `--collect`, não há chamadas de rede. Respostas IBGE vazias ou inválidas não
 substituem caches válidos; uma falha de atualização mantém os dados anteriores e
 seu aviso. População de período anterior não substitui um cache mais recente por

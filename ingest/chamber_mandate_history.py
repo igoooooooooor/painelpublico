@@ -28,9 +28,10 @@ if str(ROOT) not in sys.path:
 from ingest.chamber_housing import load_roster  # noqa: E402
 from ingest.profile_office import load_office  # noqa: E402
 
+from ingest import periods  # noqa: E402
 from ingest.periods import current_year, history_years  # noqa: E402
 
-MANDATE_START = "2023-02"
+MANDATE_START = periods.MANDATE_START.strftime("%Y-%m")
 # Anos fechados do mandato e ano corrente, derivados da data (ingest/periods.py).
 DEFAULT_YEARS = history_years()
 CURRENT_YEAR = current_year()

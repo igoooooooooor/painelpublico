@@ -23,6 +23,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlencode, urlsplit
 from urllib.request import Request, urlopen
 
+from ingest import periods  # noqa: E402
+
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -489,7 +491,7 @@ def build_snapshot(
     return snapshot, stats
 
 
-MANDATE_START = date(2023, 2, 1)
+MANDATE_START = periods.MANDATE_START
 
 
 def _mandate_year_ranges(end_date: date) -> list[tuple[int, date, date]]:

@@ -138,6 +138,36 @@ seguindo a revisão descrita em [Metodologia do Placar](voting-scoreboard.md). O
 candidato novo sem revisão desde a fila anterior, aviso de arquivo manual ou falha; status em
 `data/status/weekly.json`.
 
+### Eventos com data
+
+O job semanal também executa `ingest/calendar_events.py`: sem rede, ele diz o que ainda falta
+depois de uma data marcada e roda as ações pendentes.
+
+- **Segundo turno (25/10/2026).** Depois da data, enquanto a fotografia das eleições e os caches de
+  candidaturas e votos de 2026 forem anteriores ao turno, o semanal roda `make collect-elections` e
+  `cities.py --collect --refresh-election`. Os dois pedem os arquivos do TSE por GET condicional:
+  enquanto o TSE não regenerar os arquivos, a resposta `304` não transfere nada (o ZIP de votos tem
+  cerca de 450 MB). Quando os arquivos passam da data do turno, o evento fica concluído. Depois de 90
+  dias sem arquivo novo, vira aviso para conferência manual.
+- **Troca de legislatura (1º/2/2027).** Trinta dias antes, o e-mail semanal avisa com o roteiro
+  abaixo. Nos 45 dias seguintes à posse, a lista oficial muda a cada dia (posses, suplentes), e a
+  guarda de regressão da lista no job diário aceita quedas de até 50% em vez de 5%; lista vazia
+  continua sem substituir a anterior. O recorte "mandato atual" não muda sozinho.
+
+### Troca de legislatura (roteiro para 1º/2/2027)
+
+1. **Antes da posse**, confira o roadmap: manter o mandato 2023–2027 como histórico nas fichas é uma
+   mudança de produto (telas e API), não de coleta. Sem isso, trocar o recorte apaga o mandato
+   anterior do site.
+2. **Na posse**, nada a fazer na cota: o job diário importa a nova lista oficial e preserva notas e
+   alertas de quem saiu (`roster`, esquema v2). Confira `make deploy-status` nos primeiros dias.
+3. **Quando decidir iniciar o novo recorte**, defina em `/etc/painel/pipeline.env`
+   `PAINEL_MANDATE_START=2027-02-01`. Todos os coletores leem esse valor de `ingest/periods.py`
+   (projetos, presença, votações e autoria do Senado, folha, moradia, histórico da cota, custo do
+   mandato). Rode o mensal assistido (`sudo systemctl start painel-ingest-monthly.service`) e
+   revise `docs/data.md`, que descreve o recorte em texto.
+4. **Tempo de mandato** (`tenure.json`) e a legislatura em vigor seguem a data sozinhos.
+
 Os jobs usam o interpretador `/opt/painel/venv/bin/python3`, criado pelo deploy com
 `ingest/senate-requirements.txt`; o site continua no Python do sistema, sem dependências.
 

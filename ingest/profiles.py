@@ -35,15 +35,16 @@ RAW_PROFILES = ROOT / "data" / "raw" / "profiles"
 DEFAULT_OUTPUT = ROOT / "data" / "snapshots" / "perfis.json"
 SENATE_XML = RAW_LEGISLATIVE / "senadores-atual.xml"
 
+from ingest import periods  # noqa: E402
 from ingest.periods import current_year  # noqa: E402
 
 CURRENT_YEAR = current_year()
 CHAMBER_API = "https://dadosabertos.camara.leg.br/api/v2"
 CHAMBER_LIST_URL = f"{CHAMBER_API}/deputados?itens=100&pagina=1"
-CHAMBER_PROJECTS_PERIOD = "PL, PLP e PEC apresentados desde 2023-02-01"
+CHAMBER_PROJECTS_PERIOD = f"PL, PLP e PEC apresentados desde {periods.MANDATE_START.isoformat()}"
 CHAMBER_PROJECTS_PARAMS = {
     "siglaTipo": "PL,PLP,PEC",
-    "dataApresentacaoInicio": "2023-02-01",
+    "dataApresentacaoInicio": periods.MANDATE_START.isoformat(),
     "itens": 100,
     "ordem": "DESC",
     "ordenarPor": "id",

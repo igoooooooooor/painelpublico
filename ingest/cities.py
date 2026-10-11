@@ -518,11 +518,35 @@ def _project_candidate_archive(source: BinaryIO, destination: Path, year: int) -
     return meta, federal_ids
 
 
-def _download_candidate_archive(year: int, destination: Path) -> tuple[dict[str, Any], set[str]]:
+class _NotModified(Exception):
+    """A fonte respondeu 304: o arquivo local continua válido."""
+
+
+def _open_conditional(url: str, since: str | None):
+    """GET com ``If-Modified-Since`` quando a data da cópia local é conhecida; 304 vira _NotModified."""
+    headers = {"User-Agent": USER_AGENT}
+    if since:
+        headers["If-Modified-Since"] = since
+    try:
+        return urlopen(Request(url, headers=headers), timeout=DOWNLOAD_TIMEOUT)
+    except HTTPError as error:
+        if error.code == 304 and since:
+            raise _NotModified(url) from error
+        raise
+
+
+def _download_candidate_archive(year: int, destination: Path, since: str | None = None) -> tuple[dict[str, Any], set[str]]:
     url = TSE_CANDIDATES_URL.format(year=year)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    request = Request(url, headers={"User-Agent": USER_AGENT})
-    with urlopen(request, timeout=DOWNLOAD_TIMEOUT) as response:
+    meta_path = destination.with_name(destination.stem + ".meta.json")
+    try:
+        response = _open_conditional(url, since)
+    except _NotModified:
+        prior = _meta(meta_path)
+        meta = {**prior, "checkedAt": utc_now(), "notModified": True, "status": "available"}
+        _atomic_json(meta_path, meta)
+        return meta, set()
+    with response:
         last_modified = response.headers.get("Last-Modified")
         compressed_archive = response.read()
     size = len(compressed_archive)
@@ -793,10 +817,17 @@ def _public_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
     return {field: candidate.get(field) for field in fields}
 
 
-def _download_votes(destination: Path, meta_path: Path, refresh: bool = False) -> dict[str, Any]:
+def _download_votes(destination: Path, meta_path: Path, refresh: bool = False, since: str | None = None) -> dict[str, Any]:
     url = TSE_VOTES_URL
     destination.parent.mkdir(parents=True, exist_ok=True)
     prior = _meta(meta_path)
+    if destination.exists() and refresh and since:
+        try:
+            _open_conditional(url, since).close()
+        except _NotModified:
+            meta = {**prior, "checkedAt": utc_now(), "notModified": True, "status": "available"}
+            _atomic_json(meta_path, meta)
+            return meta
     if destination.exists() and not refresh:
         # A prior local archive can be reused after checking it is a valid TSE
         # ZIP. This avoids another hundreds-of-megabytes transfer.
@@ -836,15 +867,22 @@ def _download_votes(destination: Path, meta_path: Path, refresh: bool = False) -
             temporary.unlink()
 
 
-def _fetch_sources(root_paths: dict[str, Path], refresh: bool = False) -> dict[str, str]:
+# Fontes que mudam depois do segundo turno: só elas são baixadas de novo com --refresh-election.
+ELECTION_SOURCES = ("stateCandidates", "votes")
+
+
+def _fetch_sources(root_paths: dict[str, Path], refresh: bool = False, refresh_keys: tuple[str, ...] | None = None) -> dict[str, str]:
+    """``refresh`` baixa tudo de novo; ``refresh_keys`` só as fontes nomeadas, por GET condicional
+    (``If-Modified-Since`` com a data da cópia local), sem transferir o que não mudou."""
     outcomes: dict[str, str] = {}
+    since = lambda key: _meta(root_paths[key]).get("lastModified") if refresh_keys else None  # noqa: E731
     tasks: list[tuple[str, Callable[[], Any], Path, str]] = [
         ("municipalities", lambda: _fetch_json(IBGE_MUNICIPALITIES_URL, root_paths["municipalities"], "cadastro vigente na consulta"), root_paths["municipalities_meta"], IBGE_MUNICIPALITIES_URL),
         ("population", lambda: _fetch_population(root_paths), root_paths["population_meta"], IBGE_POPULATION_URL.format(year=POPULATION_YEAR)),
         ("crosswalk", lambda: _download_crosswalk(root_paths["crosswalk"]), root_paths["crosswalk_meta"], TSE_CROSSWALK_URL),
         ("municipalCandidates", lambda: _download_candidate_archive(MUNICIPAL_ELECTION_YEAR, root_paths["municipal_candidates"]), root_paths["municipal_candidates_meta"], TSE_CANDIDATES_URL.format(year=MUNICIPAL_ELECTION_YEAR)),
-        ("stateCandidates", lambda: _download_candidate_archive(YEAR, root_paths["state_candidates"]), root_paths["state_candidates_meta"], TSE_CANDIDATES_URL.format(year=YEAR)),
-        ("votes", lambda: _download_votes(root_paths["votes"], root_paths["votes_meta"], refresh=refresh), root_paths["votes_meta"], TSE_VOTES_URL),
+        ("stateCandidates", lambda: _download_candidate_archive(YEAR, root_paths["state_candidates"], since=since("state_candidates_meta")), root_paths["state_candidates_meta"], TSE_CANDIDATES_URL.format(year=YEAR)),
+        ("votes", lambda: _download_votes(root_paths["votes"], root_paths["votes_meta"], refresh=refresh or "votes" in (refresh_keys or ()), since=since("votes_meta")), root_paths["votes_meta"], TSE_VOTES_URL),
     ]
     for key, action, meta_path, url in tasks:
         cache_key = {
@@ -852,7 +890,8 @@ def _fetch_sources(root_paths: dict[str, Path], refresh: bool = False) -> dict[s
             "municipalCandidates": "municipal_candidates", "stateCandidates": "state_candidates", "votes": "votes",
         }[key]
         destination = root_paths[cache_key]
-        if destination.exists() and not refresh and (key not in ("votes", "stateCandidates") or meta_path.exists()):
+        wanted = refresh or (refresh_keys is not None and key in refresh_keys)
+        if destination.exists() and not wanted and (key not in ("votes", "stateCandidates") or meta_path.exists()):
             outcomes[key] = "stale" if _meta(meta_path).get("status") == "stale" else "cached"
             continue
         try:
@@ -934,9 +973,10 @@ def _guard_snapshot_replacement(previous: Any, current: dict[str, Any]) -> None:
             )
 
 
-def build_snapshot(root: Path = ROOT, collect: bool = False, refresh: bool = False) -> dict[str, Any]:
+def build_snapshot(root: Path = ROOT, collect: bool = False, refresh: bool = False,
+                   refresh_keys: tuple[str, ...] | None = None) -> dict[str, Any]:
     where = paths(root)
-    outcomes = _fetch_sources(where, refresh=refresh) if collect else {}
+    outcomes = _fetch_sources(where, refresh=refresh, refresh_keys=refresh_keys) if collect else {}
     inputs = _load_snapshot_inputs(where)
     municipalities = inputs["municipalities"]
     if not municipalities and inputs["population"]:
@@ -1072,10 +1112,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Monta a fotografia nacional de municípios e eleições")
     parser.add_argument("--collect", action="store_true", help="atualiza os dados oficiais em data/raw e monta o snapshot")
     parser.add_argument("--refresh", action="store_true", help="força o download dos arquivos já presentes; exige --collect")
+    parser.add_argument("--refresh-election", action="store_true",
+                        help="baixa de novo só candidaturas e votos de 2026 (após o segundo turno), se a fonte mudou; exige --collect")
     args = parser.parse_args(argv)
-    if args.refresh and not args.collect:
-        parser.error("--refresh exige --collect")
-    snapshot = build_snapshot(collect=args.collect, refresh=args.refresh)
+    if (args.refresh or args.refresh_election) and not args.collect:
+        parser.error("--refresh e --refresh-election exigem --collect")
+    snapshot = build_snapshot(collect=args.collect, refresh=args.refresh,
+                              refresh_keys=ELECTION_SOURCES if args.refresh_election else None)
     print("cidades", json.dumps(snapshot["coverage"], ensure_ascii=False, sort_keys=True))
     print("fontes", json.dumps({key: value["status"] for key, value in snapshot["sources"].items()}, ensure_ascii=False, sort_keys=True))
     return 0

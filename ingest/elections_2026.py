@@ -21,6 +21,7 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Callable
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -107,10 +108,21 @@ def collect_identities(roster: list[dict[str, Any]], cache: dict[str, Any], refr
 
 
 def download_candidates(zip_path: Path, meta_path: Path) -> None:
-    request = Request(CANDIDATES_URL, headers={"User-Agent": USER_AGENT})
-    with urlopen(request, timeout=180) as response:
-        content = response.read()
-        modified = response.headers.get("Last-Modified")
+    """Baixa o ZIP do TSE; com cópia local datada, pede por GET condicional e um 304 mantém o cache."""
+    headers = {"User-Agent": USER_AGENT}
+    prior = _json_from_path(meta_path) if meta_path.exists() and zip_path.exists() else {}
+    if prior.get("lastModified"):
+        headers["If-Modified-Since"] = prior["lastModified"]
+    request = Request(CANDIDATES_URL, headers=headers)
+    try:
+        with urlopen(request, timeout=180) as response:
+            content = response.read()
+            modified = response.headers.get("Last-Modified")
+    except HTTPError as error:
+        if error.code == 304 and prior.get("lastModified"):
+            _atomic_json(meta_path, {**prior, "checkedAt": utc_now(), "notModified": True})
+            return
+        raise
     with zipfile.ZipFile(io.BytesIO(content)) as archive:  # Valida antes de substituir o cache.
         if archive.testzip() is not None or not _brazil_csv(archive):
             raise ValueError("Arquivo do TSE sem a tabela nacional de candidaturas")

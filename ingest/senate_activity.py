@@ -38,10 +38,11 @@ ATTENDANCE_GUIDE_URL = (
 USER_AGENT = "QuantoCusta/1.0 (public-data importer)"
 HTTP_TIMEOUT = 45
 HTTP_RETRIES = 1
+from ingest import periods  # noqa: E402
 from ingest.periods import current_year  # noqa: E402
 
 YEAR = current_year()
-MANDATE_START = date(2023, 2, 1)
+MANDATE_START = periods.MANDATE_START
 
 
 class SourceError(RuntimeError):
