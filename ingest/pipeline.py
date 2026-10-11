@@ -7,7 +7,9 @@ cópia por troca atômica e avisa por e-mail. Depois do banco, atualiza os snaps
 Senado. O comando ``monthly`` roda a cadeia mensal do custo do mandato e do Senado (folha, moradia,
 exercício, gabinete e presença da Câmara, histórico da cota no banco, composição do custo, folha,
 exercício, presença, participação e tempo de mandato do Senado, impostos estaduais) e remonta a
-página. Cada etapa fica registrada em ``data/status/<job>.json``.
+página. O comando ``weekly`` refaz o inventário de votações do Plenário e monta a fila editorial do
+Placar e dos arquivos mantidos à mão, avisando quando há trabalho novo para uma pessoa. Cada etapa
+fica registrada em ``data/status/<job>.json``.
 
 Regras do orquestrador:
 
@@ -21,6 +23,7 @@ Regras do orquestrador:
 Uso:
     python3 -m ingest.pipeline daily [--dry-run] [--year AAAA] [--db-only]
     python3 -m ingest.pipeline monthly [--dry-run] [--period AAAA-MM] [--only a,b] [--skip c]
+    python3 -m ingest.pipeline weekly
     python3 -m ingest.pipeline status
     python3 -m ingest.pipeline test-mail
     python3 -m ingest.pipeline notify-failure --unit painel-ingest.service
@@ -62,7 +65,7 @@ SNAPSHOT_TIMEOUT_SECONDS = 3600
 # Etapas mensais podem levar horas na primeira execução (histórico de folha e moradia desde 2023).
 MONTHLY_TOOL_TIMEOUT_SECONDS = 4 * 3600
 LOCK_WAIT_SECONDS = 1800
-JOB_LABELS = {"daily": "diária", "monthly": "mensal"}
+JOB_LABELS = {"daily": "diária", "monthly": "mensal", "weekly": "semanal"}
 # Validade dos arquivos anuais da Câmara na situação dos projetos: ano corrente a cada execução diária;
 # anos fechados (projetos antigos ainda tramitam) uma vez por semana.
 ARCHIVE_MAX_AGE_HOURS = 20
@@ -663,6 +666,19 @@ def compose_report(status: dict) -> tuple[str, str]:
             lines.append(f"  snapshotAt: {summary['snapshotAt']} (anterior: {summary.get('previousSnapshotAt')})")
     if status.get("period"):
         lines.append(f"Período de referência: {status['period']}")
+    editorial = summary.get("editorial")
+    if editorial:
+        lines += ["", "Fila editorial:"]
+        if editorial.get("placar") == "ok":
+            lines.append(f"  Placar: {editorial.get('candidatos')} candidatos no inventário, "
+                         f"{editorial.get('semRevisao')} sem revisão, {editorial.get('pendentes')} pendentes com motivo")
+            if editorial.get("novos"):
+                lines.append("  Novos sem revisão desde a fila anterior: " + ", ".join(editorial["novos"]))
+        else:
+            lines.append(f"  Placar: inventário indisponível ({editorial.get('placar')})")
+        for warning in editorial.get("arquivosManuais") or []:
+            lines.append(f"  Arquivo mantido à mão: {warning}")
+        lines.append("  Detalhes: data/reviews/editorial-queue.md no servidor")
     lines += ["", "Etapas:"]
     for step in status.get("steps", []):
         line = f"  {step['name']}: {step['status']} ({step.get('seconds', '?')}s)"
@@ -680,7 +696,8 @@ def notify(run: Run, status: dict, mail_sender=send_mail) -> None:
     config = run.config
     record = {"name": "notify", "status": "ok", "startedAt": utc_now().isoformat(timespec="seconds")}
     mail = MailConfig.from_environ(config.environ)
-    should_mail = status["result"] != "ok" or (mail is not None and mail.on_success)
+    attention = bool((status.get("summary") or {}).get("editorial", {}).get("atencao"))
+    should_mail = status["result"] != "ok" or attention or (mail is not None and mail.on_success)
     if mail is None:
         record["mail"] = "não configurado (PAINEL_MAIL_TO e PAINEL_SMTP_HOST)"
         if status["result"] != "ok":
@@ -696,7 +713,8 @@ def notify(run: Run, status: dict, mail_sender=send_mail) -> None:
             log(record["mail"])
     else:
         record["mail"] = "sucesso sem aviso (PAINEL_MAIL_ON_SUCCESS desligado)"
-    ping_url = config.environ.get("PAINEL_HEALTHCHECK_URL_MONTHLY" if run.job == "monthly" else "PAINEL_HEALTHCHECK_URL")
+    ping_url = config.environ.get({"monthly": "PAINEL_HEALTHCHECK_URL_MONTHLY", "weekly": "PAINEL_HEALTHCHECK_URL_WEEKLY"}
+                                  .get(run.job, "PAINEL_HEALTHCHECK_URL"))
     if ping_url:
         record["ping"] = ping(ping_url if status["result"] == "ok" else ping_url.rstrip("/") + "/fail")
     record["finishedAt"] = utc_now().isoformat(timespec="seconds")
@@ -803,6 +821,40 @@ def run_monthly(config: PipelineConfig, mail_sender=send_mail) -> dict:
     return status
 
 
+def run_weekly(config: PipelineConfig, mail_sender=send_mail) -> dict:
+    """Inventário do Plenário do ano corrente até hoje e fila editorial. Avisa quando há trabalho novo."""
+    config = PipelineConfig(**{**config.__dict__, "job": "weekly"})
+    run = Run(config, "weekly")
+    reference = reference_today()
+    log(f"atualização semanal (inventário até {reference.isoformat()})")
+    try:
+        with Lock(config.lock_path, config.lock_wait_seconds):
+            run_tool(run, "vote-inventory", ("-m", "ingest.chamber_vote_inventory", "--collect", "--year", str(reference.year),
+                                             "--through", reference.isoformat()))
+            if config.wants("editorial-queue"):
+                with run.step("editorial-queue") as step:
+                    completed = run_snapshot_collector(config, ("-m", "ingest.editorial_queue"))
+                    stdout_lines = (completed.stdout or "").strip().splitlines()
+                    step.detail(exitCode=completed.returncode, stdoutTail=stdout_lines[-4:],
+                                stderrTail=(completed.stderr or "").strip().splitlines()[-5:])
+                    if completed.returncode != 0:
+                        raise PipelineError("Fila editorial não gerada: código " + str(completed.returncode))
+                    summary_text = next((line[len("resumo: "):] for line in stdout_lines if line.startswith("resumo: ")), None)
+                    if summary_text:
+                        run.summary["editorial"] = json.loads(summary_text)
+    except PipelineError as error:
+        run.error = str(error)
+        run.downgrade("failed")
+    except Exception as error:  # noqa: BLE001
+        run.error = f"{type(error).__name__}: {error}\n{traceback.format_exc()}"
+        run.downgrade("failed")
+    status = run.write()
+    notify(run, status, mail_sender=mail_sender)
+    status = run.write(history=True)
+    log(f"resultado: {RESULT_LABELS.get(status['result'], status['result'])}")
+    return status
+
+
 def read_status(config: PipelineConfig) -> dict | None:
     if not config.status_path.is_file():
         return None
@@ -849,6 +901,9 @@ def _build_parser() -> argparse.ArgumentParser:
     monthly.add_argument("--keep-backups", type=int, default=7)
     monthly.add_argument("--max-roster-drop", type=float, default=0.05)
     monthly.add_argument("--max-expense-drop", type=float, default=0.10)
+    weekly = commands.add_parser("weekly", help="inventário do Plenário e fila editorial do Placar")
+    weekly.add_argument("--only", type=str, default="", help="só estas etapas (vote-inventory, editorial-queue)")
+    weekly.add_argument("--skip", type=str, default="")
     commands.add_parser("status", help="imprime o último status gravado de cada job")
     commands.add_parser("test-mail", help="envia um e-mail de teste com a configuração atual")
     failure = commands.add_parser("notify-failure", help="aviso de último recurso, usado pelo systemd OnFailure")
@@ -877,10 +932,16 @@ def main(argv=None) -> int:
         )
         status = run_monthly(config)
         return 0 if status["result"] == "ok" else 1
-    config = PipelineConfig(data_dir=data_dir, db_path=db_path, job="monthly" if "monthly" in (getattr(args, "unit", "") or "") else "daily")
+    if args.command == "weekly":
+        names = lambda value: tuple(item.strip() for item in value.split(",") if item.strip())  # noqa: E731
+        status = run_weekly(PipelineConfig(data_dir=data_dir, db_path=db_path, job="weekly", only=names(args.only), skip=names(args.skip)))
+        return 0 if status["result"] == "ok" else 1
+    unit = getattr(args, "unit", "") or ""
+    config = PipelineConfig(data_dir=data_dir, db_path=db_path,
+                            job=next((job for job in ("monthly", "weekly") if job in unit), "daily"))
     if args.command == "status":
         statuses = {}
-        for job in ("daily", "monthly"):
+        for job in ("daily", "weekly", "monthly"):
             statuses[job] = read_status(PipelineConfig(data_dir=data_dir, db_path=db_path, job=job)) or {"status": "nunca executado"}
         print(json.dumps(statuses, ensure_ascii=False, indent=2))
         return 0 if all(s.get("result") == "ok" for s in statuses.values()) else 1

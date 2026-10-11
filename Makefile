@@ -8,7 +8,7 @@ CURRENT_YEAR := $(shell date +%Y)
 HISTORY_YEARS := $(shell seq 2023 $$(( $(CURRENT_YEAR) - 1 )))
 
 
-.PHONY: ci deploy-data remote-build collect-vote-inventory collect-votes update-daily update-monthly pipeline-status pipeline-test-mail
+.PHONY: ci deploy-data remote-build collect-vote-inventory collect-votes update-daily update-monthly update-weekly pipeline-status pipeline-test-mail
 .PHONY: help build dev prod test check db-init db-check db-backup import collect-legislative collect-profiles collect-senate collect-senate-mandate collect-project-status collect-elections collect-cities collect-amendments collect-accounts collect-mandate-cost audit-mandate-cost collect-mandate-history collect-senate-cost collect-tenure collect-senate-participation deploy deploy-db deploy-status
 help:
 	@echo "make dev                Gera o app e inicia em localhost:8000"
@@ -38,6 +38,7 @@ help:
 	@echo "make ci                 Sintaxe e testes sem dados privados (CI)"
 	@echo "make update-daily       Atualização diária da cota: coleta, importa, verifica e publica (docs/deploy.md)"
 	@echo "make update-monthly     Cadeia mensal: custo do mandato, histórico da cota, Senado e página (docs/deploy.md)"
+	@echo "make update-weekly      Inventário do Plenário e fila editorial do Placar (docs/deploy.md)"
 	@echo "make pipeline-status    Último resultado da atualização automática"
 
 build:
@@ -84,6 +85,10 @@ update-daily:
 # Cadeia mensal (custo do mandato, histórico da cota, Senado, página). PERIOD=AAAA-MM, ONLY=a,b e SKIP=c filtram.
 update-monthly:
 	$(PYTHON) -m ingest.pipeline monthly $(if $(PERIOD),--period $(PERIOD),) $(if $(DRY_RUN),--dry-run,) $(if $(ONLY),--only $(ONLY),) $(if $(SKIP),--skip $(SKIP),)
+
+# Semanal: inventário das votações do Plenário e fila editorial (não publica nada).
+update-weekly:
+	$(PYTHON) -m ingest.pipeline weekly $(if $(ONLY),--only $(ONLY),) $(if $(SKIP),--skip $(SKIP),)
 
 pipeline-status:
 	$(PYTHON) -m ingest.pipeline status
@@ -167,7 +172,7 @@ SSH ?= ssh
 # Usuário comum com sudo (ex.: ubuntu na Magalu Cloud). Para root, use SUDO= (vazio).
 SUDO ?= sudo
 # Monta a página no servidor com os snapshots complementares que estiverem lá e reinicia o serviço.
-REMOTE_BUILD = cd $(APP_DIR)/app && ln -sfn $(APP_DIR)/data $(APP_DIR)/app/data && PAINEL_SNAPSHOTS=$(APP_DIR)/data/snapshots python3 scripts/build.py && chown -R painel:painel $(APP_DIR)/app && install -m 0644 deploy/dashboard.service /etc/systemd/system/painel.service && install -m 0644 deploy/painel-ingest.service deploy/painel-ingest.timer deploy/painel-ingest-monthly.service deploy/painel-ingest-monthly.timer deploy/painel-ingest-failure@.service /etc/systemd/system/ && ( [ -x $(APP_DIR)/venv/bin/python3 ] || python3 -m venv $(APP_DIR)/venv ) && $(APP_DIR)/venv/bin/pip install -q -r ingest/senate-requirements.txt && systemctl daemon-reload && systemctl enable --now painel && systemctl restart painel
+REMOTE_BUILD = cd $(APP_DIR)/app && ln -sfn $(APP_DIR)/data $(APP_DIR)/app/data && PAINEL_SNAPSHOTS=$(APP_DIR)/data/snapshots python3 scripts/build.py && chown -R painel:painel $(APP_DIR)/app && install -m 0644 deploy/dashboard.service /etc/systemd/system/painel.service && install -m 0644 deploy/painel-ingest.service deploy/painel-ingest.timer deploy/painel-ingest-monthly.service deploy/painel-ingest-monthly.timer deploy/painel-ingest-failure@.service deploy/painel-ingest-weekly.service deploy/painel-ingest-weekly.timer /etc/systemd/system/ && ( [ -x $(APP_DIR)/venv/bin/python3 ] || python3 -m venv $(APP_DIR)/venv ) && $(APP_DIR)/venv/bin/pip install -q -r ingest/senate-requirements.txt && systemctl daemon-reload && systemctl enable --now painel && systemctl restart painel
 
 deploy: check
 	@test -n "$(SERVER)" || (echo "Defina SERVER=usuario@host (ou no .env)"; exit 1)
@@ -191,4 +196,4 @@ deploy-db: deploy-data
 
 deploy-status:
 	$(SSH) $(SERVER) 'systemctl is-active painel && curl -fsS http://127.0.0.1:8000/healthz && echo'
-	@for job in daily monthly; do $(SSH) $(SERVER) "python3 -c \"import json; s = json.load(open('$(APP_DIR)/data/status/$$job.json')); print('atualização $$job:', s['result'], s['finishedAt'], s['error'] or '')\" 2>/dev/null || echo 'atualização $$job: nunca executada'"; done
+	@for job in daily weekly monthly; do $(SSH) $(SERVER) "python3 -c \"import json; s = json.load(open('$(APP_DIR)/data/status/$$job.json')); print('atualização $$job:', s['result'], s['finishedAt'], s['error'] or '')\" 2>/dev/null || echo 'atualização $$job: nunca executada'"; done

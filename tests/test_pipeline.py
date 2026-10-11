@@ -271,6 +271,36 @@ class PipelineTests(unittest.TestCase):
                                           mail_sender=self.fake_mail)
         self.assertEqual([call[0] for call in self.snapshot_calls], ['ingest/senate_cost.py', 'scripts/build.py'])
 
+    def test_weekly_runs_inventory_and_mails_when_the_queue_has_news(self):
+        self.snapshot_results['ingest.editorial_queue'] = (0, 'resumo: {"placar": "ok", "candidatos": 12, "semRevisao": 2, '
+                                                            '"pendentes": 1, "novos": ["7-1"], "arquivosManuais": ["arrecadacao.json"], "atencao": true}\nfila: x')
+        with mock.patch.dict('os.environ', {'PAINEL_TODAY': '2026-10-11'}), \
+                mock.patch.object(pipeline, 'run_snapshot_collector', self.fake_snapshot_collector), redirect_stdout(StringIO()):
+            status = pipeline.run_weekly(self.config, mail_sender=self.fake_mail)
+        self.assertEqual(status['result'], 'ok')
+        self.assertEqual([s['name'] for s in status['steps']], ['vote-inventory', 'editorial-queue', 'notify'])
+        self.assertEqual(self.snapshot_calls[0], ('-m', 'ingest.chamber_vote_inventory', '--collect', '--year', '2026', '--through', '2026-10-11'))
+        self.assertEqual(status['summary']['editorial']['novos'], ['7-1'])
+        self.assertEqual(len(self.sent), 1)
+        self.assertIn('Atualização semanal concluída', self.sent[0][1])
+        self.assertIn('Novos sem revisão desde a fila anterior: 7-1', self.sent[0][2])
+        self.assertIn('arrecadacao.json', self.sent[0][2])
+        self.assertTrue((self.config.status_dir / 'weekly.json').exists())
+        # Sem novidade e sem avisos: nada de e-mail.
+        self.sent.clear()
+        self.snapshot_results['ingest.editorial_queue'] = (0, 'resumo: {"placar": "ok", "candidatos": 12, "semRevisao": 0, '
+                                                            '"pendentes": 0, "novos": [], "arquivosManuais": [], "atencao": false}')
+        with mock.patch.object(pipeline, 'run_snapshot_collector', self.fake_snapshot_collector), redirect_stdout(StringIO()):
+            status = pipeline.run_weekly(self.config, mail_sender=self.fake_mail)
+        self.assertEqual((status['result'], self.sent), ('ok', []))
+        # Inventário indisponível: parcial com e-mail; fila que não gera é falha.
+        self.snapshot_results['ingest.chamber_vote_inventory'] = (1, 'erro de rede')
+        self.snapshot_results['ingest.editorial_queue'] = (2, '')
+        with mock.patch.object(pipeline, 'run_snapshot_collector', self.fake_snapshot_collector), redirect_stdout(StringIO()):
+            status = pipeline.run_weekly(self.config, mail_sender=self.fake_mail)
+        self.assertEqual(status['result'], 'failed')
+        self.assertIn('Fila editorial não gerada', status['error'])
+
     def test_mail_config_and_report(self):
         self.assertIsNone(pipeline.MailConfig.from_environ({}))
         mail = pipeline.MailConfig.from_environ({'PAINEL_MAIL_TO': 'a@x.br, b@x.br', 'PAINEL_SMTP_HOST': 'smtp.x.br',
@@ -316,6 +346,7 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(code, 1)  # o mensal nunca rodou
         self.assertEqual(json.loads(out.getvalue())['daily']['result'], 'ok')
         self.assertEqual(json.loads(out.getvalue())['monthly']['status'], 'nunca executado')
+        self.assertEqual(json.loads(out.getvalue())['weekly']['status'], 'nunca executado')
 
 
 if __name__ == '__main__':

@@ -26,4 +26,4 @@ fi
 ufw allow OpenSSH
 ufw --force enable
 echo "Pronto. Próximo passo no seu computador: make deploy-db SERVER=root@ESTE_SERVIDOR e make deploy SERVER=root@ESTE_SERVIDOR"
-echo "Depois, para a atualização automática: copie deploy/pipeline.env.example para /etc/painel/pipeline.env e rode systemctl enable --now painel-ingest.timer painel-ingest-monthly.timer"
+echo "Depois, para a atualização automática: copie deploy/pipeline.env.example para /etc/painel/pipeline.env e rode systemctl enable --now painel-ingest.timer painel-ingest-weekly.timer painel-ingest-monthly.timer"

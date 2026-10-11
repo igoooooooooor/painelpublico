@@ -1,0 +1,26 @@
+# Semanal: inventário das votações do Plenário no ano corrente e fila editorial do Placar e dos arquivos
+# mantidos à mão. Não publica nada; avisa por e-mail quando há trabalho novo para uma pessoa.
+[Unit]
+Description=Painel Público: inventário semanal e fila editorial
+After=network-online.target
+Wants=network-online.target
+OnFailure=painel-ingest-failure@%n.service
+
+[Service]
+Type=oneshot
+User=painel
+WorkingDirectory=/opt/painel/app
+Environment=PAINEL_DB=/opt/painel/data/na-lupa.sqlite3
+Environment=PAINEL_SNAPSHOTS=/opt/painel/data/snapshots
+EnvironmentFile=-/etc/painel/pipeline.env
+ExecStart=/opt/painel/venv/bin/python3 -m ingest.pipeline weekly
+TimeoutStartSec=2h
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadOnlyPaths=/opt/painel/app
+ReadWritePaths=/opt/painel/data

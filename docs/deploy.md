@@ -87,7 +87,7 @@ Ativar (uma vez), depois do `make deploy`, que instala as unidades:
 sudo install -m 0600 /opt/painel/app/deploy/pipeline.env.example /etc/painel/pipeline.env
 sudo nano /etc/painel/pipeline.env                      # destinatário e SMTP (Gmail: senha de app)
 sudo systemctl start painel-ingest.service && sudo journalctl -u painel-ingest -n 50   # primeira execução, assistida
-sudo systemctl enable --now painel-ingest.timer painel-ingest-monthly.timer
+sudo systemctl enable --now painel-ingest.timer painel-ingest-weekly.timer painel-ingest-monthly.timer
 ```
 
 Acompanhar: `systemctl list-timers 'painel-ingest*'`, `journalctl -u painel-ingest -n 100`
@@ -123,15 +123,30 @@ moradia de 513 deputados por 45 meses) e pode levar algumas horas; o timeout da 
 assistida: `sudo systemctl start painel-ingest-monthly.service` e `journalctl -u painel-ingest-monthly -f`.
 Os insumos ficam em `/opt/painel/data/snapshots` e não são apagados pelo `make deploy-data`.
 
+### Job semanal e fila editorial
+
+`painel-ingest-weekly.timer` (segunda-feira, 3h de Brasília) roda `python3 -m ingest.pipeline weekly`
+(`make update-weekly`): refaz o inventário das votações do Plenário do ano corrente até o dia
+(`ingest.chamber_vote_inventory --collect`, cerca de 70 consultas) e monta a fila editorial
+(`ingest/editorial_queue.py`) em `/opt/painel/data/reviews/editorial-queue.md` e `.json`. A fila cruza
+os candidatos do inventário com todas as revisões locais e lista os sem revisão, os pendentes com
+motivo e os alertas de tipo do inventário; também avisa sobre os arquivos mantidos à mão
+(`arrecadacao.json` com mais de 60 dias, senador da lista atual sem gabinete em
+`ingest/senate_office_map.json`, contas municipais com exercício atrasado a partir de julho e a
+fotografia das eleições antes do segundo turno). Nada é publicado: o catálogo do Placar continua
+seguindo a revisão descrita em [Metodologia do Placar](voting-scoreboard.md). O e-mail sai quando há
+candidato novo sem revisão desde a fila anterior, aviso de arquivo manual ou falha; status em
+`data/status/weekly.json`.
+
 Os jobs usam o interpretador `/opt/painel/venv/bin/python3`, criado pelo deploy com
 `ingest/senate-requirements.txt`; o site continua no Python do sistema, sem dependências.
 
 Se o processo morrer sem gravar status (timeout, falta de memória), `painel-ingest-failure@.service`
 envia o aviso de último recurso para a unidade que falhou. O e-mail não detecta o timer que deixou de disparar; para isso,
-defina `PAINEL_HEALTHCHECK_URL` (e `PAINEL_HEALTHCHECK_URL_MONTHLY`) com um monitor externo
-(healthchecks.io ou similar), que avisa quando o ping não chega. Continuam manuais: o catálogo do
-Placar (revisão editorial), Minha cidade (cidades, emendas, contas), eleições e os arquivos mantidos
-à mão; a ordem de automação está em [Próximas etapas](roadmap.md).
+defina `PAINEL_HEALTHCHECK_URL` (e as variantes `_WEEKLY` e `_MONTHLY`) com um monitor externo
+(healthchecks.io ou similar), que avisa quando o ping não chega. Continuam manuais, com aviso da fila
+editorial: o catálogo do Placar (revisão), Minha cidade (cidades, emendas, contas), eleições e os
+arquivos mantidos à mão; a ordem de automação está em [Próximas etapas](roadmap.md).
 
 ## Rodar do próprio Mac (temporário)
 
