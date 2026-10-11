@@ -1,6 +1,11 @@
 # Painel Público
 
-Protótipo para entender, em linguagem simples, gastos, presença e votações de deputados(as) e senadores(as). Alertas indicam registros para conferir, não conclusões de irregularidade.
+Site para entender, em linguagem simples, gastos, presença e votações de deputados(as) e senadores(as), sempre com link para a fonte oficial.
+
+- **Políticos**: ficha de cada parlamentar com custo médio do mandato (salário, auxílios, cota e verba de gabinete), notas da cota, presença e votos.
+- **Placar**: votações nominais do texto principal no Plenário da Câmara e, dentro de cada uma, as decisões sobre trechos (destaques e emendas), com o que significava Sim e Não.
+- **Alertas**: registros da cota que merecem conferência, não conclusões de irregularidade.
+- **Comparar**: políticos ou partidos lado a lado, com imagem para compartilhar.
 
 A área **Minha cidade** reúne a base nacional do IBGE, os resultados eleitorais do TSE, as emendas municipais do Portal da Transparência e as contas anuais do SICONFI, com busca por nome, fontes, períodos e indicação de dados ausentes.
 
@@ -49,9 +54,13 @@ python3 -m backend.server --port 8000
 | `make collect-amendments YEAR=2026` | Coletar emendas por município e ano da proposta; valores empenhados e pagos separados |
 | `make collect-cities` | Coletar a base nacional de Minha cidade (IBGE e TSE); reconstrução offline em [Dados e SQLite](docs/data.md) |
 | `make collect-elections` | Ligar a lista atual às candidaturas de 2026 no TSE; depois rode `make build` |
+| `make collect-mandate-cost` | Coletar folha e moradia do ano corrente para o custo do mandato; depois `python3 -m ingest.mandate_cost_composition` ([Dados e SQLite](docs/data.md)) |
+| `make collect-mandate-history` | Coletar 2023–2025 e recompor o custo do mandato desde fev/2023 (faça `make db-backup` antes) |
 | `make update-daily` | Atualização diária da cota: coleta, importa em cópia, verifica e publica; no servidor roda por timer ([Publicação](docs/deploy.md)) |
+| `make pipeline-status` | Último resultado da atualização diária |
 | `make prod` | Rodar como em produção (cache, só localhost) |
-| `make deploy` / `make deploy-db` | Publicar código / banco no servidor ([Publicação](docs/deploy.md)) |
+| `make deploy` / `make deploy-data` | Publicar código / banco e snapshots no servidor; push na `main` já publica o código ([Publicação](docs/deploy.md)) |
+| `make deploy-status` | Ver se o site está no ar |
 
 ## Estrutura
 
@@ -76,7 +85,7 @@ dist/           app gerado, ignorado no Git
 - [Contribuição](CONTRIBUTING.md): branches curtas, commits por finalidade e verificações.
 - [Próximas etapas](docs/roadmap.md): expansão planejada, separada da cobertura entregue.
 
-O servidor usa `127.0.0.1` por padrão e serve somente o app e a API. O código está em [igor05k/painelpublico](https://github.com/igor05k/painelpublico); publicar código no GitHub não publica o site nem a base. A instalação do servidor e do túnel está descrita em [Publicação](docs/deploy.md). `.env.example` e os arquivos `*.example.*` contêm apenas modelos de configuração.
+O servidor usa `127.0.0.1` por padrão e serve somente o app e a API. O código está em [igoooooooooor/painelpublico](https://github.com/igoooooooooor/painelpublico); publicar código no GitHub não publica o site nem a base. A instalação do servidor e do túnel está descrita em [Publicação](docs/deploy.md). `.env.example` e os arquivos `*.example.*` contêm apenas modelos de configuração.
 
 ## Licença
 
