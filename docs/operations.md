@@ -84,7 +84,7 @@ Para ver o estado sem e-mail: `make deploy-status` do seu computador, ou
 O job semanal escreve `data/reviews/editorial-queue.md` e manda por e-mail quando há novidade.
 
 - **Revisar votações do Placar.** As revisões ficam no seu computador e vão para o servidor com
-  `make deploy-data`; sem isso, a fila do servidor conta tudo como sem revisão. Para cada candidato sem revisão, o semanal gera um rascunho em
+  `make deploy-reviews` (só elas, sem tocar o banco); sem isso, a fila do servidor conta tudo como sem revisão. Para cada candidato sem revisão, o semanal gera um rascunho em
   `data/reviews/chamber-vote-reviews-draft-<data>.json` com os campos objetivos já preenchidos
   (ID, data, proposição, placar, links da API e da ficha). Falta conferir o relatório nominal,
   colar o link dele em `sources.rollCall`, escrever `title`, `summary`, `decisionLabel`,

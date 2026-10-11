@@ -35,6 +35,7 @@ help:
 	@echo "make prod               Roda como em produção (cache, só localhost)"
 	@echo "make deploy SERVER=...  Testa e publica o código no servidor"
 	@echo "make deploy-data SERVER=...  Envia banco e snapshots (alias: deploy-db)"
+	@echo "make deploy-reviews SERVER=...  Envia só as revisões do Placar"
 	@echo "make fetch-data [TAG=data-AAAA-MM-DD]  Baixa o release de dados do GitHub, instala em data/ e monta o site (FORCE=1 substitui o banco)"
 	@echo "make publish-data [TAG=data-AAAA-MM-DD]  Publica banco, snapshots e revisões do Placar como release no GitHub (DRY_RUN=1 só empacota)"
 	@echo "make ci                 Sintaxe e testes sem dados privados (CI)"
@@ -190,13 +191,20 @@ deploy-data:
 	$(PYTHON) -c "import sqlite3; s=sqlite3.connect('data/na-lupa.sqlite3'); d=sqlite3.connect('data/backups/deploy.sqlite3'); s.backup(d); d.close()"
 	rsync -az --progress --rsync-path="$(SUDO) rsync" data/backups/deploy.sqlite3 $(SERVER):$(APP_DIR)/data/na-lupa.sqlite3.new
 	rsync -az --delete --exclude-from=deploy/snapshots-local-only.txt --rsync-path="$(SUDO) rsync" data/snapshots/ $(SERVER):$(APP_DIR)/data/snapshots/
-	@mkdir -p data/reviews
-	rsync -az --include='chamber-vote-reviews-*.json' --include='chamber-vote-segment-reviews-*.json' --exclude='*' --rsync-path="$(SUDO) rsync" data/reviews/ $(SERVER):$(APP_DIR)/data/reviews/
+	$(MAKE) deploy-reviews
 	$(SSH) $(SERVER) "$(SUDO) sh -c 'cd $(APP_DIR)/data && chown -R painel:painel na-lupa.sqlite3.new snapshots reviews && rm -f na-lupa.sqlite3-wal na-lupa.sqlite3-shm && mv -f na-lupa.sqlite3.new na-lupa.sqlite3 && ( [ -d $(APP_DIR)/app/scripts ] && $(REMOTE_BUILD) || true )'"
 	rm -f data/backups/deploy.sqlite3
 	@echo "Banco e snapshots publicados; página remontada e serviço reiniciado."
 
 deploy-db: deploy-data
+
+# Só as revisões do Placar (data/reviews/), sem tocar o banco nem os snapshots do servidor.
+deploy-reviews:
+	@test -n "$(SERVER)" || (echo "Defina SERVER=usuario@host (ou no .env)"; exit 1)
+	@mkdir -p data/reviews
+	rsync -az --include='chamber-vote-reviews-*.json' --include='chamber-vote-segment-reviews-*.json' --exclude='*' --rsync-path="$(SUDO) rsync" data/reviews/ $(SERVER):$(APP_DIR)/data/reviews/
+	$(SSH) $(SERVER) "$(SUDO) sh -c 'chown -R painel:painel $(APP_DIR)/data/reviews'"
+	@echo "Revisões enviadas; no servidor, rode: sudo systemctl start painel-ingest-weekly.service"
 
 # Release público de dados no GitHub (docs/data.md#publicar-a-base). Monta o pacote em data/releases/<tag>/
 # e anexa ao release; DRY_RUN=1 só monta. O release cria a tag no último commit da main remota.

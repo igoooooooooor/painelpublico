@@ -37,7 +37,7 @@ visitante → Cloudflare (HTTPS, cache, proteção) → túnel → 127.0.0.1:800
 |---|---|
 | Código ou telas | `make deploy` |
 | Banco ou snapshots (nova coleta/importação) | `make db-check` e depois `make deploy-data` (alias `deploy-db`). Os snapshots listados em `deploy/snapshots-local-only.txt` (insumos do custo do mandato) não são enviados; o servidor produz os seus no job mensal e eles ficam lá. Também envia as revisões do Placar (`data/reviews/chamber-vote-reviews-*.json` e `chamber-vote-segment-reviews-*.json`), que a fila editorial do servidor precisa para saber o que já foi revisado |
-| Revisões novas do Placar | `make deploy-data` (envia só o que mudou); sem isso, a fila semanal do servidor conta essas votações como sem revisão |
+| Revisões novas do Placar | `make deploy-reviews`: envia só `data/reviews/`, sem tocar o banco; depois `sudo systemctl start painel-ingest-weekly.service` no servidor. Sem isso, a fila semanal conta essas votações como sem revisão |
 | Cota do ano corrente | Nada: `painel-ingest.timer` atualiza no servidor todo dia (abaixo). `make deploy-data` continua válido para publicar uma base local, e substitui a do servidor |
 | Ver se está no ar | `make deploy-status` |
 
