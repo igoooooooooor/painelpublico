@@ -215,8 +215,12 @@ class ProjectArchiveIntegrationTests(unittest.TestCase):
         self.temp.cleanup()
 
     def build(self, **kwargs):
+        from ingest import project_status
+        # Sem rede no teste: os arquivos anuais vêm só do cache; um arquivo ausente deve virar falha, nunca download.
         with patch.object(profiles, '_office_section', return_value={'status': 'unavailable'}), \
                 patch.object(profiles, '_request_json', side_effect=RuntimeError('sem rede no teste')), \
+                patch.object(project_status, 'request_archive', side_effect=OSError('sem rede no teste')), \
+                patch.object(project_status, 'request_bytes', side_effect=OSError('sem rede no teste')), \
                 patch('builtins.print'):
             return profiles.build_snapshot(self.root, self.root / 'perfis.json', **kwargs)
 
