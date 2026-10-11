@@ -801,7 +801,16 @@ def monthly_steps(config: PipelineConfig) -> list[tuple[str, tuple[str, ...], in
         ("state-tax-revenue", ("-m", "ingest.state_tax_revenue"), SNAPSHOT_TIMEOUT_SECONDS),
         ("build", ("scripts/build.py",), SNAPSHOT_TIMEOUT_SECONDS),
     ]
+    if wants_data_release(config.environ):
+        # Release público de dados no GitHub (docs/data.md#publicar-a-base); em dry-run só monta o pacote.
+        steps.append(("publish-data", ("scripts/publish_data.py", *(("--dry-run",) if config.dry_run else ())),
+                      SNAPSHOT_TIMEOUT_SECONDS))
     return steps
+
+
+def wants_data_release(environ: dict) -> bool:
+    """PAINEL_DATA_RELEASE=1 liga o release mensal de dados; o token vem de PAINEL_GITHUB_TOKEN."""
+    return (environ.get("PAINEL_DATA_RELEASE") or "").strip().lower() in ("1", "true", "yes", "sim")
 
 
 def run_monthly(config: PipelineConfig, mail_sender=send_mail) -> dict:

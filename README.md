@@ -1,6 +1,11 @@
 # Painel Público
 
-Protótipo para entender, em linguagem simples, gastos, presença e votações de deputados(as) e senadores(as). Alertas indicam registros para conferir, não conclusões de irregularidade.
+Site para entender, em linguagem simples, gastos, presença e votações de deputados(as) e senadores(as), sempre com link para a fonte oficial.
+
+- **Políticos**: ficha de cada parlamentar com custo médio do mandato (salário, auxílios, cota e verba de gabinete), notas da cota, presença e votos.
+- **Placar**: votações nominais do texto principal no Plenário da Câmara e, dentro de cada uma, as decisões sobre trechos (destaques e emendas), com o que significava Sim e Não.
+- **Alertas**: registros da cota que merecem conferência, não conclusões de irregularidade.
+- **Comparar**: políticos ou partidos lado a lado, com imagem para compartilhar.
 
 A área **Minha cidade** reúne a base nacional do IBGE, os resultados eleitorais do TSE, as emendas municipais do Portal da Transparência e as contas anuais do SICONFI, com busca por nome, fontes, períodos e indicação de dados ausentes.
 
@@ -18,7 +23,7 @@ Abra [localhost:8000](http://127.0.0.1:8000/). `make dev` gera `dist/index.html`
 
 A base já existente em `data/na-lupa.sqlite3` é preservada. Este repositório publica somente código, testes e documentação: banco, snapshots complementares, downloads e credenciais são locais.
 
-**Em um clone novo**, `make check`, `make build` e `make dev` não dependem de `editorial.json` nem de snapshots privados. `make db-init` prepara um banco vazio; para consultar a base parlamentar completa, obtenha os arquivos normalizados e importe-os conforme [Dados e SQLite](docs/data.md). O build não baixa dados. Presença, votos e perfis são complementos opcionais, coletados manualmente; no servidor, a cota do ano corrente é atualizada todo dia por um timer do systemd.
+**Em um clone novo**, `make fetch-data` baixa o [release de dados](https://github.com/igoooooooooor/painelpublico/releases) mais recente (banco, snapshots e revisões do Placar, com conferência de SHA-256), instala em `data/` e monta a página; depois, `make dev`. Sem rede, `make check`, `make build` e `make dev` funcionam com `make db-init` (banco vazio) e sem snapshots. O build não baixa dados. No servidor, a cota do ano corrente é atualizada todo dia e o release de dados sai todo mês por timers do systemd. Para assumir o projeto do zero, siga [Continuidade](docs/continuity.md).
 
 Sem Make:
 
@@ -34,6 +39,7 @@ python3 -m backend.server --port 8000
 | `make dev PORT=8001` | Rodar em outra porta |
 | `make build` | Gerar HTML em `dist/` |
 | `make check` | Build, sintaxe e testes locais |
+| `make fetch-data` | Baixar o release de dados mais recente, instalar em `data/` e montar a página; `TAG=data-AAAA-MM-DD` escolhe outro, `FORCE=1` substitui o banco |
 | `make db-init` | Criar/atualizar esquema sem apagar dados |
 | `make db-check` | Conferir integridade e cobertura numérica |
 | `make db-backup` | Backup SQLite consistente e datado |
@@ -49,9 +55,16 @@ python3 -m backend.server --port 8000
 | `make collect-amendments YEAR=2026` | Coletar emendas por município e ano da proposta; valores empenhados e pagos separados |
 | `make collect-cities` | Coletar a base nacional de Minha cidade (IBGE e TSE); reconstrução offline em [Dados e SQLite](docs/data.md) |
 | `make collect-elections` | Ligar a lista atual às candidaturas de 2026 no TSE; depois rode `make build` |
+| `make collect-mandate-cost` | Coletar folha e moradia da Câmara nos meses já encerrados do ano, para o custo do mandato |
+| `make collect-mandate-history` | Coletar os anos fechados do mandato na Câmara e recompor a média (faça `make db-backup` antes) |
 | `make update-daily` | Atualização diária da cota: coleta, importa em cópia, verifica e publica; no servidor roda por timer ([Publicação](docs/deploy.md)) |
+| `make update-weekly` | Inventário do Plenário e fila editorial do Placar; no servidor roda por timer |
+| `make update-monthly` | Custo do mandato, histórico da cota, Senado e página; no servidor roda por timer |
+| `make pipeline-status` | Último resultado das atualizações automáticas |
 | `make prod` | Rodar como em produção (cache, só localhost) |
-| `make deploy` / `make deploy-db` | Publicar código / banco no servidor ([Publicação](docs/deploy.md)) |
+| `make deploy` / `make deploy-data` | Publicar código / banco e snapshots no servidor; push na `main` já publica o código ([Publicação](docs/deploy.md)) |
+| `make publish-data` | Publicar banco, snapshots e revisões do Placar como release de dados no GitHub; `DRY_RUN=1` só monta o pacote; no servidor sai todo mês ([Dados e SQLite](docs/data.md#publicar-a-base)) |
+| `make deploy-status` | Ver se o site está no ar |
 
 ## Estrutura
 
@@ -72,12 +85,13 @@ dist/           app gerado, ignorado no Git
 - [Arquitetura](docs/architecture.md): divisão de responsabilidades e fluxo dos dados.
 - [Design system](docs/design-system.md): componentes, temas e bordas neutras.
 - [Dados e SQLite](docs/data.md): fontes, limitações, importação e backups.
+- [Continuidade](docs/continuity.md): como assumir o projeto do zero, o que é automático e o que depende de uma pessoa.
 - [Alertas da cota](docs/alerts.md): regras, prazos, cobertura, simulação e decisões registradas.
 - [Contribuição](CONTRIBUTING.md): branches curtas, commits por finalidade e verificações.
 - [Próximas etapas](docs/roadmap.md): expansão planejada, separada da cobertura entregue.
 
-O servidor usa `127.0.0.1` por padrão e serve somente o app e a API. O código está em [igor05k/painelpublico](https://github.com/igor05k/painelpublico); publicar código no GitHub não publica o site nem a base. A instalação do servidor e do túnel está descrita em [Publicação](docs/deploy.md). `.env.example` e os arquivos `*.example.*` contêm apenas modelos de configuração.
+O servidor usa `127.0.0.1` por padrão e serve somente o app e a API. O código está em [igoooooooooor/painelpublico](https://github.com/igoooooooooor/painelpublico); publicar código no GitHub não publica o site nem a base. A instalação do servidor e do túnel está descrita em [Publicação](docs/deploy.md). `.env.example` e os arquivos `*.example.*` contêm apenas modelos de configuração.
 
 ## Licença
 
-Código sob a [licença MIT](LICENSE). Os dados exibidos pertencem às fontes públicas indicadas em [Dados e SQLite](docs/data.md); veja também o [Aviso legal](LEGAL-NOTICE.md).
+Código sob a [licença MIT](LICENSE). Os [releases de dados](https://github.com/igoooooooooor/painelpublico/releases) estão sob [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.pt-br); as informações pertencem às fontes públicas indicadas em [Dados e SQLite](docs/data.md). Veja também o [Aviso legal](LEGAL-NOTICE.md).

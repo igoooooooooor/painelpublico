@@ -124,6 +124,41 @@ A API pagina os resumos e carrega os votos individuais por decisão. A home,
 fichas, partidos e comparações mantêm as quatro seleções originais. Um clone
 sem catálogo mostra essas seleções com a limitação explícita.
 
+## Baixar a base
+
+Quem clona o repositório não precisa coletar nada: `make fetch-data` baixa o [release de dados](https://github.com/igoooooooooor/painelpublico/releases) mais recente, instala e monta a página.
+
+```sh
+make fetch-data                      # último release com tag data-
+make fetch-data TAG=data-2026-10-11  # uma fotografia específica
+make fetch-data FORCE=1              # substitui um banco já existente (cópia em data/backups/)
+make dev
+```
+
+`scripts/fetch_data.py` usa só a biblioteca padrão: consulta a API pública do GitHub, baixa `manifest.json` e os arquivos listados, confere tamanho e SHA-256, descompacta o banco em `data/na-lupa.sqlite3` e copia `snapshots/` e `reviews/` para `data/`, substituindo arquivos de mesmo nome e mantendo os demais. Um banco existente só é trocado com `FORCE=1`. Em seguida o alvo roda `make db-init` (migra o esquema se o código for mais novo que a fotografia) e `make build`. Sem token funciona; `PAINEL_GITHUB_TOKEN` só evita o limite de consultas anônimas.
+
+## Publicar a base
+
+O repositório publica só código; a base vai para o público como **release de dados no GitHub**, com tag datada, sob [CC BY 4.0](../LEGAL-NOTICE.md#licença):
+
+```sh
+make publish-data                      # tag data-AAAA-MM-DD de hoje
+make publish-data TAG=data-2026-10-11  # tag explícita
+make publish-data DRY_RUN=1            # só monta o pacote em data/releases/<tag>/, sem publicar
+```
+
+`scripts/publish_data.py` monta em `data/releases/<tag>/` o mesmo conjunto que `make deploy-data` envia ao servidor:
+
+- `na-lupa-<tag>.sqlite3.gz`: cópia consistente do banco pela API de backup do SQLite, com `VACUUM` na cópia e gzip. O banco de origem não é tocado.
+- `snapshots-<tag>.tar.gz`: `data/snapshots/`, menos os insumos listados em `deploy/snapshots-local-only.txt` (folha, moradia e auditorias do custo do mandato, que o site não lê) e menos as gerações antigas de `chamber-vote-details/`: só entra a apontada por `detailsVersion` em `chamber-votes.json`.
+- `reviews-<tag>.tar.gz`: `chamber-vote-reviews-*.json` e `chamber-vote-segment-reviews-*.json` de `data/reviews/`, sem rascunhos (`.draft.json`). São as decisões humanas do Placar, que nenhum coletor reconstrói; sem elas, `make collect-vote-inventory` só produz o inventário bruto.
+- `manifest.json`: SHA-256 e tamanho de cada arquivo, versão do esquema, contagem por tabela, lista dos snapshots e revisões e o commit em que o pacote foi gerado (ausente no servidor, que não tem `.git`).
+- `NOTES.md`: notas do release em pt-BR, com conteúdo, como usar, fontes, limites e licença. Vão como descrição do release.
+
+Os brutos de `data/raw/`, `data/imports/`, backups e a fila editorial ficam de fora. A publicação usa a API REST do GitHub, sem dependências: o token vem de `PAINEL_GITHUB_TOKEN` (ou `GH_TOKEN`/`GITHUB_TOKEN`), com permissão de conteúdo no repositório, ou de `gh auth token` no computador de quem mantém o projeto. O comando recusa uma tag que já tenha release e cria a tag no último commit da `main` remota, então o código publicado é o que acompanha os dados.
+
+**No servidor, o release sai sozinho todo mês:** com `PAINEL_DATA_RELEASE=1` e `PAINEL_GITHUB_TOKEN` em `/etc/painel/pipeline.env`, o job mensal termina com a etapa `publish-data`, logo depois do `build` ([Publicação](deploy.md#job-mensal)). Falha nessa etapa deixa a execução parcial, com e-mail, sem afetar o site. Recoletar uma fonte pode produzir outro retrato; a tag identifica a fotografia.
+
 ## Base e recursos
 
 O esquema normalizado contém `sources(id,label,url,scope,period,status,detail,fetchedAt)`,

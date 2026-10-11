@@ -408,5 +408,21 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(json.loads(out.getvalue())['weekly']['status'], 'nunca executado')
 
 
+class MonthlyReleaseStepTests(unittest.TestCase):
+    def steps(self, environ, dry_run=False):
+        config = pipeline.PipelineConfig(environ=environ, dry_run=dry_run)
+        return {name: arguments for name, arguments, _timeout in pipeline.monthly_steps(config)}
+
+    def test_publish_data_runs_last_only_when_enabled(self):
+        self.assertNotIn('publish-data', self.steps({}))
+        self.assertNotIn('publish-data', self.steps({'PAINEL_DATA_RELEASE': '0'}))
+        config = pipeline.PipelineConfig(environ={'PAINEL_DATA_RELEASE': '1'})
+        names = [name for name, _arguments, _timeout in pipeline.monthly_steps(config)]
+        self.assertEqual(names[-2:], ['build', 'publish-data'])
+        self.assertEqual(self.steps({'PAINEL_DATA_RELEASE': 'sim'})['publish-data'], ('scripts/publish_data.py',))
+        self.assertEqual(self.steps({'PAINEL_DATA_RELEASE': '1'}, dry_run=True)['publish-data'],
+                         ('scripts/publish_data.py', '--dry-run'))
+
+
 if __name__ == '__main__':
     unittest.main()
