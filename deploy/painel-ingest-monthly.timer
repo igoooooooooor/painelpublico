@@ -1,0 +1,13 @@
+# Dia 10 de cada mês, 1h30 de Brasília: o mês anterior já tem folha, moradia e Diários publicados.
+# Persistent=true: se o servidor estava desligado, roda ao ligar. O lock do pipeline evita sobreposição com o diário.
+[Unit]
+Description=Painel Público: timer da atualização mensal
+
+[Timer]
+OnCalendar=*-*-10 01:30:00 America/Sao_Paulo
+RandomizedDelaySec=30min
+Persistent=true
+Unit=painel-ingest-monthly.service
+
+[Install]
+WantedBy=timers.target

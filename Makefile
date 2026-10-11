@@ -8,7 +8,7 @@ CURRENT_YEAR := $(shell date +%Y)
 HISTORY_YEARS := $(shell seq 2023 $$(( $(CURRENT_YEAR) - 1 )))
 
 
-.PHONY: ci deploy-data remote-build collect-vote-inventory collect-votes update-daily pipeline-status pipeline-test-mail
+.PHONY: ci deploy-data remote-build collect-vote-inventory collect-votes update-daily update-monthly pipeline-status pipeline-test-mail
 .PHONY: help build dev prod test check db-init db-check db-backup import collect-legislative collect-profiles collect-senate collect-senate-mandate collect-project-status collect-elections collect-cities collect-amendments collect-accounts collect-mandate-cost audit-mandate-cost collect-mandate-history collect-senate-cost collect-tenure collect-senate-participation deploy deploy-db deploy-status
 help:
 	@echo "make dev                Gera o app e inicia em localhost:8000"
@@ -37,6 +37,7 @@ help:
 	@echo "make deploy-data SERVER=...  Envia banco e snapshots (alias: deploy-db)"
 	@echo "make ci                 Sintaxe e testes sem dados privados (CI)"
 	@echo "make update-daily       Atualização diária da cota: coleta, importa, verifica e publica (docs/deploy.md)"
+	@echo "make update-monthly     Cadeia mensal: custo do mandato, histórico da cota, Senado e página (docs/deploy.md)"
 	@echo "make pipeline-status    Último resultado da atualização automática"
 
 build:
@@ -79,6 +80,10 @@ collect-legislative:
 # DB_ONLY=1 pula perfis e situação dos projetos.
 update-daily:
 	$(PYTHON) -m ingest.pipeline daily $(if $(YEAR),--year $(YEAR),) $(if $(DRY_RUN),--dry-run,) $(if $(DB_ONLY),--db-only,)
+
+# Cadeia mensal (custo do mandato, histórico da cota, Senado, página). PERIOD=AAAA-MM, ONLY=a,b e SKIP=c filtram.
+update-monthly:
+	$(PYTHON) -m ingest.pipeline monthly $(if $(PERIOD),--period $(PERIOD),) $(if $(DRY_RUN),--dry-run,) $(if $(ONLY),--only $(ONLY),) $(if $(SKIP),--skip $(SKIP),)
 
 pipeline-status:
 	$(PYTHON) -m ingest.pipeline status
@@ -162,7 +167,7 @@ SSH ?= ssh
 # Usuário comum com sudo (ex.: ubuntu na Magalu Cloud). Para root, use SUDO= (vazio).
 SUDO ?= sudo
 # Monta a página no servidor com os snapshots complementares que estiverem lá e reinicia o serviço.
-REMOTE_BUILD = cd $(APP_DIR)/app && ln -sfn $(APP_DIR)/data $(APP_DIR)/app/data && PAINEL_SNAPSHOTS=$(APP_DIR)/data/snapshots python3 scripts/build.py && chown -R painel:painel $(APP_DIR)/app && install -m 0644 deploy/dashboard.service /etc/systemd/system/painel.service && install -m 0644 deploy/painel-ingest.service deploy/painel-ingest.timer deploy/painel-ingest-failure.service /etc/systemd/system/ && systemctl daemon-reload && systemctl enable --now painel && systemctl restart painel
+REMOTE_BUILD = cd $(APP_DIR)/app && ln -sfn $(APP_DIR)/data $(APP_DIR)/app/data && PAINEL_SNAPSHOTS=$(APP_DIR)/data/snapshots python3 scripts/build.py && chown -R painel:painel $(APP_DIR)/app && install -m 0644 deploy/dashboard.service /etc/systemd/system/painel.service && install -m 0644 deploy/painel-ingest.service deploy/painel-ingest.timer deploy/painel-ingest-monthly.service deploy/painel-ingest-monthly.timer deploy/painel-ingest-failure@.service /etc/systemd/system/ && ( [ -x $(APP_DIR)/venv/bin/python3 ] || python3 -m venv $(APP_DIR)/venv ) && $(APP_DIR)/venv/bin/pip install -q -r ingest/senate-requirements.txt && systemctl daemon-reload && systemctl enable --now painel && systemctl restart painel
 
 deploy: check
 	@test -n "$(SERVER)" || (echo "Defina SERVER=usuario@host (ou no .env)"; exit 1)
@@ -177,7 +182,7 @@ deploy-data:
 	rm -f data/backups/deploy.sqlite3
 	$(PYTHON) -c "import sqlite3; s=sqlite3.connect('data/na-lupa.sqlite3'); d=sqlite3.connect('data/backups/deploy.sqlite3'); s.backup(d); d.close()"
 	rsync -az --progress --rsync-path="$(SUDO) rsync" data/backups/deploy.sqlite3 $(SERVER):$(APP_DIR)/data/na-lupa.sqlite3.new
-	rsync -az --delete --delete-excluded --exclude-from=deploy/snapshots-local-only.txt --rsync-path="$(SUDO) rsync" data/snapshots/ $(SERVER):$(APP_DIR)/data/snapshots/
+	rsync -az --delete --exclude-from=deploy/snapshots-local-only.txt --rsync-path="$(SUDO) rsync" data/snapshots/ $(SERVER):$(APP_DIR)/data/snapshots/
 	$(SSH) $(SERVER) "$(SUDO) sh -c 'cd $(APP_DIR)/data && chown -R painel:painel na-lupa.sqlite3.new snapshots && rm -f na-lupa.sqlite3-wal na-lupa.sqlite3-shm && mv -f na-lupa.sqlite3.new na-lupa.sqlite3 && ( [ -d $(APP_DIR)/app/scripts ] && $(REMOTE_BUILD) || true )'"
 	rm -f data/backups/deploy.sqlite3
 	@echo "Banco e snapshots publicados; página remontada e serviço reiniciado."
@@ -186,4 +191,4 @@ deploy-db: deploy-data
 
 deploy-status:
 	$(SSH) $(SERVER) 'systemctl is-active painel && curl -fsS http://127.0.0.1:8000/healthz && echo'
-	$(SSH) $(SERVER) "python3 -c \"import json; s = json.load(open('$(APP_DIR)/data/status/daily.json')); print('atualização automática:', s['result'], s['finishedAt'], s['error'] or '')\" 2>/dev/null || echo 'atualização automática: nunca executada'"
+	@for job in daily monthly; do $(SSH) $(SERVER) "python3 -c \"import json; s = json.load(open('$(APP_DIR)/data/status/$$job.json')); print('atualização $$job:', s['result'], s['finishedAt'], s['error'] or '')\" 2>/dev/null || echo 'atualização $$job: nunca executada'"; done

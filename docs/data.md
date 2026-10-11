@@ -22,7 +22,7 @@ make import
 make db-check
 ```
 
-No servidor, essa sequência roda sozinha todo dia para o ano corrente, com backup, cópia de trabalho, guarda de regressão e aviso por e-mail: `python3 -m ingest.pipeline daily` (`make update-daily`), descrito em [Publicação](deploy.md#atualização-automática-dos-dados). Os demais coletores desta página continuam manuais.
+No servidor, essa sequência roda sozinha todo dia para o ano corrente, com backup, cópia de trabalho, guarda de regressão e aviso por e-mail: `python3 -m ingest.pipeline daily` (`make update-daily`), descrito em [Publicação](deploy.md#atualização-automática-dos-dados). O job mensal (`make update-monthly`) encadeia os coletores do custo do mandato, o histórico da cota, o Senado e a remontagem da página; Placar, Minha cidade e eleições continuam manuais.
 
 Os importadores atuais usam apenas a biblioteca padrão do Python. Downloads podem ser grandes. Os snapshots normalizados ficam em `data/imports/`, e os originais/cache em `data/raw/`. Nem todos os brutos são retidos; preserve os normalizados se precisar reconstruir exatamente a mesma fotografia. Recoletar uma fonte pode produzir outro retrato.
 

@@ -1,0 +1,27 @@
+# Cadeia mensal: custo do mandato (Câmara), histórico da cota no banco, Senado (folha, exercício, presença,
+# participação, tempo de mandato), impostos estaduais e remontagem da página. Disparado por painel-ingest-monthly.timer.
+# A primeira execução em um servidor novo coleta o histórico desde 2023 e pode levar horas; as seguintes usam os caches.
+[Unit]
+Description=Painel Público: atualização mensal do custo do mandato e do Senado
+After=network-online.target
+Wants=network-online.target
+OnFailure=painel-ingest-failure@%n.service
+
+[Service]
+Type=oneshot
+User=painel
+WorkingDirectory=/opt/painel/app
+Environment=PAINEL_DB=/opt/painel/data/na-lupa.sqlite3
+Environment=PAINEL_SNAPSHOTS=/opt/painel/data/snapshots
+EnvironmentFile=-/etc/painel/pipeline.env
+ExecStart=/opt/painel/venv/bin/python3 -m ingest.pipeline monthly
+TimeoutStartSec=12h
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadOnlyPaths=/opt/painel/app
+ReadWritePaths=/opt/painel/data /opt/painel/app/dist

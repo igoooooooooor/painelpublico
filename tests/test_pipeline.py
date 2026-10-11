@@ -69,9 +69,10 @@ class PipelineTests(unittest.TestCase):
         self.sent.append((mail, subject, body))
 
     # Os coletores de snapshot (perfis e situação) também são subprocessos; aqui respondem conforme combinado.
-    def fake_snapshot_collector(self, config, arguments):
+    def fake_snapshot_collector(self, config, arguments, timeout=None):
         self.snapshot_calls.append(arguments)
-        code, stdout = self.snapshot_results.get(arguments[0], (0, ''))
+        key = arguments[1] if arguments[0] == '-m' else arguments[0]
+        code, stdout = self.snapshot_results.get(key, (0, ''))
         return subprocess.CompletedProcess(list(arguments), code, stdout=stdout, stderr='')
 
     def run_daily(self, config=None):
@@ -92,8 +93,9 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(self.counts(), (8, 32))
         self.assertEqual([s['name'] for s in status['steps']],
                          ['collect', 'validate', 'backup', 'stage', 'import', 'verify', 'publish',
-                          'profiles', 'project-status', 'notify'])
-        self.assertEqual([call[0] for call in self.snapshot_calls], ['ingest/profiles.py', 'ingest/project_status.py'])
+                          'profiles', 'project-status', 'senate-projects', 'senate-activity', 'notify'])
+        self.assertEqual([call[0] for call in self.snapshot_calls],
+                         ['ingest/profiles.py', 'ingest/project_status.py', 'ingest/senate_projects.py', 'ingest/senate_activity.py'])
         self.assertIn('--max-age-hours', self.snapshot_calls[1])
         self.assertEqual(status['summary']['roster'], {'camara_deputies_current': 5, 'senado_senators_current': 3})
         self.assertEqual(json.loads(self.config.status_path.read_text())['result'], 'ok')
@@ -178,7 +180,7 @@ class PipelineTests(unittest.TestCase):
 
     def test_concurrent_run_is_refused(self):
         with pipeline.Lock(self.config.lock_path):
-            status = self.run_daily()
+            status = self.run_daily(pipeline.PipelineConfig(**{**self.config.__dict__, 'lock_wait_seconds': 0}))
         self.assertEqual(status['result'], 'failed')
         self.assertIn('em andamento', status['error'])
         self.assertEqual(status['steps'], [{**status['steps'][0]}])  # só o registro de aviso
@@ -205,6 +207,69 @@ class PipelineTests(unittest.TestCase):
         self.next_document = document()
         self.run_daily(pipeline.PipelineConfig(**{**self.config.__dict__, 'db_only': True}))
         self.assertEqual(self.snapshot_calls, [])
+
+    def test_lock_waits_for_the_other_job(self):
+        import threading
+        held = pipeline.Lock(self.config.lock_path)
+        held.__enter__()
+        threading.Timer(0.3, held.__exit__, args=(None, None, None)).start()
+        with mock.patch.object(pipeline, 'LOCK_WAIT_SECONDS', 5):
+            with pipeline.Lock(self.config.lock_path, wait_seconds=5, poll_seconds=0.05):
+                pass
+
+    def test_monthly_runs_the_chain_in_order_and_imports_history_through_a_work_copy(self):
+        self.run_daily()
+        self.snapshot_calls.clear()
+        with mock.patch.dict('os.environ', {'PAINEL_TODAY': '2026-10-11'}):
+            with mock.patch.object(pipeline, 'run_collector', self.fake_collector), \
+                    mock.patch.object(pipeline, 'run_snapshot_collector', self.fake_snapshot_collector), \
+                    redirect_stdout(StringIO()):
+                status = pipeline.run_monthly(self.config, mail_sender=self.fake_mail)
+        self.assertEqual(status['result'], 'ok', status)
+        self.assertEqual(status['period'], '2026-09')
+        names = [s['name'] for s in status['steps']]
+        self.assertEqual(names[:4], ['legislative-2023', 'legislative-2024', 'legislative-2025', 'quota-history'])
+        self.assertEqual(names[4:9], ['backup', 'stage', 'import-history', 'verify', 'publish'])
+        self.assertEqual(names[9:12], ['payroll-2023', 'housing-2023', 'service-2023'])
+        self.assertEqual(names[-11:], ['chamber-mandate-history', 'mandate-cost', 'senate-office-pilot', 'senate-cost',
+                                       'senate-attendance', 'senate-activity', 'senate-participation', 'tenure',
+                                       'state-tax-revenue', 'build', 'notify'])
+        history_call = next(call for call in self.snapshot_calls if call[:2] == ('-m', 'backend.quota_history'))
+        self.assertEqual(history_call[2:], ('--db', str(self.config.work_db)))
+        payroll_2023 = next(call for call in self.snapshot_calls if call[0] == 'ingest/chamber_payroll.py')
+        self.assertIn('data/snapshots/chamber-payroll-2023.json', payroll_2023)
+        payroll_2026 = [call for call in self.snapshot_calls if call[0] == 'ingest/chamber_payroll.py'][-1]
+        self.assertEqual(payroll_2026, ('ingest/chamber_payroll.py', '--collect', '--year', '2026'))
+        self.assertEqual(self.counts(), (8, 32))
+        self.assertTrue((self.config.status_dir / 'monthly.json').exists())
+        self.assertEqual(self.sent, [])
+
+    def test_monthly_failures_are_partial_and_history_import_failure_keeps_the_database(self):
+        self.run_daily()
+        self.sent.clear()
+        self.snapshot_results['backend.quota_history'] = (1, '')
+        self.snapshot_results['ingest/senate_attendance.py'] = (2, 'pdfplumber ausente')
+        with mock.patch.object(pipeline, 'run_collector', self.fake_collector), \
+                mock.patch.object(pipeline, 'run_snapshot_collector', self.fake_snapshot_collector), \
+                redirect_stdout(StringIO()):
+            status = pipeline.run_monthly(pipeline.PipelineConfig(**{**self.config.__dict__, 'period': (2026, 8)}),
+                                          mail_sender=self.fake_mail)
+        self.assertEqual(status['result'], 'failed')
+        self.assertIn('histórico da cota', status['error'])
+        statuses = {s['name']: s['status'] for s in status['steps']}
+        self.assertEqual((statuses['import-history'], statuses['senate-attendance'], statuses['build']), ('failed', 'partial', 'ok'))
+        self.assertEqual(self.counts(), (8, 32))
+        self.assertFalse(self.config.work_db.exists())
+        self.assertIn('Atualização mensal FALHOU', self.sent[0][1])
+        self.assertIn('2026-08', self.sent[0][2])
+        # --only/--skip limitam a cadeia.
+        self.snapshot_calls.clear()
+        with mock.patch.object(pipeline, 'run_collector', self.fake_collector), \
+                mock.patch.object(pipeline, 'run_snapshot_collector', self.fake_snapshot_collector), \
+                redirect_stdout(StringIO()):
+            status = pipeline.run_monthly(pipeline.PipelineConfig(**{**self.config.__dict__, 'only': ('senate-cost', 'build')}),
+                                          mail_sender=self.fake_mail)
+        self.assertEqual([call[0] for call in self.snapshot_calls], ['ingest/senate_cost.py', 'scripts/build.py'])
 
     def test_mail_config_and_report(self):
         self.assertIsNone(pipeline.MailConfig.from_environ({}))
@@ -248,8 +313,9 @@ class PipelineTests(unittest.TestCase):
         out = StringIO()
         with redirect_stdout(out):
             code = pipeline.main(['--db', str(self.config.db_path), '--data-dir', str(self.config.data_dir), 'status'])
-        self.assertEqual(code, 0)
-        self.assertEqual(json.loads(out.getvalue())['result'], 'ok')
+        self.assertEqual(code, 1)  # o mensal nunca rodou
+        self.assertEqual(json.loads(out.getvalue())['daily']['result'], 'ok')
+        self.assertEqual(json.loads(out.getvalue())['monthly']['status'], 'nunca executado')
 
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@ Description=Painel Público: atualização diária dos dados
 After=network-online.target
 Wants=network-online.target
 # Aviso de último recurso se o processo morrer antes de gravar status (ex.: timeout, falta de memória).
-OnFailure=painel-ingest-failure.service
+OnFailure=painel-ingest-failure@%n.service
 
 [Service]
 Type=oneshot
@@ -14,7 +14,8 @@ WorkingDirectory=/opt/painel/app
 Environment=PAINEL_DB=/opt/painel/data/na-lupa.sqlite3
 Environment=PAINEL_SNAPSHOTS=/opt/painel/data/snapshots
 EnvironmentFile=-/etc/painel/pipeline.env
-ExecStart=/usr/bin/python3 -m ingest.pipeline daily
+# Interpretador do venv criado pelo deploy (traz pdfplumber para a presença do Senado).
+ExecStart=/opt/painel/venv/bin/python3 -m ingest.pipeline daily
 TimeoutStartSec=2h
 # Não disputa CPU e disco com o site.
 Nice=10
@@ -25,4 +26,5 @@ ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true
 ReadOnlyPaths=/opt/painel/app
-ReadWritePaths=/opt/painel/data
+# dist/ recebe a página remontada pelo job mensal.
+ReadWritePaths=/opt/painel/data /opt/painel/app/dist

@@ -36,7 +36,7 @@ visitante → Cloudflare (HTTPS, cache, proteção) → túnel → 127.0.0.1:800
 | O que mudou | Comando |
 |---|---|
 | Código ou telas | `make deploy` |
-| Banco ou snapshots (nova coleta/importação) | `make db-check` e depois `make deploy-data` (alias `deploy-db`). Os snapshots listados em `deploy/snapshots-local-only.txt` (insumos do custo do mandato) ficam só no computador local |
+| Banco ou snapshots (nova coleta/importação) | `make db-check` e depois `make deploy-data` (alias `deploy-db`). Os snapshots listados em `deploy/snapshots-local-only.txt` (insumos do custo do mandato) não são enviados; o servidor produz os seus no job mensal e eles ficam lá |
 | Cota do ano corrente | Nada: `painel-ingest.timer` atualiza no servidor todo dia (abaixo). `make deploy-data` continua válido para publicar uma base local, e substitui a do servidor |
 | Ver se está no ar | `make deploy-status` |
 
@@ -63,8 +63,10 @@ aleatório). O timer chama
 | `project-status` | `ingest/project_status.py --collect` com validade dos arquivos anuais (20 h o ano corrente, uma semana os fechados) e detalhes só para andamentos novos | Execução **parcial**; o snapshot anterior fica |
 | `notify` | E-mail em falha e parcial (sucesso só com `PAINEL_MAIL_ON_SUCCESS=1`) e ping opcional no monitor | Falha de envio fica registrada no status |
 
-As duas etapas de snapshot rodam depois do banco publicado e não o desfazem. `--db-only` (ou
-`make update-daily DB_ONLY=1`) pula as duas. Na primeira execução no servidor, que não tem os caches de
+| `senate-projects`, `senate-activity` | Autoria e votações nominais do Senado desde fev/2023 (`--mandate`); só o ano corrente é consultado de novo | Execução **parcial**; snapshot anterior fica |
+
+As etapas de snapshot rodam depois do banco publicado e não o desfazem. `--db-only` (ou
+`make update-daily DB_ONLY=1`) pula todas. Na primeira execução no servidor, que não tem os caches de
 `data/raw/`, a etapa `profiles` consulta o detalhe e a página de gabinete dos 513 deputados e baixa os
 arquivos anuais de 2023 até o ano corrente (dezenas de MB cada, lidos um por vez); as seguintes usam os
 caches. Confira na primeira execução a linha `conciliacao:` do log dessa etapa (ou `projectsArchive` em
@@ -85,19 +87,51 @@ Ativar (uma vez), depois do `make deploy`, que instala as unidades:
 sudo install -m 0600 /opt/painel/app/deploy/pipeline.env.example /etc/painel/pipeline.env
 sudo nano /etc/painel/pipeline.env                      # destinatário e SMTP (Gmail: senha de app)
 sudo systemctl start painel-ingest.service && sudo journalctl -u painel-ingest -n 50   # primeira execução, assistida
-sudo systemctl enable --now painel-ingest.timer
+sudo systemctl enable --now painel-ingest.timer painel-ingest-monthly.timer
 ```
 
-Acompanhar: `systemctl list-timers painel-ingest.timer`, `journalctl -u painel-ingest -n 100`
+Acompanhar: `systemctl list-timers 'painel-ingest*'`, `journalctl -u painel-ingest -n 100`
 e `make deploy-status`, que mostra o último resultado. Teste do e-mail no servidor:
 `cd /opt/painel/app && sudo -u painel env $(sudo cat /etc/painel/pipeline.env | xargs) python3 -m ingest.pipeline test-mail`.
 Localmente, `make update-daily DRY_RUN=1` faz tudo, menos trocar o banco (os snapshots das fichas são atualizados normalmente; use `DB_ONLY=1` para evitar).
 
-Se o processo morrer sem gravar status (timeout de 2 h, falta de memória), `painel-ingest-failure.service`
-envia o aviso de último recurso. O e-mail não detecta o timer que deixou de disparar; para isso,
-defina `PAINEL_HEALTHCHECK_URL` com um monitor externo (healthchecks.io ou similar), que avisa
-quando o ping diário não chega. Os demais coletores (perfis, projetos, Senado, custo do mandato,
-Minha cidade) continuam manuais; a ordem de automação está em [Próximas etapas](roadmap.md).
+### Job mensal
+
+`painel-ingest-monthly.timer` (dia 10, 1h30 de Brasília) roda `python3 -m ingest.pipeline monthly`
+(`make update-monthly`), a cadeia do custo do mandato e do Senado, com status em
+`/opt/painel/data/status/monthly.json`. O mês de referência é o anterior (`--period AAAA-MM` para
+outro); cada coletor é retomável, usa os caches e só busca o que falta, então um mês já coletado
+custa pouco. A ordem:
+
+1. `legislative-<ano>` para cada ano fechado do mandato (cota dos anos anteriores, com correções da fonte) e
+   `quota-history`; se ambos derem certo, o histórico entra no banco pelo mesmo caminho do diário
+   (`backup`, `stage`, `import-history`, `verify`, `publish`), com a guarda de regressão nas notas do histórico.
+2. `payroll-<ano>`, `housing-<ano>` e `service-<ano>` para cada ano do mandato (folha individual, moradia e
+   exercício da Câmara; meses já encerrados), `chamber-mandate-history` (gabinete dos anos anteriores e
+   presença do ano corrente) e `mandate-cost` (composição da média).
+3. `senate-office-pilot`, `senate-cost`, `senate-attendance` (PDFs do Diário; precisa de `pdfplumber`,
+   instalado no venv pelo deploy), `senate-activity`, `senate-participation` e `tenure`.
+4. `state-tax-revenue` e `build`, que remonta `dist/index.html` com a presença e os impostos estaduais novos.
+
+Uma etapa que falha deixa a execução parcial, com e-mail, e as seguintes continuam; só a importação
+do histórico no banco pode marcar a execução como falha, sem tocar o banco publicado. `--only a,b` e
+`--skip c` (ou `ONLY=`/`SKIP=` no `make`) limitam a cadeia, por nome ou prefixo (`payroll` cobre
+`payroll-2026`). Os dois jobs compartilham um lock: o que chegar segundo espera até 30 minutos.
+
+Em um servidor novo, a primeira execução mensal coleta o histórico desde fevereiro de 2023 (folha e
+moradia de 513 deputados por 45 meses) e pode levar algumas horas; o timeout da unidade é 12 h. Rode-a
+assistida: `sudo systemctl start painel-ingest-monthly.service` e `journalctl -u painel-ingest-monthly -f`.
+Os insumos ficam em `/opt/painel/data/snapshots` e não são apagados pelo `make deploy-data`.
+
+Os jobs usam o interpretador `/opt/painel/venv/bin/python3`, criado pelo deploy com
+`ingest/senate-requirements.txt`; o site continua no Python do sistema, sem dependências.
+
+Se o processo morrer sem gravar status (timeout, falta de memória), `painel-ingest-failure@.service`
+envia o aviso de último recurso para a unidade que falhou. O e-mail não detecta o timer que deixou de disparar; para isso,
+defina `PAINEL_HEALTHCHECK_URL` (e `PAINEL_HEALTHCHECK_URL_MONTHLY`) com um monitor externo
+(healthchecks.io ou similar), que avisa quando o ping não chega. Continuam manuais: o catálogo do
+Placar (revisão editorial), Minha cidade (cidades, emendas, contas), eleições e os arquivos mantidos
+à mão; a ordem de automação está em [Próximas etapas](roadmap.md).
 
 ## Rodar do próprio Mac (temporário)
 
