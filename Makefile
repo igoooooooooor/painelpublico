@@ -180,9 +180,12 @@ SUDO ?= sudo
 # Monta a página no servidor com os snapshots complementares que estiverem lá e reinicia o serviço.
 REMOTE_BUILD = cd $(APP_DIR)/app && ln -sfn $(APP_DIR)/data $(APP_DIR)/app/data && PAINEL_SNAPSHOTS=$(APP_DIR)/data/snapshots python3 scripts/build.py && chown -R painel:painel $(APP_DIR)/app && install -m 0644 deploy/dashboard.service /etc/systemd/system/painel.service && install -m 0644 deploy/painel-ingest.service deploy/painel-ingest.timer deploy/painel-ingest-monthly.service deploy/painel-ingest-monthly.timer deploy/painel-ingest-failure@.service deploy/painel-ingest-weekly.service deploy/painel-ingest-weekly.timer /etc/systemd/system/ && ( [ -x $(APP_DIR)/venv/bin/python3 ] || python3 -m venv $(APP_DIR)/venv ) && $(APP_DIR)/venv/bin/pip install -q -r ingest/senate-requirements.txt && systemctl daemon-reload && systemctl enable --now painel && systemctl restart painel
 
+# Só vai o que está no Git: o que não é versionado (rascunhos, caches, configuração do editor) fica de fora.
 deploy: check
 	@test -n "$(SERVER)" || (echo "Defina SERVER=usuario@host (ou no .env)"; exit 1)
-	rsync -az --delete --rsync-path="$(SUDO) rsync" --exclude-from=deploy/rsync-exclude.txt ./ $(SERVER):$(APP_DIR)/app/
+	@untracked=$$(mktemp) && git ls-files --others --directory | sed 's|^|/|' > "$$untracked" && \
+	rsync -az --delete --rsync-path="$(SUDO) rsync" --exclude-from=deploy/rsync-exclude.txt --exclude-from="$$untracked" ./ $(SERVER):$(APP_DIR)/app/; \
+	status=$$?; rm -f "$$untracked"; exit $$status
 	$(SSH) $(SERVER) "$(SUDO) sh -c '$(REMOTE_BUILD)'"
 	$(MAKE) deploy-status
 
