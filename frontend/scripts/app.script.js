@@ -96,14 +96,15 @@ function legacyProfileView() {
 const LEGACY_VIEWS = {
   inicio: 'home', hoje: 'home', votacoes: 'votes', deputados: 'politicians', ficha: 'profile',
   votacao: 'vote', gastos: 'alerts', gasto: 'profile', lupa: 'alerts', politicos: 'politicians',
-  politico: 'profile', presenca: 'attendance', comparar: 'compare', partidos: 'parties',
+  politico: 'profile', presenca: 'attendance', comparar: 'compare', partidos: 'parties', metodologia: 'methodology',
 };
 const normalizeView = view => LEGACY_VIEWS[view] || view;
 
 function render() {
   state.view = normalizeView(state.view);
   const views = { home: homeView, votes: votesView, politicians: politiciansView, profile: profileView, vote: voteView,
-    alerts: alertsView, attendance: attendanceView, compare: comparisonView, parties: partiesView, city: cityView };
+    alerts: alertsView, attendance: attendanceView, compare: comparisonView, parties: partiesView, city: cityView,
+    methodology: methodologyView };
   if (!views[state.view]) state.view = 'home';
   const v = state.view;
   $app.innerHTML = `<div class="view">${views[v]()}</div>`;
@@ -116,10 +117,10 @@ function render() {
 /* Endereços próprios: /deputado/<id>, /senador/<id> e seções. O servidor entrega a mesma página com
    resumo e metadados para buscadores; aqui o app lê o endereço ao abrir e o atualiza ao navegar. */
 const PATH_BY_VIEW = { home: '/', alerts: '/alertas', votes: '/placar', vote: '/placar', politicians: '/politicos',
-  parties: '/partidos', compare: '/comparar', attendance: '/presenca', city: '/minha-cidade' };
+  parties: '/partidos', compare: '/comparar', attendance: '/presenca', city: '/minha-cidade', methodology: '/metodologia' };
 const currentPath = () => (typeof location === 'undefined' || typeof location.pathname !== 'string' ? '/' : location.pathname.replace(/\/+$/, '') || '/');
 const TITLE_BY_VIEW = { alerts: 'Alertas', votes: 'Placar', vote: 'Placar', politicians: 'Políticos', parties: 'Comparar partidos',
-  compare: 'Comparar políticos', attendance: 'Presença', city: 'Minha cidade', profile: 'Ficha' };
+  compare: 'Comparar políticos', attendance: 'Presença', city: 'Minha cidade', profile: 'Ficha', methodology: 'Metodologia' };
 function syncTitle() {
   const person = state.view === 'profile' ? citizenState.profile?.pessoa : null;
   const page = person && person.id === state.politicianId ? person.name : TITLE_BY_VIEW[state.view];
@@ -181,11 +182,12 @@ function navigateToView(view, keep) {
   state.view = view; render(); syncLocation(); window.scrollTo(0, 0);
 }
 function navigateBack() { const h = navigationHistory.pop() || { view: state.view === 'vote' ? 'votes' : 'home', y: 0 }; Object.assign(state, { view: h.view, deputyId: h.deputyId, voteId: h.voteId, politicianId: h.politicianId }); render(); syncLocation('replace'); window.scrollTo(0, h.y || 0); }
-// A ficha chega pela API: guardamos a âncora até a seção existir no DOM.
+// Âncoras de seção: a ficha chega pela API, então guardamos a âncora até a seção existir no DOM.
 let pendingProfileAnchor = null;
+const SECTION_ANCHORS = { profile: /^#profile-(cost|work|alerts)$/, methodology: /^#methodology-[a-z]+$/ };
 function scrollToProfileAnchor(fromLocation = false) {
   if (fromLocation) pendingProfileAnchor = typeof location !== 'undefined' ? location.hash : null;
-  if (state.view !== 'profile' || !/^#profile-(cost|work|alerts)$/.test(pendingProfileAnchor || '')) {
+  if (!SECTION_ANCHORS[state.view] || !SECTION_ANCHORS[state.view].test(pendingProfileAnchor || '')) {
     pendingProfileAnchor = null;
     return false;
   }
@@ -227,8 +229,14 @@ document.addEventListener('click', e => {
     e.preventDefault();
     return openPolitician(t.dataset.deputy);
   }
-  // Abas do menu começam um caminho novo; links dentro da página lembram de onde veio, para o "Voltar".
-  if (t.dataset.go) { if (!t.closest || t.closest('nav.tabs')) { navigationHistory.length = 0; navigateToView(t.dataset.go, true); } else navigateToView(t.dataset.go); }
+  if (t.dataset.go) {
+    // Links reais (rodapé, metodologia) também abrem em nova aba com Ctrl/Cmd/Shift ou botão do meio.
+    if (t.tagName === 'A') { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button) return; e.preventDefault(); }
+    // Abas do menu começam um caminho novo; links dentro da página lembram de onde veio, para o "Voltar".
+    if (!t.closest || t.closest('nav.tabs')) { navigationHistory.length = 0; navigateToView(t.dataset.go, true); } else navigateToView(t.dataset.go);
+    // "/metodologia#methodology-alerts": abre a página já na seção.
+    if (t.hash) { history.replaceState(null, '', viewPath() + t.hash); pendingProfileAnchor = t.hash; scrollToProfileAnchor(); }
+  }
 });
 /* Alterna tema claro/escuro; o padrão é escuro e a escolha fica salva neste navegador. */
 const THEME_ICON = '<svg class="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="theme-moon" d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/><g class="theme-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></svg>';

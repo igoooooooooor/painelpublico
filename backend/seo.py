@@ -37,6 +37,8 @@ SECTIONS = {
                   'Presença de cada deputado(a) nas sessões deliberativas do mandato atual, desde fev/2023, com faltas justificadas e não justificadas.'),
     '/minha-cidade': ('city', 'Minha cidade',
                       'Quem representa sua cidade, emendas parlamentares e contas da prefeitura, com dados do IBGE, TSE e Tesouro.'),
+    '/metodologia': ('methodology', 'Metodologia e perguntas',
+                     'Como o painel calcula custo, cota, presença, alertas, Placar e contador de impostos: fontes oficiais, regras, prazos e limites de cada número.'),
 }
 # Comparação compartilhável de dois partidos: /partidos/PL-vs-PT (siglas codificadas na URL).
 PARTY_PAIR_PATH = re.compile(r'^/partidos/([^/]{1,60})-vs-([^/]{1,60})$')
@@ -312,9 +314,10 @@ e não indicam irregularidade. Ausência de dado não significa zero.
 - [Placar]({origin}/placar): votações selecionadas do Plenário da Câmara
 - [Comparar partidos]({origin}/partidos)
 - [Minha cidade]({origin}/minha-cidade)
+- [Metodologia]({origin}/metodologia): fontes, regras e limites de cada número
 - [Sitemap]({origin}/sitemap.xml)
 
 ## Sobre
 
-Projeto pessoal, independente e apartidário, com código aberto: https://github.com/igor05k/painelpublico
+Projeto pessoal, independente e apartidário, com código aberto: https://github.com/igoooooooooor/painelpublico
 """

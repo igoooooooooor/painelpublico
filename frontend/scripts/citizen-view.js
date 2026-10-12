@@ -296,7 +296,7 @@ function alertsView() {
       <div class="alerts-intro">
         <h1 class="h ph-t">Alertas</h1>
         <p class="ph-lead">Meses acima da referência e concentração em fornecedor nas notas da cota de deputados(as) e senadores(as), pelas mesmas regras para todos(as). Os alertas não indicam irregularidade: confira sempre as notas na fonte oficial.</p>
-        <a class="alerts-how-link" href="#alerts-how">Como as regras funcionam →</a>
+        <a class="alerts-how-link" href="/metodologia#methodology-alerts" data-go="methodology">Como as regras funcionam →</a>
         ${alertTopPeople()}
       </div>
       ${alertRuleCards()}

@@ -27,7 +27,7 @@ function loadApp({ pathname, history, includeScoreboard = false, fetch: fetchImp
   const votes = JSON.parse(fs.readFileSync(path.join(__dirname, '../frontend/data/votes.json'), 'utf8'));
   const data = { votacoes: votes.map(vote => ({ ...vote, partidos: [] })), presencaTodos: [],
     votosCompletos: {}, arrecadacao: null, perfis: { profiles: {} }, senado: {}, ultimaVotacao: null };
-  const names = ['dates.js', 'profile-data.js', 'profile-cost.js', 'profile-senate-cost.js', 'share-card.js', 'citizen-view.js', 'extras-view.js', 'parties-view.js', 'home-view.js', 'city-view.js', ...(includeScoreboard ? ['scoreboard-view.js'] : []), 'app.script.js'];
+  const names = ['dates.js', 'profile-data.js', 'profile-cost.js', 'profile-senate-cost.js', 'share-card.js', 'citizen-view.js', 'extras-view.js', 'parties-view.js', 'home-view.js', 'city-view.js', ...(includeScoreboard ? ['scoreboard-view.js'] : []), 'methodology-view.js', 'app.script.js'];
   const source = names.map(name => fs.readFileSync(path.join(__dirname, '../frontend/scripts', name), 'utf8')).join('\n');
   vm.runInContext(source.replace('/*DATA*/null', JSON.stringify(data)), context);
   const click = dataset => {
@@ -36,13 +36,13 @@ function loadApp({ pathname, history, includeScoreboard = false, fetch: fetchImp
       handler({ target: { closest: selector => selector.split(',').some(item => target.hasAttribute(item.slice(1, -1))) ? target : null }, preventDefault() {} });
     }
   };
-  return { context, app, document, votes, click };
+  return { context, app, document, votes, click, listeners };
 }
 
 test('combined scripts boot and navigate through all public views with unavailable data', () => {
   const { context, document, app } = loadApp();
   assert.equal(document.body.dataset.view, 'home');
-  for (const view of ['votes', 'politicians', 'alerts', 'attendance', 'compare', 'parties', 'city', 'home']) {
+  for (const view of ['votes', 'politicians', 'alerts', 'attendance', 'compare', 'parties', 'city', 'methodology', 'home']) {
     vm.runInContext(`navigateToView(${JSON.stringify(view)})`, context);
     assert.equal(document.body.dataset.view, view);
     assert.ok(app.innerHTML.length > 50);
@@ -80,6 +80,30 @@ test('deep links open the profile and navigation updates the address bar', () =>
 test('section paths open their view', () => {
   const { document } = loadApp({ pathname: '/partidos' });
   assert.equal(document.body.dataset.view, 'parties');
+});
+
+test('methodology page has its own address and its links open the page at the right section', () => {
+  const calls = [];
+  const history = { pushState: (_, __, url) => { calls.push(['push', url]); context.location.pathname = url; },
+    replaceState: (_, __, url) => { calls.push(['replace', url]); context.location.pathname = url.split('#')[0]; } };
+  const { context, document, app, listeners } = loadApp({ pathname: '/metodologia', history });
+  assert.equal(document.body.dataset.view, 'methodology');
+  assert.equal(context.document.title, 'Metodologia · Painel Público');
+  for (const text of ['Como o painel funciona', 'Alertas não indicam irregularidade', 'id="methodology-alerts"', 'href="#methodology-sources"',
+    '1,75 vez a referência', '50% e pelo menos R$ 30 mil', 'cota-alertas-v3', 'Dado ausente não significa zero']) assert.ok(app.innerHTML.includes(text), text);
+  assert.doesNotMatch(app.innerHTML, /\[Confirmar/);
+  vm.runInContext("navigateToView('alerts')", context);
+  assert.match(app.innerHTML, /href="\/metodologia#methodology-alerts" data-go="methodology"/);
+  // O link "Como as regras funcionam" abre a metodologia já na seção dos alertas.
+  const section = { scrollIntoView: options => calls.push(['scroll', options.block]) };
+  document.getElementById = id => id === 'app' ? app : id === 'methodology-alerts' ? section : null;
+  const link = { tagName: 'A', hash: '#methodology-alerts', dataset: { go: 'methodology' }, hasAttribute: () => false };
+  let prevented = false;
+  const event = { target: { closest: selector => selector.split(',').includes('[data-go]') ? link : null }, preventDefault() { prevented = true; } };
+  for (const handler of listeners.click) handler(event);
+  assert.ok(prevented);
+  assert.equal(document.body.dataset.view, 'methodology');
+  assert.deepEqual(calls.slice(-3), [['push', '/metodologia'], ['replace', '/metodologia#methodology-alerts'], ['scroll', 'start']]);
 });
 
 test('party comparison paths open the selected pair', () => {

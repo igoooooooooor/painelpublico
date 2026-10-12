@@ -118,8 +118,13 @@ class SeoPagesTests(unittest.TestCase):
         self.assertIn(f'<loc>{self.base}/deputado/1-ana-avila</loc>', sitemap)
         self.assertIn(f'<loc>{self.base}/senador/2-bruno-be</loc>', sitemap)
         self.assertIn(f'<loc>{self.base}/alertas</loc>', sitemap)
+        self.assertIn(f'<loc>{self.base}/metodologia</loc>', sitemap)
+        response, methodology = self.get('/metodologia')
+        self.assertEqual(response.status, 200)
+        self.assertIn('<title>Metodologia e perguntas · Painel Público</title>', methodology)
         _, llms = self.get('/llms.txt')
         self.assertIn('/deputado/<id>-<nome>', llms)
+        self.assertIn(f'{self.base}/metodologia', llms)
 
     def test_party_pair_path_has_its_own_escaped_metadata(self):
         response, page = self.get('/partidos/PL-vs-PT')

@@ -18,7 +18,7 @@ function loadApp({ pathname = '/', fetch: fetchImpl = () => Promise.resolve(json
   const data = { votacoes: votes.map(vote => ({ ...vote, partidos: [] })), presencaTodos: [], votosCompletos: {},
     arrecadacao: null, perfis: { profiles: {} }, senado: {}, ultimaVotacao: null };
   const names = ['dates.js', 'profile-data.js', 'profile-cost.js', 'profile-senate-cost.js', 'share-card.js', 'citizen-view.js',
-    'extras-view.js', 'parties-view.js', 'home-view.js', 'city-view.js', 'scoreboard-view.js', 'app.script.js'];
+    'extras-view.js', 'parties-view.js', 'home-view.js', 'city-view.js', 'scoreboard-view.js', 'methodology-view.js', 'app.script.js'];
   const source = names.map(name => fs.readFileSync(path.join(__dirname, '../frontend/scripts', name), 'utf8')).join('\n');
   const context = vm.createContext({
     document, window: { scrollY: 0, scrollTo() {}, addEventListener() {} }, location: { protocol: 'http:', pathname }, URL, URLSearchParams, FormData,
