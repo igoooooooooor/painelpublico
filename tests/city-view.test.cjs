@@ -297,3 +297,35 @@ test('stale detail responses cannot overwrite a different selected city', async 
   await older;
   assert.equal(city.detail.municipality.id, '3304557');
 });
+
+test('city page counts current federal members for the desktop govern column and offers an empty change-city search', () => {
+  const { context } = makeView();
+  const html = showCity(context, SP, {
+    municipalElected: [{ name: 'PREFEITA', office: 'Prefeito', party: 'AAA' }],
+    currentFederal: [{ id: 'camara:1', name: 'A' }, { id: 'camara:2', name: 'B' }, { id: 'senado:3', name: 'C' }],
+  });
+  assert.match(html, /Em Brasília, por SP/);
+  assert.match(html, /<b class="mono">2 \+ 1<\/b>/);
+  assert.match(html, /2 deputados\(as\) federais e 1 senador\(a\) no mandato hoje/);
+  assert.match(html, /data-profile-open="congress"/);
+  assert.match(html, /<label for="city-search">Trocar de cidade<\/label>/);
+  assert.match(html, /id="city-search" type="search" value=""/);
+  const empty = showCity(context, SP, { municipalElected: [{ name: 'PREFEITA', office: 'Prefeito', party: 'AAA' }] });
+  assert.doesNotMatch(empty, /Em Brasília/);
+});
+
+test('city page counts current federal members in the govern answer and offers an empty change-city search', () => {
+  const { context } = makeView();
+  const html = showCity(context, SP, {
+    municipalElected: [{ name: 'PREFEITA', office: 'Prefeito', party: 'AAA' }],
+    currentFederal: [{ id: 'camara:1', name: 'A' }, { id: 'camara:2', name: 'B' }, { id: 'senado:3', name: 'C' }],
+  });
+  assert.match(html, /Em Brasília, por SP/);
+  assert.match(html, /<b class="mono">2 \+ 1<\/b>/);
+  assert.match(html, /2 deputados\(as\) federais e 1 senador\(a\) no mandato hoje/);
+  assert.match(html, /data-profile-open="congress"/);
+  assert.match(html, /<label for="city-search">Trocar de cidade<\/label>/);
+  assert.match(html, /id="city-search" type="search" value=""/);
+  const empty = showCity(context, SP, { municipalElected: [{ name: 'PREFEITA', office: 'Prefeito', party: 'AAA' }] });
+  assert.doesNotMatch(empty, /Em Brasília/);
+});

@@ -1186,6 +1186,40 @@ body[data-view="home"] .citizen-alert { box-shadow: var(--shadow-raised); }
   .compare-page .cmp-bars i { border-radius: 999px; }
 }
 
+/* Minha cidade (protótipo): abertura com o nome grande e a busca para trocar de cidade; no computador,
+   "Quem governa" na largura toda, em três colunas, e gasto e emendas lado a lado. No celular os blocos de
+   "Quem governa" seguem empilhados dentro do cartão. */
+body[data-view="city"] .view:has(> .city-hero) > .back[data-city-search] { display: none; }
+.city-hero { display: flex; flex-direction: column; gap: 20px; }
+.city-hero-search { display: flex; flex-direction: column; gap: 8px; position: relative; }
+.city-hero-search label { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.city-hero-box { display: flex; gap: 6px; padding: 5px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow-raised); }
+.city-hero-box:focus-within { outline: 2px solid var(--ink); outline-offset: 2px; }
+.city-hero-box input { flex: 1; min-width: 0; min-height: var(--control-height); padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--ink); font: inherit; font-size: 16px; }
+.city-hero-box input:focus-visible { outline: none; }
+.city-hero-box button { min-height: var(--control-height); padding: 0 20px; border: 0; border-radius: 999px; background: var(--accent); color: var(--bg); font: inherit; font-weight: 600; cursor: pointer; }
+.city-hero-box button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.city-hero-search .city-results { position: absolute; top: 100%; left: 0; right: 0; z-index: 20; min-height: 0; margin-top: 8px; }
+.city-hero-search .city-results:not(:empty) { padding: 8px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: var(--shadow-raised); }
+.city-hero-search .city-suggestions { border: 0; }
+.city-govern { display: flex; flex-direction: column; gap: var(--space-3); }
+.city-govern-part { display: flex; flex-direction: column; gap: var(--space-3); }
+.city-govern-congress { padding-top: 12px; border-top: 1px solid var(--hero-line); }
+.city-govern-congress > b { font-size: 34px; font-weight: 600; letter-spacing: -0.03em; line-height: 1; color: var(--hero-fg); }
+@media (min-width: 900px) {
+  body[data-view="city"] .view > .city-hero { grid-column: 1 / -1; }
+  .city-hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 48px; align-items: end; padding-block: 24px 16px; }
+  .city-title { font-weight: 600; font-size: clamp(56px, 6vw, 80px); letter-spacing: -0.03em; }
+  .city-answers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .city-answers > [data-city-answer="govern"] { grid-column: 1 / -1; }
+  .city-govern { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0; padding-top: 4px; }
+  .city-govern-part { padding-inline: 24px; border-left: 1px solid var(--hero-line); }
+  .city-govern-part:first-child { padding-left: 0; border-left: 0; }
+  .city-govern-part:last-child { padding-right: 0; }
+  .city-govern-congress { padding-top: 0; border-top: 0; }
+  .city-govern .city-mini-seats { padding-top: 0; border-top: 0; }
+}
+
 /* Placar: decisões sobre trechos (destaques e emendas) */
 .scoreboard-segment-count { margin: 0; font-size: 13px; font-weight: 600; color: var(--accent); }
 .scoreboard-segments > p { margin: 0; }

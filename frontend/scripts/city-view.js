@@ -315,12 +315,32 @@ function cityGovernAnswer(data, isDf, isFernando) {
     <p class="city-answer-note">Ausência de dado não significa que não houve eleição.</p></section>`;
   const name = cityPersonName(mayor);
   return `${open}<span class="k">Prefeitura · eleição de 2024</span>
-    <div class="city-mayor"><span class="city-initials" aria-hidden="true">${esc(cityInitials(name))}</span><div><b>${esc(name)}</b><span>Prefeito(a)${mayor.party ? ` · ${esc(mayor.party)}` : ''}</span></div></div>
-    ${vice ? `<p class="city-answer-note">Vice: <b>${esc(cityPersonName(vice))}</b>${vice.party ? ` (${esc(vice.party)})` : ''}</p>` : ''}
-    <p class="city-answer-note">Mandato de 2025 a 2028.</p>
-    ${council.length ? `<div class="city-mini-seats"><span class="k">Maiores bancadas na Câmara Municipal</span><div class="city-seats">${cityCouncilSeats(council).slice(0, 4).map(([party, count]) => `<span class="fchip city-seat"><b>${esc(party)}</b> ${count}</span>`).join('')}</div></div>` : ''}
-    ${council.length ? `<button type="button" class="opt city-answer-action" data-profile-open="council"><span>Câmara Municipal: ${council.length} ${council.length === 1 ? 'vereador(a)' : 'vereadores(as)'}</span><span>→</span></button>` : ''}
+    <div class="city-govern">
+      <div class="city-govern-part">
+        <div class="city-mayor"><span class="city-initials" aria-hidden="true">${esc(cityInitials(name))}</span><div><b>${esc(name)}</b><span>Prefeito(a)${mayor.party ? ` · ${esc(mayor.party)}` : ''}</span></div></div>
+        ${vice ? `<p class="city-answer-note">Vice: <b>${esc(cityPersonName(vice))}</b>${vice.party ? ` (${esc(vice.party)})` : ''}</p>` : ''}
+        <p class="city-answer-note">Mandato de 2025 a 2028.</p>
+      </div>
+      ${council.length ? `<div class="city-govern-part">
+        <div class="city-mini-seats"><span class="k">Maiores bancadas na Câmara Municipal</span><div class="city-seats">${cityCouncilSeats(council).slice(0, 4).map(([party, count]) => `<span class="fchip city-seat"><b>${esc(party)}</b> ${count}</span>`).join('')}</div></div>
+        <button type="button" class="opt city-answer-action" data-profile-open="council"><span>Câmara Municipal: ${council.length} ${council.length === 1 ? 'vereador(a)' : 'vereadores(as)'}</span><span>→</span></button>
+      </div>` : ''}
+      ${cityGovernCongress(data)}
+    </div>
   </section>`;
+}
+
+/* "Quem governa" também mostra quantos representam o estado em Brasília hoje (a lista está em "Ver mais"). */
+function cityGovernCongress(data) {
+  const people = Array.isArray(data.currentFederal) ? data.currentFederal : [];
+  const chamber = people.filter(person => String(person.id || '').startsWith('camara:')).length;
+  const senate = people.filter(person => String(person.id || '').startsWith('senado:')).length;
+  if (!chamber && !senate) return '';
+  const uf = data.municipality?.uf;
+  return `<div class="city-govern-part city-govern-congress"><span class="k">Em Brasília${uf ? `, por ${esc(uf)}` : ''}</span>
+    <b class="mono">${chamber} + ${senate}</b>
+    <p class="city-answer-note">${chamber} ${chamber === 1 ? 'deputado(a) federal' : 'deputados(as) federais'} e ${senate} ${senate === 1 ? 'senador(a)' : 'senadores(as)'} no mandato hoje.</p>
+    <button type="button" class="opt city-answer-action" data-profile-open="congress"><span>Ver quem são</span><span>→</span></button></div>`;
 }
 
 function citySpendAnswer(data, isDf, isFernando) {
@@ -523,13 +543,25 @@ function cityDetailView() {
     ['sources', 'Fontes e datas', citySourcesDetail(data)],
   ].filter(([, , content]) => typeof content === 'string' && content.trim());
   return `${back}
-    <header class="city-head"><span class="k">Minha cidade · ${esc(uf)}</span><h1 class="h city-title">${esc(name)}</h1>
-      <p class="city-sub">${population ? `${esc(population)}${year ? ` <span class="muted">· estimativa de ${esc(year)}</span>` : ''}` : 'População não informada'}</p></header>
+    <div class="city-hero">
+      <header class="city-head"><span class="k">Minha cidade · ${esc(uf)}</span><h1 class="h city-title">${esc(name)}</h1>
+        <p class="city-sub">${population ? `${esc(population)}${year ? ` <span class="muted">· estimativa de ${esc(year)}</span>` : ''}` : 'População não informada'}</p></header>
+      ${cityHeroSearch()}
+    </div>
     <span class="k citizen-answer-label">${esc(name)} em 3 respostas</span>
     <div class="citizen-answers city-answers">${cityGovernAnswer(data, isDf, isFernando)}${citySpendAnswer(data, isDf, isFernando)}${cityAmendmentsAnswer(data, name)}</div>
     <h2 class="h">Ver mais</h2>
     <div class="citizen-details city-details">${sections.map(([key, title, content]) => cityAccordion(id, key, title, content)).join('')}</div>
     <span class="src">Dados públicos do IBGE, do TSE, do Portal da Transparência e do Tesouro Nacional. Datas e métodos em “Fontes e datas”.</span>`;
+}
+
+/* Busca para trocar de cidade sem sair da página. Usa os mesmos ids da busca inicial, que nunca aparece junto com esta. */
+function cityHeroSearch() {
+  const typing = cityViewState.suggestionsOpen && cityViewState.query.trim();
+  return `<div class="city-hero-search" role="search"><label for="city-search">Trocar de cidade</label>
+    <div class="city-hero-box"><input id="city-search" type="search" value="${typing ? esc(cityViewState.query) : ''}" placeholder="Digite o nome da cidade" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="city-suggestions"><button type="button" data-city-search-submit>Buscar</button></div>
+    <div id="city-results" class="city-results" aria-live="polite">${typing ? citySearchResultsMarkup() : ''}</div>
+  </div>`;
 }
 
 function cityPickerView() {
