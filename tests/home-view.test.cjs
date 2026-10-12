@@ -61,6 +61,9 @@ test('home categories list every category with refunds kept and the ranking uses
   assert.match(ranking, /data-politician="camara:100"/);
   assert.match(ranking, /entre 13 deputados\(as\) com dados/);
   assert.equal((ranking.match(/data-politician=/g) || []).length, 5);
+  // A lista completa abre na mesma conta do card, não na de custo total.
+  assert.match(ranking, /data-home-quota-list/);
+  assert.doesNotMatch(ranking, /data-go="politicians"/);
 });
 
 test('failed home summary stays explicit and can retry without any sample fallback', async () => {

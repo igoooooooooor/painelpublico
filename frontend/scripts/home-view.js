@@ -74,7 +74,7 @@ function homeTopCard(data) {
     <div class="home-panel-head"><h2 class="h">Quem mais usa a cota</h2><span class="muted">Média mensal nos meses com notas</span></div>
     ${top.length ? `<ol class="home-ranking">${top.map((p, i) => `<li><button type="button" data-politician="${esc(p.id)}"><span class="home-rank">${i + 1}</span><span class="home-rank-name"><b>${esc(p.nome)}</b><small>${esc(p.partido || '')} · ${esc(p.uf || '')}</small></span><span class="home-rank-value">R$ ${mil(p.gastoMensal)} mil</span><i style="width:${(Math.max(0, p.gastoMensal) / max * 100).toFixed(2)}%"></i></button></li>`).join('')}</ol>` : '<p>Sem reembolsos importados para ordenar.</p>'}
     <span class="muted">Os cinco maiores valores entre ${ranking.length} deputados(as) com dados. ${esc(homePeriod(data.reembolsos.deputado.periodo))}. Valores altos não indicam irregularidade.</span>
-    <button type="button" class="more" data-go="politicians">Ver a lista completa →</button>
+    <button type="button" class="more" data-home-quota-list>Ver a lista completa →</button>
   </section>`;
 }
 function homeHero() {
@@ -100,6 +100,12 @@ function homeView() {
     <span class="src">Listas e reembolsos: Câmara dos Deputados e Senado Federal. ${data?.snapshotAt ? 'Fotografia da base: ' + esc(dateBR(data.snapshotAt)) + '.' : ''} Presença e votações têm a cobertura indicada em suas telas.</span>`;
 }
 if (typeof document !== 'undefined' && document.addEventListener) {
+  // "Quem mais usa a cota" abre a lista completa na mesma conta: deputados(as), pela média mensal da cota.
+  document.addEventListener('click', event => {
+    if (!event.target?.closest?.('[data-home-quota-list]')) return;
+    Object.assign(citizenState.politicians, { query: '', role: 'deputado', order: 'cota', key: '' });
+    navigateToView('politicians');
+  });
   document.addEventListener('submit', event => {
     const form = event.target?.closest?.('[data-home-search]');
     if (!form) return;

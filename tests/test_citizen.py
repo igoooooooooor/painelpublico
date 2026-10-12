@@ -198,6 +198,13 @@ class CitizenPoliticiansTests(unittest.TestCase):
         self.assertEqual(result['topCamara'][0]['id'], 'camara:extra-09')
         self.assertEqual(result['topCamara'][-1]['id'], 'camara:zero')
         self.assertNotIn('camara:former', {item['id'] for item in result['topCamara']})
+        # "Ver a lista completa" do card da home abre a lista na ordem da cota: mesma conta, mesma ordem.
+        with closing(store.connect(self.db_path)) as db, db:
+            listing = citizen.politicians(db, {'ordem': 'cota', 'cargo': 'deputado', 'pageSize': 100})['itens']
+        with_notes = [item for item in listing if item['hasExpenseData']]
+        self.assertEqual([item['id'] for item in with_notes], [item['id'] for item in result['topCamara']])
+        self.assertEqual([item['gastoMensal'] for item in with_notes], [item['gastoMensal'] for item in result['topCamara']])
+        self.assertFalse(any(item['hasExpenseData'] for item in listing[len(with_notes):]))  # sem notas, no fim
 
     def test_home_summary_averages_monthly_cost_per_house_without_inventing_missing_costs(self):
         self.payload['authorities'].append(

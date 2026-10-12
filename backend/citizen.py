@@ -487,6 +487,9 @@ def politicians(db, params):
         args += [store.query_text(params), q.upper(), q.upper()]
     sort_order = {
         'gasto': 'CASE WHEN t.authorityId IS NULL THEN 1 ELSE 0 END,gastoMensal DESC',
+        # Média mensal da cota (a mesma conta do "Quem mais usa a cota" da home). As cotas das Casas têm regras e
+        # tetos diferentes: Câmara primeiro, depois Senado; sem notas, no fim.
+        'cota': "CASE a.role WHEN 'deputado' THEN 0 ELSE 1 END,CASE WHEN t.authorityId IS NULL THEN 1 ELSE 0 END,gastoMensal DESC,a.name",
         # Pelo peso: valor envolvido nos alertas, não a contagem (vários alertas pequenos não passam à frente de um enorme).
         'alertas': 'valorAlertas DESC,alertas DESC,CASE WHEN t.authorityId IS NULL THEN 1 ELSE 0 END,gastoMensal DESC',
         # Pela contagem: quantos alertas a pessoa tem, com o valor só para desempatar.
