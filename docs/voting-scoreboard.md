@@ -721,7 +721,7 @@ subemenda sem o texto como candidato, 2 de urgência do art. 154 (uma delas a do
 com 238 Sim), 2 sem relatório nominal compatível, 1 com nome do relatório fora da lista oficial de
 deputados e 1 com o relatório citando outro projeto. No catálogo, eles ficam em `urgencies`, no nível do
 índice (`coverage.standaloneUrgencyCount`), fora de `items`. Na tela: filtro "Tipo de decisão" no Placar
-(`/api/c/votes?kind=urgency` lista os ligados e estes juntos, com a situação do texto), página própria com
+(`/api/c/votes?kind=urgency` lista os ligados e estes juntos, com a situação do texto); o mesmo filtro tem "Destaques e emendas" (`kind=segment`), com os 212 trechos, cada um com a votação do texto a que pertence, e o filtro de resultado conta trecho mantido como Sim vencedor e trecho retirado como Sim derrotado, página própria com
 o bloco "E o texto do projeto?" e, na ficha, uma linha "urgência · voto" com a situação do texto, fora da
 contagem de votações. Para esses projetos, o pedido é o único voto registrado de cada deputado. Os títulos
 curtos partem da ementa oficial; quando ela só cita as leis alteradas, o título diz só isso.

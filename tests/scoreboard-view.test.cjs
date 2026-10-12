@@ -370,3 +370,27 @@ test('the decision type filter lists urgency requests with the state of the text
   assert.match(app.innerHTML, /pelo menos 257 votos Sim/);
   assert.doesNotMatch(app.innerHTML, /Ligado a uma votação do texto principal|Parte de uma votação maior/);
 });
+
+test('the decision type filter lists decisions on parts of the text with their main vote', async () => {
+  const calls = [];
+  const part = { id: '1-5', kind: 'segment', segmentKind: 'destaque', date: '2026-10-08', proposition: 'PL 123/2026', type: 'PL',
+    title: 'Destaque do art. 1º', summary: 'Destaque para retirar o art. 1º.', decisionLabel: 'Artigo mantido', outcome: 'kept',
+    tally: { yes: 284, no: 86, abstention: 3, total: 373 }, themes: [{ id: 'tributos', label: 'Tributos' }],
+    parent: { id: '1-1', title: 'Texto principal', date: '2026-10-08' } };
+  const { context, app } = loadApp({ fetch: async url => {
+    calls.push(url);
+    return jsonResponse({ ...listPayload({ items: url.includes('kind=segment') ? [part] : [item('1-1', 'Texto principal')] }),
+      kindCounts: { text: 187, segment: 212, urgency: 165 } });
+  } });
+  vm.runInContext("navigateToView('votes')", context);
+  await flush();
+  assert.match(app.innerHTML, /Destaques e emendas <b>212<\/b>/);
+  vm.runInContext("scoreboardApplyFilters({ kind: 'segment' })", context);
+  await flush();
+  assert.ok(calls.at(-1).includes('kind=segment'));
+  assert.match(app.innerHTML, /data-type="SEG"[^>]*>DESTAQUE</);
+  assert.match(app.innerHTML, /Votação em separado de um trecho · PL 123\/2026/);
+  assert.match(app.innerHTML, /Parte da votação do texto “Texto principal”, em 08\/10\/2026/);
+  assert.match(app.innerHTML, /Artigo mantido/);
+  assert.match(app.innerHTML, /data-vote="1-5"/);
+});

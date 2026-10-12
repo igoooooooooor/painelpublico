@@ -234,7 +234,7 @@ function scoreboardCoverage(data) {
     <details><summary>Como montamos este Placar e seus limites</summary>
       <p><strong>De onde vêm as votações.</strong> A Câmara publicou ${inventory} registros de votação ${timeframe}. Muitos são etapas do mesmo projeto: urgência, emendas, destaques, procedimentos e redação final. A contagem do Placar fica só com as votações do texto principal de PL, PLP e PEC no Plenário. Destaques, emendas e pedidos de urgência aparecem à parte, dentro da votação do projeto, quando já foram conferidos; não entram na contagem nem nas comparações. Votações simbólicas (sem registro de voto de cada deputado) e outros tipos de proposta ficam de fora.</p>
       <p><strong>Como escolhemos.</strong> Dos ${inventory} registros, ${candidates} pareciam votações do texto principal. ${review}: ${excluded}${published} entraram no Placar. ${pendingNote}</p>
-      ${Number.isInteger(coverage.segmentCount) && coverage.segmentCount > 0 ? `<p><strong>Decisões sobre trechos.</strong> Em alguns projetos, mostramos também ${scoreboardCount(coverage.segmentCount)} ${coverage.segmentCount === 1 ? 'votação nominal' : 'votações nominais'} de destaques e emendas ressalvados no texto principal, com o que significava votar Sim e Não. É um piloto: cada uma é conferida no relatório nominal e no texto oficial do destaque ou da emenda, e elas não entram na contagem acima nem nas comparações entre deputados e partidos.</p>` : ''}
+      ${Number.isInteger(coverage.segmentCount) && coverage.segmentCount > 0 ? `<p><strong>Decisões sobre trechos.</strong> Em alguns projetos, mostramos também ${scoreboardCount(coverage.segmentCount)} ${coverage.segmentCount === 1 ? 'votação nominal' : 'votações nominais'} de destaques e emendas ressalvados no texto principal, com o que significava votar Sim e Não. É um piloto: cada uma é conferida no relatório nominal e no texto oficial do destaque ou da emenda, e elas não entram na contagem acima nem nas comparações entre deputados e partidos. Elas aparecem na página da votação do texto e também no filtro “Destaques e emendas”.</p>` : ''}
       ${Number.isInteger(coverage.urgencyCount) && coverage.urgencyCount > 0 ? (() => {
         const linked = coverage.urgencyCount, alone = Number.isInteger(coverage.standaloneUrgencyCount) ? coverage.standaloneUrgencyCount : 0;
         return `<p><strong>Pedidos de urgência.</strong> Mostramos também ${scoreboardCount(linked + alone)} votações nominais de pedidos para acelerar a tramitação (art. 155 do Regimento Interno), no filtro “Pedidos de urgência”. Em ${scoreboardCount(linked)}, o texto do projeto foi votado depois no Placar, e o pedido aparece também na página dessa votação.${alone ? ` Nas outras ${scoreboardCount(alone)}, o texto foi aprovado em votação simbólica, sem voto de cada deputado, ou ainda não foi votado; o pedido é o único voto registrado sobre o projeto.` : ''} O voto na urgência não aprova o conteúdo e não entra na contagem acima nem nas comparações. Pedidos de outros tipos de proposta e casos que ainda pedem conferência ficam de fora.</p>`;
@@ -271,10 +271,18 @@ function scoreboardItemCard(item) {
   const date = typeof item?.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(item.date) ? item.date : '';
   const abstention = Number.isFinite(tally.abstention) ? `${scoreboardCount(tally.abstention)} abst.` : 'abst. não publicada';
   const isUrgency = item?.kind === 'urgency';
-  const status = isUrgency ? scoreboardTextStatus(item.textStatus) : '';
-  const badge = isUrgency ? '<abbr class="scoreboard-type" data-type="URG" title="Pedido de urgência (art. 155 do Regimento Interno)">URGÊNCIA</abbr>' : scoreboardTypeBadge(type);
-  const label = isUrgency && item?.request?.label ? `${item.request.label} · ${item?.proposition || ''}` : item?.proposition;
-  const outcome = isUrgency ? (item?.decisionLabel || SCOREBOARD_URGENCY_OUTCOMES[item?.outcome] || 'Resultado não informado') : scoreboardOutcome(item?.outcome, item?.related);
+  const isSegment = item?.kind === 'segment';
+  const segmentKind = SCOREBOARD_SEGMENT_KINDS[item?.kind === 'segment' ? item?.segmentKind || '' : ''] || '';
+  const status = isUrgency ? scoreboardTextStatus(item.textStatus)
+    : isSegment && item?.parent?.title ? `Parte da votação do texto “${item.parent.title}”, em ${scoreboardPeriodDate(item.parent.date)}` : '';
+  const badge = isUrgency ? '<abbr class="scoreboard-type" data-type="URG" title="Pedido de urgência (art. 155 do Regimento Interno)">URGÊNCIA</abbr>'
+    : isSegment ? `<abbr class="scoreboard-type" data-type="SEG" title="${scoreboardEscape(segmentKind || 'Decisão sobre um trecho')}">${item?.segmentKind === 'destaque' ? 'DESTAQUE' : item?.segmentKind === 'dispositivos' ? 'DISPOSITIVOS' : 'EMENDA'}</abbr>`
+      : scoreboardTypeBadge(type);
+  const label = isUrgency && item?.request?.label ? `${item.request.label} · ${item?.proposition || ''}`
+    : isSegment ? `${segmentKind || 'Decisão sobre um trecho'} · ${item?.proposition || ''}` : item?.proposition;
+  const outcome = isUrgency ? (item?.decisionLabel || SCOREBOARD_URGENCY_OUTCOMES[item?.outcome] || 'Resultado não informado')
+    : isSegment ? (item?.decisionLabel || SCOREBOARD_SEGMENT_OUTCOMES[item?.outcome] || 'Resultado não informado')
+      : scoreboardOutcome(item?.outcome, item?.related);
   return `<article class="card scoreboard-card">
     ${date ? `<p class="scoreboard-date" aria-hidden="true"><b>${date.slice(8, 10)}</b><span>${SCOREBOARD_MONTHS[Number(date.slice(5, 7)) - 1]?.slice(0, 3) || ''}</span></p>` : ''}
     <div class="scoreboard-card-body">
@@ -318,7 +326,7 @@ function scoreboardFilterForm(data, fallback) {
       <button class="scoreboard-submit" type="submit">Buscar</button>
     </div>
     <div class="scoreboard-filter-row">
-      ${fallback ? '' : `<fieldset class="scoreboard-chips"><legend class="sr-only">Tipo de decisão</legend>${kindOption('', 'Texto principal', counts.text)}${kindOption('urgency', 'Pedidos de urgência', counts.urgency)}</fieldset>`}
+      ${fallback ? '' : `<fieldset class="scoreboard-chips"><legend class="sr-only">Tipo de decisão</legend>${kindOption('', 'Texto principal', counts.text)}${kindOption('segment', 'Destaques e emendas', counts.segment)}${kindOption('urgency', 'Pedidos de urgência', counts.urgency)}</fieldset>`}
       <fieldset class="scoreboard-chips"><legend class="sr-only">Tipo de proposta</legend>${typeOption('', 'Todos os tipos', '')}${types.map(type => typeOption(type, type, SCOREBOARD_TYPE_NAMES[type] || '')).join('')}</fieldset>
       <fieldset class="scoreboard-chips"><legend class="sr-only">Resultado da votação</legend>${resultOption('', 'Todos os resultados', '')}${resultOption('approved', 'Aprovadas', 'Texto aprovado nesta votação')}${resultOption('not_approved', 'Rejeitadas', 'Texto rejeitado ou não aprovado nesta votação; pode ser uma versão alternativa, e o projeto ter sido aprovado em seguida')}</fieldset>
       ${fallback ? `<p class="muted">Temas oficiais ficam disponíveis quando o catálogo ampliado está ativo.</p>` : `<label class="scoreboard-theme"><span class="sr-only">Tema oficial</span><select name="theme" data-scoreboard-autosubmit><option value="">Todos os temas</option>${themes.map(theme => `<option value="${scoreboardEscape(theme.id)}"${list.theme === theme.id ? ' selected' : ''}>${scoreboardEscape(theme.label)}</option>`).join('')}</select></label>`}
@@ -579,7 +587,7 @@ function scoreboardApplyFilters(values) {
   list.type = ['PL', 'PLP', 'PEC'].includes(values?.type) ? values.type : '';
   list.theme = scoreboardText(values?.theme).slice(0, 80);
   list.result = ['approved', 'not_approved'].includes(values?.result) ? values.result : '';
-  list.kind = values?.kind === 'urgency' ? 'urgency' : '';
+  list.kind = ['urgency', 'segment'].includes(values?.kind) ? values.kind : '';
   list.page = 1;
   return scoreboardLoadList();
 }

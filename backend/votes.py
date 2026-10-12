@@ -370,9 +370,10 @@ def listing(params=None, path=None):
                 'pageCount': 0, 'period': None, 'coverage': None,
                 'filters': {'types': [], 'themes': []}, 'generatedAt': None}
 
-    kind = 'urgency' if str(params.get('kind', '')) == 'urgency' else 'text'
-    urgency_rows = _urgency_rows(snapshot)
-    all_items = urgency_rows if kind == 'urgency' else snapshot['items']
+    kind = str(params.get('kind', ''))
+    kind = kind if kind in ('urgency', 'segment') else 'text'
+    urgency_rows, segment_rows = _urgency_rows(snapshot), _segment_rows(snapshot)
+    all_items = {'urgency': urgency_rows, 'segment': segment_rows}.get(kind, snapshot['items'])
     types = ['PL', 'PLP', 'PEC']
     themes_by_id = {}
     for item in all_items:
@@ -382,7 +383,8 @@ def listing(params=None, path=None):
     type_filter = str(params.get('type', '')).upper()
     theme_filter = str(params.get('theme', ''))
     # "not_approved" reúne rejeição explícita e falta de aprovação; valores desconhecidos são ignorados.
-    result_filter = {'approved': {'approved'}, 'not_approved': {'rejected', 'not_approved'}}.get(
+    # Em trechos, o Sim venceu quando o trecho foi mantido e perdeu quando foi retirado.
+    result_filter = {'approved': {'approved', 'kept'}, 'not_approved': {'rejected', 'not_approved', 'removed'}}.get(
         str(params.get('result', '')))
     filtered = [item for item in all_items
                 if (not query or all(word in fold(f"{item['title']} {item['summary']} {item['proposition']} "
@@ -400,11 +402,21 @@ def listing(params=None, path=None):
                    **({'urgencyCount': len(item['urgencies'])} if item.get('urgencies') else {})}
                   for item in filtered[offset:offset + page_size]]
     return {'available': True, 'items': page_items, 'total': total, 'kind': kind,
-            'kindCounts': {'text': len(snapshot['items']), 'urgency': len(urgency_rows)},
+            'kindCounts': {'text': len(snapshot['items']), 'segment': len(segment_rows), 'urgency': len(urgency_rows)},
             'page': page, 'pageSize': page_size, 'pageCount': page_count,
             'period': snapshot['period'], 'coverage': snapshot['coverage'],
             'filters': {'types': types, 'themes': sorted(themes_by_id.values(), key=lambda theme: (theme['label'], theme['id']))},
             'generatedAt': snapshot['generatedAt']}
+
+
+def _segment_rows(snapshot):
+    """Every published decision on part of the text as a list row, carrying the main vote it belongs to."""
+    rows = [{**segment, 'kind': 'segment', 'segmentKind': segment['kind'], 'proposition': item['proposition'], 'type': item['type'],
+             'themes': item['themes'], 'parent': {'id': item['id'], 'title': item['title'], 'date': item['date']}}
+            for item in snapshot['items'] for segment in item.get('segments', [])]
+    rows.sort(key=lambda row: row['id'])
+    rows.sort(key=lambda row: row['date'], reverse=True)
+    return rows
 
 
 def _urgency_rows(snapshot):

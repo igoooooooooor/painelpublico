@@ -314,6 +314,18 @@ class VoteSnapshotTests(unittest.TestCase):
         # Concordância e votos da pessoa continuam só no texto principal.
         self.assertNotIn('2611313-35', [item['id'] for item in votes.person_votes('camara:1', self.index)['items']])
 
+    def test_segments_have_their_own_list_with_the_main_vote_and_result_filter(self):
+        self.write(self.index, self.segment_snapshot())
+        listed = votes.listing({'kind': 'segment'}, self.index)
+        self.assertEqual((listed['kind'], listed['total'], listed['kindCounts']['segment']), ('segment', 1, 1))
+        row = listed['items'][0]
+        self.assertEqual((row['kind'], row['segmentKind'], row['proposition']), ('segment', 'destaque', 'PLP 74/2026'))
+        self.assertEqual(row['parent'], {'id': '2611313-31', 'title': 'Regras para benefícios tributários', 'date': '2026-09-03'})
+        # Trecho mantido: o Sim venceu, como numa aprovação.
+        self.assertEqual(votes.listing({'kind': 'segment', 'result': 'approved'}, self.index)['total'], 1)
+        self.assertEqual(votes.listing({'kind': 'segment', 'result': 'not_approved'}, self.index)['total'], 0)
+        self.assertEqual(votes.listing({'kind': 'segment', 'q': 'art. 1º'}, self.index)['total'], 1)
+
     def test_invalid_segments_make_the_index_unavailable(self):
         for changes in ({'outcome': 'winner'}, {'kind': 'outro'}, {'date': '2026-09-02'}, {'date': '3/9/2026'}, {'id': '2611313-31'},
                         {'sources': {'vote': 'http://camara.leg.br/x'}}, {'yesMeaning': ''}):
@@ -399,7 +411,7 @@ class VoteSnapshotTests(unittest.TestCase):
                 {'id': 'camara:1', 'name': 'Ana', 'party': 'ABC', 'uf': 'SP', 'vote': vote}],
                 'partyTotals': [{'party': 'ABC', 'yes': int(vote == 'Sim'), 'no': int(vote == 'Não'), 'other': 0}]})
         listed = votes.listing({'kind': 'urgency'}, self.index)
-        self.assertEqual((listed['kind'], listed['total'], listed['kindCounts']), ('urgency', 2, {'text': 3, 'urgency': 2}))
+        self.assertEqual((listed['kind'], listed['total'], listed['kindCounts']), ('urgency', 2, {'text': 3, 'segment': 0, 'urgency': 2}))
         first, second = listed['items']
         self.assertEqual((first['id'], first['proposition'], first['textStatus']['kind']), ('2650000-8', 'PL 849/2025', 'not_voted'))
         self.assertEqual(second['textStatus'], {'kind': 'placar', 'date': '2026-09-03', 'voteId': '2611313-31'})
