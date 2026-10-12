@@ -1,5 +1,355 @@
 [
   {
+    "id": "2485383-7",
+    "parentId": null,
+    "status": "pending",
+    "reason": "O relatório nominal cita o PL 1.822/2024, mas o registro da API indica o PL 4.183/2024 como proposição afetada; a relação entre os dois precisa de conferência."
+  },
+  {
+    "id": "2562289-8",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 3839/2025"
+    },
+    "title": "Urgência para o PLP 104/2025 (sardinha em conserva na cesta básica)",
+    "summary": "O REQ 3839/2025 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PLP 104/2025, que inclui a sardinha em conserva entre os produtos da cesta básica isentos. O pedido foi aprovado com 272 votos Sim e 18 Não.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PLP 104/2025. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PLP Nº 104/2025",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13615",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2562289",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2501880"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13615) registra votação nominal eletrônica em 2026-04-07, encerrada às 16:55, com 272 Sim e 18 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 3839/2025 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PLP Nº 104/2025”. O registro 2562289-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 272; Não: 18; Total: 290.” e indica o PLP 104/2025 (ID 2501880) como única proposição afetada.",
+      "text": "A ementa do REQ 3839/2025 (ID 2562289): “Requer regime de urgência para apreciação do PLP nº 104, de 2025.Contribuição sobre Bens e Serviços (CBS) e do Imposto sobre Bens e Serviços (IBS)”.” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2565804-8",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 3983/2025"
+    },
+    "title": "Urgência para o PL 4.822/2025 (sanções a órgãos de partidos)",
+    "summary": "O REQ 3983/2025 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 4.822/2025, sobre a responsabilidade individual de cada órgão partidário por sanções financeiras. O pedido foi aprovado com 284 votos Sim e 127 Não, com 1 abstenção.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 4.822/2025. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 4.822/2025",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13714",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2565804",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2565441"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13714) registra votação nominal eletrônica em 2026-05-19, encerrada às 17:51, com 284 Sim e 127 Não e 1 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 3983/2025 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 4.822/2025”. O registro 2565804-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 284; Não: 127; Abstenção: 1; Total: 412.” e indica o PL 4822/2025 (ID 2565441) como única proposição afetada.",
+      "text": "A ementa do REQ 3983/2025 (ID 2565804): “Requer, nos termos do artigo 155 do Regimento Interno da Câmara dos Deputados, que seja incluído automaticamente na Ordem do Dia o PL 4822/2025, que “Altera a Lei nº 9.096, de 19 de setembro de 1995, para dispor sobre a responsabilidade individualizada de cada órgão dos partidos políticos pela execução de sanções pecuniárias e vedar descontos de cotas do Fundo Partidário de órgãos distintos, regulamentando a forma de cumprimento, parcelamento e fiscalização dessas obrigações, aplicadas aos órgãos nacionais, órgãos estaduais, distrital e municipais das agremiações, de acordo com o artigo 15-A e § 3º do artigo 28 da Lei n.º 9.096, de 19 de setembro de 1995, bem como a decisão do Supremo Tribunal Federal na Ação Direta de Constitucionalidade 31”.” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2572994-8",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 4307/2025"
+    },
+    "title": "Urgência para o PL 2.158/2023 (farmácias em supermercados)",
+    "summary": "O REQ 4307/2025 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 2.158/2023, sobre a venda de medicamentos em farmácias instaladas em supermercados. O pedido foi aprovado com 315 votos Sim e 38 Não, com 1 abstenção.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 2.158/2023. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL 2158/2023",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13507",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2572994",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2567351"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13507) registra votação nominal eletrônica em 2026-03-02, encerrada às 18:48, com 315 Sim e 38 Não e 1 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 4307/2025 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL 2158/2023”. O registro 2572994-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 315; Não: 38; Abstenção: 1; Total: 354.” e indica o PL 2158/2023 (ID 2567351) como única proposição afetada.",
+      "text": "A ementa do REQ 4307/2025 (ID 2572994): “Requeiro nos termos do art. 155, inciso I, do Regimento Interno da Câmara dos Deputados, Regime de Urgência para o Projeto de Lei 2158/23, de autoria do Senhor Senador da República EFRAIM FILHO, UNIÃO/PB, que altera a Lei nº 5.991, de 17 de dezembro de 1973, que “dispõe sobre o Controle Sanitário do Comércio de Drogas, Medicamentos, Insumos Farmacêuticos e Correlatos, e dá outras Providências”, para dispor sobre a comercialização de medicamentos em farmácia ou drogaria instalada na área de venda de supermercados.” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2578968-7",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 4565/2025"
+    },
+    "title": "Urgência para o PL 1.248/2024 (custo amazônico na merenda escolar)",
+    "summary": "O REQ 4565/2025 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 1.248/2024, que considera o custo amazônico nos repasses da alimentação escolar. O pedido foi aprovado com 355 votos Sim e 29 Não.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 1.248/2024. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 1.248/2024",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13637",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2578968",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2426763"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13637) registra votação nominal eletrônica em 2026-04-15, encerrada às 20:19, com 355 Sim e 29 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 4565/2025 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 1.248/2024”. O registro 2578968-7 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 355; Não: 29; Total: 384.” e indica o PL 1248/2024 (ID 2426763) como única proposição afetada.",
+      "text": "A ementa do REQ 4565/2025 (ID 2578968): “Altera a redação do § 4º no art. 5º da Lei nº 11.947, de 16 de junho de 2009, para que seja considerado o custo amazônico em relação às matrículas da região amazônica.” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2579791-17",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 4612/2025"
+    },
+    "title": "Urgência para o PL 4.675/2025 (mercados digitais no Cade)",
+    "summary": "O REQ 4612/2025 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 4.675/2025, que cria regras para grandes plataformas digitais e a Superintendência de Mercados Digitais no Cade. O pedido foi aprovado com 276 votos Sim e 186 Não.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 4.675/2025. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 4.675/2025",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13585",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2579791",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2562481"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13585) registra votação nominal eletrônica em 2026-03-18, encerrada às 17:59, com 276 Sim e 186 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 4612/2025 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 4.675/2025”. O registro 2579791-17 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 276; Não: 186; Total: 462.” e indica o PL 4675/2025 (ID 2562481) como única proposição afetada.",
+      "text": "A ementa do REQ 4612/2025 (ID 2579791): “Requer regime de urgência para apreciação do Projeto de Lei nº 4.675, de 2025, que altera a Lei nº 12.529, de 30 de novembro de 2011, dispõe sobre os processos de designação de agentes econômicos de relevância sistêmica em mercados digitais e de determinação de obrigações especiais a agentes econômicos de relevância sistêmica e cria a Superintendência de Mercados Digitais no âmbito do Conselho Administrativo de Defesa Econômica.” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2581785-8",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 4686/2025"
+    },
+    "title": "Urgência para o PL 1.922/2022 (água e esgoto como direitos humanos)",
+    "summary": "O REQ 4686/2025 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 1.922/2022, que garante acesso à água potável e ao esgotamento sanitário como direitos humanos. O pedido foi aprovado com 343 votos Sim e 78 Não.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 1.922/2022. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 1.922/2022",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13573",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2581785",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2331573"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13573) registra votação nominal eletrônica em 2026-03-17, encerrada às 21:44, com 343 Sim e 78 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 4686/2025 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 1.922/2022”. O registro 2581785-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 343; Não: 78; Total: 421.” e indica o PL 1922/2022 (ID 2331573) como única proposição afetada.",
+      "text": "A ementa do REQ 4686/2025 (ID 2581785): “Requer, nos termos do artigo 155 do Regimento Interno, tramitação sob o regime urgência do Projeto de Lei nº 1922, de 2022.” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2589628-8",
+    "parentId": null,
+    "status": "pending",
+    "reason": "Depois do pedido, a Câmara aprovou uma subemenda e votou destaques sem registro do texto principal como candidato no inventário; a situação do texto precisa de conferência manual."
+  },
+  {
+    "id": "2593781-8",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 5540/2025"
+    },
+    "title": "Urgência para o PL 3.946/2021 (profissão de doula)",
+    "summary": "O REQ 5540/2025 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 3.946/2021, sobre o exercício da profissão de doula. O pedido foi aprovado com 380 votos Sim e 57 Não, com 1 abstenção.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 3.946/2021. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 3.946/2021",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13540",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2593781",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2318547"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13540) registra votação nominal eletrônica em 2026-03-10, encerrada às 18:07, com 380 Sim e 57 Não e 1 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 5540/2025 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 3.946/2021”. O registro 2593781-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 380; Não: 57; Abstenção: 1; Total: 438.” e indica o PL 3946/2021 (ID 2318547) como única proposição afetada.",
+      "text": "A ementa do REQ 5540/2025 (ID 2593781): “Requer regime de urgência para apreciação do PL 3946/21, Dispõe sobre o exercício da profissão de doula.” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2596339-8",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 5788/2025"
+    },
+    "title": "Urgência para o PL 3.278/2021 (transporte público coletivo urbano)",
+    "summary": "O REQ 5788/2025 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 3.278/2021, que institui o marco legal do transporte público coletivo urbano. O pedido foi aprovado com 304 votos Sim e 113 Não.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 3.278/2021. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL 3278/2021",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13479",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2596339",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2481715"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13479) registra votação nominal eletrônica em 2026-02-09, encerrada às 19:57, com 304 Sim e 113 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 5788/2025 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL 3278/2021”. O registro 2596339-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 304; Não: 113; Total: 417.” e indica o PL 3278/2021 (ID 2481715) como única proposição afetada.",
+      "text": "A ementa do REQ 5788/2025 (ID 2596339): “Urgência, para o Projeto de Lei nº. 3278 de 2021, que institui o marco legal do transporte público coletivo urbano e altera a Lei nº 10.257, de 10 de julho de 2001 (Estatuto da Cidade), a Lei nº 10.336, de 19 de dezembro de 2001, a Lei nº 10.636, de 30 de dezembro de 2002, e a Lei nº 12.587, de 3 de janeiro de 2012 (Lei de Mobilidade Urbana).” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2600122-8",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 50/2026"
+    },
+    "title": "Urgência para o PL 6.601/2025 (profissão de trabalhador em refeições coletivas)",
+    "summary": "O REQ 50/2026 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 6.601/2025, que regulamenta a profissão de trabalhador em refeições coletivas. O pedido foi aprovado com 307 votos Sim e 113 Não, com 3 abstenções.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 6.601/2025. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL 6601/2025",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13481",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2600122",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2598651"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13481) registra votação nominal eletrônica em 2026-02-09, encerrada às 20:41, com 307 Sim e 113 Não e 3 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 50/2026 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL 6601/2025”. O registro 2600122-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 307; Não: 113; Abstenção: 3; Total: 423.” e indica o PL 6601/2025 (ID 2598651) como única proposição afetada.",
+      "text": "A ementa do REQ 50/2026 (ID 2600122): “Requer regime de urgência para apreciação do Projeto de Lei nº 6.601, de 2025, que “dispõe sobre a regulamentação da profissão de Trabalhador em Refeições Coletivas e dá outras providências.”” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2600277-9",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 95/2026"
+    },
+    "title": "Urgência para o PL 6.132/2025 (Universidade Federal Indígena)",
+    "summary": "O REQ 95/2026 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 6.132/2025, que cria a Universidade Federal Indígena. O pedido foi aprovado com 277 votos Sim e 119 Não, com 1 abstenção.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 6.132/2025. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 6132/2025",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13495",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2600277",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2591970"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13495) registra votação nominal eletrônica em 2026-02-10, encerrada às 22:15, com 277 Sim e 119 Não e 1 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 95/2026 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 6132/2025”. O registro 2600277-9 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 277; Não: 119; Abstenção: 1; Total: 397.” e indica o PL 6132/2025 (ID 2591970) como única proposição afetada.",
+      "text": "A ementa do REQ 95/2026 (ID 2600277): “Requer, nos termos do artigo 155 do Regimento Interno, tramitação sob o regime urgência do Projeto de Lei nº 6.132, de 2025.” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2600278-9",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 96/2026"
+    },
+    "title": "Urgência para o PL 6.133/2025 (Universidade Federal do Esporte)",
+    "summary": "O REQ 96/2026 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 6.133/2025, que cria a Universidade Federal do Esporte. O pedido foi aprovado com 273 votos Sim e 103 Não, com 1 abstenção.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 6.133/2025. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL 6133/2025",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13490",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2600278",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2591974"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13490) registra votação nominal eletrônica em 2026-02-10, encerrada às 18:58, com 273 Sim e 103 Não e 1 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 96/2026 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL 6133/2025”. O registro 2600278-9 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 273; Não: 103; Abstenção: 1; Total: 377.” e indica o PL 6133/2025 (ID 2591974) como única proposição afetada.",
+      "text": "A ementa do REQ 96/2026 (ID 2600278): “Requer, nos termos do artigo 155 do Regimento Interno, tramitação sob o regime urgência do Projeto de Lei nº 6.133, de 2025.” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2600708-7",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 176/2026"
+    },
+    "title": "Urgência para o PL 3.838/2024 (compensação de carbono para produtos europeus)",
+    "summary": "O REQ 176/2026 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 3.838/2024, que exige compensação de pegada de carbono de produtos e serviços da União Europeia. O pedido foi aprovado com 305 votos Sim e 22 Não.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 3.838/2024. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 3.838/2024",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13638",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2600708",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2461363"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13638) registra votação nominal eletrônica em 2026-04-15, encerrada às 20:25, com 305 Sim e 22 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 176/2026 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 3.838/2024”. O registro 2600708-7 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 305; Não: 22; Total: 327.” e indica o PL 3838/2024 (ID 2461363) como única proposição afetada.",
+      "text": "A ementa do REQ 176/2026 (ID 2600708): “Requer regime de urgência para a apreciação do Projeto de Lei nº 3838, de 2024, que “Institui exigências de compensação de pegada de carbono para produtos e serviços provenientes da União Europeia, com base na Cédula de Produto Rural Verde (CPR Verde), e dá outras providências”.” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2601223-8",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 284/2026"
+    },
+    "title": "Urgência para o PL 68/2026 (Mounjaro e Zepbound de interesse público)",
+    "summary": "O REQ 284/2026 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 68/2026, que declara de interesse público os medicamentos Mounjaro e Zepbound, para fins de licença compulsória. O pedido foi aprovado com 337 votos Sim e 19 Não.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 68/2026. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL 68/2026",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13476",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2601223",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2600127"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13476) registra votação nominal eletrônica em 2026-02-09, encerrada às 19:07, com 337 Sim e 19 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 284/2026 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL 68/2026”. O registro 2601223-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 337; Não: 19; Total: 356.” e indica o PL 68/2026 (ID 2600127) como única proposição afetada.",
+      "text": "A ementa do REQ 284/2026 (ID 2601223): “Requer urgência para a tramitação do projeto de lei nº 68, de 2026, que \"Declara de interesse público os medicamentos Mounjaro e Zepbound, para fins do disposto no art. 71 da Lei n° 9.279, de 14 de maio de 1996, alterado pela Lei nº 14.200, de 2 de setembro de 2021\".” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
     "id": "2601522-8",
     "parentId": "2601040-31",
     "status": "confirmed",
@@ -23,6 +373,292 @@
       "method": "O relatório nominal oficial (ideVotacao 13480) registra votação nominal eletrônica em 2026-02-09, encerrada às 20:18, com 298 Sim e 132 Não; o registro da API traz o mesmo placar.",
       "object": "O relatório identifica a proposição como REQ 309/2026 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PLP 14/2026”. O registro 2601522-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 298; Não: 132; Total: 430.” e indica o PLP 14/2026 (ID 2601040) como única proposição afetada.",
       "text": "A ementa do REQ 309/2026 (ID 2601522): “Urgência para o PLP 14/2026 - Dispõe sobre a redução de alíquotas da Contribuição para o PIS/Pasep e da Cofins incidentes sobre a indústria química e petroquímica, e altera a Lei nº 11.196, de 21 de novembro de 2005, e a Lei nº 10.865, de 30 de abril de 2004.” A votação do texto principal ligada é 2601040-31 (10/2/2026), a primeira do PLP 14/2026 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2605090-8",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 1159/2026"
+    },
+    "title": "Urgência para o PL 533/2024 (Mais Cultura nas Escolas)",
+    "summary": "O REQ 1159/2026 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 533/2024, que institui a Política Nacional Mais Cultura nas Escolas. O pedido foi aprovado com 290 votos Sim e 147 Não.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 533/2024. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 533/2024",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13538",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2605090",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2419128"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13538) registra votação nominal eletrônica em 2026-03-10, encerrada às 17:28, com 290 Sim e 147 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 1159/2026 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 533/2024”. O registro 2605090-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 290; Não: 147; Total: 437.” e indica o PL 533/2024 (ID 2419128) como única proposição afetada.",
+      "text": "A ementa do REQ 1159/2026 (ID 2605090): “Requer urgência para a tramitação do PL 533/2024 que “Institui a Política Nacional “Mais Cultura nas Escolas” e dá outras providências.”” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2605243-12",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 1180/2026"
+    },
+    "title": "Urgência para o PL 5.900/2025 (análise prévia do órgão federal de agricultura)",
+    "summary": "O REQ 1180/2026 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 5.900/2025, que dá ao órgão federal de agricultura competência para análise econômica prévia. O pedido foi aprovado com 317 votos Sim e 123 Não.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 5.900/2025. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 5.900/2025",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13706",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2605243",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2586587"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13706) registra votação nominal eletrônica em 2026-05-19, encerrada às 17:10, com 317 Sim e 123 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 1180/2026 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 5.900/2025”. O registro 2605243-12 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 317; Não: 123; Total: 440.” e indica o PL 5900/2025 (ID 2586587) como única proposição afetada.",
+      "text": "A ementa do REQ 1180/2026 (ID 2605243): “Solicita regime de urgência no trâmite do Projeto de Lei nº 5.900/2025, que “Acrescenta dispositivos à Lei nº 14.600, de 19 de junho de 2023, para estabelecer a competência privativa do órgão federal responsável pela agricultura para análise econômica e manifestação prévia vinculante sobre atos normativos que impactem espécies de interesse produtivo; e dá outras providências. “.” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2606189-10",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 1233/2026"
+    },
+    "title": "Urgência para o PL 849/2025 (APA da Baleia Franca)",
+    "summary": "O REQ 1233/2026 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 849/2025, que reduz a Área de Proteção Ambiental da Baleia Franca, em Santa Catarina. O pedido foi aprovado com 279 votos Sim e 162 Não, com 1 abstenção.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 849/2025. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 849/2025",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13821",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2606189",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2486315"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13821) registra votação nominal eletrônica em 2026-07-01, encerrada às 18:34, com 279 Sim e 162 Não e 1 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 1233/2026 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 849/2025”. O registro 2606189-10 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 279; Não: 162; Abstenção: 1; Total: 442.” e indica o PL 849/2025 (ID 2486315) como única proposição afetada.",
+      "text": "A ementa do REQ 1233/2026 (ID 2606189): “Requer urgência para apreciação do Projeto de Lei nº 849/2025, que Reduz a Área de Proteção Ambiental da Baleia Franca, no Estado de Santa Catarina.” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2607960-9",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 1376/2026"
+    },
+    "title": "Urgência para o PL 3.640/2025 (crise climática e mulheres)",
+    "summary": "O REQ 1376/2026 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 3.640/2025, sobre dados dos impactos da crise climática na vida de meninas e mulheres. O pedido foi aprovado com 316 votos Sim e 86 Não, com 1 abstenção.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 3.640/2025. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 3.640/2025",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13549",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2607960",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2539000"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13549) registra votação nominal eletrônica em 2026-03-11, encerrada às 17:52, com 316 Sim e 86 Não e 1 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 1376/2026 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 3.640/2025”. O registro 2607960-9 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 316; Não: 86; Abstenção: 1; Total: 403.” e indica o PL 3640/2025 (ID 2539000) como única proposição afetada.",
+      "text": "A ementa do REQ 1376/2026 (ID 2607960): “Com base no art. 155 do Regimento Interno, requeremos regime de urgência para a apreciação do PL 3640/2025.” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2610579-7",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 1492/2026"
+    },
+    "title": "Urgência para o PL 2.898/2025 (infrações ambientais na Lei 9.605/1998)",
+    "summary": "O REQ 1492/2026 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 2.898/2025, que altera a Lei 9.605/1998, sobre infrações e sanções ambientais. O pedido foi aprovado com 305 votos Sim e 112 Não, com 1 abstenção.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 2.898/2025. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL 2898/2025",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13828",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2610579",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2525620"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13828) registra votação nominal eletrônica em 2026-07-02, encerrada às 11:20, com 305 Sim e 112 Não e 1 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 1492/2026 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL 2898/2025”. O registro 2610579-7 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 305; Não: 112; Abstenção: 1; Total: 418.” e indica o PL 2898/2025 (ID 2525620) como única proposição afetada.",
+      "text": "A ementa do REQ 1492/2026 (ID 2610579): “Requer a urgência para a apreciação do Projeto de Lei 2898 de 2025 que altera a Lei nº 9.605, de 12 de fevereiro de 1998, que dispõe sobre as infrações e sanções administrativas ao meio ambiente, estabelece o processo administrativo federal para apuração destas infrações, e dá outras providências, para estabelecer regime especial de sanções para pequenos produtores rurais que produzam para subsistência.” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2618104-8",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 2275/2026"
+    },
+    "title": "Urgência para o PL 1.944/2026 (progressão de regime na Lei de Execução Penal)",
+    "summary": "O REQ 2275/2026 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 1.944/2026, que altera o art. 112 da Lei de Execução Penal, sobre progressão de regime. O pedido foi aprovado com 330 votos Sim e 104 Não.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 1.944/2026. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL 1944/2026",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13671",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2618104",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2618047"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13671) registra votação nominal eletrônica em 2026-04-28, encerrada às 20:44, com 330 Sim e 104 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 2275/2026 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL 1944/2026”. O registro 2618104-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 330; Não: 104; Total: 434.” e indica o PL 1944/2026 (ID 2618047) como única proposição afetada.",
+      "text": "A ementa do REQ 2275/2026 (ID 2618104): “Requer regime de urgência para a apreciação do Projeto de Lei nº 1944/2026, que “Altera o artigo 112 da Lei de Execução Penal para repristinar as alterações que lhe haviam sido feitas pela Lei n.º 15.358, de 24 de março de 2026 – Lei Raul Jungmann.”.” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2625979-8",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 2976/2026"
+    },
+    "title": "Urgência para o PL 1.448/2026 (assentamentos periurbanos e semirrurais)",
+    "summary": "O REQ 2976/2026 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 1.448/2026, que institui o Programa Nacional de Assentamentos Periurbanos e Semirrurais. O pedido foi aprovado com 269 votos Sim e 125 Não, com 2 abstenções.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 1.448/2026. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 1.448/2026",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13725",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2625979",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2612463"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13725) registra votação nominal eletrônica em 2026-05-20, encerrada às 16:58, com 269 Sim e 125 Não e 2 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 2976/2026 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 1.448/2026”. O registro 2625979-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 269; Não: 125; Abstenção: 2; Total: 396.” e indica o PL 1448/2026 (ID 2612463) como única proposição afetada.",
+      "text": "A ementa do REQ 2976/2026 (ID 2625979): “Requer a urgência do Projeto de Lei nº 1448/2026.” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2626432-8",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 3028/2026"
+    },
+    "title": "Urgência para o PL 68/2025 (violência política de gênero)",
+    "summary": "O REQ 3028/2026 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 68/2025, que inclui medidas de proteção a mulheres na política contra a violência política de gênero. O pedido foi aprovado com 358 votos Sim e 68 Não.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 68/2025. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 68/2025",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13742",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2626432",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2482275"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13742) registra votação nominal eletrônica em 2026-05-26, encerrada às 16:50, com 358 Sim e 68 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 3028/2026 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 68/2025”. O registro 2626432-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 358; Não: 68; Total: 426.” e indica o PL 68/2025 (ID 2482275) como única proposição afetada.",
+      "text": "A ementa do REQ 3028/2026 (ID 2626432): “Com base no art. 155 do Regimento Interno, requeremos regime de urgência para a apreciação do PL 68/2025.” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2629954-8",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 3336/2026"
+    },
+    "title": "Urgência para o PL 957/2024 (Código de Mineração)",
+    "summary": "O REQ 3336/2026 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 957/2024, que altera o Código de Mineração e as Leis 6.567/1978 e 7.805/1989. O pedido foi aprovado com 311 votos Sim e 135 Não, com 2 abstenções.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 957/2024. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 957/2024",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13767",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2629954",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2423263"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13767) registra votação nominal eletrônica em 2026-06-03, encerrada às 12:10, com 311 Sim e 135 Não e 2 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 3336/2026 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 957/2024”. O registro 2629954-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 311; Não: 135; Abstenção: 2; Total: 448.” e indica o PL 957/2024 (ID 2423263) como única proposição afetada.",
+      "text": "A ementa do REQ 3336/2026 (ID 2629954): “Requerimento de Urgência - PL nº 957, de 2024.” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2636281-8",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 3690/2026"
+    },
+    "title": "Urgência para o PL 896/2023 (crimes de misoginia)",
+    "summary": "O REQ 3690/2026 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 896/2023, sobre crimes praticados em razão de misoginia. O pedido foi aprovado com 293 votos Sim e 158 Não, com 3 abstenções.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 896/2023. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 896/2023",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13820",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2636281",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2612930"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13820) registra votação nominal eletrônica em 2026-07-01, encerrada às 18:06, com 293 Sim e 158 Não e 3 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 3690/2026 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 896/2023”. O registro 2636281-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 293; Não: 158; Abstenção: 3; Total: 454.” e indica o PL 896/2023 (ID 2612930) como única proposição afetada.",
+      "text": "A ementa do REQ 3690/2026 (ID 2636281): “Requeiro a Vossa Excelência, com base no art. 155, do Regimento Interno da Câmara dos Deputados, regime de urgência para apreciação do Projeto de Lei nº 896/2023, que Altera a Lei nº 7.716, de 5 de janeiro de 1989, e o Decreto-Lei nº 2.848, de 7 de dezembro de 1940 (Código Penal), para dispor sobre crimes praticados em razão de misoginia.” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
+    }
+  },
+  {
+    "id": "2643915-8",
+    "parentId": null,
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 4063/2026"
+    },
+    "title": "Urgência para o PL 4.921/2026 (cargos no TRT da 18ª Região)",
+    "summary": "O REQ 4063/2026 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 4.921/2026, que transforma cargos vagos no Tribunal Regional do Trabalho da 18ª Região. O pedido foi aprovado com 320 votos Sim e 67 Não, com 1 abstenção.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 4.921/2026. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL 4921/2026",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13906",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2643915",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2642167"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13906) registra votação nominal eletrônica em 2026-09-01, encerrada às 17:56, com 320 Sim e 67 Não e 1 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 4063/2026 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL 4921/2026”. O registro 2643915-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 320; Não: 67; Abstenção: 1; Total: 388.” e indica o PL 4921/2026 (ID 2642167) como única proposição afetada.",
+      "text": "A ementa do REQ 4063/2026 (ID 2643915): “Requer a urgência para a apreciação do PL n.º 4.921/2026, que dispõe sobre a transformação de cargos vagos no quadro permanente do Tribunal Regional do Trabalho da 18ª Região, sem aumento de despesas.” O projeto não tem votação nominal do texto principal no Placar depois do pedido; a situação do texto é calculada do inventário na geração do catálogo."
     }
   }
 ]

@@ -696,10 +696,35 @@ Resultado de 12/10/2026: das 56 votações ligáveis, **54 publicadas** em 53 vo
 4275/2023 (PL 5.230/2023), com a votação do texto da Câmara de 20/3/2024 fora do catálogo entre o pedido
 e o texto do Senado. Primeiro lote de 10 revisado com mais cuidado editorial (piloto); os outros 44
 seguem o mesmo modelo, com rótulos a partir dos títulos já revisados das votações principais. As 138
-votações de urgência restantes têm projeto sem votação nominal do texto principal no catálogo e ficam
-para uma segunda fase, que precisa decidir como mostrá-las sem uma votação principal ligada. Fora daqui,
+votações de urgência restantes têm projeto sem votação nominal do texto principal no catálogo; estão
+no parágrafo seguinte. Fora daqui,
 para decidir depois: autoria dos requerimentos (as fichas listam de 2 a 261 signatários) e a estatística
 de projetos aprovados em urgência, que depende do regime na data.
+
+**Pedidos sem votação do texto no Placar (12/10/2026).** Das 138 votações de urgência sem votação
+principal ligada, 121 são de PL ou PLP com projeto identificado (os 10 PDLs, tipo fora do Placar, e as
+7 votações sem projeto-alvo claro na API ficam de fora). Para elas, a revisão não tem `parentId`, e a
+ficha em `sources.proposition` é a do projeto-alvo, conferida contra `proposicoesAfetadas` e o objeto do
+relatório. A situação do texto não é escrita à mão: `text_status` a calcula do inventário na geração do
+catálogo. Procedimentos (requerimentos, "Alteração do Regime de Tramitação") não contam como
+deliberação. Sem deliberação depois do pedido, o texto **não foi votado** até o fim do inventário. Se a
+primeira deliberação é o texto principal excluído do Placar por votação simbólica (motivo da revisão),
+o texto foi **aprovado em votação simbólica** naquela data; emendas votadas na mesma sessão, logo antes do
+texto, são aceitas. Qualquer outro caso falha fechado: emendas do Senado, subemenda sem o texto como
+candidato, texto publicado no Placar (então a revisão precisa de `parentId`). Só entram urgências do
+art. 155: a descrição da API não pode citar outro artigo, e, quando não cita nenhum, a ementa oficial do
+requerimento tem de citar o art. 155.
+
+Resultado: **111 publicados** (62 com o texto aprovado em votação simbólica, 49 com o texto ainda não
+votado; 107 aprovados e 4 rejeitados) e 10 pendentes com motivo: 3 com emendas do Senado, 1 com
+subemenda sem o texto como candidato, 2 de urgência do art. 154 (uma delas a do PL 2.630/2020, aprovada
+com 238 Sim), 2 sem relatório nominal compatível, 1 com nome do relatório fora da lista oficial de
+deputados e 1 com o relatório citando outro projeto. No catálogo, eles ficam em `urgencies`, no nível do
+índice (`coverage.standaloneUrgencyCount`), fora de `items`. Na tela: filtro "Tipo de decisão" no Placar
+(`/api/c/votes?kind=urgency` lista os ligados e estes juntos, com a situação do texto), página própria com
+o bloco "E o texto do projeto?" e, na ficha, uma linha "urgência · voto" com a situação do texto, fora da
+contagem de votações. Para esses projetos, o pedido é o único voto registrado de cada deputado. Os títulos
+curtos partem da ementa oficial; quando ela só cita as leis alteradas, o título diz só isso.
 
 **Localizar o relatório.** `python3 -m ingest.chamber_vote_report_locator <id> ... [--collect]` procura,
 entre os números `ideVotacao` delimitados pelos relatórios já guardados no cache, o único relatório da

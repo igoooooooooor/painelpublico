@@ -382,6 +382,49 @@ class VoteSnapshotTests(unittest.TestCase):
         self.write(self.index, data)
         self.assertFalse(votes.listing({}, self.index)['available'])
 
+    def standalone_data(self, **changes):
+        data = self.urgency_data()
+        alone = {**data['items'][0]['urgencies'][0], 'id': '2650000-8', 'date': '2026-09-20',
+                 'request': {'label': 'REQ 950/2026', 'url': 'https://camara.leg.br/ficha-req2'},
+                 'title': 'Urgência para o PL 849/2025', 'project': {'label': 'PL 849/2025', 'type': 'PL'},
+                 'textStatus': {'kind': 'not_voted', 'through': '2026-10-09'}, **changes}
+        data['urgencies'] = [alone]
+        data['coverage']['standaloneUrgencyCount'] = 1
+        return data
+
+    def test_urgencies_without_main_vote_list_open_and_reach_the_profile(self):
+        self.write(self.index, self.standalone_data())
+        for identifier, vote in (('2611400-8', 'Sim'), ('2650000-8', 'Não')):
+            self.write(self.root / votes.DETAILS_DIRECTORY / f'{identifier}.json', {'id': identifier, 'participants': [
+                {'id': 'camara:1', 'name': 'Ana', 'party': 'ABC', 'uf': 'SP', 'vote': vote}],
+                'partyTotals': [{'party': 'ABC', 'yes': int(vote == 'Sim'), 'no': int(vote == 'Não'), 'other': 0}]})
+        listed = votes.listing({'kind': 'urgency'}, self.index)
+        self.assertEqual((listed['kind'], listed['total'], listed['kindCounts']), ('urgency', 2, {'text': 3, 'urgency': 2}))
+        first, second = listed['items']
+        self.assertEqual((first['id'], first['proposition'], first['textStatus']['kind']), ('2650000-8', 'PL 849/2025', 'not_voted'))
+        self.assertEqual(second['textStatus'], {'kind': 'placar', 'date': '2026-09-03', 'voteId': '2611313-31'})
+        self.assertEqual(votes.listing({'kind': 'urgency', 'q': 'REQ 950'}, self.index)['total'], 1)
+        # A lista padrão continua só com as votações do texto principal.
+        self.assertEqual(votes.listing({}, self.index)['total'], 3)
+        alone = votes.detail('2650000-8', self.index)
+        self.assertNotIn('parent', alone['vote'])
+        self.assertEqual((alone['vote']['proposition'], alone['vote']['textStatus']['kind']), ('PL 849/2025', 'not_voted'))
+        person = votes.person_votes('camara:1', self.index)
+        self.assertEqual([(u['id'], u['vote'], u['textStatus']['kind']) for u in person['urgencies']], [('2650000-8', 'Não', 'not_voted')])
+        self.assertNotIn('2650000-8', [item['id'] for item in person['items']])
+
+    def test_invalid_urgencies_without_main_vote_make_the_index_unavailable(self):
+        for changes in ({'textStatus': {'kind': 'placar', 'date': '2026-09-21'}}, {'textStatus': {'kind': 'symbolic'}},
+                        {'textStatus': {'kind': 'symbolic', 'date': '2026-09-19'}}, {'project': {'label': 'PDL 1/2026', 'type': 'PDL'}},
+                        {'project': {'label': 'PL 849/2025', 'type': 'PLP'}}, {'id': '2611400-8'}):
+            with self.subTest(changes=changes):
+                self.write(self.index, self.standalone_data(**changes))
+                self.assertFalse(votes.listing({}, self.index)['available'])
+        data = self.standalone_data()
+        data['coverage']['standaloneUrgencyCount'] = 0
+        self.write(self.index, data)
+        self.assertFalse(votes.listing({}, self.index)['available'])
+
     def test_detail_uses_selected_generation_and_tracks_index_switch_without_leaking_version(self):
         first_version, second_version = 'a' * 64, 'b' * 64
         first_details = {'participants': [

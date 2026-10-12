@@ -891,7 +891,25 @@ test('a vote with an urgency request shows both choices with dates, without call
   const votes = profileSection(api.profileView(), 'votes');
   assert.match(votes, /data-vote="1-1"><b>não<\/b><span>Texto principal<\/span><small class="profile-vote-urgency">Texto principal votado em 03\/09\/2026<\/small><small class="profile-vote-urgency">Pedido de urgência \(REQ 900\/2026\) em 27\/08\/2026: sim · pedido aprovado/);
   assert.doesNotMatch(votes, /data-vote="2-1">[^<]*<b>sim<\/b><span>Outra votação<\/span><small/);
-  assert.match(votes, /decide se a tramitação é acelerada, não o conteúdo/);
+  assert.match(votes, /decidem se a tramitação é acelerada, não o conteúdo/);
   assert.match(votes, /Votou em <b>2 de 2<\/b> votações do Placar/);
   assert.doesNotMatch(votes, /contradi|incoerên|tentou barrar/i);
+});
+
+test('urgency requests without a main vote join the vote list with the state of the text, outside the count', () => {
+  const { api, state, context } = makeView();
+  vm.runInContext('CHAMBER_PERSON_VOTES', context).data['camara:1'] = { available: true,
+    items: [placarVote('1-1', '2026-09-03', 'Texto principal', 'Sim')],
+    urgencies: [{ id: '9-9', date: '2026-07-01', proposition: 'PL 849/2025', type: 'PL', title: 'Urgência para o PL 849/2025 (APA da Baleia Franca)',
+      request: 'REQ 1233/2026', outcome: 'approved', textStatus: { kind: 'not_voted', through: '2026-10-09' }, vote: 'Não', detailsAvailable: true },
+    { id: '9-10', date: '2026-09-01', proposition: 'PL 4921/2026', type: 'PL', title: 'Urgência para o PL 4.921/2026', request: 'REQ 4063/2026',
+      outcome: 'approved', textStatus: { kind: 'symbolic', date: '2026-09-01' }, vote: 'Sim', detailsAvailable: true }] };
+  setProfileFixture(api, state, 'camara:1');
+  const votes = profileSection(api.profileView(), 'votes');
+  assert.match(votes, /Votou em <b>1 de 1<\/b> votações do Placar/);
+  assert.match(votes, /desde fev\/2023 · 1 · e 2 pedidos de urgência/);
+  assert.match(votes, /data-vote="1-1">[\s\S]*data-vote="9-10"><b>urgência · sim<\/b>[\s\S]*data-vote="9-9"><b>urgência · não<\/b>/);
+  assert.match(votes, /Texto aprovado em votação simbólica em 01\/09\/2026, sem voto individual/);
+  assert.match(votes, /Texto ainda não votado \(até 09\/10\/2026\)/);
+  assert.match(votes, /o pedido é o único voto registrado sobre o projeto/);
 });

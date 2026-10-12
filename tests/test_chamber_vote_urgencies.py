@@ -46,7 +46,8 @@ def urgency_review(**changes):
 class UrgencyAPI(FakeChamberAPI):
     """Adds an urgency request voted before the main text to the offline API fixture."""
 
-    def __init__(self, *, aprovacao=0, yes=1, no=2, affected=None, request_type="REQ", description=None, report=None):
+    def __init__(self, *, aprovacao=0, yes=1, no=2, affected=None, request_type="REQ", description=None, report=None,
+                 request_ementa="Requer, nos termos do art. 155, urgência para o PL 1/2026."):
         super().__init__()
         self.urgency = {"id": URGENCY_ID, "data": THROUGH, "aprovacao": aprovacao,
                         "dataHoraRegistro": f"{THROUGH}T10:31:00",
@@ -54,7 +55,7 @@ class UrgencyAPI(FakeChamberAPI):
                                                      f"Urgência (Art. 155 do RICD). Sim: {yes}; Não: {no}; Total: {yes + no}."),
                         "proposicoesAfetadas": affected if affected is not None else [target()]}
         self.request_record = {"id": 555, "siglaTipo": request_type, "numero": 10, "ano": 2026,
-                               "ementa": "Requer, nos termos do art. 155, urgência para o PL 1/2026."}
+                               "ementa": request_ementa}
         self.urgency_report = report or urgency_report(yes=yes, no=no)
         self.votes = [participant(index, "Sim") for index in range(1, yes + 1)] + \
                      [participant(yes + index, "Não") for index in range(1, no + 1)]
@@ -194,6 +195,65 @@ class ChamberVoteUrgenciesTests(unittest.TestCase):
         self.assertFalse(cites("URGÊNCIA PARA APRECIAÇÃO DO PL Nº 1.958/2021", 1958, 2022))
         self.assertTrue(cites("URGÊNCIA PARA APRECIAÇÃO DO PL 2342/22", 2342, 2022))
         self.assertFalse(cites("URGÊNCIA PARA APRECIAÇÃO DO PL 2342/22", 2342, 1922))
+
+
+class StandaloneUrgencyTests(unittest.TestCase):
+    """Pedidos de projetos sem votação principal no Placar: a situação do texto vem do inventário."""
+
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def build(self, urgency=None, api=None, extra=(), excluded=None):
+        root = Path(tempfile.mkdtemp(dir=self.root))
+        api = api or UrgencyAPI()
+        data = urgency_inventory(extra)
+        snapshot, details = chamber_votes.build_catalogue(data, [review()], root=root, collect=True, request=api)
+        entries = {entry["id"]: entry for entry in data["entries"]}
+        cache = root / "data" / "raw" / "chamber-vote-inventory" / f"{data['period']['start']}_{data['period']['end']}"
+        standalone = []
+        build_urgencies(snapshot["items"], entries, [urgency or urgency_review(parentId=None)], taken=set(details), cache=cache,
+                        collect=True, refresh=False, request=api, standalone=standalone,
+                        excluded=excluded or {}, through=THROUGH)
+        return snapshot, standalone
+
+    def test_project_without_later_deliberation_is_not_voted(self):
+        snapshot, standalone = self.build()
+        self.assertNotIn("urgencies", snapshot["items"][0])
+        self.assertEqual(standalone[0]["project"], {"label": "PL 1/2026", "type": "PL"})
+        self.assertEqual(standalone[0]["textStatus"], {"kind": "not_voted", "through": THROUGH})
+        self.assertNotIn("registeredAt", standalone[0])
+
+    def test_procedures_do_not_count_and_a_symbolic_text_vote_is_recorded(self):
+        regime = {"id": "42-8", "date": THROUGH, "category": "procedure", "registeredAt": f"{THROUGH}T10:40:00"}
+        text = {"id": "42-9", "date": THROUGH, "category": "main_text", "candidate": True, "registeredAt": f"{THROUGH}T11:00:00"}
+        # Emenda de comissão votada na mesma sessão, logo antes do texto.
+        amendment = {"id": "42-7", "date": THROUGH, "category": "amendment", "registeredAt": f"{THROUGH}T10:50:00"}
+        _, standalone = self.build(extra=[regime, amendment, text], excluded={"42-9": "Votação simbólica na transcrição."})
+        self.assertEqual(standalone[0]["textStatus"], {"kind": "symbolic", "date": THROUGH})
+        with self.assertRaisesRegex(CollectionError, "sem votação simbólica confirmada"):
+            self.build(extra=[text], excluded={"42-9": "Outro motivo."})
+
+    def test_other_deliberations_without_the_main_text_fail_closed(self):
+        senate = {"id": "42-9", "date": THROUGH, "category": "amendment", "registeredAt": f"{THROUGH}T11:00:00"}
+        with self.assertRaisesRegex(CollectionError, "não é a do texto principal"):
+            self.build(extra=[senate])
+        undated = {**senate, "registeredAt": None}
+        with self.assertRaisesRegex(CollectionError, "ordem ambígua"):
+            self.build(extra=[undated])
+
+    def test_only_article_155_requests_enter(self):
+        with self.assertRaisesRegex(CollectionError, "art. 155"):
+            self.build(api=UrgencyAPI(description="Rejeitado o Requerimento de Urgência (Art. 154 do RICD). Sim: 1; Não: 2; Total: 3."))
+        # Sem artigo na descrição, vale a ementa oficial do requerimento.
+        silent = "Rejeitado o requerimento de urgência. Sim: 1; Não: 2; Total: 3."
+        _, standalone = self.build(api=UrgencyAPI(description=silent))
+        self.assertEqual(len(standalone), 1)
+        with self.assertRaisesRegex(CollectionError, "art. 155"):
+            self.build(api=UrgencyAPI(description=silent, request_ementa="Requer urgência para o PL 1/2026."))
 
 
 if __name__ == "__main__":

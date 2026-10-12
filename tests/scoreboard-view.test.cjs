@@ -334,3 +334,39 @@ test('urgency requests list under the main vote, explain the quorum and open as 
   assert.doesNotMatch(app.innerHTML, /Parte de uma votação maior/);
   assert.doesNotMatch(app.innerHTML, /tentou barrar|incoerên/i);
 });
+
+test('the decision type filter lists urgency requests with the state of the text and opens one without a main vote', async () => {
+  const calls = [];
+  const alone = { id: '9-9', kind: 'urgency', date: '2026-07-01', proposition: 'PL 849/2025', type: 'PL', request: { label: 'REQ 1233/2026' },
+    title: 'Urgência para o PL 849/2025 (APA da Baleia Franca)', summary: 'O REQ 1233/2026 pediu urgência.', decisionLabel: 'Urgência aprovada',
+    outcome: 'approved', tally: { yes: 279, no: 162, abstention: 1, total: 442 }, themes: [], textStatus: { kind: 'not_voted', through: '2026-10-09' } };
+  const symbolic = { ...alone, id: '9-10', textStatus: { kind: 'symbolic', date: '2026-09-01' } };
+  const detail = { available: true, vote: { ...alone, yesMeaning: 'Aprovar o pedido.', noMeaning: 'Rejeitar o pedido.', quorum: 257, sources: {} },
+    participants: [], partyTotals: [], participantsAvailable: false };
+  const { context, app, click } = loadApp({ fetch: async url => {
+    calls.push(url);
+    if (url.startsWith('/api/c/votes?')) {
+      const urgency = url.includes('kind=urgency');
+      return jsonResponse({ ...listPayload({ items: urgency ? [alone, symbolic] : [item('1-1', 'Texto principal')] }), kindCounts: { text: 187, urgency: 165 } });
+    }
+    return jsonResponse(detail);
+  } });
+  vm.runInContext("navigateToView('votes')", context);
+  await flush();
+  assert.match(app.innerHTML, /name="kind" value="" checked/);
+  assert.match(app.innerHTML, /Pedidos de urgência <b>165<\/b>/);
+  vm.runInContext("scoreboardApplyFilters({ kind: 'urgency' })", context);
+  await flush();
+  assert.ok(calls.at(-1).includes('kind=urgency'));
+  assert.match(app.innerHTML, /data-type="URG"/);
+  assert.match(app.innerHTML, /REQ 1233\/2026 · PL 849\/2025/);
+  assert.match(app.innerHTML, /Texto ainda não votado no Plenário \(até 09\/10\/2026\)/);
+  assert.match(app.innerHTML, /Texto aprovado em votação simbólica em 01\/09\/2026, sem voto de cada deputado/);
+  assert.match(app.innerHTML, /Urgência aprovada/);
+  click({ vote: '9-9' });
+  await flush();
+  assert.match(app.innerHTML, /E o texto do projeto\?/);
+  assert.match(app.innerHTML, /Até 09\/10\/2026, a Câmara não votou o texto do PL 849\/2025/);
+  assert.match(app.innerHTML, /pelo menos 257 votos Sim/);
+  assert.doesNotMatch(app.innerHTML, /Ligado a uma votação do texto principal|Parte de uma votação maior/);
+});

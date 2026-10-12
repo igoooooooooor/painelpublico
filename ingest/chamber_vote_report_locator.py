@@ -56,6 +56,9 @@ def locate(entry, record, pairs, *, cache, collect, request=request_bytes, width
         start, stop = same_day[0] - width, same_day[-1] + width
     elif lower is not None and upper is not None:
         start, stop = lower + 1, min(upper - 1, lower + 4 * width)
+    elif lower is not None or upper is not None:
+        # Antes do primeiro ou depois do último relatório conhecido: busca só de um lado.
+        start, stop = (lower + 1, lower + 4 * width) if upper is None else (upper - 4 * width, upper - 1)
     else:
         return {'error': 'sem relatórios conhecidos para delimitar a busca'}
     start, stop = max(start, (lower or 0) + 1), min(stop, (upper or stop + 1) - 1)

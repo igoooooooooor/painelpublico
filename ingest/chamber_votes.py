@@ -383,7 +383,7 @@ def merge_catalogues(parts):
     items.sort(key=lambda item: (item['date'], item['id']), reverse=True)
     counts = ('inventoryCount', 'candidateCount', 'reviewedCount', 'publishedCount', 'excludedCount',
               'pendingCount', 'missingTextCount', 'missingAbstentionCount', 'missingThemeCount', 'segmentCount',
-              'urgencyCount')
+              'urgencyCount', 'standaloneUrgencyCount')
     coverage = {key: sum(snapshot['coverage'].get(key, 0) for snapshot, _ in parts) for key in counts}
     period = {'start': parts[0][0]['period']['start'], 'end': parts[-1][0]['period']['end']}
     years = sorted({snapshot['period']['start'][:4] for snapshot, _ in parts})
@@ -429,12 +429,14 @@ def main(argv=None):
     if args.reviews and len(throughs) > 1:
         parser.error('--reviews só pode ser usado com um único --through.')
     try:
-        parts, entries, caches, segment_reviews, urgency_reviews = [], {}, {}, [], []
+        parts, entries, caches, segment_reviews, urgency_reviews, excluded = [], {}, {}, [], [], {}
         for through in throughs:
             # Revisões versionadas em reviews/, com data/reviews/ como alternativa (ingest/review_paths.py).
             reviews_path = args.reviews or find_review(args.root, f'chamber-vote-reviews-{through}.json')
             inventory = json.loads((args.root / 'data' / 'reviews' / f'chamber-vote-inventory-{through}.json').read_text())
             reviews = json.loads(reviews_path.read_text())
+            excluded.update({review['id']: review.get('reason') or '' for review in reviews
+                             if isinstance(review, dict) and review.get('status') == 'excluded'})
             parts.append(build_catalogue(inventory, reviews, root=args.root, collect=args.collect, refresh=args.refresh))
             # Destaques e emendas revisados do período; ligados depois de juntar os anos, porque podem
             # pertencer a uma votação principal de um ano anterior.
@@ -456,10 +458,16 @@ def main(argv=None):
                                           collect=args.collect, refresh=args.refresh, request=request_bytes))
             snapshot['coverage']['segmentCount'] = sum(len(item.get('segments', [])) for item in snapshot['items'])
         if urgency_reviews:
+            standalone = []
             details.update(build_urgencies(snapshot['items'], entries, urgency_reviews, taken=set(details),
                                            cache=caches.__getitem__, collect=args.collect, refresh=args.refresh,
-                                           request=request_bytes))
+                                           request=request_bytes, standalone=standalone, excluded=excluded,
+                                           through=max(throughs).isoformat()))
             snapshot['coverage']['urgencyCount'] = sum(len(item.get('urgencies', [])) for item in snapshot['items'])
+            # Pedidos de projetos sem votação principal no Placar: lista própria, fora de "items".
+            if standalone:
+                snapshot['urgencies'] = standalone
+                snapshot['coverage']['standaloneUrgencyCount'] = len(standalone)
         if segment_reviews or urgency_reviews:
             snapshot['detailsVersion'] = hashlib.sha256(_json_bytes(details)).hexdigest()
         write_catalogue(snapshot, details, args.root / 'data' / 'snapshots')

@@ -779,20 +779,30 @@ function profileUrgencyVotes(vote) {
     return `<small class="profile-vote-urgency">Pedido de urgência${urgency?.request ? ` (${esc(urgency.request)})` : ''} em ${esc(dateBR(urgency?.date))}: ${esc(choice)} · pedido ${esc(result)}</small>`;
   }).join('');
 }
+function profileStandaloneUrgencyNote(vote) {
+  const info = vote.urgenciaAvulsa || {};
+  const result = ({ approved: 'aprovado', rejected: 'rejeitado' })[vote.outcome] || 'resultado não informado';
+  const status = info.textStatus?.kind === 'symbolic' ? `Texto aprovado em votação simbólica em ${dateBR(info.textStatus.date)}, sem voto individual`
+    : info.textStatus?.kind === 'not_voted' ? `Texto ainda não votado (até ${dateBR(info.textStatus.through)})` : '';
+  return `<small class="profile-vote-urgency">Pedido de urgência${info.request ? ` (${esc(info.request)})` : ''} em ${esc(dateBR(vote.data))} · pedido ${esc(result)}</small>${status ? `<small class="profile-vote-urgency">${esc(status)}</small>` : ''}`;
+}
 function profileVoteDetails(shared) {
   const senate = shared.person.role === 'senador';
   if (senate) profileSenateEnsure();
   if (senate ? profileSenateLoading() : profileChamberVotesLoading(shared.id)) return skel('linhas', 3);
-  const votes = votesForPerson(shared.id), limit = PROFILE_VOTE_LIMIT.get(shared.id) || PROFILE_VOTE_PAGE;
+  const mainVotes = votesForPerson(shared.id), limit = PROFILE_VOTE_LIMIT.get(shared.id) || PROFILE_VOTE_PAGE;
+  const standalone = senate || typeof profileStandaloneUrgencies !== 'function' ? [] : profileStandaloneUrgencies(shared.id);
+  const votes = standalone.length ? [...mainVotes, ...standalone].sort((first, second) => String(second.vote?.data || '').localeCompare(String(first.vote?.data || ''))) : mainVotes;
   const source = senate ? profileSenateSource('votacoes') : null;
   const votePeriod = senate ? profileSectionPeriod(source) || (source ? 'período não informado' : 'recorte indisponível') : '';
-  return `<span class="k">${senate ? `Votações nominais do Senado · ${esc(votePeriod)}` : 'Votações do Placar · texto principal de PL, PLP e PEC desde fev/2023'} · ${votes.length || 'sem registros'}</span>
+  return `<span class="k">${senate ? `Votações nominais do Senado · ${esc(votePeriod)}` : 'Votações do Placar · texto principal de PL, PLP e PEC desde fev/2023'} · ${mainVotes.length || 'sem registros'}${standalone.length ? ` · e ${standalone.length} pedidos de urgência` : ''}</span>
     ${votes.length ? `<div class="votes">${votes.slice(0, limit).map(({ vote, recordedVote }) => {
       const voteLabel = recordedVote == null ? 'Sem registro importado' : vote.secreta ? 'Presença registrada · voto secreto' : senate && recordedVote === 'Presente' ? 'Presença registrada · sem voto' : String(recordedVote).toLowerCase();
+      if (vote.urgenciaAvulsa) return profileVoteButton(vote, `<b>urgência · ${esc(voteLabel)}</b><span>${esc(vote.titulo)}</span>${profileStandaloneUrgencyNote(vote)}`);
       return profileVoteButton(vote, `<b>${esc(voteLabel)}</b><span>${esc(vote.titulo)}</span>${senate ? `<small>${esc(dateBR(vote.data))} · fonte oficial ↗</small>` : profileUrgencyVotes(vote)}`);
     }).join('')}</div>` : `<p class="muted">${senate ? 'Votos nominais do Senado ainda não disponíveis neste recorte.' : 'Votações do Placar indisponíveis no momento.'}</p>`}
     ${votes.length > limit ? `<button type="button" class="more" data-profile-votes-more="${esc(shared.id)}">Mostrar mais votações (${votes.length - limit})</button>` : ''}
-    ${!senate && votes.some(({ vote }) => vote.urgencias?.length) ? '<p class="muted">Em alguns projetos aparece também o voto no pedido de urgência, que decide se a tramitação é acelerada, não o conteúdo. O texto pode ter mudado entre as duas votações. Esse voto não entra no resumo acima.</p>' : ''}
+    ${!senate && votes.some(({ vote }) => vote.urgencias?.length || vote.urgenciaAvulsa) ? '<p class="muted">Aparecem também os votos em pedidos de urgência, que decidem se a tramitação é acelerada, não o conteúdo. O texto pode ter mudado entre as duas votações. Quando o texto foi aprovado em votação simbólica ou ainda não foi votado, o pedido é o único voto registrado sobre o projeto. Esses votos não entram no resumo acima.</p>' : ''}
     <p class="muted">O resumo conta votos identificados na fonte. ${senate ? 'Presença sem voto, atividade parlamentar, licenças e presidência não contam como voto nominal.' : 'Presença em voto secreto e quem presidiu aparecem à parte.'} Ausência de registro não significa que a pessoa não votou.</p>
     ${source ? `${profileSource(source, 'Fonte das votações do Senado')}${source.detail ? `<p class="muted">${esc(datesInTextBR(source.detail))}</p>` : ''}` : ''}
 `;

@@ -1,6 +1,6 @@
 /* Catálogo amplo de votações: carregado só ao entrar no Placar. */
 const scoreboardState = {
-  list: { status: 'idle', data: null, error: null, available: null, query: '', type: '', theme: '', result: '', page: 1, pageSize: 12 },
+  list: { status: 'idle', data: null, error: null, available: null, query: '', type: '', theme: '', result: '', kind: '', page: 1, pageSize: 12 },
   listSequence: 0,
   detail: { id: null, status: 'idle', data: null, error: null, visibleParticipants: 20 },
   detailSequence: 0,
@@ -95,6 +95,26 @@ function scoreboardUrgencies(urgencies) {
       </li>`;
     }).join('')}</ol>${scoreboardQuorumNote(rows[0].quorum)}</section>`;
 }
+/* Situação do texto do projeto de um pedido de urgência: votado no Placar, aprovado em votação simbólica
+   (sem voto de cada deputado) ou ainda não votado até o fim do levantamento. */
+function scoreboardTextStatus(status) {
+  if (status?.kind === 'placar') return `Texto votado no Placar em ${scoreboardPeriodDate(status.date)}`;
+  if (status?.kind === 'symbolic') return `Texto aprovado em votação simbólica em ${scoreboardPeriodDate(status.date)}, sem voto de cada deputado`;
+  if (status?.kind === 'not_voted') return `Texto ainda não votado no Plenário (até ${scoreboardPeriodDate(status.through)})`;
+  return '';
+}
+function scoreboardTextStatusCard(vote) {
+  const status = vote?.textStatus;
+  if (!status || vote?.parent) return '';
+  const project = scoreboardEscape(vote.proposition || 'o projeto');
+  const body = status.kind === 'symbolic'
+    ? `O texto do ${project} foi aprovado em ${scoreboardEscape(scoreboardPeriodDate(status.date))} em votação simbólica, em que não se registra o voto de cada deputado. Por isso o texto não está no Placar, e este pedido de urgência é o único voto registrado de cada deputado sobre o projeto.`
+    : status.kind === 'not_voted'
+      ? `Até ${scoreboardEscape(scoreboardPeriodDate(status.through))}, a Câmara não votou o texto do ${project} no Plenário. Por enquanto, este pedido de urgência é o único voto registrado de cada deputado sobre o projeto. Aprovar a urgência não garante que o texto será votado, nem quando.`
+      : '';
+  if (!body) return '';
+  return `<section class="card scoreboard-related" role="note"><span class="k">E o texto do projeto?</span><p>${body}</p></section>`;
+}
 function scoreboardParentDecision(parent) {
   if (!parent || !SCOREBOARD_VOTE_ID.test(scoreboardText(parent.id))) return '';
   if (parent.relation === 'urgency') {
@@ -137,6 +157,7 @@ function scoreboardListUrl() {
   if (list.type) query.set('type', list.type);
   if (list.theme) query.set('theme', list.theme);
   if (list.result) query.set('result', list.result);
+  if (list.kind) query.set('kind', list.kind);
   query.set('page', String(list.page));
   query.set('pageSize', String(list.pageSize));
   return `/api/c/votes?${query.toString()}`;
@@ -214,7 +235,10 @@ function scoreboardCoverage(data) {
       <p><strong>De onde vêm as votações.</strong> A Câmara publicou ${inventory} registros de votação ${timeframe}. Muitos são etapas do mesmo projeto: urgência, emendas, destaques, procedimentos e redação final. A contagem do Placar fica só com as votações do texto principal de PL, PLP e PEC no Plenário. Destaques, emendas e pedidos de urgência aparecem à parte, dentro da votação do projeto, quando já foram conferidos; não entram na contagem nem nas comparações. Votações simbólicas (sem registro de voto de cada deputado) e outros tipos de proposta ficam de fora.</p>
       <p><strong>Como escolhemos.</strong> Dos ${inventory} registros, ${candidates} pareciam votações do texto principal. ${review}: ${excluded}${published} entraram no Placar. ${pendingNote}</p>
       ${Number.isInteger(coverage.segmentCount) && coverage.segmentCount > 0 ? `<p><strong>Decisões sobre trechos.</strong> Em alguns projetos, mostramos também ${scoreboardCount(coverage.segmentCount)} ${coverage.segmentCount === 1 ? 'votação nominal' : 'votações nominais'} de destaques e emendas ressalvados no texto principal, com o que significava votar Sim e Não. É um piloto: cada uma é conferida no relatório nominal e no texto oficial do destaque ou da emenda, e elas não entram na contagem acima nem nas comparações entre deputados e partidos.</p>` : ''}
-      ${Number.isInteger(coverage.urgencyCount) && coverage.urgencyCount > 0 ? `<p><strong>Pedidos de urgência.</strong> Em alguns projetos, mostramos também ${scoreboardCount(coverage.urgencyCount)} ${coverage.urgencyCount === 1 ? 'votação nominal' : 'votações nominais'} de pedidos para acelerar a tramitação (art. 155 do Regimento Interno), votados antes do texto principal. Por enquanto, só entram pedidos de projetos que já têm a votação do texto principal no Placar; por isso eles não representam todos os pedidos de urgência do mandato. O voto na urgência não aprova o conteúdo e não entra na contagem acima nem nas comparações.</p>` : ''}
+      ${Number.isInteger(coverage.urgencyCount) && coverage.urgencyCount > 0 ? (() => {
+        const linked = coverage.urgencyCount, alone = Number.isInteger(coverage.standaloneUrgencyCount) ? coverage.standaloneUrgencyCount : 0;
+        return `<p><strong>Pedidos de urgência.</strong> Mostramos também ${scoreboardCount(linked + alone)} votações nominais de pedidos para acelerar a tramitação (art. 155 do Regimento Interno), no filtro “Pedidos de urgência”. Em ${scoreboardCount(linked)}, o texto do projeto foi votado depois no Placar, e o pedido aparece também na página dessa votação.${alone ? ` Nas outras ${scoreboardCount(alone)}, o texto foi aprovado em votação simbólica, sem voto de cada deputado, ou ainda não foi votado; o pedido é o único voto registrado sobre o projeto.` : ''} O voto na urgência não aprova o conteúdo e não entra na contagem acima nem nas comparações. Pedidos de outros tipos de proposta e casos que ainda pedem conferência ficam de fora.</p>`;
+      })() : ''}
       <p><strong>Por que quase todas foram aprovadas.</strong> Quase todas as votações do texto principal no Placar terminaram em aprovação. Isso não quer dizer consenso: um texto aprovado por margem estreita pode ter sido muito disputado, e o placar de cada votação mostra o tamanho da divisão. O Placar também não mostra os projetos que não chegaram a uma votação nominal do texto, por exemplo os que ficaram nas comissões ou foram decididos em votação simbólica. Parte das disputas aparece nas decisões sobre trechos e nos pedidos de urgência, mostrados à parte quando já conferidos. Uma rejeição aqui pode ser de uma versão alternativa, como o substitutivo de uma comissão: nesse caso, a página da votação mostra a decisão seguinte, que aprovou o projeto.</p>
       <p><strong>Limites.</strong></p>
       <ul>${gaps}
@@ -246,18 +270,24 @@ function scoreboardItemCard(item) {
   const type = scoreboardVoteType(item);
   const date = typeof item?.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(item.date) ? item.date : '';
   const abstention = Number.isFinite(tally.abstention) ? `${scoreboardCount(tally.abstention)} abst.` : 'abst. não publicada';
+  const isUrgency = item?.kind === 'urgency';
+  const status = isUrgency ? scoreboardTextStatus(item.textStatus) : '';
+  const badge = isUrgency ? '<abbr class="scoreboard-type" data-type="URG" title="Pedido de urgência (art. 155 do Regimento Interno)">URGÊNCIA</abbr>' : scoreboardTypeBadge(type);
+  const label = isUrgency && item?.request?.label ? `${item.request.label} · ${item?.proposition || ''}` : item?.proposition;
+  const outcome = isUrgency ? (item?.decisionLabel || SCOREBOARD_URGENCY_OUTCOMES[item?.outcome] || 'Resultado não informado') : scoreboardOutcome(item?.outcome, item?.related);
   return `<article class="card scoreboard-card">
     ${date ? `<p class="scoreboard-date" aria-hidden="true"><b>${date.slice(8, 10)}</b><span>${SCOREBOARD_MONTHS[Number(date.slice(5, 7)) - 1]?.slice(0, 3) || ''}</span></p>` : ''}
     <div class="scoreboard-card-body">
-      <p class="scoreboard-kicker">${scoreboardTypeBadge(type)}<span class="k">${scoreboardEscape(item?.proposition || 'Proposição não informada')}<span${date ? ' class="sr-only"' : ''}> · ${scoreboardEscape(scoreboardDate(item?.date))}</span></span></p>
+      <p class="scoreboard-kicker">${badge}<span class="k">${scoreboardEscape(label || 'Proposição não informada')}<span${date ? ' class="sr-only"' : ''}> · ${scoreboardEscape(scoreboardDate(item?.date))}</span></span></p>
       <h3 class="h">${scoreboardEscape(item?.title || 'Título não informado')}</h3>
       ${item?.summary ? `<p class="muted scoreboard-summary">${scoreboardEscape(item.summary)}</p>` : ''}
+      ${status ? `<p class="scoreboard-text-status">${scoreboardEscape(status)}</p>` : ''}
       ${themes.length ? `<p class="scoreboard-themes">${themes.map(theme => `<span class="pill">${scoreboardEscape(theme)}</span>`).join(' ')}</p>` : ''}
       ${Number.isInteger(item?.segmentCount) && item.segmentCount > 0 ? `<p class="scoreboard-segment-count">+ ${item.segmentCount} ${item.segmentCount === 1 ? 'decisão sobre um trecho' : 'decisões sobre trechos'}, com voto de cada deputado</p>` : ''}
       ${Number.isInteger(item?.urgencyCount) && item.urgencyCount > 0 ? `<p class="scoreboard-segment-count">+ ${item.urgencyCount} ${item.urgencyCount === 1 ? 'pedido de urgência' : 'pedidos de urgência'} votado${item.urgencyCount === 1 ? '' : 's'} antes</p>` : ''}
     </div>
     <div class="scoreboard-card-result">
-      <p class="scoreboard-outcome" data-outcome="${scoreboardEscape(item?.outcome || '')}">${scoreboardEscape(scoreboardOutcome(item?.outcome, item?.related))}</p>
+      <p class="scoreboard-outcome" data-outcome="${scoreboardEscape(item?.outcome || '')}">${scoreboardEscape(outcome)}</p>
       ${scoreboardTallyBar(tally)}
       <p class="scoreboard-meta"><span><b>${scoreboardCount(tally.yes)}</b> sim</span><span><b>${scoreboardCount(tally.no)}</b> não</span><span>${abstention}</span></p>
       ${SCOREBOARD_VOTE_ID.test(id) ? `<button type="button" class="more" data-vote="${scoreboardEscape(id)}">Ver decisão e votos →</button>` : '<p class="muted">Identificador desta votação indisponível.</p>'}
@@ -279,6 +309,8 @@ function scoreboardFilterForm(data, fallback) {
   const themes = Array.isArray(filters.themes) ? filters.themes : [];
   const list = scoreboardState.list;
   const resultOption = (value, label, title) => `<label class="scoreboard-chip"${title ? ` title="${scoreboardEscape(title)}"` : ''}><input type="radio" name="result" value="${scoreboardEscape(value)}"${list.result === value ? ' checked' : ''}><span>${scoreboardEscape(label)}</span></label>`;
+  const counts = data?.kindCounts || {};
+  const kindOption = (value, label, count) => `<label class="scoreboard-chip"><input type="radio" name="kind" value="${scoreboardEscape(value)}"${list.kind === value ? ' checked' : ''}><span>${scoreboardEscape(label)}${Number.isInteger(count) ? ` <b>${scoreboardCount(count)}</b>` : ''}</span></label>`;
   const typeOption = (value, label, title) => `<label class="scoreboard-chip"${title ? ` title="${scoreboardEscape(title)}"` : ''}><input type="radio" name="type" value="${scoreboardEscape(value)}"${list.type === value ? ' checked' : ''}><span>${scoreboardEscape(label)}</span></label>`;
   return `<form class="card wide scoreboard-filters" data-scoreboard-filter-form aria-label="Filtros do Placar">
     <div class="scoreboard-search-row">
@@ -286,6 +318,7 @@ function scoreboardFilterForm(data, fallback) {
       <button class="scoreboard-submit" type="submit">Buscar</button>
     </div>
     <div class="scoreboard-filter-row">
+      ${fallback ? '' : `<fieldset class="scoreboard-chips"><legend class="sr-only">Tipo de decisão</legend>${kindOption('', 'Texto principal', counts.text)}${kindOption('urgency', 'Pedidos de urgência', counts.urgency)}</fieldset>`}
       <fieldset class="scoreboard-chips"><legend class="sr-only">Tipo de proposta</legend>${typeOption('', 'Todos os tipos', '')}${types.map(type => typeOption(type, type, SCOREBOARD_TYPE_NAMES[type] || '')).join('')}</fieldset>
       <fieldset class="scoreboard-chips"><legend class="sr-only">Resultado da votação</legend>${resultOption('', 'Todos os resultados', '')}${resultOption('approved', 'Aprovadas', 'Texto aprovado nesta votação')}${resultOption('not_approved', 'Rejeitadas', 'Texto rejeitado ou não aprovado nesta votação; pode ser uma versão alternativa, e o projeto ter sido aprovado em seguida')}</fieldset>
       ${fallback ? `<p class="muted">Temas oficiais ficam disponíveis quando o catálogo ampliado está ativo.</p>` : `<label class="scoreboard-theme"><span class="sr-only">Tema oficial</span><select name="theme" data-scoreboard-autosubmit><option value="">Todos os temas</option>${themes.map(theme => `<option value="${scoreboardEscape(theme.id)}"${list.theme === theme.id ? ' selected' : ''}>${scoreboardEscape(theme.label)}</option>`).join('')}</select></label>`}
@@ -431,8 +464,8 @@ function scoreboardDetailView() {
   const vote = payload.vote || {};
   const tally = vote.tally || {};
   const themes = Array.isArray(vote.themes) ? vote.themes.map(theme => scoreboardText(theme?.label)).filter(Boolean) : [];
-  const isSegment = Boolean(vote.parent);
-  const isUrgency = vote.parent?.relation === 'urgency';
+  const isSegment = Boolean(vote.parent) || Boolean(vote.request && vote.textStatus);
+  const isUrgency = vote.parent?.relation === 'urgency' || Boolean(vote.request && vote.textStatus);
   const outcome = isSegment ? (vote.decisionLabel || (isUrgency ? SCOREBOARD_URGENCY_OUTCOMES : SCOREBOARD_SEGMENT_OUTCOMES)[vote.outcome] || 'Resultado não informado') : scoreboardOutcome(vote.outcome, vote.related);
   const hasParticipants = payload.participantsAvailable !== false;
   const type = scoreboardVoteType(vote);
@@ -449,6 +482,7 @@ function scoreboardDetailView() {
       ${pecNote}${isUrgency ? scoreboardQuorumNote(vote.quorum) : ''}<p class="muted">O resultado é o desta votação, não a situação atual da proposta.</p></section>
     ${scoreboardRelatedDecision(vote.related)}
     ${scoreboardParentDecision(vote.parent)}
+    ${scoreboardTextStatusCard(vote)}
     <section class="card scoreboard-result"><span class="k">Resultado desta votação</span><dl class="scoreboard-tally"><div><dt>Sim</dt><dd>${scoreboardCount(tally.yes)}</dd></div><div><dt>Não</dt><dd>${scoreboardCount(tally.no)}</dd></div><div><dt>Abstenção</dt><dd>${scoreboardCount(tally.abstention)}</dd>${Number.isFinite(tally.abstention) ? '' : '<small>não publicada</small>'}</div><div><dt>Total</dt><dd>${scoreboardCount(tally.total)}</dd></div></dl>
       ${hasParticipants ? scoreboardSeatGrid(participants) : ''}
       <p class="muted">${scoreboardEscape(outcome)}. O resultado se refere a esta decisão registrada. O total soma Sim, Não e Abstenção.</p></section>
@@ -545,6 +579,7 @@ function scoreboardApplyFilters(values) {
   list.type = ['PL', 'PLP', 'PEC'].includes(values?.type) ? values.type : '';
   list.theme = scoreboardText(values?.theme).slice(0, 80);
   list.result = ['approved', 'not_approved'].includes(values?.result) ? values.result : '';
+  list.kind = values?.kind === 'urgency' ? 'urgency' : '';
   list.page = 1;
   return scoreboardLoadList();
 }
@@ -576,11 +611,11 @@ if (typeof document !== 'undefined' && document.addEventListener) {
     if (!form) return;
     event.preventDefault();
     const formData = new FormData(form);
-    scoreboardApplyFilters({ query: formData.get('q'), type: formData.get('type'), theme: formData.get('theme'), result: formData.get('result') });
+    scoreboardApplyFilters({ query: formData.get('q'), type: formData.get('type'), theme: formData.get('theme'), result: formData.get('result'), kind: formData.get('kind') });
   });
   document.addEventListener('change', event => {
     const field = event.target;
-    if (!field?.matches?.('[data-scoreboard-filter-form] input[name="type"], [data-scoreboard-filter-form] input[name="result"], [data-scoreboard-autosubmit]')) return;
+    if (!field?.matches?.('[data-scoreboard-filter-form] input[name="type"], [data-scoreboard-filter-form] input[name="result"], [data-scoreboard-filter-form] input[name="kind"], [data-scoreboard-autosubmit]')) return;
     const form = field.closest('[data-scoreboard-filter-form]');
     if (form?.requestSubmit) form.requestSubmit();
   });

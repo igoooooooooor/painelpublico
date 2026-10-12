@@ -212,6 +212,16 @@ function profileVotes(id) {
   return profileVoteList(chamber).map(vote => ({ vote, recordedVote: profileVoteRows(vote)
     .find(row => (chamber === 'camara' ? profileId(row[0]) : String(row[0])) === canonical)?.[4] ?? null }));
 }
+/* Pedidos de urgência de projetos sem votação do texto no Placar: listados com os votos, fora da contagem. */
+function profileStandaloneUrgencies(id) {
+  const canonical = profileId(id);
+  if (!canonical.startsWith('camara:')) return [];
+  const items = CHAMBER_PERSON_VOTES.data[canonical]?.urgencies;
+  return Array.isArray(items) ? items.map(item => ({
+    vote: { id: item.id, titulo: item.title, proposicao: item.proposition, data: item.date, secreta: false, outcome: item.outcome,
+      urgenciaAvulsa: { request: item.request, textStatus: item.textStatus } },
+    recordedVote: item.vote ?? null })) : [];
+}
 function profileVoteButton(v, content, className = 'vt') {
   if (!String(v.id).startsWith('senado:')) return `<button type="button" class="${esc(className)}" data-vote="${esc(v.id)}">${content}</button>`;
   const url = profileSafeUrl(v.sourceUrl);

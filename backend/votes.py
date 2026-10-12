@@ -23,10 +23,13 @@ _ITEM_FIELDS = ('id', 'date', 'proposition', 'type', 'title', 'summary', 'decisi
                 'yesMeaning', 'noMeaning', 'outcome', 'tally', 'themes', 'sources', 'reviewedAt')
 _COVERAGE_FIELDS = ('inventoryCount', 'candidateCount', 'reviewedCount', 'publishedCount', 'pendingCount')
 _OPTIONAL_COVERAGE_FIELDS = ('excludedCount', 'missingTextCount', 'missingAbstentionCount', 'missingThemeCount',
-                             'segmentCount', 'urgencyCount')
+                             'segmentCount', 'urgencyCount', 'standaloneUrgencyCount')
 # Pedidos de urgência (art. 155): votados antes do texto principal, sobre acelerar a tramitação.
 _URGENCY_OUTCOMES = {'approved', 'rejected'}
 _REQUEST_LABEL = re.compile(r'^REQ \d+/\d{4}$')
+_PROJECT_LABEL = re.compile(r'^(PL|PLP|PEC) \d+/\d{4}$')
+# Situação do texto de um projeto cujo pedido de urgência não tem votação principal no Placar.
+_TEXT_STATUS = {'symbolic', 'not_voted'}
 # Decisões sobre trechos (destaques e emendas) penduradas na votação do texto principal.
 _SEGMENT_KINDS = {'destaque', 'emenda', 'emendas', 'emenda_redacao', 'dispositivos'}
 _SEGMENT_OUTCOMES = {'approved', 'rejected', 'kept', 'removed'}
@@ -141,6 +144,28 @@ def _urgency_item(value, parent_date):
             'request': {'label': request['label'], 'url': request['url']}, 'tally': tally,
             'sources': {key: sources[key] for key in ('vote', 'rollCall', 'request', 'proposition')},
             **({'dataNotes': notes} if 'dataNotes' in value else {})}
+
+
+def _iso_date(value):
+    return _text(value, limit=10) and bool(re.fullmatch(r'\d{4}-\d{2}-\d{2}', value))
+
+
+def _standalone_urgency(value):
+    """Validate one urgency request whose project has no main vote in the scoreboard after it."""
+    if not isinstance(value, dict):
+        return None
+    base = _urgency_item({key: item for key, item in value.items() if key not in ('project', 'textStatus')}, '9999-12-31')
+    project, status = value.get('project'), value.get('textStatus')
+    if (base is None or not isinstance(project, dict) or not _text(project.get('label'), limit=40)
+            or not _PROJECT_LABEL.fullmatch(project['label']) or project.get('type') != project['label'].split(' ')[0]
+            or not isinstance(status, dict) or status.get('kind') not in _TEXT_STATUS):
+        return None
+    if status['kind'] == 'symbolic':
+        if not _iso_date(status.get('date')) or status['date'] < base['date'] or set(status) != {'kind', 'date'}:
+            return None
+    elif not _iso_date(status.get('through')) or status['through'] < base['date'] or set(status) != {'kind', 'through'}:
+        return None
+    return {**base, 'project': {'label': project['label'], 'type': project['type']}, 'textStatus': dict(status)}
 
 
 def _summary_item(value):
@@ -300,6 +325,17 @@ def _index(path=None):
         return None
     if coverage.get('urgencyCount', 0) != sum(len(item.get('urgencies', [])) for item in safe_items):
         return None
+    raw_standalone = data.get('urgencies', [])
+    if not isinstance(raw_standalone, list):
+        return None
+    standalone = [_standalone_urgency(urgency) for urgency in raw_standalone]
+    if any(urgency is None or urgency['id'] in seen_ids for urgency in standalone):
+        return None
+    if len({urgency['id'] for urgency in standalone}) != len(standalone):
+        return None
+    if coverage.get('standaloneUrgencyCount', 0) != len(standalone):
+        return None
+    standalone.sort(key=lambda urgency: (urgency['date'], urgency['id']), reverse=True)
     if coverage['publishedCount'] != len(safe_items):
         return None
     # Latest decisions first; IDs make same-day ordering stable.
@@ -309,7 +345,7 @@ def _index(path=None):
         'generatedAt': data['generatedAt'], 'period': {'start': period['start'], 'end': period['end']},
         'coverage': {**{key: coverage[key] for key in (*_COVERAGE_FIELDS, *_OPTIONAL_COVERAGE_FIELDS)
                        if key in coverage}, 'detail': coverage['detail']},
-        'items': safe_items, 'detailsVersion': details_version,
+        'items': safe_items, 'urgencies': standalone, 'detailsVersion': details_version,
     }
 
 
@@ -334,7 +370,9 @@ def listing(params=None, path=None):
                 'pageCount': 0, 'period': None, 'coverage': None,
                 'filters': {'types': [], 'themes': []}, 'generatedAt': None}
 
-    all_items = snapshot['items']
+    kind = 'urgency' if str(params.get('kind', '')) == 'urgency' else 'text'
+    urgency_rows = _urgency_rows(snapshot)
+    all_items = urgency_rows if kind == 'urgency' else snapshot['items']
     types = ['PL', 'PLP', 'PEC']
     themes_by_id = {}
     for item in all_items:
@@ -347,7 +385,8 @@ def listing(params=None, path=None):
     result_filter = {'approved': {'approved'}, 'not_approved': {'rejected', 'not_approved'}}.get(
         str(params.get('result', '')))
     filtered = [item for item in all_items
-                if (not query or all(word in fold(f"{item['title']} {item['summary']} {item['proposition']}")
+                if (not query or all(word in fold(f"{item['title']} {item['summary']} {item['proposition']} "
+                                                  f"{item.get('request', {}).get('label', '')}")
                                      for word in query.split()))
                 and (not type_filter or item['type'] == type_filter)
                 and (not theme_filter or any(theme['id'] == theme_filter for theme in item['themes']))
@@ -360,11 +399,28 @@ def listing(params=None, path=None):
                    **({'segmentCount': len(item['segments'])} if item.get('segments') else {}),
                    **({'urgencyCount': len(item['urgencies'])} if item.get('urgencies') else {})}
                   for item in filtered[offset:offset + page_size]]
-    return {'available': True, 'items': page_items, 'total': total,
+    return {'available': True, 'items': page_items, 'total': total, 'kind': kind,
+            'kindCounts': {'text': len(snapshot['items']), 'urgency': len(urgency_rows)},
             'page': page, 'pageSize': page_size, 'pageCount': page_count,
             'period': snapshot['period'], 'coverage': snapshot['coverage'],
             'filters': {'types': types, 'themes': sorted(themes_by_id.values(), key=lambda theme: (theme['label'], theme['id']))},
             'generatedAt': snapshot['generatedAt']}
+
+
+def _urgency_rows(snapshot):
+    """Every published urgency request as a list row: linked ones carry their main vote, the others the text status."""
+    rows = []
+    for item in snapshot['items']:
+        for urgency in item.get('urgencies', []):
+            rows.append({**urgency, 'kind': 'urgency', 'proposition': item['proposition'], 'type': item['type'],
+                         'themes': item['themes'],
+                         'textStatus': {'kind': 'placar', 'date': item['date'], 'voteId': item['id']}})
+    for urgency in snapshot.get('urgencies', []):
+        rows.append({**{key: value for key, value in urgency.items() if key != 'project'}, 'kind': 'urgency',
+                     'proposition': urgency['project']['label'], 'type': urgency['project']['type'], 'themes': []})
+    rows.sort(key=lambda row: row['id'])
+    rows.sort(key=lambda row: row['date'], reverse=True)
+    return rows
 
 
 def _vote_details(snapshot_path, snapshot, identifier):
@@ -437,7 +493,14 @@ def detail(identifier, path=None):
                            if any(urgency['id'] == identifier for urgency in item.get('urgencies', []))), None)
             relation = 'urgency'
         if parent is None:
-            return None
+            standalone = next((urgency for urgency in snapshot.get('urgencies', []) if urgency['id'] == identifier), None)
+            if standalone is None:
+                return None
+            vote = {**{key: value for key, value in standalone.items() if key != 'project'},
+                    'proposition': standalone['project']['label'], 'type': standalone['project']['type'], 'themes': []}
+            participants, party_totals, available = _vote_details(snapshot_path, snapshot, identifier)
+            return {'available': True, 'vote': vote, 'participants': participants,
+                    'partyTotals': party_totals, 'participantsAvailable': available}
         child = next(entry for entry in parent['segments' if relation == 'segment' else 'urgencies']
                      if entry['id'] == identifier)
         vote = {**child, 'proposition': parent['proposition'], 'type': parent['type'], 'themes': parent['themes'],
@@ -525,6 +588,13 @@ def _person_index(snapshot_path, snapshot):
         voters = sum(choices.values())
         pairs += voters * (voters - 1) // 2
         agreeing_pairs += sum(count * (count - 1) // 2 for count in choices.values())
+    for urgency in snapshot.get('urgencies', []):
+        urgency_participants, _, urgency_available = _vote_details(snapshot_path, snapshot, urgency['id'])
+        if not urgency_available:
+            missing_details.add(urgency['id'])
+            continue
+        for participant in urgency_participants:
+            by_person.setdefault(participant['id'], {})[urgency['id']] = participant['vote']
     index = {'byPerson': by_person, 'missingDetails': missing_details,
              'pairAgreement': round(agreeing_pairs / pairs, 4) if pairs else None}
     with _person_index_lock:
@@ -557,6 +627,12 @@ def person_votes(identifier, path=None):
              | {'vote': choices.get(vote['id']), 'detailsAvailable': vote['id'] not in index['missingDetails']}
              | ({'urgencies': urgencies(vote)} if vote.get('urgencies') else {})
              for vote in snapshot['items']]
-    return {'available': True, 'items': items, 'period': snapshot['period'],
+    # Pedidos de urgência de projetos sem votação principal no Placar: à parte, fora de "items" e da concordância.
+    standalone = [{'id': urgency['id'], 'date': urgency['date'], 'proposition': urgency['project']['label'],
+                   'type': urgency['project']['type'], 'title': urgency['title'], 'request': urgency['request']['label'],
+                   'outcome': urgency['outcome'], 'textStatus': urgency['textStatus'], 'vote': choices.get(urgency['id']),
+                   'detailsAvailable': urgency['id'] not in index['missingDetails']}
+                  for urgency in snapshot.get('urgencies', [])]
+    return {'available': True, 'items': items, 'urgencies': standalone, 'period': snapshot['period'],
             'coverage': snapshot['coverage'], 'generatedAt': snapshot['generatedAt'],
             'pairAgreement': index['pairAgreement']}

@@ -26,6 +26,8 @@ URGENCY_FIELDS = ('title', 'summary', 'decisionLabel', 'yesMeaning', 'noMeaning'
 # Maioria absoluta da composição da Câmara, exigida pelo art. 155 do Regimento Interno.
 URGENCY_QUORUM = 257
 TARGET_TYPES = {'PL', 'PLP', 'PEC', 'MPV', 'PDL'}
+# Tipos do Placar: pedidos sem votação principal ligada só entram para esses projetos.
+PLACAR_TYPES = {'PL', 'PLP', 'PEC'}
 REQUEST_LABEL = re.compile(r'REQ (\d+)/(\d{4})')
 FICHA = 'https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao={}'
 
@@ -56,8 +58,48 @@ def _proposition_id(url):
     return int(match.group(1)) if match else None
 
 
-def build_urgencies(items, inventory_entries, reviews, *, taken, cache, collect, refresh, request):
-    """Valida as revisões e pendura cada pedido na votação principal; devolve os detalhes novos."""
+def text_status(target_id, registered, entry, inventory_entries, parents, excluded, through):
+    """Situação do texto de um projeto sem votação principal no Placar depois do pedido de urgência.
+
+    Procedimentos (requerimentos, mudança de regime) não contam como deliberação do texto. A primeira
+    deliberação depois do pedido tem de ser o texto principal excluído do Placar por votação simbólica;
+    sem nenhuma deliberação, o texto não foi votado até o fim do inventário. Qualquer outro caso
+    (emendas do Senado, subemenda sem texto, texto publicado no Placar) falha fechado.
+    """
+    later = []
+    for other in inventory_entries.values():
+        if int(other['id'].split('-')[0]) != target_id or other['date'] < entry['date'] or other.get('category') == 'procedure':
+            continue
+        moment = _moment(other.get('registeredAt'))
+        if moment is None:
+            raise CollectionError(f"{entry['id']}: deliberação do projeto sem horário de registro; ordem ambígua.")
+        if moment > registered:
+            later.append((moment, other))
+    if not later:
+        return {'kind': 'not_voted', 'through': through}
+    later.sort(key=lambda pair: (pair[0], pair[1]['id']))
+    candidates = [other for _, other in later if other.get('candidate')]
+    if not candidates:
+        raise CollectionError(f"{entry['id']}: a primeira deliberação depois do pedido não é a do texto principal.")
+    first = candidates[0]
+    # Antes do texto, só emendas votadas na mesma sessão (como a de uma comissão, rejeitada antes do texto).
+    before = [other for _, other in later[:[other for _, other in later].index(first)]]
+    if any(other.get('category') != 'amendment' or other['date'] != first['date'] for other in before):
+        raise CollectionError(f"{entry['id']}: a primeira deliberação depois do pedido não é a do texto principal.")
+    if first['id'] in parents:
+        raise CollectionError(f"{entry['id']}: o texto foi votado no Placar ({first['id']}); ligue o pedido a essa votação.")
+    if 'simbolic' not in _folded(excluded.get(first['id'], '')):
+        raise CollectionError(f"{entry['id']}: texto votado sem votação simbólica confirmada na revisão.")
+    return {'kind': 'symbolic', 'date': first['date']}
+
+
+def build_urgencies(items, inventory_entries, reviews, *, taken, cache, collect, refresh, request,
+                    standalone=None, excluded=None, through=None):
+    """Valida as revisões e pendura cada pedido na votação principal; devolve os detalhes novos.
+
+    Revisão sem ``parentId``: o projeto não tem votação principal no Placar depois do pedido. O pedido vai
+    para ``standalone``, com o projeto e a situação do texto calculada do inventário (``text_status``).
+    """
     from ingest.chamber_votes import (PROPOSITION_LABEL as proposition_label, REGISTRATION_LAG, VOTE_ID as vote_id,
                                       _official_source as official_source, _valid_review_date as valid_date)
     if not isinstance(reviews, list):
@@ -88,35 +130,45 @@ def build_urgencies(items, inventory_entries, reviews, *, taken, cache, collect,
         if not isinstance(notes, list) or len(notes) > 4 or any(not isinstance(note, str) or not note.strip() for note in notes):
             raise CollectionError(f'{identifier}: notas de dados inválidas.')
 
-        parent = parents.get(review.get('parentId'))
         entry = inventory_entries.get(identifier)
-        if parent is None or entry is None or entry['date'] > parent['date']:
-            raise CollectionError(f'{identifier}: pedido sem votação principal publicada depois dele.')
-        targets = {_proposition_id(parent['sources'].get(key)) for key in ('proposition', 'referenceProposition')} - {None}
         safe_sources = {key: official_source(sources.get(key)) for key in ('rollCall', 'request', 'proposition')}
-        if safe_sources['proposition'] != parent['sources']['proposition']:
-            raise CollectionError(f'{identifier}: ficha do projeto diferente da votação principal ligada.')
+        registered = _moment((entry or {}).get('registeredAt'))
+        if entry is None or registered is None:
+            raise CollectionError(f'{identifier}: pedido fora do inventário ou sem horário de registro.')
+        if review.get('parentId') is None:
+            parent = None
+            target_id = _proposition_id(safe_sources['proposition'])
+            if standalone is None or excluded is None or not through or target_id is None:
+                raise CollectionError(f'{identifier}: pedido sem votação principal precisa da ficha do projeto.')
+            targets = {target_id}
+        else:
+            parent = parents.get(review.get('parentId'))
+            if parent is None or entry['date'] > parent['date']:
+                raise CollectionError(f'{identifier}: pedido sem votação principal publicada depois dele.')
+            targets = {_proposition_id(parent['sources'].get(key)) for key in ('proposition', 'referenceProposition')} - {None}
+            if safe_sources['proposition'] != parent['sources']['proposition']:
+                raise CollectionError(f'{identifier}: ficha do projeto diferente da votação principal ligada.')
 
-        # A votação principal ligada é a primeira deliberação do texto principal depois do pedido. A ordem
-        # vem do número sequencial dos relatórios nominais (ideVotacao); o horário de registro da API, que
-        # pode atrasar alguns minutos, só decide com folga, e o que cai dentro da folga fica ambíguo.
-        parent_entry = inventory_entries.get(parent['id'])
-        registered = _moment(entry.get('registeredAt'))
-        parent_registered = _moment((parent_entry or {}).get('registeredAt'))
-        own_number = _roll_call_number(safe_sources['rollCall'])
-        parent_number = _roll_call_number(parent['sources'].get('rollCall'))
-        if (registered is None or parent_registered is None or not registered < parent_registered
-                or own_number is None or parent_number is None or not own_number < parent_number):
-            raise CollectionError(f'{identifier}: pedido não é anterior à votação principal ligada.')
-        for other in inventory_entries.values():
-            if (not other.get('candidate') or other['id'] == parent['id']
-                    or int(other['id'].split('-')[0]) not in targets
-                    or not entry['date'] <= other['date'] <= parent['date']):
-                continue
-            moment = _moment(other.get('registeredAt'))
-            if moment is None or registered - REGISTRATION_LAG < moment < parent_registered + REGISTRATION_LAG:
-                raise CollectionError(f'{identifier}: outra deliberação do texto principal fica entre o pedido '
-                                      'e a votação ligada, ou a ordem é ambígua.')
+        if parent is not None:
+            # A votação principal ligada é a primeira deliberação do texto principal depois do pedido. A ordem
+            # vem do número sequencial dos relatórios nominais (ideVotacao); o horário de registro da API, que
+            # pode atrasar alguns minutos, só decide com folga, e o que cai dentro da folga fica ambíguo.
+            parent_entry = inventory_entries.get(parent['id'])
+            parent_registered = _moment((parent_entry or {}).get('registeredAt'))
+            own_number = _roll_call_number(safe_sources['rollCall'])
+            parent_number = _roll_call_number(parent['sources'].get('rollCall'))
+            if (parent_registered is None or not registered < parent_registered
+                    or own_number is None or parent_number is None or not own_number < parent_number):
+                raise CollectionError(f'{identifier}: pedido não é anterior à votação principal ligada.')
+            for other in inventory_entries.values():
+                if (not other.get('candidate') or other['id'] == parent['id']
+                        or int(other['id'].split('-')[0]) not in targets
+                        or not entry['date'] <= other['date'] <= parent['date']):
+                    continue
+                moment = _moment(other.get('registeredAt'))
+                if moment is None or registered - REGISTRATION_LAG < moment < parent_registered + REGISTRATION_LAG:
+                    raise CollectionError(f'{identifier}: outra deliberação do texto principal fica entre o pedido '
+                                          'e a votação ligada, ou a ordem é ambígua.')
 
         urgency_cache = cache_for(identifier)
         url = f'{API_BASE}/votacoes/{identifier}'
@@ -124,8 +176,9 @@ def build_urgencies(items, inventory_entries, reviews, *, taken, cache, collect,
                                        collect=collect, refresh=refresh, request=request, detail=True)
         record = payload['dados']
         description = _folded(record.get('descricao'))
+        cited_articles = set(re.findall(r'art(?:igo|\.)?\s*(\d+)', description))
         if (record.get('id') != identifier or record.get('data') != entry['date']
-                or not re.search(r'requerimento de urgencia', description) or not re.search(r'art\.?\s*155', description)):
+                or not re.search(r'requerimento de urgencia', description) or cited_articles - {'155'}):
             raise CollectionError(f'{identifier}: registro da API não confirma um pedido de urgência do art. 155.')
         if review['outcome'] != api_outcome(record.get('descricao'), record.get('aprovacao')):
             raise CollectionError(f'{identifier}: resultado da revisão diverge do registro da API.')
@@ -141,15 +194,19 @@ def build_urgencies(items, inventory_entries, reviews, *, taken, cache, collect,
                 or (proposition.get('numero'), proposition.get('ano')) != (number, year)
                 or safe_sources['request'] != FICHA.format(prefix)):
             raise CollectionError(f'{identifier}: requerimento não confirma o pedido de urgência revisado.')
+        # O artigo vem da descrição da API ou, quando ela não diz, da ementa oficial do requerimento.
+        if '155' not in cited_articles and not re.search(r'art(?:igo|\.)?\s*155\b', _folded(proposition.get('ementa'))):
+            raise CollectionError(f'{identifier}: registro da API não confirma um pedido de urgência do art. 155.')
 
         affected = [item for item in record.get('proposicoesAfetadas') or []
                     if isinstance(item, dict) and item.get('siglaTipo') in TARGET_TYPES]
-        if len(affected) != 1 or affected[0].get('id') not in targets:
+        if (len(affected) != 1 or affected[0].get('id') not in targets
+                or (parent is None and affected[0].get('siglaTipo') not in PLACAR_TYPES)):
             raise CollectionError(f'{identifier}: projeto afetado diferente do projeto da votação principal.')
         target = affected[0]
         # Mesmo ID, duas numerações: a dos Dados Abertos e a da votação principal publicada (apensados).
         numbers = {(target.get('numero'), target.get('ano'))}
-        match = proposition_label.fullmatch(parent['proposition'])
+        match = proposition_label.fullmatch(parent['proposition']) if parent is not None else None
         if match and target.get('id') == _proposition_id(parent['sources'].get('proposition')):
             numbers.add((int(match.group(2)), int(match.group(3))))
         if (not any(cites(review['reportObject'], number, year) for number, year in numbers)
@@ -170,9 +227,17 @@ def build_urgencies(items, inventory_entries, reviews, *, taken, cache, collect,
                    'quorum': URGENCY_QUORUM, 'tally': tally,
                    'sources': {'vote': url, **safe_sources}, 'reviewedAt': review['reviewedAt'],
                    'registeredAt': registered.isoformat(), **({'dataNotes': notes} if notes else {})}
-        parent.setdefault('urgencies', []).append(urgency)
+        if parent is not None:
+            parent.setdefault('urgencies', []).append(urgency)
+        else:
+            urgency['project'] = {'label': f"{target['siglaTipo']} {target['numero']}/{target['ano']}", 'type': target['siglaTipo']}
+            urgency['textStatus'] = text_status(target['id'], registered, entry, inventory_entries, parents, excluded, through)
+            urgency.pop('registeredAt')
+            standalone.append(urgency)
         details[identifier] = detail
     for item in items:
         if 'urgencies' in item:
             item['urgencies'].sort(key=lambda urgency: (urgency.pop('registeredAt'), urgency['id']))
+    if standalone:
+        standalone.sort(key=lambda urgency: (urgency['date'], urgency['id']), reverse=True)
     return details
