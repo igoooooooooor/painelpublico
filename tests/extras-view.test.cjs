@@ -479,3 +479,17 @@ test('presiding stays visible but does not count as agreement or disagreement', 
   assert.equal(card.agreement.matching, 1);
   assert.equal(card.agreement.total, 1);
 });
+
+test('comparison shows votes ten at a time and each "Mostrar mais" opens ten more', () => {
+  const { api, context } = comparison(profile('camara:1', 1), profile('camara:2', 2));
+  context.DATA.votacoes = Array.from({ length: 25 }, (_, index) => ({ id: `v${index}`, data: '2026-09-01', titulo: `Votação ${index}`, secreta: false }));
+  context.DATA.votosCompletos = Object.fromEntries(context.DATA.votacoes.map(vote => [vote.id, [[1, 'A', 'AAA', 'SP', 'Sim'], [2, 'B', 'BBB', 'RJ', 'Não']]]));
+  const rows = html => (html.match(/class="cmp-vote"/g) || []).length;
+  let html = api.comparisonTable([profile('camara:1', 1), profile('camara:2', 2)]);
+  assert.equal(rows(html), 10);
+  assert.match(html, /Mostrar mais \(15\)/);
+  api.extrasState.comparisonVoteLimit += 10;
+  html = api.comparisonTable([profile('camara:1', 1), profile('camara:2', 2)]);
+  assert.equal(rows(html), 20);
+  assert.match(html, /Mostrar mais \(5\)/);
+});

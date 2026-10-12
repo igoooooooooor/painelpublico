@@ -103,3 +103,36 @@ test('quota legends close 100% with "Outras" in profile and face-off cards', () 
   assert.ok(texts.includes('Outras'));
   assert.ok(texts.includes('10%'));
 });
+
+test('official photos are drawn in a circle with a source credit, and only same-domain photo URLs are loaded', async () => {
+  const context = load();
+  assert.equal(context.sharePhotoUrl('camara:204515'), '/api/c/foto/camara%3A204515');
+  assert.equal(context.sharePhotoUrl('senado:5672'), '/api/c/foto/senado%3A5672');
+  assert.equal(context.sharePhotoUrl('https://www.camara.leg.br/x.jpg'), null);
+  const requested = [];
+  context.fetch = async url => { requested.push(url); return { ok: true, headers: { get: () => 'image/jpeg' }, blob: async () => 'blob' }; };
+  context.createImageBitmap = async () => ({ width: 300, height: 400 });
+  Object.assign(context, { AbortController, setTimeout, clearTimeout });
+  const images = await context.shareLoadImages({ photo: 'https://www.camara.leg.br/x.jpg', people: [{ photo: '/api/c/foto/camara%3A1' }, { photo: '/api/c/foto/senado%3A2' }] });
+  assert.deepEqual(requested, ['/api/c/foto/camara%3A1', '/api/c/foto/senado%3A2']);
+  assert.equal(images.size, 2);
+  const calls = [];
+  const fake = new Proxy({ measureText: text => ({ width: String(text).length * 10 }), canvas: { id: 'canvas' } }, {
+    get: (target, key) => key in target ? target[key] : (...args) => calls.push([key, ...args]),
+    set: (target, key, value) => { target[key] = value; return true; },
+  });
+  const photo = '/api/c/foto/camara%3A1';
+  context.shareDrawCard({ layout: 'profile', title: 'Ana', initials: 'AN', photo, photoCredit: 'Câmara dos Deputados', cost: { value: 'Sem dados', parts: [] },
+    presence: { value: 'Sem registro' }, categories: [], top: null, footnote: 'Fontes.' }, { getContext: () => fake }, new Map([[photo, { width: 300, height: 400 }]]));
+  assert.ok(calls.some(([name]) => name === 'drawImage'));
+  assert.ok(calls.some(([name]) => name === 'clip'));
+  const texts = calls.filter(([name]) => name === 'fillText').map(([, text]) => text);
+  assert.ok(!texts.includes('AN'));  // com foto, sem as iniciais
+  assert.ok(texts.some(text => String(text).includes('Foto: Câmara dos Deputados.')));
+  calls.length = 0;
+  context.shareDrawCard({ layout: 'profile', title: 'Ana', initials: 'AN', photo, photoCredit: 'Câmara dos Deputados', cost: { value: 'Sem dados', parts: [] },
+    presence: { value: 'Sem registro' }, categories: [], top: null, footnote: 'Fontes.' }, { getContext: () => fake });
+  const fallback = calls.filter(([name]) => name === 'fillText').map(([, text]) => text);
+  assert.ok(fallback.includes('AN'));
+  assert.ok(!fallback.some(text => String(text).includes('Foto:')));
+});

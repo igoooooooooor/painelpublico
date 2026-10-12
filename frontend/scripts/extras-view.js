@@ -1,6 +1,8 @@
 /* Contador de impostos, presença de todos(as), quem votou o quê e comparação de perfis.
    A leitura de presença e votos passa pelos helpers compartilhados de perfil. */
-const extrasState = { votes: {}, voteLimit: 40, voteQuery: '', attendanceOrder: 'less', attendanceQuery: '', attendanceLimit: 40, senateVoteLimit: 20, comparisonVoteLimit: 20, comparisonIds: [], comparisonQuery: '', comparisonKey: null, comparisonResults: null, comparisonError: null, comparisonLoading: false };
+// Votações por vez em "Como votaram" da comparação: listas longas cansam; "Mostrar mais" abre o próximo bloco.
+const COMPARISON_VOTE_PAGE = 10;
+const extrasState = { votes: {}, voteLimit: 40, voteQuery: '', attendanceOrder: 'less', attendanceQuery: '', attendanceLimit: 40, senateVoteLimit: 20, comparisonVoteLimit: COMPARISON_VOTE_PAGE, comparisonIds: [], comparisonQuery: '', comparisonKey: null, comparisonResults: null, comparisonError: null, comparisonLoading: false };
 const chamberPersonId = id => 'camara:' + id;
 const percent = (a, b) => b ? Math.round(a / b * 100) : 0;
 const TAX_DATE_FORMATTER = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -401,7 +403,7 @@ function comparisonShareCard([a, b]) {
   const costGap = costWinner === null ? '' : `${formatCitizenAmount(Math.abs(figures[0].total.cents - figures[1].total.cents) / 100)} a menos por mês`;
   const monthLabel = item => item?.month && item?.year ? `${SHORT_MONTHS[item.month]}/${item.year}` : '';
   const people = [a, b].map((f, index) => ({
-    name: name(f),
+    name: name(f), photo: typeof sharePhotoUrl === 'function' ? sharePhotoUrl(f.pessoa.id) : null, photoCredit: chamber(f) === 'senado' ? 'Senado Federal' : 'Câmara dos Deputados',
     meta: [f.pessoa.party, f.pessoa.uf].filter(Boolean).join(' · '),
     stats: [
       { label: costLabel, value: costs[index] == null ? 'Sem dados' : formatCitizenAmount(costs[index]),
@@ -611,7 +613,7 @@ function comparisonTable([a, b]) {
     ? (senateVotesUnavailable ? 'Dados de votações nominais do Senado indisponíveis neste recorte.'
       : comparableVotes.length ? `${firstName(personA)} e ${firstName(personB)} registraram o mesmo voto em ${matchingVoteCount} de ${comparableVotes.length} votações nominais comparáveis no Senado.` : 'Sem votos nominais comparáveis para estes(as) senadores(as) neste recorte.')
     : `${firstName(personA)} e ${firstName(personB)} registraram o mesmo voto em ${matchingVoteCount} de ${comparableVotes.length} votações do Placar comparáveis.`;
-  const voteRows = votes.slice(0, extrasState.comparisonVoteLimit || 20).map(record => {
+  const voteRows = votes.slice(0, extrasState.comparisonVoteLimit || COMPARISON_VOTE_PAGE).map(record => {
     const voteAClass = record.voteA === 'Sim' ? 'yes' : record.voteA === 'Não' ? 'no' : '';
     const voteBClass = record.voteB === 'Sim' ? 'yes' : record.voteB === 'Não' ? 'no' : '';
     const voteA = record.voteA === null ? 'Sem registro importado' : String(record.voteA).toLowerCase();
@@ -639,7 +641,7 @@ function comparisonTable([a, b]) {
   ${voteChamber === 'senado' || comparableVotes.length || chamberVotesLoading ? `<section class="card wide"><span class="k">${voteLabel}</span>
     ${isSenateLoading || chamberVotesLoading ? (typeof skel === 'function' ? skel('linhas', 3) : '<i class="sk" style="display:block;width:100%;height:14px"></i>') : `<h2 class="h" style="font-size:21px">${voteSummary}</h2>
     ${voteRows || (voteChamber === 'senado' ? `<p class="muted">${senateVotesUnavailable ? 'Dados de votações nominais indisponíveis neste recorte.' : 'Sem votações nominais do Senado com registro para ambos neste recorte.'}</p>` : '')}
-    ${votes.length > (extrasState.comparisonVoteLimit || 20) ? `<button type="button" class="opt citizen-more" data-cmp-votes-more>Mostrar mais (${votes.length - (extrasState.comparisonVoteLimit || 20)})</button>` : ''}`}
+    ${votes.length > (extrasState.comparisonVoteLimit || COMPARISON_VOTE_PAGE) ? `<button type="button" class="opt citizen-more" data-cmp-votes-more>Mostrar mais (${votes.length - (extrasState.comparisonVoteLimit || COMPARISON_VOTE_PAGE)})</button>` : ''}`}
     ${voteChamber === 'senado' ? `${senateVoteSource?.detail ? `<p class="muted">${esc(datesInTextBR(senateVoteSource.detail))}</p>` : ''}${activitySource(senateVoteSource, 'Fonte e período')}` : '<span class="muted">Votações do Placar: texto principal de PL, PLP e PEC no Plenário desde fev/2023. A comparação considera apenas votos registrados por ambos; ausência de registro não significa que a pessoa não votou.</span>'}
   </section>` : String(personA.id).split(':')[0] !== String(personB.id).split(':')[0] ? '<section class="card wide"><span class="k">Votações</span><p class="muted">Votações de casas diferentes não são comparadas.</p></section>' : ''}
   <span class="src">Destaque em roxo: quem gastou menos, teve menos alertas ou teve maior presença na Câmara. O Senado aparece como contagem de presenças registradas, sem ranking; votações entre casas não são comparadas. Gastos pelas notas da cota publicadas pela Câmara e pelo Senado (sem as passagens aéreas da Câmara).</span>`;
@@ -654,7 +656,7 @@ document.addEventListener('click', e => {
   if (t.dataset.voteGroup) { extrasState.votes[t.dataset.voteId] = t.dataset.voteGroup; extrasState.voteLimit = 40; extrasState.voteQuery = ''; return rerender(); }
   if (t.hasAttribute('data-vote-more')) { extrasState.voteLimit += 80; return rerender(); }
   if (t.hasAttribute('data-senate-votes-more')) { extrasState.senateVoteLimit += 20; return rerender(); }
-  if (t.hasAttribute('data-cmp-votes-more')) { extrasState.comparisonVoteLimit += 20; return rerender(); }
+  if (t.hasAttribute('data-cmp-votes-more')) { extrasState.comparisonVoteLimit += COMPARISON_VOTE_PAGE; return rerender(); }
   if (t.dataset.cmpAdd) { e.stopPropagation(); addComparisonPerson(t.dataset.cmpAdd); if (state.view !== 'compare') return navigateToView('compare'); rerender(); return syncComparisonLocation(); }
   if (t.hasAttribute('data-cmp-retry')) { extrasState.comparisonError = null; extrasState.comparisonResults = null; extrasState.comparisonLoading = false; return searchComparisonPeople(extrasState.comparisonQuery); }
   if (t.dataset.cmpDel) { extrasState.comparisonIds = extrasState.comparisonIds.filter(x => x !== t.dataset.cmpDel); extrasState.comparisonQuery = ''; extrasState.comparisonKey = null; extrasState.comparisonResults = null; extrasState.comparisonError = null; rerender(); return syncComparisonLocation(); }

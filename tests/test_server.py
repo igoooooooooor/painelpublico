@@ -82,6 +82,27 @@ class ProdServerTests(unittest.TestCase):
         self.assertEqual(summary['categoriasCamara'], [])
         self.assertEqual(summary['topCamara'], [])
 
+    def test_official_photo_is_served_as_jpeg_from_cache_and_invalid_ids_are_404(self):
+        jpeg = b'\xff\xd8\xff\xe0' + b'0' * 2000
+        folder = Path(self.temp.name) / 'fotos'
+        folder.mkdir()
+        (folder / 'camara-1.jpg').write_bytes(jpeg)
+        original = srv.photos.CACHE_DIR
+        srv.photos.CACHE_DIR = folder
+        try:
+            req = urllib.request.Request(self.base + '/api/c/foto/camara%3A1', headers={'Accept-Encoding': 'gzip'})
+            with urllib.request.urlopen(req) as r:
+                self.assertEqual(r.headers['Content-Type'], 'image/jpeg')
+                self.assertIsNone(r.headers.get('Content-Encoding'))  # JPEG não é comprimido de novo
+                self.assertIn('max-age=604800', r.headers['Cache-Control'])
+                self.assertEqual(r.read(), jpeg)
+            with self.assertRaises(urllib.error.HTTPError) as ctx:
+                self.get('/api/c/foto/https%3A%2F%2Fevil.test%2Fx.jpg')
+            self.assertEqual(ctx.exception.code, 404)
+            ctx.exception.close()
+        finally:
+            srv.photos.CACHE_DIR = original
+
     def test_profile_is_served_on_demand_from_snapshot_and_missing_is_404(self):
         snap = Path(self.temp.name) / 'perfis.json'
         snap.write_text(json.dumps({'generatedAt': 'x', 'profiles': {'camara:1': {'name': 'Ana', 'projetos': {'total': 2}}}}),

@@ -14,6 +14,7 @@ fontes oficiais (Câmara, Senado, TSE, IBGE, Tesouro, Portal da Transparência)
 data/raw/        caches das respostas, nunca no Git
 data/imports/    documento normalizado da cota do ano corrente
 data/snapshots/  complementos em JSON (perfis, projetos, custo do mandato, Senado, cidades…)
+data/cache/fotos/  fotos oficiais baixadas sob demanda por /api/c/foto (30 dias; apagar é seguro)
         │  backend/public_store.py importa a cota no SQLite; os snapshots são lidos direto
         ▼
 data/na-lupa.sqlite3  banco com listas oficiais, notas da cota e sinais de alerta

@@ -864,6 +864,7 @@ function profileShareCard(f, shared, alerts, hasExpenseData) {
   const top = f.maiores?.[0];
   return {
     layout: 'profile', title: name, initials: citizenInitials(name), kicker: `Ficha · ${senate ? 'Senado' : 'Câmara'}`,
+    photo: typeof sharePhotoUrl === 'function' ? sharePhotoUrl(person.id) : null, photoCredit: senate ? 'Senado Federal' : 'Câmara dos Deputados',
     subtitle: [ROLE_LABELS[person.role], person.party, person.uf].filter(Boolean).join(' · '),
     cost: profileShareCost(f, shared, hasExpenseData), presence: profileSharePresence(shared),
     categories: hasExpenseData && f.total > 0 ? (f.categorias || []).slice(0, 3).map(category => ({ name: category.nome, share: category.valor / f.total })) : [],

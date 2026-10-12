@@ -9,7 +9,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
-from . import cities, citizen, database, profiles, public_store as store, seo, votes
+from . import cities, citizen, database, photos, profiles, public_store as store, seo, votes
 from .config import BUILD_PATH, ROOT
 
 FAVICON_PATH = ROOT / 'frontend' / 'static' / 'favicon.svg'
@@ -49,7 +49,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('X-Frame-Options', 'DENY')
 
     def send_body(self, content, content_type, status=200, cache='no-store'):
-        gz = 'gzip' in self.headers.get('Accept-Encoding', '') and len(content) > 1024
+        gz = ('gzip' in self.headers.get('Accept-Encoding', '') and len(content) > 1024
+              and not content_type.startswith('image/jpeg'))  # JPEG já é comprimido
         if gz:
             content = gzip.compress(content, 6)
         self.send_response(status)
@@ -185,6 +186,14 @@ class Handler(BaseHTTPRequestHandler):
             found = profiles.senate_activity()
             self.send_json(found if found is not None else {'error': 'Atividade do Senado não encontrada.'},
                            200 if found is not None else 404)
+            return
+        if url.path.startswith('/api/c/foto/'):
+            # Foto oficial pelo próprio domínio, para entrar na imagem de compartilhar (canvas sem CORS).
+            data = photos.photo(unquote(url.path[len('/api/c/foto/'):]))
+            if data is None:
+                self.send_json({'error': 'Foto não disponível.'}, 404, 'public, max-age=3600' if prod else 'no-store')
+            else:
+                self.send_body(data, 'image/jpeg', cache='public, max-age=604800' if prod else 'no-store')
             return
         if not url.path.startswith('/api/'):
             self.send_json({'error': 'Recurso não encontrado.'}, 404)

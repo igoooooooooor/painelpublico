@@ -18,6 +18,7 @@ function shareActionsHTML(card, label = 'Compartilhar imagem') {
   if (SHARE_STATE.card?.fileName !== card?.fileName) SHARE_STATE.message = '';
   SHARE_STATE.card = card;
   if (!card) return '';
+  sharePrefetchPhotos(card);
   return `<div class="share-actions" role="group" aria-label="Compartilhar">
     <button type="button" class="fchip" data-share="image"${SHARE_STATE.busy ? ' disabled' : ''}>${esc(label)}</button>
     <span class="share-status muted" role="status">${esc(SHARE_STATE.message)}</span>
@@ -88,6 +89,49 @@ function shareQuotaLegend(categories) {
   return legend;
 }
 
+/* Fotos oficiais pelo próprio domínio (/api/c/foto/...), para não contaminar o canvas. Cada uma tem 9 s para
+   carregar (o servidor desiste da fonte em 8 s); sem foto, o card usa as iniciais. */
+const SHARE_PHOTO_PATH = /^\/api\/c\/foto\/(camara|senado)%3A\d+$/;
+function sharePhotoUrl(id) {
+  return /^(camara|senado):\d+$/.test(String(id || '')) ? `/api/c/foto/${encodeURIComponent(id)}` : null;
+}
+// Pede as fotos assim que a tela abre: quando a pessoa tocar em compartilhar, o servidor já tem a foto em cache.
+const SHARE_PREFETCHED = new Set();
+const sharePhotoUrls = card => [card?.photo, ...(card?.people || []).map(person => person?.photo)].filter(url => SHARE_PHOTO_PATH.test(String(url || '')));
+function sharePrefetchPhotos(card) {
+  if (typeof Image !== 'function') return;
+  for (const url of sharePhotoUrls(card)) {
+    if (SHARE_PREFETCHED.has(url)) continue;
+    SHARE_PREFETCHED.add(url);
+    const image = new Image();
+    image.onerror = () => SHARE_PREFETCHED.delete(url);
+    image.src = url;
+  }
+}
+async function shareLoadImages(card) {
+  const images = new Map();
+  if (typeof fetch !== 'function' || typeof createImageBitmap !== 'function') return images;
+  await Promise.all([...new Set(sharePhotoUrls(card))].map(async url => {
+    const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 9000);
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      if (response.ok && (response.headers.get('Content-Type') || '').startsWith('image/')) images.set(url, await createImageBitmap(await response.blob()));
+    } catch (error) { /* fica com as iniciais */ } finally { clearTimeout(timer); }
+  }));
+  return images;
+}
+/* Foto recortada em círculo, preenchendo o círculo e alinhada pelo alto (o rosto fica na parte de cima). */
+function shareDrawPhoto(context, image, cx, cy, radius) {
+  const imageWidth = image.naturalWidth || image.width, imageHeight = image.naturalHeight || image.height;
+  const side = Math.min(imageWidth, imageHeight);
+  const sx = (imageWidth - side) / 2, sy = Math.max(0, (imageHeight - side) * 0.15);
+  context.save();
+  context.beginPath(); context.arc(cx, cy, radius, 0, Math.PI * 2); context.closePath(); context.clip();
+  context.drawImage(image, sx, sy, side, side, cx - radius, cy - radius, radius * 2, radius * 2);
+  context.restore();
+}
+const sharePhotoCredit = sources => sources.length ? ` ${sources.length > 1 ? 'Fotos' : 'Foto'}: ${[...new Set(sources)].join(' e ')}.` : '';
+
 function sharePill(context, text, x, y, color) {
   context.font = shareFont(700, 18);
   const width = context.measureText(text).width + 28;
@@ -97,20 +141,38 @@ function sharePill(context, text, x, y, color) {
 }
 
 /* Dois cards lado a lado (custo, presença, cota por categoria, maior nota), votos em comum e alertas embaixo. */
-function shareDrawFaceoff(card, context) {
+function shareDrawFaceoff(card, context, images = new Map()) {
   const { width, height } = SHARE_SIZE, padding = 56, gap = 18;
   const cardWidth = (width - padding * 2 - gap) / 2, inner = cardWidth - 56, cardTop = padding, cardHeight = 900;
   context.fillStyle = SHARE_DARK.bg;
   context.fillRect(0, 0, width, height);
+  const credits = [];
   card.people.slice(0, 2).forEach((person, index) => {
     const color = SHARE_DARK.people[index], left = padding + index * (cardWidth + gap), x = left + 28;
     shareRoundRect(context, left, cardTop, cardWidth, cardHeight, 28, SHARE_DARK.surface);
+    // Foto oficial no canto, com um anel na cor da pessoa; sem foto, o nome usa a largura toda.
+    const portrait = images.get(person.photo), photoSize = 84;
+    if (portrait) {
+      const pcx = left + cardWidth - 28 - photoSize / 2, pcy = cardTop + 28 + photoSize / 2;
+      context.fillStyle = color; context.beginPath(); context.arc(pcx, pcy, photoSize / 2 + 3, 0, Math.PI * 2); context.fill();
+      shareDrawPhoto(context, portrait, pcx, pcy, photoSize / 2);
+      if (person.photoCredit) credits.push(person.photoCredit);
+    }
+    const nameWidth = portrait ? inner - photoSize - 16 : inner;
     // Nome: uma linha grande; se não couber, duas menores.
     context.fillStyle = color;
     context.font = shareFont(600, 50, SHARE_FONTS.display);
     let y = cardTop + 28;
-    const oneLine = context.measureText(person.name).width <= inner;
-    const nameLines = oneLine ? [person.name] : shareWrap(context, person.name, inner, 2).length > 1 ? (context.font = shareFont(600, 38, SHARE_FONTS.display), shareWrap(context, person.name, inner, 2)) : [person.name];
+    const oneLine = context.measureText(person.name).width <= nameWidth;
+    // Duas linhas menores; se ainda não couber, diminui mais antes de cortar o nome.
+    let nameLines = [person.name];
+    if (!oneLine) {
+      for (const size of [38, 32, 28]) {
+        context.font = shareFont(600, size, SHARE_FONTS.display);
+        nameLines = shareWrap(context, person.name, nameWidth, 2);
+        if (!nameLines.at(-1).endsWith('…')) break;
+      }
+    }
     for (const line of nameLines) { y += oneLine ? 46 : 38; context.fillText(line, x, y); }
     context.fillStyle = SHARE_DARK.muted;
     context.font = shareFont(600, 19, SHARE_FONTS.data);
@@ -257,7 +319,7 @@ function shareDrawFaceoff(card, context) {
   // Rodapé miúdo: fontes, aviso de independência e endereço.
   context.font = shareFont(400, 15);
   context.fillStyle = SHARE_DARK.faint;
-  const notes = [...shareWrap(context, card.footnote || '', width - padding * 2 - 200, 2), ...shareWrap(context, SHARE_DISCLAIMER, width - padding * 2 - 200, 2)];
+  const notes = [...shareWrap(context, `${card.footnote || ''}${sharePhotoCredit(credits)}`, width - padding * 2 - 200, 2), ...shareWrap(context, SHARE_DISCLAIMER, width - padding * 2 - 200, 2)];
   let footY = height - 48 - (notes.length - 1) * 22;
   for (const line of notes) { context.fillText(line, padding, footY); footY += 22; }
   context.textAlign = 'right';
@@ -270,7 +332,7 @@ function shareDrawFaceoff(card, context) {
 
 /* Ficha: nome grande, custo médio com as partes, presença com a média da Casa, maior nota e para onde vai a cota.
    Mesmo tema escuro das comparações; o violeta é o único destaque. Sem marca no topo: o endereço fica no rodapé. */
-function shareDrawProfile(card, context) {
+function shareDrawProfile(card, context, images = new Map()) {
   const { width, height } = SHARE_SIZE, padding = 56, inner = width - padding * 2, accent = SHARE_DARK.people[0];
   const box = (x, y, w, h, radius = 28) => {
     shareRoundRect(context, x, y, w, h, radius, SHARE_DARK.line);
@@ -289,8 +351,12 @@ function shareDrawProfile(card, context) {
   context.fillStyle = SHARE_DARK.line; context.beginPath(); context.arc(cx, cy, avatar / 2 + 8, 0, Math.PI * 2); context.fill();
   context.fillStyle = SHARE_DARK.bg; context.beginPath(); context.arc(cx, cy, avatar / 2 + 6, 0, Math.PI * 2); context.fill();
   context.fillStyle = '#262046'; context.beginPath(); context.arc(cx, cy, avatar / 2, 0, Math.PI * 2); context.fill();
-  context.fillStyle = '#C9BFFF'; context.font = shareFont(600, 46, SHARE_FONTS.display);
-  context.textAlign = 'center'; context.fillText(card.initials || '', cx, cy + 16); context.textAlign = 'left';
+  const portrait = images.get(card.photo);
+  if (portrait) shareDrawPhoto(context, portrait, cx, cy, avatar / 2);
+  else {
+    context.fillStyle = '#C9BFFF'; context.font = shareFont(600, 46, SHARE_FONTS.display);
+    context.textAlign = 'center'; context.fillText(card.initials || '', cx, cy + 16); context.textAlign = 'left';
+  }
   const textX = padding + avatar + 32, textWidth = width - padding - textX;
   context.fillStyle = SHARE_DARK.muted; context.font = shareFont(600, 17, SHARE_FONTS.data);
   context.fillText(String(card.kicker || '').toUpperCase(), textX, y + 18);
@@ -431,7 +497,8 @@ function shareDrawProfile(card, context) {
   // Rodapé: fontes, aviso de independência e o endereço do site.
   context.font = shareFont(400, 15);
   context.fillStyle = SHARE_DARK.faint;
-  const notes = [...shareWrap(context, card.footnote || '', inner - 220, 2), ...shareWrap(context, card.disclaimer || SHARE_DISCLAIMER, inner - 220, 1)];
+  const credit = sharePhotoCredit(portrait && card.photoCredit ? [card.photoCredit] : []);
+  const notes = [...shareWrap(context, `${card.footnote || ''}${credit}`, inner - 220, 2), ...shareWrap(context, card.disclaimer || SHARE_DISCLAIMER, inner - 220, 1)];
   let footY = height - 48 - (notes.length - 1) * 22;
   for (const line of notes) { context.fillText(line, padding, footY); footY += 22; }
   context.textAlign = 'right';
@@ -442,15 +509,15 @@ function shareDrawProfile(card, context) {
   return context.canvas;
 }
 
-function shareDrawCard(card, canvas) {
+function shareDrawCard(card, canvas, images = new Map()) {
   const { width, height, padding } = SHARE_SIZE;
   const inner = width - padding * 2;
   canvas.width = width;
   canvas.height = height;
   const context = canvas.getContext('2d');
   context.textBaseline = 'alphabetic';
-  if (card.layout === 'faceoff') return shareDrawFaceoff(card, context);
-  if (card.layout === 'profile') return shareDrawProfile(card, context);
+  if (card.layout === 'faceoff') return shareDrawFaceoff(card, context, images);
+  if (card.layout === 'profile') return shareDrawProfile(card, context, images);
   context.fillStyle = SHARE_COLORS.bg;
   context.fillRect(0, 0, width, height);
 
@@ -570,7 +637,8 @@ async function shareCurrentCard() {
   shareSetStatus('Gerando a imagem…', true);
   try {
     await shareFontsReady();
-    const blob = await shareCanvasBlob(shareDrawCard(card, document.createElement('canvas')));
+    const images = await shareLoadImages(card);
+    const blob = await shareCanvasBlob(shareDrawCard(card, document.createElement('canvas'), images));
     const name = `painel-publico-${shareSlug(card.fileName || card.title)}.png`;
     const file = typeof File === 'function' ? new File([blob], name, { type: 'image/png' }) : null;
     // No celular, abre a folha de compartilhamento (WhatsApp, Instagram...). No computador, baixa a imagem.
