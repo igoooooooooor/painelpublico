@@ -4,19 +4,22 @@ O voto na urgência aprova ou rejeita o pedido para acelerar a tramitação, nã
 Cada pedido vem de uma revisão editorial local e só é publicado depois de conferido, falhando fechado:
 
 - o requerimento é a proposição do próprio ID da votação (REQ), com o número que o relatório nominal mostra;
-- o projeto-alvo é o único projeto afetado no registro da API, é o da votação principal ligada e aparece
-  no objeto do relatório nominal;
+  a ementa não é conferida, porque às vezes só descreve o assunto do projeto;
+- o projeto-alvo é o único projeto afetado no registro da API, é o da votação principal ligada e aparece,
+  com a palavra urgência, no objeto do relatório nominal;
 - a votação principal ligada é a primeira deliberação do texto principal desse projeto depois do pedido,
-  sem outra no meio (inclusive as que não estão no catálogo);
+  sem outra no meio (inclusive as que não estão no catálogo), pela ordem dos relatórios nominais e com
+  folga para o atraso do horário de registro da API;
 - placar, resultado e votos individuais seguem as mesmas conferências das decisões sobre trechos.
 """
 from __future__ import annotations
 
 import re
 import unicodedata
+from datetime import datetime
 
 from ingest.chamber_vote_inventory import API_BASE, CollectionError, _load
-from ingest.chamber_vote_segments import api_outcome, verify_nominal
+from ingest.chamber_vote_segments import _roll_call_number, api_outcome, verify_nominal
 
 URGENCY_OUTCOMES = {'approved', 'rejected'}
 URGENCY_FIELDS = ('title', 'summary', 'decisionLabel', 'yesMeaning', 'noMeaning')
@@ -33,11 +36,19 @@ def _folded(value):
 
 
 def cites(text, number, year):
-    """O texto cita a proposição pelo número e ano ("PL Nº 1.958/2021", "nº 177, de 2023")."""
-    for found_number, found_year in re.findall(r'(\d[\d.]*)\s*(?:/|,?\s*de\s+)\s*(\d{4})', _folded(text)):
-        if int(found_number.replace('.', '')) == number and int(found_year) == year:
+    """O texto cita a proposição pelo número e ano ("PL Nº 1.958/2021", "nº 177, de 2023", "PL 2342/22")."""
+    for found_number, found_year in re.findall(r'(\d[\d.]*)\s*(?:/|,?\s*de\s+)\s*(\d{4}|\d{2})(?!\d)', _folded(text)):
+        found = int(found_year) if len(found_year) == 4 else 2000 + int(found_year)
+        if int(found_number.replace('.', '')) == number and found == year:
             return True
     return False
+
+
+def _moment(value):
+    try:
+        return datetime.fromisoformat(str(value)) if value else None
+    except ValueError:
+        return None
 
 
 def _proposition_id(url):
@@ -47,8 +58,8 @@ def _proposition_id(url):
 
 def build_urgencies(items, inventory_entries, reviews, *, taken, cache, collect, refresh, request):
     """Valida as revisões e pendura cada pedido na votação principal; devolve os detalhes novos."""
-    from ingest.chamber_votes import (VOTE_ID as vote_id, _official_source as official_source,
-                                      _valid_review_date as valid_date)
+    from ingest.chamber_votes import (PROPOSITION_LABEL as proposition_label, REGISTRATION_LAG, VOTE_ID as vote_id,
+                                      _official_source as official_source, _valid_review_date as valid_date)
     if not isinstance(reviews, list):
         raise CollectionError('A revisão de urgências deve ser uma lista.')
     cache_for = cache if callable(cache) else (lambda _identifier: cache)
@@ -86,17 +97,26 @@ def build_urgencies(items, inventory_entries, reviews, *, taken, cache, collect,
         if safe_sources['proposition'] != parent['sources']['proposition']:
             raise CollectionError(f'{identifier}: ficha do projeto diferente da votação principal ligada.')
 
-        # A votação principal ligada é a primeira deliberação do texto principal depois do pedido.
+        # A votação principal ligada é a primeira deliberação do texto principal depois do pedido. A ordem
+        # vem do número sequencial dos relatórios nominais (ideVotacao); o horário de registro da API, que
+        # pode atrasar alguns minutos, só decide com folga, e o que cai dentro da folga fica ambíguo.
         parent_entry = inventory_entries.get(parent['id'])
-        registered = str(entry.get('registeredAt') or '')
-        if parent_entry is None or not registered or not registered < str(parent_entry.get('registeredAt') or ''):
+        registered = _moment(entry.get('registeredAt'))
+        parent_registered = _moment((parent_entry or {}).get('registeredAt'))
+        own_number = _roll_call_number(safe_sources['rollCall'])
+        parent_number = _roll_call_number(parent['sources'].get('rollCall'))
+        if (registered is None or parent_registered is None or not registered < parent_registered
+                or own_number is None or parent_number is None or not own_number < parent_number):
             raise CollectionError(f'{identifier}: pedido não é anterior à votação principal ligada.')
-        between = [other['id'] for other in inventory_entries.values()
-                   if other.get('candidate') and other['id'] != parent['id']
-                   and int(other['id'].split('-')[0]) in targets
-                   and registered < str(other.get('registeredAt') or '') < parent_entry['registeredAt']]
-        if between:
-            raise CollectionError(f'{identifier}: outra deliberação do texto principal fica entre o pedido e a votação ligada.')
+        for other in inventory_entries.values():
+            if (not other.get('candidate') or other['id'] == parent['id']
+                    or int(other['id'].split('-')[0]) not in targets
+                    or not entry['date'] <= other['date'] <= parent['date']):
+                continue
+            moment = _moment(other.get('registeredAt'))
+            if moment is None or registered - REGISTRATION_LAG < moment < parent_registered + REGISTRATION_LAG:
+                raise CollectionError(f'{identifier}: outra deliberação do texto principal fica entre o pedido '
+                                      'e a votação ligada, ou a ordem é ambígua.')
 
         urgency_cache = cache_for(identifier)
         url = f'{API_BASE}/votacoes/{identifier}'
@@ -119,7 +139,6 @@ def build_urgencies(items, inventory_entries, reviews, *, taken, cache, collect,
         number, year = (int(value) for value in REQUEST_LABEL.fullmatch(request_ref['label']).groups())
         if (proposition.get('id') != prefix or proposition.get('siglaTipo') != 'REQ'
                 or (proposition.get('numero'), proposition.get('ano')) != (number, year)
-                or 'urgencia' not in _folded(proposition.get('ementa'))
                 or safe_sources['request'] != FICHA.format(prefix)):
             raise CollectionError(f'{identifier}: requerimento não confirma o pedido de urgência revisado.')
 
@@ -128,8 +147,14 @@ def build_urgencies(items, inventory_entries, reviews, *, taken, cache, collect,
         if len(affected) != 1 or affected[0].get('id') not in targets:
             raise CollectionError(f'{identifier}: projeto afetado diferente do projeto da votação principal.')
         target = affected[0]
-        if not cites(review['reportObject'], target.get('numero'), target.get('ano')):
-            raise CollectionError(f'{identifier}: objeto do relatório não cita o projeto-alvo.')
+        # Mesmo ID, duas numerações: a dos Dados Abertos e a da votação principal publicada (apensados).
+        numbers = {(target.get('numero'), target.get('ano'))}
+        match = proposition_label.fullmatch(parent['proposition'])
+        if match and target.get('id') == _proposition_id(parent['sources'].get('proposition')):
+            numbers.add((int(match.group(2)), int(match.group(3))))
+        if (not any(cites(review['reportObject'], number, year) for number, year in numbers)
+                or 'urgencia' not in _folded(review['reportObject'])):
+            raise CollectionError(f'{identifier}: objeto do relatório não cita a urgência do projeto-alvo.')
 
         allowed = [{'type': 'REQ', 'number': number, 'year': year}]
         _report, tally, notes, detail = verify_nominal(
@@ -144,7 +169,7 @@ def build_urgencies(items, inventory_entries, reviews, *, taken, cache, collect,
                    **{field: review[field] for field in URGENCY_FIELDS}, 'outcome': review['outcome'],
                    'quorum': URGENCY_QUORUM, 'tally': tally,
                    'sources': {'vote': url, **safe_sources}, 'reviewedAt': review['reviewedAt'],
-                   'registeredAt': registered, **({'dataNotes': notes} if notes else {})}
+                   'registeredAt': registered.isoformat(), **({'dataNotes': notes} if notes else {})}
         parent.setdefault('urgencies', []).append(urgency)
         details[identifier] = detail
     for item in items:

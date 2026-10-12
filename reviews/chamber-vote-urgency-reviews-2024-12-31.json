@@ -1,5 +1,83 @@
 [
   {
+    "id": "2388491-7",
+    "parentId": "2386051-93",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 3108/2023"
+    },
+    "title": "Urgência para o PL 4.357/2023 (lei da reforma agrária)",
+    "summary": "O REQ 3108/2023 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 4.357/2023, sobre mudança no art. 2º da lei da reforma agrária. O pedido foi aprovado com 290 votos Sim e 111 Não, com 3 abstenções. O texto principal foi votado em 5/11/2025, cerca de 11 meses depois.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 4.357/2023. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 4357/2023",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12504",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2388491",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2386051"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12504) registra votação nominal eletrônica em 2024-11-26, encerrada às 17:54, com 290 Sim e 111 Não e 3 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 3108/2023 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 4357/2023”. O registro 2388491-7 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 290; Não: 111; Abstenção: 3; Total: 404.” e indica o PL 4357/2023 (ID 2386051) como única proposição afetada.",
+      "text": "A ementa do REQ 3108/2023 (ID 2388491): “Requer em regime de urgência para apreciação do Projeto de Lei nº 4357/2023, que “Altera o art. 2º da Lei nº 8.629, de 25 de fevereiro de 1993.”.” A votação do texto principal ligada é 2386051-93 (5/11/2025), a primeira do PL 4357/2023 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2407112-7",
+    "parentId": "2326582-61",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 4075/2023"
+    },
+    "title": "Urgência para o PL 1.548/2022 (PIS/Cofins do farelo e do óleo de milho)",
+    "summary": "O REQ 4075/2023 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 1.548/2022, sobre PIS/Cofins do farelo e do óleo de milho. O pedido foi aprovado com 337 votos Sim e 17 Não. O texto principal foi votado em 16/4/2024.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 1.548/2022. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA O PL 1548/2022",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12067",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2407112",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2326582"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12067) registra votação nominal eletrônica em 2024-03-13, encerrada às 17:30, com 337 Sim e 17 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 4075/2023 e o objeto como “URGÊNCIA PARA O PL 1548/2022”. O registro 2407112-7 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 337; não: 17; total: 354.” e indica o PL 1548/2022 (ID 2326582) como única proposição afetada.",
+      "text": "A ementa do REQ 4075/2023 (ID 2407112): “Requer, nos termos do artigo 155, urgência para o Projeto de Lei nº 1.548/2022, que altera a Lei nº 12.865, de 09 de outubro de 2013, para estender ao farelo e ao óleo de milho o mesmo tratamento tributário concedido à soja relativamente à incidência da Contribuição para o PIS/PASEP e da COFINS.” A votação do texto principal ligada é 2326582-61 (16/4/2024), a primeira do PL 1548/2022 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2411815-7",
+    "parentId": "2323391-73",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 4244/2023"
+    },
+    "title": "Urgência para o PL 1.269/2022 (improbidade administrativa)",
+    "summary": "O REQ 4244/2023 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 1.269/2022, sobre improbidade administrativa. O pedido foi aprovado com 413 votos Sim e 13 Não, com 1 abstenção. Na votação ligada, a Câmara decidiu sobre o texto do Senado. O texto principal foi votado em 28/2/2024.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 1.269/2022. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 1269/2022",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12019",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2411815",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2323391"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12019) registra votação nominal eletrônica em 2024-02-21, encerrada às 21:01, com 413 Sim e 13 Não e 1 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 4244/2023 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 1269/2022”. O registro 2411815-7 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 413; não: 13; abstenção: 1; total: 427.” e indica o PL 1269/2022 (ID 2323391) como única proposição afetada.",
+      "text": "A ementa do REQ 4244/2023 (ID 2411815): “Requer regime de urgência para apreciação do PL 1269/2022, que “Altera a Lei nº 13.097, de 19 de janeiro de 2015, para garantir a eficácia dos negócios jurídicos relativos a imóveis em cuja matrícula inexista averbação, mediante decisão judicial, de qualquer tipo de constrição judicial.\"” A votação do texto principal ligada é 2323391-73 (28/2/2024), a primeira do PL 1269/2022 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
     "id": "2421859-9",
     "parentId": "2400758-62",
     "status": "confirmed",
@@ -26,6 +104,32 @@
     }
   },
   {
+    "id": "2447264-7",
+    "parentId": "2447191-41",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 2523/2024"
+    },
+    "title": "Urgência para o PLP 72/2024 (hospitais universitários no mínimo da saúde)",
+    "summary": "O REQ 2523/2024 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PLP 72/2024, sobre gastos com hospitais universitários no mínimo constitucional da saúde. O pedido foi aprovado com 329 votos Sim e 11 Não. O texto principal foi votado em 10/9/2024, cerca de 2 meses depois.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PLP 72/2024. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PLP Nº 72/2024",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12298",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2447264",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2447191"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12298) registra votação nominal eletrônica em 2024-07-11, encerrada às 19:28, com 329 Sim e 11 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 2523/2024 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PLP Nº 72/2024”. O registro 2447264-7 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim:329 ; não:11; total: 340.” e indica o PLP 72/2024 (ID 2447191) como única proposição afetada.",
+      "text": "A ementa do REQ 2523/2024 (ID 2447264): “Requer, nos termos do artigo 155 do Regimento Interno, tramitação sob o regime urgência do Projeto de Lei Complementar nº 72, de 2024.” A votação do texto principal ligada é 2447191-41 (10/9/2024), a primeira do PLP 72/2024 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
     "id": "2447439-8",
     "parentId": "2430143-72",
     "status": "confirmed",
@@ -49,6 +153,110 @@
       "method": "O relatório nominal oficial (ideVotacao 12267) registra votação nominal eletrônica em 2024-07-09, encerrada às 20:19, com 322 Sim e 137 Não e 3 abstenções; o registro da API traz o mesmo placar.",
       "object": "O relatório identifica a proposição como REQ 2527/2024 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PLP Nº 68/2024”. O registro 2447439-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 322; não: 137; abstenção: 3; total: 462.” e indica o PLP 68/2024 (ID 2430143) como única proposição afetada.",
       "text": "A ementa do REQ 2527/2024 (ID 2447439): “Requer, nos termos do artigo 155 do Regimento Interno, tramitação sob o regime urgência do Projeto de Lei Complementar nº 68, de 2024.” A votação do texto principal ligada é 2430143-72 (10/7/2024), a primeira do PLP 68/2024 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2450745-8",
+    "parentId": "2438459-55",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 2753/2024"
+    },
+    "title": "Urgência para o PLP 108/2024 (Comitê Gestor do IBS)",
+    "summary": "O REQ 2753/2024 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PLP 108/2024, sobre o Comitê Gestor do IBS, da reforma tributária. O pedido foi aprovado com 308 votos Sim e 142 Não. O texto principal foi votado em 13/8/2024.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PLP 108/2024. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PLP Nº 108/2024",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12305",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2450745",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2438459"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12305) registra votação nominal eletrônica em 2024-08-12, encerrada às 19:56, com 308 Sim e 142 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 2753/2024 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PLP Nº 108/2024”. O registro 2450745-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 308; não: 142; total: 450.” e indica o PLP 108/2024 (ID 2438459) como única proposição afetada.",
+      "text": "A ementa do REQ 2753/2024 (ID 2450745): “Requer, nos termos do artigo 155 do Regimento Interno da Câmara dos Deputados, URGÊNCIA para a apreciação do Projeto de Lei Complementar nº 108, 2024, que “Institui o Comitê Gestor do Imposto sobre Bens e Serviços - CG-IBS, dispõe sobre o processo administrativo tributário relativo ao lançamento de ofício do Imposto sobre Bens e Serviços - IBS, sobre a distribuição para os entes federativos do produto da arrecadação do IBS, e sobre o Imposto sobre Transmissão Causa mortis e Doação de Quaisquer Bens ou Direitos - ITCMD, e dá outras providências”.” A votação do texto principal ligada é 2438459-55 (13/8/2024), a primeira do PLP 108/2024 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2452555-8",
+    "parentId": "2448974-43",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 3015/2024"
+    },
+    "title": "Urgência para o PL 397/2024 (crédito rural em calamidade)",
+    "summary": "O REQ 3015/2024 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 397/2024, sobre a prorrogação de crédito rural em situação de calamidade. O pedido foi aprovado com 347 votos Sim e 86 Não. A urgência e o texto principal foram votados na mesma sessão.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 397/2024. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 397/2024",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12315",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2452555",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2448974"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12315) registra votação nominal eletrônica em 2024-08-14, encerrada às 20:19, com 347 Sim e 86 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 3015/2024 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 397/2024”. O registro 2452555-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 347; não: 86; total: 433.” e indica o PL 397/2024 (ID 2448974) como única proposição afetada.",
+      "text": "A ementa do REQ 3015/2024 (ID 2452555): “Requer urgência para o Projeto de Lei nº 397/2024, que “Autoriza a prorrogação do pagamento de financiamentos relacionados a operações de crédito rural em Municípios ou no Distrito Federal quando neles houver sido declarado estado de calamidade ou situação de emergência, reconhecidos em ato oficial do Munícipio, Distrito Federal, Estado ou governo federal, em virtude de situação de seca ou estiagem extremas ou de excessos hídricos”.” A votação do texto principal ligada é 2448974-43 (14/8/2024), a primeira do PL 397/2024 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2455033-10",
+    "parentId": "2454704-53",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 3346/2024"
+    },
+    "title": "Urgência para o PL 1.847/2024 (transição da desoneração da folha)",
+    "summary": "O REQ 3346/2024 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 1.847/2024, sobre a transição da desoneração da folha de pagamento. O pedido foi aprovado com 293 votos Sim e 118 Não, com 4 abstenções. O texto principal foi votado em 11/9/2024.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 1.847/2024. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL 1.847/2024",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12352",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2455033",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2454704"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12352) registra votação nominal eletrônica em 2024-09-09, encerrada às 20:11, com 293 Sim e 118 Não e 4 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 3346/2024 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL 1.847/2024”. O registro 2455033-10 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 293; Não: 118; Abstenção: 4; Total: 415.” e indica o PL 1847/2024 (ID 2454704) como única proposição afetada.",
+      "text": "A ementa do REQ 3346/2024 (ID 2455033): “Requer, nos termos do artigo 155 do Regimento Interno, tramitação sob o regime urgência do Projeto de Lei nº 1.847, de 2024.” A votação do texto principal ligada é 2454704-53 (11/9/2024), a primeira do PL 1847/2024 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2457208-7",
+    "parentId": "2454400-42",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 3470/2024"
+    },
+    "title": "Urgência para o PLP 121/2024 (dívidas dos estados, Propag)",
+    "summary": "O REQ 3470/2024 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PLP 121/2024, sobre o programa de pagamento das dívidas dos estados (Propag). O pedido foi aprovado com 316 votos Sim e 19 Não, com 4 abstenções. O texto principal foi votado em 10/12/2024, cerca de 3 meses depois.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PLP 121/2024. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PLP 121/2024",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12354",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2457208",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2454400"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12354) registra votação nominal eletrônica em 2024-09-09, encerrada às 20:19, com 316 Sim e 19 Não e 4 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 3470/2024 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PLP 121/2024”. O registro 2457208-7 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 316; Não: 19; Abstenção: 4; Total: 339.” e indica o PLP 121/2024 (ID 2454400) como única proposição afetada.",
+      "text": "A ementa do REQ 3470/2024 (ID 2457208): “Requer regime de urgência para apreciação do PLP nº 121/2024.” A votação do texto principal ligada é 2454400-42 (10/12/2024), a primeira do PLP 121/2024 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
     }
   },
   {
@@ -101,6 +309,110 @@
       "method": "O relatório nominal oficial (ideVotacao 12475) registra votação nominal eletrônica em 2024-11-13, encerrada às 17:01, com 272 Sim e 140 Não e 3 abstenções; o registro da API traz o mesmo placar.",
       "object": "O relatório identifica a proposição como REQ 4192/2024 e o objeto como “URGÊNCIA PARA APROVAÇÃO DO PL Nº 1.958/2021”. O registro 2462049-9 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 272; Não: 140; Abstenção: 3; Total: 415.” e indica o PL 1958/2021 (ID 2439779) como única proposição afetada.",
       "text": "A ementa do REQ 4192/2024 (ID 2462049): “Requer, nos termos do artigo 155 do Regimento Interno, tramitação sob o regime urgência do Projeto de Lei nº 1.958 de 2021.” A votação do texto principal ligada é 2439779-55 (19/11/2024), a primeira do PL 1958/2021 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2466682-9",
+    "parentId": "2466104-39",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 4403/2024"
+    },
+    "title": "Urgência para o PLP 175/2024 (emendas parlamentares ao orçamento)",
+    "summary": "O REQ 4403/2024 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PLP 175/2024, sobre regras para emendas parlamentares ao orçamento. O pedido foi aprovado com 360 votos Sim e 60 Não. A urgência e o texto principal foram votados na mesma sessão.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PLP 175/2024. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PROJETO DE LEI COMPLEMENTAR 175 DE 2024",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12454",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2466682",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2466104"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12454) registra votação nominal eletrônica em 2024-11-05, encerrada às 20:17, com 360 Sim e 60 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 4403/2024 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PROJETO DE LEI COMPLEMENTAR 175 DE 2024”. O registro 2466682-9 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 360; Não: 60; Total: 420.” e indica o PLP 175/2024 (ID 2466104) como única proposição afetada.",
+      "text": "A ementa do REQ 4403/2024 (ID 2466682): “Requer, nos termos do artigo 155 do Regimento Interno da Câmara dos Deputados, que seja incluído automaticamente na Ordem do Dia o Projeto de Lei Complementar nº 175/2024, que dispõe sobre a proposição e execução de emendas parlamentares na lei orçamentária anual e dá outras providências.” A votação do texto principal ligada é 2466104-39 (5/11/2024), a primeira do PLP 175/2024 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2469306-8",
+    "parentId": "2453934-59",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 4484/2024"
+    },
+    "title": "Urgência para o PL 3.224/2024 (uso consciente da tecnologia digital)",
+    "summary": "O REQ 4484/2024 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 3.224/2024, sobre o uso consciente da tecnologia digital. O pedido foi aprovado com 355 votos Sim e 35 Não. O texto principal foi votado em 28/5/2025, cerca de 6 meses depois.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 3.224/2024. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 3224/2024",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12511",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2469306",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2453934"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12511) registra votação nominal eletrônica em 2024-11-26, encerrada às 19:06, com 355 Sim e 35 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 4484/2024 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 3224/2024”. O registro 2469306-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 355; Não: 35; Total: 390.” e indica o PL 3224/2024 (ID 2453934) como única proposição afetada.",
+      "text": "A ementa do REQ 4484/2024 (ID 2469306): “Requer regime de urgência para apreciação do Projeto de Lei nº 3224/2024.” A votação do texto principal ligada é 2453934-59 (28/5/2025), a primeira do PL 3224/2024 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2475016-8",
+    "parentId": "2473375-59",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 4721/2024"
+    },
+    "title": "Urgência para o PL 4.614/2024 (políticas agrícolas e assistenciais)",
+    "summary": "O REQ 4721/2024 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 4.614/2024, sobre políticas públicas agrícolas e assistenciais. O pedido foi aprovado com 267 votos Sim e 156 Não. O texto principal foi votado em 19/12/2024.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 4.614/2024. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 4.614/2024",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12554",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2475016",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2473375"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12554) registra votação nominal eletrônica em 2024-12-04, encerrada às 22:17, com 267 Sim e 156 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 4721/2024 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 4.614/2024”. O registro 2475016-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 267; Não: 156; Total: 423.” e indica o PL 4614/2024 (ID 2473375) como única proposição afetada.",
+      "text": "A ementa do REQ 4721/2024 (ID 2475016): “Requer, nos termos do artigo 155 do Regimento Interno, tramitação sob o regime urgência do Projeto de Lei nº 4.614, de 2024.” A votação do texto principal ligada é 2473375-59 (19/12/2024), a primeira do PL 4614/2024 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2475018-8",
+    "parentId": "2473389-58",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 4722/2024"
+    },
+    "title": "Urgência para o PLP 210/2024 (mudanças no arcabouço fiscal)",
+    "summary": "O REQ 4722/2024 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PLP 210/2024, sobre mudanças no arcabouço fiscal. O pedido foi aprovado com 260 votos Sim e 98 Não, com 2 abstenções. O texto principal foi votado em 17/12/2024.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PLP 210/2024. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PLP Nº 210/2024",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12553",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2475018",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2473389"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12553) registra votação nominal eletrônica em 2024-12-04, encerrada às 21:37, com 260 Sim e 98 Não e 2 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 4722/2024 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PLP Nº 210/2024”. O registro 2475018-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 260; Não: 98; Abstenção: 2; Total: 360.” e indica o PLP 210/2024 (ID 2473389) como única proposição afetada.",
+      "text": "A ementa do REQ 4722/2024 (ID 2475018): “Requer, nos termos do artigo 155 do Regimento Interno, tramitação sob o regime urgência do Projeto de Lei Complementar nº 210, de 2024.” A votação do texto principal ligada é 2473389-58 (17/12/2024), a primeira do PLP 210/2024 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
     }
   },
   {

@@ -89,11 +89,15 @@ class ChamberVoteUrgenciesTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
-    def build(self, urgencies, api=None, extra=()):
+    def build(self, urgencies, api=None, extra=(), parent_number=100):
         root = Path(tempfile.mkdtemp(dir=self.root))
         api = api or UrgencyAPI()
         data = urgency_inventory(extra)
         snapshot, details = chamber_votes.build_catalogue(data, [review()], root=root, collect=True, request=api)
+        # Relatório da votação principal com número sequencial, como no catálogo real.
+        if parent_number is not None:
+            snapshot["items"][0]["sources"]["rollCall"] = (
+                f"https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao={parent_number}")
         entries = {entry["id"]: entry for entry in data["entries"]}
         cache = root / "data" / "raw" / "chamber-vote-inventory" / f"{data['period']['start']}_{data['period']['end']}"
         details.update(build_urgencies(snapshot["items"], entries, urgencies, taken=set(details), cache=cache,
@@ -136,9 +140,19 @@ class ChamberVoteUrgenciesTests(unittest.TestCase):
             self.build([urgency_review()], api=UrgencyAPI(affected=[target(identifier=43)]))
         with self.assertRaisesRegex(CollectionError, "projeto afetado diferente"):
             self.build([urgency_review()], api=UrgencyAPI(affected=[target(), target(identifier=43)]))
-        with self.assertRaisesRegex(CollectionError, "não cita o projeto-alvo"):
+        with self.assertRaisesRegex(CollectionError, "não cita a urgência do projeto-alvo"):
             other = "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 2/2026"
             self.build([urgency_review(reportObject=other)], api=UrgencyAPI(report=urgency_report(obj=other)))
+
+    def test_report_may_cite_the_main_vote_numbering_of_the_same_project_id(self):
+        # Dados Abertos com outra numeração para o mesmo ID (apensado): vale a da votação principal.
+        renumbered = [{**target(), "numero": 9, "ano": 2020}]
+        snapshot, _ = self.build([urgency_review()], api=UrgencyAPI(affected=renumbered))
+        self.assertEqual(len(snapshot["items"][0]["urgencies"]), 1)
+        other = "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 5/2020"
+        with self.assertRaisesRegex(CollectionError, "não cita a urgência do projeto-alvo"):
+            self.build([urgency_review(reportObject=other)],
+                       api=UrgencyAPI(affected=renumbered, report=urgency_report(obj=other)))
 
     def test_no_other_main_text_deliberation_between_request_and_linked_vote(self):
         between = {"id": "42-7", "date": THROUGH, "candidate": True, "registeredAt": f"{THROUGH}T11:00:00"}
@@ -148,6 +162,19 @@ class ChamberVoteUrgenciesTests(unittest.TestCase):
         after = {**between, "registeredAt": f"{THROUGH}T13:00:00"}
         snapshot, _ = self.build([urgency_review()], extra=[after])
         self.assertEqual(len(snapshot["items"][0]["urgencies"]), 1)
+
+    def test_order_comes_from_the_roll_call_sequence_and_ambiguous_registrations_fail(self):
+        with self.assertRaisesRegex(CollectionError, "não é anterior"):
+            self.build([urgency_review()], parent_number=97)
+        with self.assertRaisesRegex(CollectionError, "não é anterior"):
+            self.build([urgency_review()], parent_number=None)
+        # Registrada 3 minutos depois da votação ligada: dentro da folga de atraso da API, a ordem é ambígua.
+        close = {"id": "42-7", "date": THROUGH, "candidate": True, "registeredAt": f"{THROUGH}T12:34:00"}
+        with self.assertRaisesRegex(CollectionError, "ordem é ambígua"):
+            self.build([urgency_review()], extra=[close])
+        undated = {**close, "registeredAt": None}
+        with self.assertRaisesRegex(CollectionError, "ordem é ambígua"):
+            self.build([urgency_review()], extra=[undated])
 
     def test_api_record_must_describe_an_article_155_request(self):
         with self.assertRaisesRegex(CollectionError, "art. 155"):
@@ -165,6 +192,8 @@ class ChamberVoteUrgenciesTests(unittest.TestCase):
         self.assertTrue(cites("URGÊNCIA PARA APROVAÇÃO DO PL Nº 1.958/2021", 1958, 2021))
         self.assertTrue(cites("Projeto de Lei Complementar nº 177, de 2023", 177, 2023))
         self.assertFalse(cites("URGÊNCIA PARA APRECIAÇÃO DO PL Nº 1.958/2021", 1958, 2022))
+        self.assertTrue(cites("URGÊNCIA PARA APRECIAÇÃO DO PL 2342/22", 2342, 2022))
+        self.assertFalse(cites("URGÊNCIA PARA APRECIAÇÃO DO PL 2342/22", 2342, 1922))
 
 
 if __name__ == "__main__":

@@ -75,12 +75,12 @@ const METHODOLOGY_SECTIONS = [
     questions: [
       { question: 'Quais votações entram?', answer: [
         'Só as votações do texto principal de PL, PLP e PEC no Plenário, com o voto de cada deputado(a) registrado. Entram aprovações e rejeições, pela mesma regra, sem escolha por partido, autor ou tema.',
-        'Urgência, emendas, destaques, procedimentos, redação final e votações simbólicas ficam de fora. O Placar não é tudo o que a Câmara votou, e um projeto aprovado ainda pode não ter virado lei.'] },
+        'Essa é a contagem do Placar. Em alguns projetos, destaques, emendas e pedidos de urgência já conferidos aparecem à parte, dentro da votação do projeto, sem entrar na contagem nem nas comparações. Procedimentos, redação final e votações simbólicas ficam de fora. O Placar não é tudo o que a Câmara votou, e um projeto aprovado ainda pode não ter virado lei.'] },
       { question: 'Como são escritos o resumo e o que significava votar Sim e Não?', answer: [
         'Cada votação é conferida no registro do resultado, no texto efetivamente votado e no relatório nominal. O resumo e os significados de Sim e Não partem desse texto, e a página de cada votação mostra a data da revisão. Quando não dá para identificar com segurança a versão votada, a votação fica pendente e não é publicada.'],
         links: [METHODOLOGY_LINKS.scoreboardDocs] },
       { question: 'Por que quase todas foram aprovadas?', answer: [
-        'Antes da votação final, um projeto passa por comissões, pedidos de urgência e acordos. Sem apoio, ele costuma parar no caminho, sem registro do voto de cada deputado(a). Por isso, quando o texto principal chega a uma votação nominal, ele quase sempre é aprovado.'] },
+        'Aprovação não quer dizer consenso: um texto aprovado por margem estreita pode ter sido muito disputado, e o placar de cada votação mostra o tamanho da divisão. O Placar também não mostra os projetos que não chegaram a uma votação nominal do texto principal, como os que ficaram nas comissões ou foram decididos em votação simbólica. Parte das disputas aparece nos destaques, emendas e pedidos de urgência, mostrados à parte quando já conferidos.'] },
     ] },
   { id: 'city', title: 'Minha cidade', view: ['city', 'Ver Minha cidade'],
     lead: 'Dados do município a partir do IBGE, do TSE, do Tesouro Nacional (Siconfi) e do Portal da Transparência.',

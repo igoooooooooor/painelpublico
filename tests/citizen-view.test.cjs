@@ -889,7 +889,8 @@ test('a vote with an urgency request shows both choices with dates, without call
   ]);
   setProfileFixture(api, state, 'camara:1');
   const votes = profileSection(api.profileView(), 'votes');
-  assert.match(votes, /data-vote="1-1"><b>não<\/b>[\s\S]*Pedido de urgência \(REQ 900\/2026\) em 27\/08\/2026: sim · pedido aprovado/);
+  assert.match(votes, /data-vote="1-1"><b>não<\/b><span>Texto principal<\/span><small class="profile-vote-urgency">Texto principal votado em 03\/09\/2026<\/small><small class="profile-vote-urgency">Pedido de urgência \(REQ 900\/2026\) em 27\/08\/2026: sim · pedido aprovado/);
+  assert.doesNotMatch(votes, /data-vote="2-1">[^<]*<b>sim<\/b><span>Outra votação<\/span><small/);
   assert.match(votes, /decide se a tramitação é acelerada, não o conteúdo/);
   assert.match(votes, /Votou em <b>2 de 2<\/b> votações do Placar/);
   assert.doesNotMatch(votes, /contradi|incoerên|tentou barrar/i);

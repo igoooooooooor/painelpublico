@@ -1,5 +1,109 @@
 [
   {
+    "id": "2320643-8",
+    "parentId": "575585-92",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 645/2022"
+    },
+    "title": "Urgência para o PL 5.228/2019 (contrato de primeiro emprego)",
+    "summary": "O REQ 645/2022 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 5.228/2019, sobre contrato de primeiro emprego e de recolocação profissional. O pedido foi aprovado com 303 votos Sim e 95 Não. O texto principal foi votado em 21/11/2023, cerca de 3 meses depois.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 5.228/2019. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 5228/2019",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=11638",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2320643",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2285157"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 11638) registra votação nominal eletrônica em 2023-08-29, encerrada às 18:51, com 303 Sim e 95 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 645/2022 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 5228/2019”. O registro 2320643-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 303; não: 95; total: 398.” e indica o PL 5228/2019 (ID 2285157) como única proposição afetada.",
+      "text": "A ementa do REQ 645/2022 (ID 2320643): “Requerimento de Urgência  ao PL 5228/2019, que trata da 'Lei do Primeiro Emprego'” A votação do texto principal ligada é 575585-92 (21/11/2023), a primeira do PL 5228/2019 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2357639-9",
+    "parentId": "2334279-57",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 1256/2023"
+    },
+    "title": "Urgência para o PL 2.342/2022 (funções e cargos no CNJ)",
+    "summary": "O REQ 1256/2023 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 2.342/2022, sobre funções e cargos no Conselho Nacional de Justiça. O pedido foi aprovado com 348 votos Sim e 48 Não, com 2 abstenções. O texto principal foi votado em 10/5/2023.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 2.342/2022. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL 2342/22",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=11440",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2357639",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2334279"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 11440) registra votação nominal eletrônica em 2023-05-09, encerrada às 18:51, com 348 Sim e 48 Não e 2 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 1256/2023 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL 2342/22”. O registro 2357639-9 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 348; não: 48; abstenção: 2; total: 398.” e indica o PL 2342/2022 (ID 2334279) como única proposição afetada.",
+      "text": "A ementa do REQ 1256/2023 (ID 2357639): “Requer, nos termos do artigo 155 do Regimento Interno, tramitação sob o regime urgência do Projeto de Lei nº 2.342, de 2022.” A votação do texto principal ligada é 2334279-57 (10/5/2023), a primeira do PL 2342/2022 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2358527-8",
+    "parentId": "2357055-29",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 1315/2023"
+    },
+    "title": "Urgência para o PL 1.987/2023 (funções comissionadas no TJDFT)",
+    "summary": "O REQ 1315/2023 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 1.987/2023, sobre funções comissionadas no Tribunal de Justiça do Distrito Federal e dos Territórios. O pedido foi aprovado com 346 votos Sim e 53 Não, com 3 abstenções. O texto principal foi votado em 10/5/2023.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 1.987/2023. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL 1987/23",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=11441",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2358527",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2357055"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 11441) registra votação nominal eletrônica em 2023-05-09, encerrada às 19:12, com 346 Sim e 53 Não e 3 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 1315/2023 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL 1987/23”. O registro 2358527-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 346; não: 53; abstenção: 3; total: 402.” e indica o PL 1987/2023 (ID 2357055) como única proposição afetada.",
+      "text": "A ementa do REQ 1315/2023 (ID 2358527): “Solicita urgência urgentíssima (art. 155 do Regimento Interno da Câmara dos Deputados) para apreciação do Projeto de Lei nº 1.987, de 2023.” A votação do texto principal ligada é 2357055-29 (10/5/2023), a primeira do PL 1987/2023 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2359287-7",
+    "parentId": "2115253-118",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 1364/2023"
+    },
+    "title": "Urgência para o PL 6.385/2016 (serviços postais para órgãos federais)",
+    "summary": "O REQ 1364/2023 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 6.385/2016, sobre serviços postais para órgãos públicos federais. O pedido foi aprovado com 274 votos Sim e 157 Não, com 1 abstenção. O texto principal foi votado em 17/5/2023.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 6.385/2016. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 6385/2016",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=11455",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2359287",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2115253"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 11455) registra votação nominal eletrônica em 2023-05-16, encerrada às 19:26, com 274 Sim e 157 Não e 1 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 1364/2023 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 6385/2016”. O registro 2359287-7 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 274; não: 157; abstenção: 1; total: 432.” e indica o PL 6385/2016 (ID 2115253) como única proposição afetada.",
+      "text": "A ementa do REQ 1364/2023 (ID 2359287): “Requer urgência para apreciação do Projeto de Lei 6385, de 2016.” A votação do texto principal ligada é 2115253-118 (17/5/2023), a primeira do PL 6385/2016 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
     "id": "2362190-9",
     "parentId": "345311-270",
     "status": "confirmed",
@@ -50,5 +154,329 @@
       "object": "O relatório identifica a proposição como REQ 1537/2023 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PLP Nº 93/2023”. O registro 2362292-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 367; não: 102; abstenção: 1; total: 470.” e indica o PLP 93/2023 (ID 2357053) como única proposição afetada.",
       "text": "A ementa do REQ 1537/2023 (ID 2362292): “Requer, nos termos do artigo 155 do Regimento Interno, tramitação sob o regime urgência do Projeto de Lei Complementar nº 93, de 2023.” A votação do texto principal ligada é 2357053-47 (23/5/2023), a primeira do PLP 93/2023 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
     }
+  },
+  {
+    "id": "2362947-9",
+    "parentId": "2157806-137",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 1589/2023"
+    },
+    "title": "Urgência para o PL 8.889/2017 (streaming e vídeo sob demanda)",
+    "summary": "O REQ 1589/2023 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 8.889/2017, sobre serviços de streaming e vídeo sob demanda. O pedido foi aprovado com 291 votos Sim e 106 Não, com 5 abstenções. O texto principal foi votado em 4/11/2025, mais de um ano depois.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 8.889/2017. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 8.889/2017",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=11618",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2362947",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2157806"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 11618) registra votação nominal eletrônica em 2023-08-16, encerrada às 21:58, com 291 Sim e 106 Não e 5 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 1589/2023 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 8.889/2017”. O registro 2362947-9 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 291; não: 106; abstenção: 5; total: 402.” e indica o PL 8889/2017 (ID 2157806) como única proposição afetada.",
+      "text": "A ementa do REQ 1589/2023 (ID 2362947): “Requer, nos termos do art. 155 do Regimento Interno, urgência para votação do Projeto de Lei nº 8889, de 2017, que “Dispõe sobre a provisão de conteúdo audiovisual por demanda (CAvD) e dá outras providências. ”.” A votação do texto principal ligada é 2157806-137 (4/11/2025), a primeira do PL 8889/2017 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2367595-12",
+    "parentId": "2364109-35",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 1890/2023"
+    },
+    "title": "Urgência para o PL 2.720/2023 (pessoas politicamente expostas)",
+    "summary": "O REQ 1890/2023 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 2.720/2023, sobre discriminação contra pessoas politicamente expostas. O pedido foi aprovado com 318 votos Sim e 118 Não, com 2 abstenções. A urgência e o texto principal foram votados na mesma sessão.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 2.720/2023. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL 2720/2023",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=11520",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2367595",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2364109"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 11520) registra votação nominal eletrônica em 2023-06-14, encerrada às 20:13, com 318 Sim e 118 Não e 2 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 1890/2023 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL 2720/2023”. O registro 2367595-12 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 318; não: 118; abstenção: 2; total: 438.” e indica o PL 2720/2023 (ID 2364109) como única proposição afetada.",
+      "text": "A ementa do REQ 1890/2023 (ID 2367595): “Requer, nos termos do artigo 155 do\nRegimento Interno da Câmara dos\nDeputados, que seja incluído\nautomaticamente na Ordem do Dia o Projeto\nde Lei nº 2720/2023, que tipifica os crimes\nde discriminação contra pessoas\npoliticamente expostas e altera a Lei nº\n8.078, de 11 de setembro de 1990 (Código\nde Defesa do Consumidor), para prescrever\nos procedimentos a serem adotados pelas\ninstituições financeiras nos casos de negativa\nde abertura ou manutenção de conta.” A votação do texto principal ligada é 2364109-35 (14/6/2023), a primeira do PL 2720/2023 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2375501-8",
+    "parentId": "1197773-90",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 2360/2023"
+    },
+    "title": "Urgência para o PL 996/2015 (homicídio de membros do MP e da magistratura)",
+    "summary": "O REQ 2360/2023 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 996/2015, sobre o homicídio de membros do Ministério Público e da magistratura. O pedido foi aprovado com 346 votos Sim e 34 Não. O texto principal foi votado em 9/8/2023.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 996/2015. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL 996/2015",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=11576",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2375501",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=1197773"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 11576) registra votação nominal eletrônica em 2023-08-08, encerrada às 17:29, com 346 Sim e 34 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 2360/2023 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL 996/2015”. O registro 2375501-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 346; não: 34; total: 380.” e indica o PL 996/2015 (ID 1197773) como única proposição afetada.",
+      "text": "A ementa do REQ 2360/2023 (ID 2375501): “Requer regime de urgência urgentíssima para apreciação do Projeto de Lei nº. 996 de 2015, que “Altera o art. 121 do Decreto-Lei nº 2.848, de 7 de dezembro de 1940 - Código Penal - para prever como homicídio qualificado aquele praticado contra membros do Ministério Público e Magistratura, no exercício de sua função ou por causa dela e dá outras providências”.” A votação do texto principal ligada é 1197773-90 (9/8/2023), a primeira do PL 996/2015 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2375543-9",
+    "parentId": "2358915-67",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 2366/2023"
+    },
+    "title": "Urgência para o PL 2.245/2023 (trabalho digno para a população de rua)",
+    "summary": "O REQ 2366/2023 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 2.245/2023, sobre trabalho digno para a população em situação de rua. O pedido foi aprovado com 300 votos Sim e 118 Não, com 1 abstenção. O texto principal foi votado em 4/10/2023.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 2.245/2023. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL 2245/2023",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=11588",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2375543",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2358915"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 11588) registra votação nominal eletrônica em 2023-08-09, encerrada às 18:22, com 300 Sim e 118 Não e 1 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 2366/2023 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL 2245/2023”. O registro 2375543-9 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 300; não: 118; abstenção: 1; total: 419.” e indica o PL 2245/2023 (ID 2358915) como única proposição afetada.",
+      "text": "A ementa do REQ 2366/2023 (ID 2375543): “Requer urgência para apreciação do Projeto de Lei nº 2245 de 2023, que “Institui a Política Nacional de Trabalho Digno e Cidadania para População em Situação de Rua - PNTC PopRua - e dá outras providências”.” A votação do texto principal ligada é 2358915-67 (4/10/2023), a primeira do PL 2245/2023 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2377273-8",
+    "parentId": "2350586-63",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 2441/2023"
+    },
+    "title": "Urgência para o PL 1.016/2023 (desoneração da folha até 2027)",
+    "summary": "O REQ 2441/2023 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 1.016/2023, sobre a prorrogação da desoneração da folha de pagamento até 2027. O pedido foi aprovado com 390 votos Sim e 15 Não. Na votação do texto principal, a proposição votada foi o PL 334/2023; nos Dados Abertos, essa votação está registrada no PL 1.016/2023. O texto principal foi votado em 30/8/2023.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 1.016/2023. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 1016/2023",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=11637",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2377273",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2372903"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 11637) registra votação nominal eletrônica em 2023-08-29, encerrada às 18:36, com 390 Sim e 15 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 2441/2023 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 1016/2023”. O registro 2377273-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 390; não: 15; total: 405.” e indica o PL 334/2023 (ID 2372903) como única proposição afetada.",
+      "text": "A ementa do REQ 2441/2023 (ID 2377273): “Requer Urgência na apreciação do Projeto de Lei nº 1.016, de 2023, que “altera a Lei nº 12.546, de 14 de dezembro de 2011, para prorrogar o prazo referente à contribuição previdenciária sobre a receita bruta, e a Lei nº 10.865, de 30 de abril de 2004, para prorrogar o prazo referente a acréscimo de alíquota da Contribuição Social para o Financiamento da Seguridade Social devida pelo Importador de Bens Estrangeiros ou Serviços do Exterior (Cofins-Importação), nos termos que especifica”.” A votação do texto principal ligada é 2350586-63 (30/8/2023), a primeira do PL 334/2023 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2380935-9",
+    "parentId": "2372071-41",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 2649/2023"
+    },
+    "title": "Urgência para o PLP 136/2023 (compensação de perdas de ICMS)",
+    "summary": "O REQ 2649/2023 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PLP 136/2023, sobre a compensação da União aos estados por perdas de ICMS. O pedido foi aprovado com 305 votos Sim e 89 Não. O texto principal foi votado em 14/9/2023.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PLP 136/2023. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PLP Nº 136/2023",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=11663",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2380935",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2372071"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 11663) registra votação nominal eletrônica em 2023-09-05, encerrada às 21:03, com 305 Sim e 89 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 2649/2023 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PLP Nº 136/2023”. O registro 2380935-9 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 305; não: 89; total: 394.” e indica o PLP 136/2023 (ID 2372071) como única proposição afetada.",
+      "text": "A ementa do REQ 2649/2023 (ID 2380935): “Requer, nos termos do artigo 155 do Regimento Interno, tramitação sob o regime urgência do Projeto de Lei Complementar nº 136, de 2023.” A votação do texto principal ligada é 2372071-41 (14/9/2023), a primeira do PLP 136/2023 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2382611-10",
+    "parentId": "2376169-62",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 2780/2023"
+    },
+    "title": "Urgência para o PL 3.780/2023 (penas para furto, roubo e receptação)",
+    "summary": "O REQ 2780/2023 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 3.780/2023, sobre penas para furto, roubo e receptação. O pedido foi aprovado com 337 votos Sim e 103 Não, com 1 abstenção. O texto principal foi votado em 31/10/2023, cerca de 2 meses depois.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 3.780/2023. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 3780/2023",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=11647",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2382611",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2376169"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 11647) registra votação nominal eletrônica em 2023-08-29, encerrada às 21:16, com 337 Sim e 103 Não e 1 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 2780/2023 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 3780/2023”. O registro 2382611-10 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 337; não: 103; abstenção: 1; total: 441.” e indica o PL 3780/2023 (ID 2376169) como única proposição afetada.",
+      "text": "A ementa do REQ 2780/2023 (ID 2382611): “Requer, nos termos do artigo 155 do Regimento Interno, tramitação sob o regime urgência do Projeto de Lei nº 3.780, de 2023.” A votação do texto principal ligada é 2376169-62 (31/10/2023), a primeira do PL 3780/2023 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2387264-8",
+    "parentId": "2387066-63",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 2998/2023"
+    },
+    "title": "Urgência para o PL 4.438/2023 (minirreforma eleitoral de 2023)",
+    "summary": "O REQ 2998/2023 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 4.438/2023, que trata da minirreforma eleitoral de 2023. O pedido foi aprovado com 366 votos Sim e 60 Não, com 2 abstenções. A urgência e o texto principal foram votados na mesma sessão.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 4.438/2023. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 4438/2023",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=11666",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2387264",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2387066"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 11666) registra votação nominal eletrônica em 2023-09-13, encerrada às 17:55, com 366 Sim e 60 Não e 2 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 2998/2023 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 4438/2023”. O registro 2387264-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 366; não: 60; abstenção: 2; total: 428.” e indica o PL 4438/2023 (ID 2387066) como única proposição afetada.",
+      "text": "A ementa do REQ 2998/2023 (ID 2387264): “Requer a urgência, nos termos do art. 155 do\nRegimento Interno da Câmara dos Deputados, para\napreciação do Projeto de Lei nº 4.438/2023, que\nAltera a Lei nº 4.737, de julho de 1965 (Código\nEleitoral), a Lei nº 9.096, de 19 de setembro de 1995\n(Lei dos Partidos Políticos) e a Lei nº 9.504, de 30\nde setembro de 1997 (Lei as Eleições), com o fim de\npromover reforma no ordenamento político-eleitoral\n(Minirreforma Eleitoral de 2023).” A votação do texto principal ligada é 2387066-63 (13/9/2023), a primeira do PL 4438/2023 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2387266-8",
+    "parentId": "2387067-33",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 2999/2023"
+    },
+    "title": "Urgência para o PLP 192/2023 (Lei de Inelegibilidade)",
+    "summary": "O REQ 2999/2023 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PLP 192/2023, sobre mudanças na Lei de Inelegibilidade. O pedido foi aprovado com 384 votos Sim e 51 Não, com 3 abstenções. O texto principal foi votado em 14/9/2023.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PLP 192/2023. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PLP Nº 192/2023",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=11667",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2387266",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2387067"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 11667) registra votação nominal eletrônica em 2023-09-13, encerrada às 18:10, com 384 Sim e 51 Não e 3 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 2999/2023 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PLP Nº 192/2023”. O registro 2387266-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 384; não: 51; abstenção: 3; total: 438.” e indica o PLP 192/2023 (ID 2387067) como única proposição afetada.",
+      "text": "A ementa do REQ 2999/2023 (ID 2387266): “Requer a urgência, nos termos do art. 155 do\nRegimento Interno da Câmara dos Deputados, para\napreciação do Projeto de Lei Complementar nº\n192/2023, que Altera a Lei Complementar nº 64, de\n18 de maio de 1990.” A votação do texto principal ligada é 2387067-33 (14/9/2023), a primeira do PLP 192/2023 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2399396-7",
+    "parentId": "2391935-43",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 3683/2023"
+    },
+    "title": "Urgência para o PL 4.287/2023 (autorregularização de tributos federais)",
+    "summary": "O REQ 3683/2023 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 4.287/2023, sobre a autorregularização incentivada de tributos federais. O pedido foi aprovado com 309 votos Sim e 35 Não. O texto principal foi votado em 8/11/2023.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 4.287/2023. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL 4287/2023",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=11821",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2399396",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2391935"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 11821) registra votação nominal eletrônica em 2023-11-07, encerrada às 18:06, com 309 Sim e 35 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 3683/2023 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL 4287/2023”. O registro 2399396-7 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 309; não: 35; total: 344.” e indica o PL 4287/2023 (ID 2391935) como única proposição afetada.",
+      "text": "A ementa do REQ 3683/2023 (ID 2399396): “Requeiro a Vossa Excelência, nos termos do art. 155 do Regimento Interno da Câmara dos Deputados, urgência para apreciação imediata do Projeto de Lei n. 4287, de 2023, que “Dispõe sobre a autorregularização incentivada de tributos administrados pela Secretaria Especial da Receita Federal do Brasil”.” A votação do texto principal ligada é 2391935-43 (8/11/2023), a primeira do PL 4287/2023 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2404958-8",
+    "parentId": "2299903-53",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 3990/2023"
+    },
+    "title": "Urgência para o PL 3.268/2021 (feriado do Dia da Consciência Negra)",
+    "summary": "O REQ 3990/2023 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 3.268/2021, sobre o feriado nacional do Dia de Zumbi e da Consciência Negra. O pedido foi aprovado com 303 votos Sim e 115 Não, com 2 abstenções. O texto principal foi votado em 29/11/2023.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 3.268/2021. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL 3268/2021",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=11844",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2404958",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2299903"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 11844) registra votação nominal eletrônica em 2023-11-21, encerrada às 19:29, com 303 Sim e 115 Não e 2 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 3990/2023 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL 3268/2021”. O registro 2404958-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim:303; não: 115; abstenção: 2; total: 420.” e indica o PL 3268/2021 (ID 2299903) como única proposição afetada.",
+      "text": "A ementa do REQ 3990/2023 (ID 2404958): “Requer, nos termos do Artigo 155 do Regimento Interno, tramitação sob o regime urgência do Projeto de Lei nº 3268/2021.” A votação do texto principal ligada é 2299903-53 (29/11/2023), a primeira do PL 3268/2021 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2407960-8",
+    "parentId": "2333929-40",
+    "status": "pending",
+    "reason": "O relatório nominal (ideVotacao 11873, REQ 4124/2023) encerrou às 23:47 e o registro da API é das 23:57, dez minutos depois, acima da folga de cinco minutos usada para confirmar que o registro corresponde ao relatório. Fica pendente até conferência manual da ordem."
+  },
+  {
+    "id": "2411730-8",
+    "parentId": "2409076-34",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 4239/2023"
+    },
+    "title": "Urgência para o PLP 243/2023 (permanência no ensino médio)",
+    "summary": "O REQ 4239/2023 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PLP 243/2023, sobre despesas de programa de permanência no ensino médio. O pedido foi aprovado com 309 votos Sim e 94 Não. A urgência e o texto principal foram votados na mesma sessão.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PLP 243/2023. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGENCIA PARA APRECIAÇÃO DO PLP 243/2023",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=11921",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2411730",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2409076"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 11921) registra votação nominal eletrônica em 2023-12-13, encerrada às 20:02, com 309 Sim e 94 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 4239/2023 e o objeto como “URGENCIA PARA APRECIAÇÃO DO PLP 243/2023”. O registro 2411730-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 309; não: 94; total: 403.” e indica o PLP 243/2023 (ID 2409076) como única proposição afetada.",
+      "text": "A ementa do REQ 4239/2023 (ID 2411730): “Requer, nos termos do artigo 155 do Regimento Interno, tramitação sob o regime urgência do Projeto de Lei Complementar nº 243, de 2023.” A votação do texto principal ligada é 2409076-34 (13/12/2023), a primeira do PLP 243/2023 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2412712-8",
+    "parentId": "2399598-112",
+    "status": "pending",
+    "reason": "Entre o pedido (13/12/2023) e a votação ligada (texto do Senado, 9/7/2024), a Câmara votou o texto principal em 20/3/2024 (registro 2399598-57), que não está no catálogo. Ligar a urgência ao texto do Senado seria errado; fica pendente até essa votação entrar no Placar."
   }
 ]

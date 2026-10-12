@@ -635,7 +635,7 @@ de ampliar para as cerca de 216 candidatas nos projetos do Placar, decidir se a 
 contexto da relatoria (por exemplo, emendas rejeitadas "por não integrarem o acordo") entra
 sempre ou só quando o parecer a traz.
 
-## Pedidos de urgência (piloto de 12/10/2026)
+## Pedidos de urgência (12/10/2026)
 
 O voto no texto principal mostra só uma parte da atuação parlamentar. Os deputados também decidem
 quais trechos ficam no texto e se o projeto tramita com urgência. O Placar já mostrava os trechos;
@@ -660,10 +660,15 @@ fechado:
   não é usado, porque pode listar outro requerimento (no marco temporal, listava o REQ 1530/2023,
   pedido de retirada de assinatura do REQ 1526/2023 votado);
 - o projeto-alvo: único projeto em `proposicoesAfetadas`, igual ao da votação principal ligada e
-  citado no objeto do relatório;
+  citado, com a palavra urgência, no objeto do relatório (aceita "1.958/2021", "nº 177, de 2023" e
+  "2342/22", e as duas numerações de um mesmo ID, como nos trechos de projetos apensados). A ementa do
+  REQ não é conferida: às vezes só descreve o assunto do projeto;
 - a descrição da API como requerimento de urgência do art. 155 e o resultado (`aprovacao`);
 - a votação principal ligada como a primeira deliberação do texto principal do projeto depois do
-  pedido, sem outra no meio no inventário (inclusive candidatos fora do catálogo). Sem essa regra, a
+  pedido, sem outra no meio no inventário (inclusive candidatos fora do catálogo). A ordem vem do
+  número sequencial dos relatórios nominais (`ideVotacao` da urgência menor que o da votação ligada);
+  o horário de registro da API, que pode atrasar, só decide com a folga de cinco minutos, e outra
+  deliberação dentro da folga ou sem horário deixa a ligação ambígua (pendente). Sem essa regra, a
   urgência do PL 5.230/2023 (dez/2023) ficaria ligada à votação do texto do Senado (jul/2024);
 - quórum: urgência aprovada precisa de pelo menos 257 votos Sim (maioria absoluta da composição).
   Por isso há urgências rejeitadas com mais Sim que Não (244 × 115 no PL 3.802/2024);
@@ -684,11 +689,22 @@ texto principal; a lista mostra "+ N pedidos de urgência votados antes"; a fich
 sob o voto no texto, o voto no pedido com data e resultado. Os pedidos ficam fora de `publishedCount`,
 da concordância (`pairAgreement`), da unidade e das comparações de partidos.
 
-Piloto de 12/10/2026: 10 pedidos revisados, todos publicados, ligados a 9 votações principais
-(o PL 3.802/2024 tem dois pedidos: rejeitado em 17/12/2024 e aprovado no dia seguinte). Inclui um
-pedido aprovado com exatamente 257 Sim (PLP 233/2023), casos do mesmo dia e um de quase três meses
-(PL 2.162/2023). Fora do piloto, para decidir depois: autoria dos requerimentos (as fichas listam de
-2 a 261 signatários) e a estatística de projetos aprovados em urgência, que depende do regime na data.
+Resultado de 12/10/2026: das 56 votações ligáveis, **54 publicadas** em 53 votações principais
+(53 aprovadas, 1 rejeitada) e 2 pendentes com motivo. O PL 3.802/2024 tem dois pedidos (rejeitado em
+17/12/2024 e aprovado no dia seguinte); o PLP 233/2023 teve exatamente 257 Sim. Pendentes: REQ 4124/2023
+(PL 3.954/2023), registrado na API dez minutos depois do fim da votação, acima da folga; e REQ
+4275/2023 (PL 5.230/2023), com a votação do texto da Câmara de 20/3/2024 fora do catálogo entre o pedido
+e o texto do Senado. Primeiro lote de 10 revisado com mais cuidado editorial (piloto); os outros 44
+seguem o mesmo modelo, com rótulos a partir dos títulos já revisados das votações principais. As 138
+votações de urgência restantes têm projeto sem votação nominal do texto principal no catálogo e ficam
+para uma segunda fase, que precisa decidir como mostrá-las sem uma votação principal ligada. Fora daqui,
+para decidir depois: autoria dos requerimentos (as fichas listam de 2 a 261 signatários) e a estatística
+de projetos aprovados em urgência, que depende do regime na data.
+
+**Localizar o relatório.** `python3 -m ingest.chamber_vote_report_locator <id> ... [--collect]` procura,
+entre os números `ideVotacao` delimitados pelos relatórios já guardados no cache, o único relatório da
+mesma data com o mesmo placar Sim e Não e encerrado antes do registro da API. Sem candidato ou com mais
+de um, informa o motivo; não grava revisões.
 
 ## Fila editorial
 
