@@ -49,7 +49,7 @@ function comparison(a, b) {
     : `<button type="button" class="${className}" data-vote="${vote.id}">${content}</button>`;
   context.profileData = value => ({ id: value.id, person: value, contact: null, projects: null, compensation: null, mandate: null });
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../frontend/scripts/dates.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '../frontend/scripts/extras-view.js'), 'utf8') +
-    '\nthis.__api = { extrasState, comparisonTable, comparisonShareCard, searchComparisonPeople, comparisonPickerList, comparisonView, taxCard, voteRowsForItem, votesForPerson, attendanceForPerson, attendanceRows, attendanceBar, attendanceView, profileExtras };', context);
+    '\nthis.__api = { extrasState, comparisonTable, comparisonShareCard, searchComparisonPeople, comparisonPickerList, comparisonView, taxCard, voteRowsForItem, votesForPerson, attendanceForPerson, attendanceRows, attendanceBar, attendanceView, comparisonPersonCard, profileExtras };', context);
   return { html: context.__api.comparisonTable([a, b]), api: context.__api, context, senate };
 }
 const profile = (id, total) => ({ pessoa: { id, name: id, role: 'senador' }, total, mediaMensal: total, media: 100,
@@ -98,6 +98,16 @@ test('attendance page keeps the three absence categories, the reported reason an
   assert.match(html, /Falta justificada<\/span><span><i class="absent"><\/i>Falta/);
   assert.match(html, /entre os\(as\) 2 deputados\(as\) com dados de presença disponíveis/);
   assert.match(html, /Fonte: página de presença em Plenário/);
+});
+
+test('compare person card links to the profile and swaps the person out of the comparison', () => {
+  const { api, context } = comparison(profile('camara:a', 1), profile('camara:b', 2));
+  context.citizenState.cache.set('/api/c/politico/camara%3A7', { pessoa: { id: 'camara:7', name: 'Ana Lima', role: 'deputado', party: 'AAA', uf: 'SP' } });
+  const card = api.comparisonPersonCard('camara:7');
+  assert.match(card, /data-politician="camara:7">Ana Lima<\/button>/);
+  assert.match(card, /AAA · SP/);
+  assert.match(card, /data-cmp-del="camara:7" aria-label="Trocar Ana Lima">Trocar/);
+  assert.doesNotMatch(api.comparisonPersonCard('camara:8'), /data-politician/);
 });
 
 test('voter lists contain source rows only and never infer non-voters from the current presence roster', () => {

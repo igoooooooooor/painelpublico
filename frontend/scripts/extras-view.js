@@ -310,13 +310,30 @@ function comparisonView() {
   const pickerSection = extrasState.comparisonIds.length < 2 ? `<section class="card wide"><span class="k">${extrasState.comparisonIds.length ? 'Com quem comparar?' : 'Escolha dois(duas) políticos(as)'}</span>
       <label class="search" for="comparison-q"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="comparison-q" type="search" placeholder="Nome, partido ou estado" value="${esc(extrasState.comparisonQuery)}" autocomplete="off"></label>
       <div id="comparison-res" class="citizen-list">${comparisonPickerList()}</div></section>` : '';
-  let content = '';
-  if (extrasState.comparisonIds.length === 2 && readyProfiles.length === 2) content = shareActionsHTML(comparisonShareCard(readyProfiles), 'Compartilhar') + comparisonTable(readyProfiles);
-  else if (extrasState.comparisonIds.length === 2) content = extrasState.comparisonError ? `<section class="card wide"><p>Não deu para abrir as fichas.</p><p class="muted">${esc(extrasState.comparisonError)}</p></section>` : skel('cmp');
-  return `<button type="button" class="back" data-back>‹ Voltar</button>
-  ${pageHead('Lado a lado', 'Comparar', 'Gastos, alertas, presença e votos de dois(duas) políticos(as) na mesma tela.')}
-  ${extrasState.comparisonIds.length ? `<div class="cmp-slots">${extrasState.comparisonIds.map(id => { const f = citizenState.cache.get('/api/c/politico/' + encodeURIComponent(id)); const p = f?.pessoa || { id, name: '…' }; return `<div class="cmp-slot">${citizenAvatar(p, 40)}<span><b>${esc(citizenName(p.name))}</b><small>${esc([p.party, p.uf].filter(Boolean).join(' · '))}</small></span><button type="button" class="cmp-x" data-cmp-del="${esc(id)}" aria-label="Tirar ${esc(citizenName(p.name))} da comparação">×</button></div>`; }).join('')}</div>` : ''}
-  ${pickerSection}${content}`;
+  let content = '', footer = '';
+  if (extrasState.comparisonIds.length === 2 && readyProfiles.length === 2) {
+    content = comparisonTable(readyProfiles);
+    footer = `<div class="compare-actions">${shareActionsHTML(comparisonShareCard(readyProfiles), 'Compartilhar imagem')}<button type="button" class="fchip" data-go="parties">Comparar partidos →</button></div>`;
+  } else if (extrasState.comparisonIds.length === 2) content = extrasState.comparisonError ? `<section class="card wide"><p>Não deu para abrir as fichas.</p><p class="muted">${esc(extrasState.comparisonError)}</p></section>` : skel('cmp');
+  return `<div class="compare-page">
+    <div class="compare-intro">
+      <button type="button" class="back" data-back>‹ Voltar</button>
+      <span class="k">Comparar</span>
+      <h1 class="h ph-t">Lado a lado</h1>
+      <p class="ph-lead">Gastos, alertas, presença e votos de dois(duas) políticos(as) na mesma tela.</p>
+    </div>
+    ${extrasState.comparisonIds.length ? `<div class="compare-people">${extrasState.comparisonIds.map(comparisonPersonCard).join('')}</div>` : ''}
+    ${pickerSection}${content}${footer}
+  </div>`;
+}
+/* Cartão de cada pessoa escolhida: "Trocar" tira da comparação e reabre a busca. */
+function comparisonPersonCard(id) {
+  const f = citizenState.cache.get('/api/c/politico/' + encodeURIComponent(id));
+  const p = f?.pessoa || { id, name: '…' }, name = esc(citizenName(p.name));
+  return `<div class="card compare-person">${citizenAvatar(p, 64)}
+    <span class="compare-person-name">${f ? `<button type="button" data-politician="${esc(id)}">${name}</button>` : `<b>${name}</b>`}<small>${ROLE_LABELS[p.role] ? `<span class="compare-person-role">${esc(ROLE_LABELS[p.role])} · </span>` : ''}${esc([p.party, p.uf].filter(Boolean).join(' · '))}</small></span>
+    <button type="button" class="compare-swap" data-cmp-del="${esc(id)}" aria-label="Trocar ${name}">Trocar</button>
+  </div>`;
 }
 /* Número de alertas só quando alguma regra pôde avaliar a pessoa; senão, "sem avaliação" (não é zero). */
 function alertCountOrNull(profile) {

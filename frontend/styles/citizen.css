@@ -191,12 +191,6 @@ b.warn { color: var(--warn); }
 .ext-vlist .citizen-row { min-height: 60px; }
 
 /* comparar */
-.cmp-slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.cmp-slot { display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 10px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); min-width: 0; }
-.cmp-slot > span:last-of-type { display: flex; flex-direction: column; min-width: 0; flex: 1; }
-.cmp-slot b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cmp-slot small { font-size: 11px; color: var(--muted); }
-.cmp-x { width: 32px; height: 32px; border-radius: 16px; border: 0; background: var(--chip); cursor: pointer; font-size: 18px; line-height: 1; flex: none; }
 .cmp { gap: 0; }
 .cmp-head, .cmp-row { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: center; }
 .cmp-head { padding-bottom: 12px; align-items: start; }
@@ -266,7 +260,6 @@ b.warn { color: var(--warn); }
   .citizen-list > .citizen-row:nth-child(2) { border-top: 0; }
   .ext-vlist { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .ext-vlist > .citizen-row:nth-child(3) { border-top: 0; }
-  .cmp-slots { grid-column: 1 / span 8; }
   .cmp-head .citizen-av, .cmp-head .citizen-avs { width: 72px !important; height: 72px !important; }
   .profile .n { font-size: 30px; }
   .faces { grid-template-columns: repeat(5, minmax(0, 1fr)); }
@@ -1141,6 +1134,56 @@ body[data-view="home"] .citizen-alert { box-shadow: var(--shadow-raised); }
 }
 @media (max-width: 640px) {
   .attendance-stat { padding: 16px 14px; }
+}
+
+/* Comparar. Computador: cartões grandes das duas pessoas e cada métrica com o rótulo em cima e os dois valores
+   lado a lado (protótipo). Celular: a estrutura da v1, mais densa: dois chips lado a lado e a tabela de três
+   colunas com as fotos no cabeçalho, com o acabamento novo (pílulas e sombra). */
+.compare-page { display: flex; flex-direction: column; gap: 20px; }
+.compare-intro { display: flex; flex-direction: column; gap: 12px; padding-top: 8px; }
+.compare-intro .ph-t { margin: 0; font-family: var(--f-display); font-weight: 600; font-size: clamp(40px, 5vw, 64px); line-height: 1; letter-spacing: -0.03em; }
+.compare-intro .ph-lead { margin: 0; max-width: 560px; color: var(--muted); }
+.compare-people { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.compare-person { flex-direction: row; align-items: center; gap: 8px; padding: 8px 8px 8px 10px; border-radius: 999px; box-shadow: var(--shadow-raised); }
+.compare-person .citizen-av, .compare-person .citizen-avs { width: 36px !important; height: 36px !important; flex: none; }
+.compare-person-name { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.compare-person-name button, .compare-person-name b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: 13px; font-weight: 600; line-height: 1.25; text-align: left; cursor: pointer; overflow: hidden; overflow-wrap: anywhere; }
+.compare-person-role { display: none; }
+.compare-person-name button:hover { text-decoration: underline; }
+.compare-person-name small { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.compare-swap { flex: none; width: 32px; height: 32px; padding: 0; border-radius: 999px; border: 0; background: var(--chip); color: var(--ink-2); font: inherit; font-size: 0; cursor: pointer; }
+.compare-swap::before { content: "×"; font-size: 18px; line-height: 1; }
+.compare-swap:hover { color: var(--ink); }
+.compare-page > .card.wide, .compare-page .cmp { box-shadow: var(--shadow-raised); }
+.compare-page .search { border-radius: 999px; }
+.compare-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+@media (min-width: 721px) {
+  .compare-people { grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 16px; }
+  .compare-person { gap: 16px; padding: 20px; border-radius: var(--radius-card); }
+  .compare-person .citizen-av, .compare-person .citizen-avs { width: 64px !important; height: 64px !important; }
+  .compare-person-name { gap: 4px; }
+  .compare-person-name button, .compare-person-name b { display: block; font-family: var(--f-display); font-size: clamp(22px, 3vw, 28px); line-height: 1.1; letter-spacing: -0.02em; white-space: normal; overflow-wrap: anywhere; }
+  .compare-person-name small { display: block; font-size: 13px; white-space: normal; }
+  .compare-person-role { display: inline; }
+  .compare-swap { width: auto; height: auto; min-height: 40px; padding: 0 16px; border: 1px solid var(--line); background: transparent; font-size: 13px; font-weight: 500; }
+  .compare-swap::before { content: none; }
+  .compare-swap:hover { background: var(--chip); }
+  .compare-page .cmp { padding: 8px 24px 16px; }
+  .compare-page .cmp-head, .compare-page .cmp-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; align-items: start; }
+  /* Os cartões das pessoas já dizem quem é cada coluna. */
+  .compare-page .cmp-head, .compare-page .cmp-l:empty { display: none; }
+  .compare-page .cmp-head + .cmp-row { border-top: 0; }
+  .compare-page .cmp-row { padding-block: 18px 6px; }
+  .compare-page .cmp-row:has(> .cmp-l:empty), .compare-page .cmp-row:not(:has(> .cmp-l)) { border-top: 0; padding-top: 0; }
+  .compare-page .cmp-l { grid-column: 1 / -1; font-size: 15px; font-weight: 600; color: var(--ink); }
+  .compare-page .cmp-l small { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; color: var(--muted); }
+  .compare-page .cmp-v { text-align: left; padding: 6px 10px; margin-inline: -10px; font-size: 14px; line-height: 1.45; }
+  .compare-page .cmp-v > b { font-family: var(--f-data); font-size: clamp(20px, 2.4vw, 28px); font-weight: 600; letter-spacing: -0.02em; }
+  .compare-page .cmp-v[style*="grid-column"] { grid-column: 1 / -1 !important; }
+  .compare-page .cmp-source { font-size: 12px; }
+  .compare-page .cmp-bars { padding-bottom: 4px; }
+  .compare-page .cmp-bars > div { height: 8px; border-radius: 999px; }
+  .compare-page .cmp-bars i { border-radius: 999px; }
 }
 
 /* Placar: decisões sobre trechos (destaques e emendas) */
