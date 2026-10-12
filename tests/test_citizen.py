@@ -1,5 +1,7 @@
 import json
+import os
 import tempfile
+import time
 import unittest
 from unittest import mock
 from contextlib import closing
@@ -67,6 +69,37 @@ class CitizenPoliticiansTests(unittest.TestCase):
         source = self.root / 'input.json'
         source.write_text(json.dumps(self.payload), encoding='utf-8')
         store.import_documents([source], self.db_path)
+
+    def age_database(self):
+        # Simula um banco gravado há tempo: arquivos recém-gravados não entram no cache das médias.
+        past = time.time() - 60
+        for path in (self.db_path, Path(f'{self.db_path}-wal')):
+            if path.exists():
+                os.utime(path, (past, past))
+
+    def test_yearly_averages_are_cached_until_the_database_changes(self):
+        citizen._averages_cache.clear()
+        with closing(store.connect(self.db_path)) as db:
+            db.execute('PRAGMA journal_mode=WAL')
+        self.age_database()
+        with mock.patch.object(citizen, '_compute_averages', wraps=citizen._compute_averages) as compute, \
+                closing(store.connect(self.db_path)) as db:
+            first = citizen._averages(db, 2026)
+            first['deputado']['media'] = -1  # quem chama não altera o que fica guardado
+            self.assertEqual(citizen._averages(db, 2026)['deputado'], {'media': 61.725, 'n': 2})
+            self.assertEqual(compute.call_count, 1)
+            # Com outra conexão aberta, o commit fica só no WAL e o arquivo principal não muda.
+            main_file = self.db_path.stat().st_mtime_ns
+            with closing(store.connect(self.db_path)) as writer, writer:
+                writer.execute("UPDATE expenses SET amountCents=amountCents+10000 WHERE id='expense:paid'")
+            self.assertEqual(self.db_path.stat().st_mtime_ns, main_file)
+            # Recém-gravado: recalcula sem guardar; depois de assentado, guarda a nova versão.
+            self.assertEqual(citizen._averages(db, 2026)['deputado'], {'media': 111.725, 'n': 2})
+            self.age_database()
+            self.assertEqual(citizen._averages(db, 2026)['deputado'], {'media': 111.725, 'n': 2})
+            self.assertEqual(citizen._averages(db, 2026)['deputado'], {'media': 111.725, 'n': 2})
+            self.assertEqual(compute.call_count, 3)
+        citizen._averages_cache.clear()
 
     def test_member_who_leaves_the_list_keeps_history_and_is_marked_outside(self):
         with closing(store.connect(self.db_path)) as db, db:

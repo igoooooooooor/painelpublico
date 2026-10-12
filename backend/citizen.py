@@ -8,7 +8,10 @@ e /api/c/gastos.csv?id=<id>.
 import csv
 import io
 import json
+import os
 import re
+import threading
+import time
 from statistics import median
 
 from . import public_store as store
@@ -366,7 +369,57 @@ def _snapshot(db):
     return r[0] if r else None
 
 
+# Médias anuais do cargo: iguais para todas as fichas, guardadas enquanto o banco não muda.
+_averages_lock = threading.Lock()
+_averages_cache = {}
+
+
+def _database_version(db):
+    """Assinatura do arquivo do banco e do seu WAL, ou None (banco em memória ou gravado há menos de 2 s).
+
+    Em modo WAL os commits vão primeiro para o arquivo -wal; o principal só muda no checkpoint. Um -wal vazio
+    não tem commits pendentes e é recriado por qualquer leitura, então fica de fora. Relógios de arquivo podem
+    ter resolução grossa: um banco gravado há pouco não entra no cache.
+    """
+    path = next((row[2] for row in db.execute('PRAGMA database_list') if row[1] == 'main'), '')
+    if not path:
+        return None
+    version = []
+    for name in (path, path + '-wal'):
+        try:
+            stat = os.stat(name)
+        except FileNotFoundError:
+            stat = None
+        except OSError:
+            return None
+        if stat is None or (name != path and stat.st_size == 0):
+            version.append(None)
+            continue
+        if time.time_ns() - stat.st_mtime_ns <= 2_000_000_000:
+            return None
+        version.append((stat.st_ino, stat.st_mtime_ns, stat.st_size))
+    return (path, *version)
+
+
 def _averages(db, year=None):
+    if year is not None:
+        version = _database_version(db)
+        key = (version, int(year))
+        with _averages_lock:
+            cached = _averages_cache.get(key) if version else None
+        if cached is None:
+            cached = _compute_averages(db, year)
+            if version:
+                with _averages_lock:
+                    # Só a versão atual do banco fica guardada; uma importação descarta as médias antigas.
+                    if any(stored[0] != version for stored in _averages_cache):
+                        _averages_cache.clear()
+                    _averages_cache[key] = cached
+        return {role: dict(average) for role, average in cached.items()}
+    return _compute_averages(db, year)
+
+
+def _compute_averages(db, year=None):
     out = {}
     for role in ROLES:
         if year is None:
