@@ -75,36 +75,62 @@ function attendanceBar(p) {
   if (!p || !Number.isFinite(p.dias) || p.dias <= 0) return '';
   return `<span class="pbar" role="img" aria-label="${p.presente} presenças, ${p.justificadas} faltas justificadas, ${p.falta} faltas em ${p.dias} dias"><i style="width:${p.presente / p.dias * 100}%"></i><i class="j" style="width:${p.justificadas / p.dias * 100}%"></i><i class="f" style="width:${p.falta / p.dias * 100}%"></i></span>`;
 }
-function attendanceView() {
-  const all = attendanceRows();
+function attendanceSorted(all = attendanceRows()) {
   const q = foldText(extrasState.attendanceQuery);
-  const people = all.filter(person => !q || foldText(`${person.nome} ${person.partido} ${person.uf}`).includes(q))
-    .sort((first, second) => extrasState.attendanceOrder === 'less' ? first.presente / first.dias - second.presente / second.dias || first.nome.localeCompare(second.nome) : second.presente / second.dias - first.presente / first.dias || first.nome.localeCompare(second.nome));
+  const rate = person => person.presente / person.dias;
+  return all.filter(person => !q || foldText(`${person.nome} ${person.partido} ${person.uf}`).includes(q))
+    .sort((first, second) => (extrasState.attendanceOrder === 'less' ? rate(first) - rate(second) : rate(second) - rate(first)) || first.nome.localeCompare(second.nome));
+}
+function attendanceView() {
+  const all = attendanceRows(), people = attendanceSorted(all);
   const average = all.reduce((sum, person) => sum + person.presente / person.dias, 0) / (all.length || 1);
   const fullAttendanceCount = all.filter(person => person.presente === person.dias).length;
   const belowHalfCount = all.filter(person => person.presente / person.dias < 0.5).length;
   const sessionCount = all.length ? Math.max(...all.map(person => person.dias)) : 0;
   const starts = all.map(person => person.inicio).filter(Boolean).sort(), ends = all.map(person => person.fim).filter(Boolean).sort();
   const period = typeof citizenQuotaPeriod === 'function' && starts.length ? citizenQuotaPeriod(starts[0], ends.at(-1)) : '';
-  return `<button type="button" class="back" data-back>‹ Voltar</button>
-  ${pageHead(`Câmara · ${period || 'mandato'}`, 'Presença', `Quantos dias cada deputado(a) foi às ${sessionCount} sessões de votação do Plenário no mandato atual${period ? ` (${period})` : ''}.`)}
-  <section class="card hero">
-    <span class="k">Média dos dados disponíveis</span>
-    <div class="huge">${Math.round(average * 100)}<small style="margin-left:4px">%</small></div>
-    <span class="muted">dos dias com sessão, em média, entre os(as) ${all.length} deputados(as) com dados de presença disponíveis.</span>
-    <div class="hero-split"><div><b class="mono">${fullAttendanceCount}</b><span>não faltaram nenhum dia</span></div><div><b class="mono">${belowHalfCount}</b><span>foram a menos da metade</span></div></div>
-    <div class="legend" style="color:var(--hero-muted)"><span><i style="background:var(--accent-2)"></i>Presente</span><span><i style="background:var(--hero-muted)"></i>Falta justificada</span><span><i style="background:var(--warn)"></i>Falta</span></div>
-  </section>
-  <label class="search" for="attendance-q"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="attendance-q" type="search" placeholder="Nome, partido ou estado" value="${esc(extrasState.attendanceQuery)}" autocomplete="off"></label>
-  <div class="chips" role="group" aria-label="Ordenar">${[['less', 'Menos presentes'], ['more', 'Mais presentes']].map(([key, label]) => `<button type="button" class="fchip" data-attendance-order="${key}" aria-pressed="${extrasState.attendanceOrder === key}">${label}</button>`).join('')}</div>
-  <div id="attendance-list" class="citizen-stack">${attendanceList(people)}</div>
-  <span class="src">Fonte: página de presença em Plenário de cada deputado(a) na Câmara, ${sessionCount} dias com sessão deliberativa no mandato atual${period ? ` (${period})` : ''}. Falta justificada inclui missão autorizada, licença e atestado. Quem assumiu no meio do mandato tem menos dias na conta.</span>`;
+  const stat = (value, label) => `<div class="card attendance-stat"><b class="mono">${value}</b><span>${label}</span></div>`;
+  return `<div class="attendance-page">
+    <section class="attendance-hero">
+      <div class="attendance-intro">
+        <button type="button" class="back" data-back>‹ Voltar</button>
+        <span class="k">Câmara · ${period || 'mandato'}</span>
+        <h1 class="h ph-t">Presença no Plenário</h1>
+        <p class="ph-lead">Quantos dias cada deputado(a) foi às ${sessionCount} sessões de votação do Plenário no mandato atual${period ? ` (${period})` : ''}.</p>
+      </div>
+      <div class="attendance-summary">
+        <div class="attendance-stats">
+          ${stat(`${Math.round(average * 100)}%`, 'presença média')}
+          ${stat(fullAttendanceCount, 'não faltaram nenhum dia')}
+          ${stat(belowHalfCount, 'foram a menos da metade')}
+        </div>
+        <p class="muted">Média dos dados disponíveis: dos dias com sessão, em média, entre os(as) ${all.length} deputados(as) com dados de presença disponíveis.</p>
+      </div>
+    </section>
+    <section class="attendance-filters" aria-label="Filtros">
+      <div class="alerts-seg" role="group" aria-label="Ordenar">${[['less', 'Menos presentes'], ['more', 'Mais presentes']].map(([key, label]) => `<button type="button" data-attendance-order="${key}" aria-pressed="${extrasState.attendanceOrder === key}">${label}</button>`).join('')}</div>
+      <label class="search attendance-search" for="attendance-q"><span class="sr-only">Buscar deputado(a)</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="attendance-q" type="search" placeholder="Nome, partido ou estado" value="${esc(extrasState.attendanceQuery)}" autocomplete="off"></label>
+      <div class="legend attendance-legend"><span><i></i>Presente</span><span><i class="justified"></i>Falta justificada</span><span><i class="absent"></i>Falta</span></div>
+    </section>
+    <div id="attendance-list" class="attendance-results">${attendanceList(people)}</div>
+    <p class="src attendance-source">Fonte: página de presença em Plenário de cada deputado(a) na Câmara, ${sessionCount} dias com sessão deliberativa no mandato atual${period ? ` (${period})` : ''}. Falta justificada inclui missão autorizada, licença e atestado. Quem assumiu no meio do mandato tem menos dias na conta.</p>
+  </div>`;
+}
+/* Linha de apoio: ausências justificadas (com o motivo mais comum informado pela Câmara) e faltas. */
+function attendanceAbsences(person) {
+  const top = (person.motivos || []).filter(([reason, count]) => reason && count > 0).sort((a, b) => b[1] - a[1])[0];
+  const parts = [];
+  if (person.justificadas) parts.push(`${person.justificadas} ${person.justificadas === 1 ? 'falta justificada' : 'faltas justificadas'}${top ? ` (mais comum: ${esc(top[0].toLowerCase())}, ${top[1]})` : ''}`);
+  if (person.falta) parts.push(`${person.falta} ${person.falta === 1 ? 'falta' : 'faltas'}`);
+  return parts.join(' · ') || 'Nenhuma ausência';
 }
 function attendanceList(people) {
   if (!people.length) return '<section class="card"><p>Ninguém encontrado.</p></section>';
-  return `<span class="muted" role="status">${people.length} deputados(as)</span><section class="card citizen-list">${people.slice(0, extrasState.attendanceLimit).map((person, index) => `<button type="button" class="citizen-row" data-politician="${chamberPersonId(person.id)}">${citizenAvatar({ id: chamberPersonId(person.id), name: person.nome }, 48)}<span class="citizen-rowtxt"><b>${esc(person.nome)}</b><small>${esc(person.partido)} · ${esc(person.uf)}${person.motivos?.length && person.justificadas ? ` · ${esc(person.motivos[0][0].toLowerCase())} (${person.motivos[0][1]})` : ''}</small>${attendanceBar(person)}</span>
-    <span class="citizen-rowval"><b class="mono ${person.presente / person.dias < 0.5 ? 'warn' : ''}">${person.presente}/${person.dias}</b><small>${percent(person.presente, person.dias)}% presente</small></span></button>`).join('')}</section>
-  ${people.length > extrasState.attendanceLimit ? `<button type="button" class="opt citizen-more" data-attendance-more>Mostrar mais (${people.length - extrasState.attendanceLimit})</button>` : ''}`;
+  return `<span class="muted" role="status">${people.length} deputados(as)</span><ol class="attendance-list">${people.slice(0, extrasState.attendanceLimit).map(person => `<li><button type="button" class="attendance-row" data-politician="${chamberPersonId(person.id)}">${citizenAvatar({ id: chamberPersonId(person.id), name: person.nome }, 44)}
+    <span class="attendance-who"><b>${esc(person.nome)}</b><small>${esc(person.partido)} · ${esc(person.uf)}</small></span>
+    <span class="attendance-bar">${attendanceBar(person)}<small>${attendanceAbsences(person)}</small></span>
+    <span class="attendance-value"><b class="mono ${person.presente / person.dias < 0.5 ? 'warn' : ''}">${percent(person.presente, person.dias)}%</b><small class="mono">${person.presente} de ${person.dias}</small></span></button></li>`).join('')}</ol>
+  ${people.length > extrasState.attendanceLimit ? `<button type="button" class="opt alerts-more" data-attendance-more>Mostrar mais (${people.length - extrasState.attendanceLimit})</button>` : ''}`;
 }
 const foldText = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -577,7 +603,7 @@ document.addEventListener('click', e => {
 let extrasTimer = null;
 document.addEventListener('input', e => {
   const id = e.target.id;
-  if (id === 'attendance-q') { extrasState.attendanceQuery = e.target.value; extrasState.attendanceLimit = 40; const query = foldText(extrasState.attendanceQuery); const listElement = document.getElementById('attendance-list'); if (listElement) { const all = attendanceRows(); listElement.innerHTML = attendanceList(all.filter(person => !query || foldText(`${person.nome} ${person.partido} ${person.uf}`).includes(query)).sort((first, second) => extrasState.attendanceOrder === 'less' ? first.presente / first.dias - second.presente / second.dias : second.presente / second.dias - first.presente / first.dias)); } }
+  if (id === 'attendance-q') { extrasState.attendanceQuery = e.target.value; extrasState.attendanceLimit = 40; const listElement = document.getElementById('attendance-list'); if (listElement) listElement.innerHTML = attendanceList(attendanceSorted()); }
   if (id === 'vote-search-q') { extrasState.voteQuery = e.target.value; const pos = e.target.selectionStart; rerender(); const i = document.getElementById('vote-search-q'); if (i) { i.focus(); i.setSelectionRange(pos, pos); } }
   if (id === 'comparison-q') { clearTimeout(extrasTimer); const v = e.target.value; extrasState.comparisonQuery = v; extrasState.comparisonKey = null; extrasState.comparisonResults = null; extrasState.comparisonError = null; extrasState.comparisonLoading = false; extrasTimer = setTimeout(() => searchComparisonPeople(v), 250); }
 });

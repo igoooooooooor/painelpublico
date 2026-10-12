@@ -49,7 +49,7 @@ function comparison(a, b) {
     : `<button type="button" class="${className}" data-vote="${vote.id}">${content}</button>`;
   context.profileData = value => ({ id: value.id, person: value, contact: null, projects: null, compensation: null, mandate: null });
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../frontend/scripts/dates.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '../frontend/scripts/extras-view.js'), 'utf8') +
-    '\nthis.__api = { extrasState, comparisonTable, comparisonShareCard, searchComparisonPeople, comparisonPickerList, comparisonView, taxCard, voteRowsForItem, votesForPerson, attendanceForPerson, attendanceRows, attendanceBar, profileExtras };', context);
+    '\nthis.__api = { extrasState, comparisonTable, comparisonShareCard, searchComparisonPeople, comparisonPickerList, comparisonView, taxCard, voteRowsForItem, votesForPerson, attendanceForPerson, attendanceRows, attendanceBar, attendanceView, profileExtras };', context);
   return { html: context.__api.comparisonTable([a, b]), api: context.__api, context, senate };
 }
 const profile = (id, total) => ({ pessoa: { id, name: id, role: 'senador' }, total, mediaMensal: total, media: 100,
@@ -81,6 +81,23 @@ test('presence helpers omit invalid and zero-day rows, and missing presence stay
   assert.equal(api.attendanceForPerson(1).presente, 1);
   assert.equal(api.attendanceForPerson(2), null);
   assert.equal(api.attendanceBar({ presente: 0, falta: 0, justificadas: 0, dias: 0 }), '');
+});
+
+test('attendance page keeps the three absence categories, the reported reason and the source note', () => {
+  const { api, context } = comparison(profile('camara:a', 1), profile('camara:b', 2));
+  context.chamberPersonId = id => `camara:${id}`;
+  context.DATA.presencaTodos = [
+    { id: 1, nome: 'Bia', partido: 'AAA', uf: 'SP', dias: 10, presente: 4, falta: 1, justificadas: 5, motivos: [['Licença', 2], ['Missão Autorizada', 3]], inicio: '2023-02', fim: '2026-09' },
+    { id: 2, nome: 'Ana', partido: 'BBB', uf: 'RJ', dias: 10, presente: 10, falta: 0, justificadas: 0, inicio: '2023-02', fim: '2026-09' },
+  ];
+  api.extrasState.attendanceOrder = 'less';
+  const html = api.attendanceView();
+  assert.ok(html.indexOf('Bia') < html.indexOf('Ana'));
+  assert.match(html, /5 faltas justificadas \(mais comum: missão autorizada, 3\) · 1 falta/);
+  assert.match(html, /Nenhuma ausência/);
+  assert.match(html, /Falta justificada<\/span><span><i class="absent"><\/i>Falta/);
+  assert.match(html, /entre os\(as\) 2 deputados\(as\) com dados de presença disponíveis/);
+  assert.match(html, /Fonte: página de presença em Plenário/);
 });
 
 test('voter lists contain source rows only and never infer non-voters from the current presence roster', () => {
