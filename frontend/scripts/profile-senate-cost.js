@@ -187,5 +187,7 @@ function senateCostFigures(cost, profileRecord) {
     ? { cents: SENATE_COST_PARTS.reduce((sum, [key]) => sum + senateCostAverage(complete.map(month => month.parts[key])), 0), months: complete.length }
     : null;
   const latestOffice = [...months].reverse().find(month => month.parts.office !== null);
-  return { total, remuneration: partAverage('remuneration'), office: partAverage('office'), officePeople: latestOffice?.officePeople || null };
+  // Partes do total sobre os mesmos meses completos (a imagem de compartilhar mostra a composição).
+  const parts = complete.length ? SENATE_COST_PARTS.map(([key]) => ({ key, cents: senateCostAverage(complete.map(month => month.parts[key])) })) : [];
+  return { total, parts, remuneration: partAverage('remuneration'), office: partAverage('office'), officePeople: latestOffice?.officePeople || null };
 }

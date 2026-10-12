@@ -366,7 +366,7 @@ test('profile without alerts explains which rules were checked and keeps neutral
   assert.match(html, /Fale com ele\(a\)/);
 });
 
-test('profile offers sharing with the same three answers on the card', () => {
+test('profile offers sharing with cost, presence and the largest note, without alert counts', () => {
   const { api, state, context } = makeView();
   setProfileFixture(api, state, 'camara:57', {
     total: 80000, mediaMensal: 80000, periodo: { inicio: '2026-01', fim: '2026-01', meses: 1 }, hasExpenseData: true, meses: [], categorias: [], fornecedores: [], maiores: [],
@@ -375,8 +375,13 @@ test('profile offers sharing with the same three answers on the card', () => {
   const html = api.profileView();
   assert.match(html, /data-share="image"/);
   const card = vm.runInContext('SHARE_STATE.card', context);
-  assert.deepEqual(Array.from(card.rows, row => row.label), ['Cota parlamentar por mês', 'Presença no Plenário · mandato', 'Gastos incomuns na cota']);
-  assert.equal(card.rows[2].values[0], '1 alerta');
+  assert.equal(card.layout, 'profile');
+  // Sem o custo do mandato, o card mostra a cota; sem presença, diz que falta o dado.
+  assert.equal(card.cost.label, 'Cota parlamentar por mês');
+  assert.equal(card.presence.value, 'Sem registro');
+  assert.equal(card.top, null);
+  // Fora da ficha, o número de alertas não se explica: não vai para a imagem.
+  assert.doesNotMatch(JSON.stringify(card), /alerta/i);
   assert.match(card.footnote, /Retrato de 07\/10\/2026/);
 });
 

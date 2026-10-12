@@ -12,7 +12,8 @@ const SHARE_DARK = { bg: '#0E0F13', surface: '#17191F', ink: '#ECEDF1', ink2: '#
 const SHARE_SITE = 'painelpublico.com';
 
 /* card: { kicker, title, subtitle?, columns?: [nome, nome], rows: [{ label, values: [..], notes?: [..] }], footnote, fileName }
-   ou, na comparação de políticos, { layout: 'faceoff', title, people: [{ name, meta, stats, categories, top }] x2, agreement, alerts, footnote, fileName }. */
+   ou, na comparação de políticos, { layout: 'faceoff', title, people: [{ name, meta, stats, categories, top }] x2, agreement, alerts, footnote, fileName }
+   ou, na ficha, { layout: 'profile', title, initials, kicker, subtitle, cost, presence, categories, top, footnote, disclaimer, fileName }. */
 function shareActionsHTML(card, label = 'Compartilhar imagem') {
   if (SHARE_STATE.card?.fileName !== card?.fileName) SHARE_STATE.message = '';
   SHARE_STATE.card = card;
@@ -77,6 +78,16 @@ async function shareFontsReady() {
   } catch (error) { /* Sem as fontes do site, o canvas usa as de reserva. */ }
 }
 
+/* "Para onde vai a cota": as 3 maiores categorias e "Outras" com o resto, em porcentagens inteiras que somam 100. */
+function shareQuotaLegend(categories) {
+  const top = (categories || []).filter(category => Number.isFinite(category?.share) && category.share > 0).slice(0, 3);
+  const rounded = top.map(category => Math.round(category.share * 100));
+  const legend = top.map((category, index) => ({ name: category.name, share: category.share, pct: rounded[index] }));
+  const rest = 1 - top.reduce((sum, category) => sum + category.share, 0);
+  if (top.length && rest > 0.004) legend.push({ name: 'Outras', share: rest, pct: Math.max(0, 100 - rounded.reduce((sum, value) => sum + value, 0)), rest: true });
+  return legend;
+}
+
 function sharePill(context, text, x, y, color) {
   context.font = shareFont(700, 18);
   const width = context.measureText(text).width + 28;
@@ -129,21 +140,21 @@ function shareDrawFaceoff(card, context) {
     context.font = shareFont(400, 18);
     context.fillText('Onde vai a cota', x, y);
     y += 14;
-    const categories = person.categories || [];
+    const categories = shareQuotaLegend(person.categories);
     if (categories.length) {
       const colors = [color, ...SHARE_DARK.others];
+      const colorOf = (category, position) => category.rest ? SHARE_DARK.track : colors[position];
       let barX = x;
       categories.forEach((category, position) => {
-        const segment = Math.max(4, inner * category.share - 3);
-        shareRoundRect(context, barX, y, segment, 18, 4, colors[position]);
+        const segment = position === categories.length - 1 ? x + inner - barX : Math.max(4, inner * category.share - 3);
+        if (segment > 0) shareRoundRect(context, barX, y, segment, 18, 4, colorOf(category, position));
         barX += segment + 3;
       });
-      if (barX < x + inner - 4) shareRoundRect(context, barX, y, x + inner - barX, 18, 4, SHARE_DARK.rest);
       y += 18;
       categories.forEach((category, position) => {
-        y += 36;
-        shareRoundRect(context, x, y - 13, 12, 12, 3, colors[position]);
-        const share = `${Math.round(category.share * 100)}%`;
+        y += 34;
+        shareRoundRect(context, x, y - 13, 12, 12, 3, colorOf(category, position));
+        const share = `${category.pct}%`;
         context.font = shareFont(600, 19, SHARE_FONTS.data);
         const shareWidth = context.measureText(share).width;
         context.fillStyle = SHARE_DARK.ink;
@@ -257,6 +268,180 @@ function shareDrawFaceoff(card, context) {
   return context.canvas;
 }
 
+/* Ficha: nome grande, custo médio com as partes, presença com a média da Casa, maior nota e para onde vai a cota.
+   Mesmo tema escuro das comparações; o violeta é o único destaque. Sem marca no topo: o endereço fica no rodapé. */
+function shareDrawProfile(card, context) {
+  const { width, height } = SHARE_SIZE, padding = 56, inner = width - padding * 2, accent = SHARE_DARK.people[0];
+  const box = (x, y, w, h, radius = 28) => {
+    shareRoundRect(context, x, y, w, h, radius, SHARE_DARK.line);
+    shareRoundRect(context, x + 1, y + 1, w - 2, h - 2, radius - 1, SHARE_DARK.surface);
+  };
+  const label = (text, x, y, maxWidth, size = 20) => {
+    context.fillStyle = SHARE_DARK.muted; context.font = shareFont(400, size);
+    context.fillText(shareWrap(context, text, maxWidth, 1)[0] || '', x, y);
+  };
+  context.fillStyle = SHARE_DARK.bg;
+  context.fillRect(0, 0, width, height);
+
+  // Quem é: iniciais, tipo de ficha, nome e cargo.
+  let y = 56;
+  const avatar = 124, cx = padding + avatar / 2, cy = y + avatar / 2;
+  context.fillStyle = SHARE_DARK.line; context.beginPath(); context.arc(cx, cy, avatar / 2 + 8, 0, Math.PI * 2); context.fill();
+  context.fillStyle = SHARE_DARK.bg; context.beginPath(); context.arc(cx, cy, avatar / 2 + 6, 0, Math.PI * 2); context.fill();
+  context.fillStyle = '#262046'; context.beginPath(); context.arc(cx, cy, avatar / 2, 0, Math.PI * 2); context.fill();
+  context.fillStyle = '#C9BFFF'; context.font = shareFont(600, 46, SHARE_FONTS.display);
+  context.textAlign = 'center'; context.fillText(card.initials || '', cx, cy + 16); context.textAlign = 'left';
+  const textX = padding + avatar + 32, textWidth = width - padding - textX;
+  context.fillStyle = SHARE_DARK.muted; context.font = shareFont(600, 17, SHARE_FONTS.data);
+  context.fillText(String(card.kicker || '').toUpperCase(), textX, y + 18);
+  context.fillStyle = SHARE_DARK.ink;
+  const nameSize = shareFit(context, card.title, textWidth, 80, 600, SHARE_FONTS.display, 56);
+  const nameLines = context.measureText(card.title).width <= textWidth ? [card.title]
+    : (context.font = shareFont(600, 52, SHARE_FONTS.display), shareWrap(context, card.title, textWidth, 2));
+  let nameY = y + 18 + (nameLines.length > 1 ? 52 : nameSize) + 8;
+  for (const line of nameLines) { context.fillText(line, textX, nameY); nameY += 54; }
+  context.fillStyle = SHARE_DARK.ink2; context.font = shareFont(400, 23);
+  context.fillText(shareWrap(context, card.subtitle || '', textWidth, 1)[0] || '', textX, nameY + (nameLines.length > 1 ? -10 : 0) + 4);
+
+  // Custo: número grande no violeta, valor exato ao lado, barra com as partes e o período.
+  y = 244;
+  const cost = card.cost || {}, parts = (cost.parts || []).filter(part => part && part.name);
+  const costHeight = parts.length ? 396 : 252;
+  box(padding, y, inner, costHeight, 32);
+  const cx0 = padding + 36, cw = inner - 72;
+  label(cost.label || 'Custa em média por mês', cx0, y + 54, cw, 22);
+  const hasValue = cost.value && cost.value !== 'Sem dados';
+  context.fillStyle = hasValue ? accent : SHARE_DARK.muted;
+  const exactWidth = cost.exact ? 230 : 0;
+  const valueSize = shareFit(context, cost.value || 'Sem dados', cw - exactWidth, hasValue ? 132 : 64, 700, SHARE_FONTS.data, 48);
+  const valueY = y + 74 + valueSize * 0.86;
+  context.fillText(cost.value || 'Sem dados', cx0, valueY);
+  if (cost.exact) {
+    const ex = cx0 + context.measureText(cost.value).width + 26;
+    label('valor exato', ex, valueY - 34, 220, 19);
+    context.fillStyle = SHARE_DARK.ink; context.font = shareFont(600, 24, SHARE_FONTS.data);
+    context.fillText(cost.exact, ex, valueY);
+  }
+  let py = valueY + 40;
+  if (parts.length && Number.isFinite(cost.totalCents) && cost.totalCents > 0) {
+    const colors = [accent, SHARE_DARK.faint, SHARE_DARK.others[1], SHARE_DARK.track];
+    let bx = cx0;
+    parts.forEach((part, index) => {
+      if (!Number.isFinite(part.cents) || part.cents <= 0) return;
+      const w = Math.max(4, cw * Math.min(1, part.cents / cost.totalCents) - 3);
+      shareRoundRect(context, bx, py, Math.min(w, cx0 + cw - bx), 22, 6, colors[index]);
+      bx += w + 3;
+    });
+    py += 22 + 46;
+    const colWidth = cw / parts.length;
+    parts.forEach((part, index) => {
+      const x = cx0 + index * colWidth;
+      shareRoundRect(context, x, py - 14, 12, 12, 3, colors[index]);
+      label(part.name, x + 20, py - 2, colWidth - 28, 18);
+      context.fillStyle = SHARE_DARK.ink; context.font = shareFont(600, 26, SHARE_FONTS.data);
+      const value = Number.isFinite(part.cents) ? (part.cents >= 100000 ? `R$ ${Math.round(part.cents / 100000).toLocaleString('pt-BR')} mil` : `R$ ${Math.round(part.cents / 100).toLocaleString('pt-BR')}`) : 'Sem dado';
+      context.fillText(value, x, py + 34);
+    });
+    py += 88;
+  }
+  context.fillStyle = SHARE_DARK.behind; context.font = shareFont(400, 17);
+  for (const line of shareWrap(context, cost.note || '', cw, 2)) { context.fillText(line, cx0, py); py += 24; }
+
+  // Presença e maior nota, lado a lado.
+  y += costHeight + 22;
+  const tileGap = 18, tileWidth = (inner - tileGap) / 2, tileHeight = 276, tw = tileWidth - 60;
+  const presence = card.presence || {};
+  box(padding, y, tileWidth, tileHeight);
+  let tx = padding + 30, ty = y + 56;
+  label(presence.label || 'Presença no Plenário', tx, ty, tw);
+  const presenceKnown = presence.value && presence.value !== 'Sem registro';
+  context.fillStyle = presenceKnown ? SHARE_DARK.ink : SHARE_DARK.muted;
+  const pSize = shareFit(context, presence.value || 'Sem registro', tw * 0.55, presenceKnown ? 72 : 40, 700, SHARE_FONTS.data, 32);
+  ty += 22 + pSize * 0.86;
+  context.fillText(presence.value || 'Sem registro', tx, ty);
+  if (presence.detail) {
+    const dx = tx + context.measureText(presence.value).width + 14;
+    context.fillStyle = SHARE_DARK.ink2; context.font = shareFont(400, 19);
+    context.fillText(shareWrap(context, presence.detail, tx + tw - dx, 1)[0] || '', dx, ty);
+  }
+  ty += 30;
+  if (Number.isFinite(presence.share)) {
+    shareRoundRect(context, tx, ty, tw, 12, 6, SHARE_DARK.line);
+    shareRoundRect(context, tx, ty, Math.max(12, tw * presence.share), 12, 6, SHARE_DARK.ink);
+    if (Number.isFinite(presence.average)) shareRoundRect(context, tx + tw * presence.average - 1.5, ty - 6, 3, 24, 1.5, accent);
+    ty += 50;
+    if (presence.averageLabel) {
+      shareRoundRect(context, tx, ty - 15, 3, 18, 1.5, accent);
+      label(presence.averageLabel, tx + 12, ty, tw - 12, 17);
+    }
+  } else if (presence.note) {
+    context.fillStyle = SHARE_DARK.muted; context.font = shareFont(400, 17);
+    for (const line of shareWrap(context, presence.note, tw, 3)) { context.fillText(line, tx, ty + 6); ty += 24; }
+  }
+  const topX = padding + tileWidth + tileGap;
+  box(topX, y, tileWidth, tileHeight);
+  tx = topX + 30; ty = y + 56;
+  label('Maior nota única', tx, ty, tw);
+  const top = card.top;
+  context.fillStyle = top ? SHARE_DARK.ink : SHARE_DARK.muted;
+  const tSize = shareFit(context, top?.value || 'Sem dados', tw, top ? 60 : 40, 700, SHARE_FONTS.data, 30);
+  ty += 22 + tSize * 0.86;
+  context.fillText(top?.value || 'Sem dados', tx, ty);
+  ty += 14;
+  if (top) {
+    context.fillStyle = SHARE_DARK.ink2; context.font = shareFont(400, 19);
+    for (const line of shareWrap(context, top.who, tw, 2)) { ty += 28; context.fillText(line, tx, ty); }
+    context.fillStyle = SHARE_DARK.behind; context.font = shareFont(400, 17);
+    if (top.what) { ty += 28; context.fillText(shareWrap(context, top.what, tw, 1)[0] || '', tx, ty); }
+  }
+
+  // Para onde vai a cota: as 3 maiores categorias e "Outras", que fecham 100% (o resto da barra também tem nome).
+  y += tileHeight + 22;
+  const legend = shareQuotaLegend(card.categories);
+  const catHeight = 224;
+  box(padding, y, inner, catHeight);
+  const kx = padding + 30, kw = inner - 60;
+  let ky = y + 56;
+  label('Para onde vai a cota', kx, ky, kw);
+  ky += 22;
+  if (legend.length) {
+    const colors = [accent, SHARE_DARK.faint, SHARE_DARK.others[1]];
+    const colorOf = (item, index) => item.rest ? SHARE_DARK.track : colors[index];
+    let bx = kx;
+    legend.forEach((item, index) => {
+      const w = index === legend.length - 1 ? kx + kw - bx : Math.max(4, kw * item.share - 3);
+      if (w > 0) shareRoundRect(context, bx, ky, w, 16, 5, colorOf(item, index));
+      bx += w + 3;
+    });
+    ky += 16 + 56;
+    const colWidth = kw / legend.length;
+    legend.forEach((item, index) => {
+      const x = kx + index * colWidth;
+      shareRoundRect(context, x, ky - 22, 14, 14, 3, colorOf(item, index));
+      context.font = shareFont(700, 32, SHARE_FONTS.data); context.fillStyle = SHARE_DARK.ink;
+      context.fillText(`${item.pct}%`, x + 24, ky - 6);
+      context.fillStyle = SHARE_DARK.ink2; context.font = shareFont(400, 19);
+      context.fillText(shareWrap(context, item.name, colWidth - 16, 1)[0] || '', x, ky + 30);
+    });
+  } else {
+    context.fillStyle = SHARE_DARK.muted; context.font = shareFont(400, 19);
+    context.fillText('Sem notas da cota no período', kx, ky + 30);
+  }
+
+  // Rodapé: fontes, aviso de independência e o endereço do site.
+  context.font = shareFont(400, 15);
+  context.fillStyle = SHARE_DARK.faint;
+  const notes = [...shareWrap(context, card.footnote || '', inner - 220, 2), ...shareWrap(context, card.disclaimer || SHARE_DISCLAIMER, inner - 220, 1)];
+  let footY = height - 48 - (notes.length - 1) * 22;
+  for (const line of notes) { context.fillText(line, padding, footY); footY += 22; }
+  context.textAlign = 'right';
+  context.fillStyle = SHARE_DARK.muted;
+  context.font = shareFont(600, 18, SHARE_FONTS.data);
+  context.fillText(SHARE_SITE, width - padding, height - 48);
+  context.textAlign = 'left';
+  return context.canvas;
+}
+
 function shareDrawCard(card, canvas) {
   const { width, height, padding } = SHARE_SIZE;
   const inner = width - padding * 2;
@@ -265,6 +450,7 @@ function shareDrawCard(card, canvas) {
   const context = canvas.getContext('2d');
   context.textBaseline = 'alphabetic';
   if (card.layout === 'faceoff') return shareDrawFaceoff(card, context);
+  if (card.layout === 'profile') return shareDrawProfile(card, context);
   context.fillStyle = SHARE_COLORS.bg;
   context.fillRect(0, 0, width, height);
 

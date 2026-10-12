@@ -820,27 +820,58 @@ function profileQuotaDifferenceNote(f, cost) {
   return `<p class="muted">No custo do mandato acima, a cota aparece como ${brl(quota / 100, 2)} por mês porque usa só os ${used} ${used === 1 ? 'mês' : 'meses'} com salário, auxílios, cota e gabinete publicados juntos. Aqui entram todos os ${f.periodo?.meses} meses com notas da cota; por isso os valores são diferentes.</p>`;
 }
 /* Cartão para compartilhar: as mesmas três respostas da ficha, em números curtos. */
+/* Imagem de compartilhar da ficha (layout 'profile'): custo e partes, presença com a média da Casa, maior nota
+   única e para onde vai a cota. Sem alertas: fora da ficha, sem as regras e a fonte ao lado, o número não se explica. */
+const PROFILE_SHARE_PART_NAMES = { office: 'Gabinete', remuneration: 'Salário', quota: 'Cota', allowances: 'Auxílios' };
+function profileShareCost(f, shared, hasExpenseData) {
+  const senate = shared.person.role === 'senador', cost = shared.cost;
+  if (!senate && cost && profileCostPeriods(cost.usedMonths).length && profileCostInteger(cost.monthlyAverageCents)) {
+    const partOf = key => (cost.parts?.[key] && typeof cost.parts[key] === 'object' ? cost.parts[key] : {});
+    return { label: 'Custa em média por mês', value: profileCostShort(cost.monthlyAverageCents), exact: profileCostMoney(cost.monthlyAverageCents),
+      totalCents: cost.monthlyAverageCents,
+      parts: PROFILE_COST_PARTS.map(([key]) => ({ name: PROFILE_SHARE_PART_NAMES[key], cents: partOf(key).usedMonthsAverageCents })),
+      note: `Média de ${profileCostMonthList(cost.usedMonths)} em exercício. Salário, auxílios, cota e verba de gabinete.` };
+  }
+  if (senate && shared.senateCost && typeof senateCostFigures === 'function') {
+    const figures = senateCostFigures(shared.senateCost, f);
+    if (figures.total && profileCostInteger(figures.total.cents)) {
+      const names = { remuneration: 'Remuneração', office: 'Gabinete', quota: 'Cota' };
+      return { label: 'Custa em média por mês', value: profileCostShort(figures.total.cents), exact: profileCostMoney(figures.total.cents),
+        totalCents: figures.total.cents, parts: figures.parts.map(part => ({ name: names[part.key], cents: part.cents })),
+        note: `${figures.total.months} ${figures.total.months === 1 ? 'mês' : 'meses'} com as três partes identificadas: remuneração, equipe do gabinete e cota.` };
+    }
+  }
+  // Sem o custo completo: só a cota, que é o que há para a pessoa.
+  const quota = hasExpenseData && Number.isFinite(f.mediaMensal);
+  return { label: 'Cota parlamentar por mês', value: quota ? formatCitizenAmount(f.mediaMensal) : 'Sem dados', exact: null, totalCents: null, parts: [],
+    note: quota ? `Média de ${citizenQuotaPeriod(f.periodo?.inicio, f.periodo?.fim)}. Reembolso de despesas do mandato.` : 'Ausência de dado não é zero.' };
+}
+function profileSharePresence(shared) {
+  const senate = shared.person.role === 'senador', presence = shared.presence, registered = senate ? shared.registeredPresence : null;
+  if (presence && presence.dias > 0) {
+    const rows = profilePresenceRows(senate ? 'senado' : 'camara');
+    const average = rows.length ? rows.reduce((sum, row) => sum + row.presente / row.dias, 0) / rows.length : null;
+    return { label: 'Presença no Plenário', value: `${Math.round(presence.presente / presence.dias * 100)}%`,
+      detail: `${presence.presente} de ${presence.dias} ${senate ? 'sessões' : 'dias'}`, share: presence.presente / presence.dias,
+      average, averageLabel: average === null ? '' : `média ${senate ? 'do Senado' : 'da Câmara'}: ${Math.round(average * 100)}%` };
+  }
+  if (registered && Number.isInteger(registered.presente)) return { label: 'Presença registrada no Senado', value: String(registered.presente),
+    detail: 'sessões', share: null, average: null, note: 'O Senado publica só as presenças, sem faltas: por isso não há porcentagem.' };
+  return { label: 'Presença no Plenário', value: 'Sem registro', detail: '', share: null, average: null, note: 'Ausência de dado não significa zero presença.' };
+}
 function profileShareCard(f, shared, alerts, hasExpenseData) {
-  const person = shared.person, senate = person.role === 'senador', cost = shared.cost;
-  const average = person.role === 'deputado' && cost ? profileCostMoney(cost.monthlyAverageCents) : null;
-  const costRow = average !== null
-    ? { label: 'Custa em média por mês', values: [average], notes: [`${profileCostMonthList(cost.usedMonths)} · salário, auxílios, cota e gabinete`] }
-    : { label: 'Cota parlamentar por mês', values: [hasExpenseData && Number.isFinite(f.mediaMensal) ? formatCitizenAmount(f.mediaMensal) : 'Sem dados'],
-      notes: [hasExpenseData ? `média de ${citizenQuotaPeriod(f.periodo?.inicio, f.periodo?.fim)}` : 'ausência de dado não é zero'] };
-  const presence = shared.presence, registered = senate ? shared.registeredPresence : null;
-  const workRow = presence
-    ? { label: senate ? `Presença no Plenário · ${senatePresencePeriodLabel()}` : `Presença no Plenário · ${citizenQuotaPeriod(presence.inicio, presence.fim) || 'mandato'}`, values: [`${Math.round(presence.presente / presence.dias * 100)}%`], notes: [`${presence.presente} de ${presence.dias} ${senate ? 'sessões' : 'dias'}`] }
-    : registered
-      ? { label: `Presença registrada no Senado · ${senatePresencePeriodLabel()}`, values: [`${registered.presente} sessões`],
-        notes: [Number.isInteger(registered.sessoesEmExercicio) ? `de ${registered.sessoesEmExercicio} em exercício · faltas não apuradas` : 'faltas e justificativas não apuradas'] }
-      : { label: `Presença no Plenário · ${senate ? senatePresencePeriodLabel() : 'mandato'}`, values: ['Sem registro'], notes: ['ausência de dado não é zero'] };
-  const alertRow = { label: 'Gastos incomuns na cota', values: [!hasExpenseData ? 'Sem dados' : alerts.length ? `${alerts.length} ${alerts.length === 1 ? 'alerta' : 'alertas'}` : 'Nenhum'],
-    notes: ['pelas mesmas 2 regras para todos(as)'] };
+  const person = shared.person, senate = person.role === 'senador', name = citizenName(person.name);
+  const top = f.maiores?.[0];
   return {
-    kicker: `Ficha · ${senate ? 'Senado' : 'Câmara'}`, title: citizenName(person.name),
+    layout: 'profile', title: name, initials: citizenInitials(name), kicker: `Ficha · ${senate ? 'Senado' : 'Câmara'}`,
     subtitle: [ROLE_LABELS[person.role], person.party, person.uf].filter(Boolean).join(' · '),
-    rows: [costRow, workRow, alertRow], fileName: citizenName(person.name),
-    footnote: `Fontes: ${senate ? 'Senado Federal' : 'Câmara dos Deputados'} (notas da cota${average !== null ? ', remuneração, gabinete' : ''} e presença). Retrato de ${f.snapshotAt ? dateBR(f.snapshotAt) : 'data não informada'}.`,
+    cost: profileShareCost(f, shared, hasExpenseData), presence: profileSharePresence(shared),
+    categories: hasExpenseData && f.total > 0 ? (f.categorias || []).slice(0, 3).map(category => ({ name: category.nome, share: category.valor / f.total })) : [],
+    top: top && Number.isFinite(top.valor) ? { value: `R$ ${Math.round(top.valor).toLocaleString('pt-BR')}`, who: top.fornecedor ? citizenName(top.fornecedor) : '',
+      what: [top.categoria, top.month && top.year ? `${SHORT_MONTHS[top.month]}/${top.year}` : ''].filter(Boolean).join(' · ') } : null,
+    fileName: name,
+    footnote: `Fontes: ${senate ? 'Senado Federal' : 'Câmara dos Deputados'} (${shared.cost || shared.senateCost ? 'remuneração, gabinete, ' : ''}notas da cota e presença). Retrato de ${f.snapshotAt ? dateBR(f.snapshotAt) : 'data não informada'}.`,
+    disclaimer: 'Projeto pessoal e apartidário com dados públicos oficiais.',
   };
 }
 /* "Na Câmara desde 2007": início da sequência ininterrupta de mandatos até o atual, não da carreira. */
