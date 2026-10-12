@@ -28,7 +28,7 @@ O Painel Público é um **projeto pessoal, independente e apartidário**. Ele re
 
 ## Correções e direito de resposta
 
-Se você encontrar um erro, ou se uma informação sobre você estiver incorreta ou fora de contexto, [abra uma issue no GitHub](https://github.com/igor05k/painelpublico/issues) indicando a tela, o registro e, se possível, a fonte oficial correta. Pedidos de correção serão analisados e, quando procedentes, corrigidos.
+Se você encontrar um erro, ou se uma informação sobre você estiver incorreta ou fora de contexto, escreva para [contato@painelpublico.com](mailto:contato@painelpublico.com) ou [abra uma issue no GitHub](https://github.com/igor05k/painelpublico/issues), indicando a tela, o registro e, se possível, a fonte oficial correta. Pedidos de correção serão analisados e, quando procedentes, corrigidos.
 
 ## Visitantes
 

@@ -154,6 +154,7 @@ nav.tabs .nav-theme { display: none; }
 .site-foot-links { display: flex; flex-wrap: wrap; gap: 0 var(--space-4); }
 .site-foot-links a { display: inline-flex; align-items: center; min-height: 32px; color: var(--ink-2); font-weight: 600; text-decoration: none; }
 .site-foot-links a:hover { text-decoration: underline; }
+.site-foot-contact a { color: var(--ink-2); font-weight: 600; overflow-wrap: anywhere; }
 /* Análise de gastos */
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .radar-intro { background: var(--accent-soft); }
