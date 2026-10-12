@@ -1,0 +1,132 @@
+[
+  {
+    "id": "2421859-9",
+    "parentId": "2400758-62",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 769/2024"
+    },
+    "title": "Urgência para o PLP 233/2023 (seguro obrigatório para vítimas de trânsito)",
+    "summary": "O REQ 769/2024 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PLP 233/2023, que trata do seguro obrigatório para proteção de vítimas de acidentes de trânsito. O pedido foi aprovado com 257 votos Sim e 116 Não, com 1 abstenção. Foram exatamente os 257 votos Sim exigidos para a urgência do art. 155, a maioria absoluta da Câmara. O texto principal foi votado em 9/4/2024.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PLP 233/2023. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PLP 233/2023",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12098",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2421859",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2400758"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12098) registra votação nominal eletrônica em 2024-03-26, encerrada às 17:52, com 257 Sim e 116 Não e 1 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 769/2024 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PLP 233/2023”. O registro 2421859-9 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 257; não: 116; abstenção: 1; total: 374.” e indica o PLP 233/2023 (ID 2400758) como única proposição afetada.",
+      "text": "A ementa do REQ 769/2024 (ID 2421859): “Requer, nos termos do artigo 155 do Regimento Interno, tramitação sob o regime urgência do Projeto de Lei Complementar nº 233, de 2023.” A votação do texto principal ligada é 2400758-62 (9/4/2024), a primeira do PLP 233/2023 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2447439-8",
+    "parentId": "2430143-72",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 2527/2024"
+    },
+    "title": "Urgência para o PLP 68/2024 (regulamentação da reforma tributária)",
+    "summary": "O REQ 2527/2024 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PLP 68/2024, que institui o IBS, a CBS e o Imposto Seletivo, os novos tributos sobre o consumo. O pedido foi aprovado com 322 votos Sim e 137 Não, com 3 abstenções. O texto principal foi votado em 10/7/2024.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PLP 68/2024. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PLP Nº 68/2024",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12267",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2447439",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2430143"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12267) registra votação nominal eletrônica em 2024-07-09, encerrada às 20:19, com 322 Sim e 137 Não e 3 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 2527/2024 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PLP Nº 68/2024”. O registro 2447439-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 322; não: 137; abstenção: 3; total: 462.” e indica o PLP 68/2024 (ID 2430143) como única proposição afetada.",
+      "text": "A ementa do REQ 2527/2024 (ID 2447439): “Requer, nos termos do artigo 155 do Regimento Interno, tramitação sob o regime urgência do Projeto de Lei Complementar nº 68, de 2024.” A votação do texto principal ligada é 2430143-72 (10/7/2024), a primeira do PLP 68/2024 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2461217-7",
+    "parentId": "2460010-43",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 4140/2024"
+    },
+    "title": "Urgência para o PL 3.802/2024 (perdas de créditos de instituições financeiras)",
+    "summary": "O REQ 4140/2024 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 3.802/2024, que altera a Lei 14.467/2022 sobre o tratamento tributário das perdas no recebimento de créditos de instituições financeiras. O pedido foi rejeitado com 244 votos Sim e 115 Não. Teve mais votos Sim que Não, mas não alcançou os 257 votos Sim exigidos para a urgência do art. 155. No dia seguinte, outro requerimento de urgência para o mesmo projeto (REQ 4954/2024) foi aprovado. O texto principal foi votado em 19/12/2024.",
+    "decisionLabel": "Urgência rejeitada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 3.802/2024. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "rejected",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 3.802/2024",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12657",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2461217",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2460010"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12657) registra votação nominal eletrônica em 2024-12-17, encerrada às 16:16, com 244 Sim e 115 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 4140/2024 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 3.802/2024”. O registro 2461217-7 da API descreve “Rejeitado o Requerimento de Urgência (Art. 155 do RICD). Sim: 244; Não: 115; Total: 359.” e indica o PL 3802/2024 (ID 2460010) como única proposição afetada.",
+      "text": "A ementa do REQ 4140/2024 (ID 2461217): “Requer, nos termos do artigo 155 do Regimento Interno da Câmara dos Deputados, URGÊNCIA para a apreciação do Projeto de Lei nº 3.802, de 2024, que “Altera a Lei nº 14.467, de 16 de novembro de 2022, que dispõe sobre o tratamento tributário aplicável às perdas incorridas no recebimento de créditos decorrentes das atividades das instituições financeiras e das demais instituições autorizadas a funcionar pelo Banco Central do Brasil.”” A votação do texto principal ligada é 2460010-43 (19/12/2024), a primeira do PL 3802/2024 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2462049-9",
+    "parentId": "2439779-55",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 4192/2024"
+    },
+    "title": "Urgência para o PL 1.958/2021 (cotas raciais em concursos públicos federais)",
+    "summary": "O REQ 4192/2024 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 1.958/2021, que trata da reserva de vagas para pessoas pretas e pardas, indígenas e quilombolas em concursos públicos federais. O pedido foi aprovado com 272 votos Sim e 140 Não, com 3 abstenções. O texto principal foi votado em 19/11/2024.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 1.958/2021. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APROVAÇÃO DO PL Nº 1.958/2021",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12475",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2462049",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2439779"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12475) registra votação nominal eletrônica em 2024-11-13, encerrada às 17:01, com 272 Sim e 140 Não e 3 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 4192/2024 e o objeto como “URGÊNCIA PARA APROVAÇÃO DO PL Nº 1.958/2021”. O registro 2462049-9 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 272; Não: 140; Abstenção: 3; Total: 415.” e indica o PL 1958/2021 (ID 2439779) como única proposição afetada.",
+      "text": "A ementa do REQ 4192/2024 (ID 2462049): “Requer, nos termos do artigo 155 do Regimento Interno, tramitação sob o regime urgência do Projeto de Lei nº 1.958 de 2021.” A votação do texto principal ligada é 2439779-55 (19/11/2024), a primeira do PL 1958/2021 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2480642-7",
+    "parentId": "2460010-43",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 4954/2024"
+    },
+    "title": "Urgência para o PL 3.802/2024 (perdas de créditos de instituições financeiras)",
+    "summary": "O REQ 4954/2024 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 3.802/2024, que altera a Lei 14.467/2022 sobre o tratamento tributário das perdas no recebimento de créditos de instituições financeiras. O pedido foi aprovado com 299 votos Sim e 134 Não, com 3 abstenções. Na véspera, um primeiro pedido de urgência para o mesmo projeto (REQ 4140/2024) tinha sido rejeitado com 244 votos Sim, abaixo de 257. O texto principal foi votado em 19/12/2024.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 3.802/2024. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO AO PL Nº 3.802/2024",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12670",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2480642",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2460010"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12670) registra votação nominal eletrônica em 2024-12-18, encerrada às 19:07, com 299 Sim e 134 Não e 3 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 4954/2024 e o objeto como “URGÊNCIA PARA APRECIAÇÃO AO PL Nº 3.802/2024”. O registro 2480642-7 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 299; Não: 134; Abstenção: 3; Total: 436.” e indica o PL 3802/2024 (ID 2460010) como única proposição afetada.",
+      "text": "A ementa do REQ 4954/2024 (ID 2480642): “Requer, nos termos do artigo 155 do Regimento Interno, tramitação sob o regime urgência do Projeto de Lei nº 3.802, de 2024.” A votação do texto principal ligada é 2460010-43 (19/12/2024), a primeira do PL 3802/2024 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  }
+]

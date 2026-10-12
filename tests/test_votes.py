@@ -303,7 +303,7 @@ class VoteSnapshotTests(unittest.TestCase):
         self.assertEqual([segment['id'] for segment in main['vote']['segments']], ['2611313-35'])
         part = votes.detail('2611313-35', self.index)
         self.assertEqual(part['vote']['parent'], {'id': '2611313-31', 'title': 'Regras para benefícios tributários',
-                                                  'outcome': 'approved'})
+                                                  'outcome': 'approved', 'date': '2026-09-03', 'relation': 'segment'})
         self.assertEqual(part['vote']['proposition'], 'PLP 74/2026')
         self.assertEqual(part['participants'][0]['vote'], 'Não')
         listed = votes.listing({}, self.index)
@@ -330,6 +330,55 @@ class VoteSnapshotTests(unittest.TestCase):
         self.assertFalse(votes.listing({}, self.index)['available'])
         data = self.segment_snapshot()
         data['coverage']['segmentCount'] = 2
+        self.write(self.index, data)
+        self.assertFalse(votes.listing({}, self.index)['available'])
+
+    def urgency_data(self, **urgency_changes):
+        urgency = {'id': '2611400-8', 'date': '2026-09-02', 'request': {'label': 'REQ 900/2026',
+                   'url': 'https://camara.leg.br/ficha-req'}, 'title': 'Urgência para o PLP 74/2026',
+                   'summary': 'O REQ 900/2026 pediu urgência.', 'decisionLabel': 'Urgência aprovada',
+                   'yesMeaning': 'Acelerar a tramitação.', 'noMeaning': 'Rejeitar o pedido.', 'outcome': 'approved',
+                   'quorum': 257, 'tally': {'yes': 300, 'no': 100, 'abstention': None, 'total': 400},
+                   'reviewedAt': '2026-10-12',
+                   'sources': {'vote': 'https://camara.leg.br/voto3', 'rollCall': 'https://camara.leg.br/lista3',
+                               'request': 'https://camara.leg.br/ficha-req', 'proposition': 'https://camara.leg.br/ficha'},
+                   **urgency_changes}
+        data = snapshot([{**self.items[0], 'urgencies': [urgency]}, *self.items[1:]])
+        data['coverage']['urgencyCount'] = 1
+        return data
+
+    def test_urgencies_hang_on_the_main_vote_and_stay_out_of_agreement(self):
+        self.write(self.index, self.urgency_data())
+        self.write(self.root / votes.DETAILS_DIRECTORY / '2611400-8.json', {'id': '2611400-8', 'participants': [
+            {'id': 'camara:1', 'name': 'Ana', 'party': 'ABC', 'uf': 'SP', 'vote': 'Sim'}],
+            'partyTotals': [{'party': 'ABC', 'yes': 1, 'no': 0, 'other': 0}]})
+        before = votes.person_votes('camara:1', self.index)['pairAgreement']
+        request = votes.detail('2611400-8', self.index)
+        self.assertEqual(request['vote']['parent']['relation'], 'urgency')
+        self.assertEqual(request['vote']['parent']['date'], '2026-09-03')
+        self.assertEqual(request['vote']['request']['label'], 'REQ 900/2026')
+        self.assertEqual(request['participants'][0]['vote'], 'Sim')
+        listed = votes.listing({}, self.index)
+        first = next(item for item in listed['items'] if item['id'] == '2611313-31')
+        self.assertEqual((first['urgencyCount'], listed['coverage']['urgencyCount']), (1, 1))
+        self.assertNotIn('urgencies', first)
+        person = votes.person_votes('camara:1', self.index)
+        self.assertNotIn('2611400-8', [item['id'] for item in person['items']])
+        main = next(item for item in person['items'] if item['id'] == '2611313-31')
+        self.assertEqual(main['urgencies'], [{'id': '2611400-8', 'date': '2026-09-02', 'request': 'REQ 900/2026',
+                                              'outcome': 'approved', 'vote': 'Sim', 'detailsAvailable': True}])
+        # A referência de concordância continua só com o texto principal.
+        self.assertEqual(person['pairAgreement'], before)
+        self.assertNotIn('urgencies', next(item for item in person['items'] if item['id'] != '2611313-31'))
+
+    def test_invalid_urgencies_make_the_index_unavailable(self):
+        for changes in ({'outcome': 'kept'}, {'date': '2026-09-04'}, {'request': {'label': 'PL 1/2026', 'url': 'https://camara.leg.br/x'}},
+                        {'quorum': None}, {'sources': {'vote': 'https://camara.leg.br/x'}}, {'id': '2611313-31'}):
+            with self.subTest(changes=changes):
+                self.write(self.index, self.urgency_data(**changes))
+                self.assertFalse(votes.listing({}, self.index)['available'])
+        data = self.urgency_data()
+        data['coverage']['urgencyCount'] = 0
         self.write(self.index, data)
         self.assertFalse(votes.listing({}, self.index)['available'])
 

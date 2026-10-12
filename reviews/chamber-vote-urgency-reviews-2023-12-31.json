@@ -1,0 +1,54 @@
+[
+  {
+    "id": "2362190-9",
+    "parentId": "345311-270",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 1526/2023"
+    },
+    "title": "Urgência para o PL 490/2007 (marco temporal de terras indígenas)",
+    "summary": "O REQ 1526/2023 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 490/2007, que trata do reconhecimento, da demarcação, do uso e da gestão de terras indígenas. O pedido foi aprovado com 324 votos Sim e 131 Não, com 1 abstenção. O texto principal foi votado em 30/5/2023.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 490/2007. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL 490/2007",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=11480",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2362190",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=345311"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 11480) registra votação nominal eletrônica em 2023-05-24, encerrada às 21:14, com 324 Sim e 131 Não e 1 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 1526/2023 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL 490/2007”. O registro 2362190-9 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 324; não: 131; abstenção: 1; total: 456.” e indica o PL 490/2007 (ID 345311) como única proposição afetada.",
+      "text": "A ementa do REQ 1526/2023 (ID 2362190): “Requer em regime de urgência a apreciação do Projeto de Lei nº 490/2007, que dispõe sobre a demarcação de terras indígenas.” A votação do texto principal ligada é 345311-270 (30/5/2023), a primeira do PL 490/2007 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2362292-8",
+    "parentId": "2357053-47",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 1537/2023"
+    },
+    "title": "Urgência para o PLP 93/2023 (novo arcabouço fiscal)",
+    "summary": "O REQ 1537/2023 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PLP 93/2023, que institui um regime fiscal sustentável para as contas da União, nos termos da Emenda Constitucional 126/2022. O pedido foi aprovado com 367 votos Sim e 102 Não, com 1 abstenção. O texto principal foi votado em 23/5/2023.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PLP 93/2023. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PLP Nº 93/2023",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=11459",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2362292",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2357053"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 11459) registra votação nominal eletrônica em 2023-05-17, encerrada às 18:19, com 367 Sim e 102 Não e 1 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 1537/2023 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PLP Nº 93/2023”. O registro 2362292-8 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 367; não: 102; abstenção: 1; total: 470.” e indica o PLP 93/2023 (ID 2357053) como única proposição afetada.",
+      "text": "A ementa do REQ 1537/2023 (ID 2362292): “Requer, nos termos do artigo 155 do Regimento Interno, tramitação sob o regime urgência do Projeto de Lei Complementar nº 93, de 2023.” A votação do texto principal ligada é 2357053-47 (23/5/2023), a primeira do PLP 93/2023 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  }
+]

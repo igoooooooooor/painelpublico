@@ -1,0 +1,54 @@
+[
+  {
+    "id": "2503292-9",
+    "parentId": "2383019-54",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 1691/2025"
+    },
+    "title": "Urgência para o PLP 177/2023 (número de deputados por estado)",
+    "summary": "O REQ 1691/2025 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PLP 177/2023, que altera a Lei Complementar 78/1993, sobre a fixação do número de deputados federais. O pedido foi aprovado com 268 votos Sim e 199 Não. A urgência e o texto principal foram votados na mesma sessão.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PLP 177/2023. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PLP 177/2023",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=12834",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2503292",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2383019"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 12834) registra votação nominal eletrônica em 2025-05-06, encerrada às 20:02, com 268 Sim e 199 Não; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 1691/2025 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PLP 177/2023”. O registro 2503292-9 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 268; Não: 199; Total: 467.” e indica o PLP 177/2023 (ID 2383019) como única proposição afetada.",
+      "text": "A ementa do REQ 1691/2025 (ID 2503292): “Requerimento de urgência para apreciação do Projeto de Lei Complementar nº 177, de 2023, que “altera a redação da Lei Complementar nº 78, de 30 de dezembro de 1993” (fixação do número de deputados).” A votação do texto principal ligada é 2383019-54 (6/5/2025), a primeira do PLP 177/2023 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  },
+  {
+    "id": "2562149-7",
+    "parentId": "2358548-89",
+    "status": "confirmed",
+    "reviewedAt": "2026-10-12",
+    "request": {
+      "label": "REQ 3834/2025"
+    },
+    "title": "Urgência para o PL 2.162/2023 (texto original sobre anistia)",
+    "summary": "O REQ 3834/2025 pediu urgência, nos termos do art. 155 do Regimento Interno, para o PL 2.162/2023, cujo texto original concede anistia a participantes de manifestações de motivação política a partir de 30 de outubro de 2022. O pedido foi aprovado com 311 votos Sim e 163 Não, com 7 abstenções. O texto principal foi votado quase três meses depois, em 9/12/2025, na forma de um substitutivo do relator.",
+    "decisionLabel": "Urgência aprovada",
+    "yesMeaning": "Aprovar o pedido para acelerar a tramitação do PL 2.162/2023. Esse voto não aprova o conteúdo do projeto.",
+    "noMeaning": "Rejeitar o pedido de urgência. Esse voto não rejeita o conteúdo do projeto.",
+    "outcome": "approved",
+    "reportObject": "URGÊNCIA PARA APRECIAÇÃO DO PL Nº 2.162/2023",
+    "sources": {
+      "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=13170",
+      "request": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2562149",
+      "proposition": "https://www.camara.leg.br/proposicoesWeb/fichadetramitacao?idProposicao=2358548"
+    },
+    "evidence": {
+      "method": "O relatório nominal oficial (ideVotacao 13170) registra votação nominal eletrônica em 2025-09-17, encerrada às 22:37, com 311 Sim e 163 Não e 7 abstenções; o registro da API traz o mesmo placar.",
+      "object": "O relatório identifica a proposição como REQ 3834/2025 e o objeto como “URGÊNCIA PARA APRECIAÇÃO DO PL Nº 2.162/2023”. O registro 2562149-7 da API descreve “Aprovado o Requerimento de Urgência (Art. 155 do RICD). Sim: 311; Não: 163; Abstenção: 7; Total: 481.” e indica o PL 2162/2023 (ID 2358548) como única proposição afetada.",
+      "text": "A ementa do REQ 3834/2025 (ID 2562149): “Requer, nos termos do art. 155 do Regimento Interno da Câmara dos Deputados, Regime de Urgência para o PL 2162/2023.” A votação do texto principal ligada é 2358548-89 (9/12/2025), a primeira do PL 2162/2023 depois do pedido no inventário, sem outra deliberação do texto principal no meio."
+    }
+  }
+]

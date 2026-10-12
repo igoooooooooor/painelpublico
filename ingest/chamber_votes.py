@@ -21,6 +21,7 @@ from urllib.parse import urlsplit
 from ingest.chamber_vote_inventory import API_BASE, ROOT, CollectionError, _load, _paged
 from ingest.chamber_vote_rules import _recorded_partial_tally, classify_vote
 from ingest.chamber_vote_segments import build_segments
+from ingest.chamber_vote_urgencies import build_urgencies
 from ingest.chamber_vote_report import identify_participants, parse_roll_call
 from ingest.project_status import _atomic_bytes, _json_bytes, _valid_date, request_bytes, utc_now
 from ingest.review_paths import find_review
@@ -376,10 +377,13 @@ def merge_catalogues(parts):
             details[item['id']] = part_details[item['id']]
             for segment in item.get('segments', []):
                 details[segment['id']] = part_details[segment['id']]
+            for urgency in item.get('urgencies', []):
+                details[urgency['id']] = part_details[urgency['id']]
             items.append(item)
     items.sort(key=lambda item: (item['date'], item['id']), reverse=True)
     counts = ('inventoryCount', 'candidateCount', 'reviewedCount', 'publishedCount', 'excludedCount',
-              'pendingCount', 'missingTextCount', 'missingAbstentionCount', 'missingThemeCount', 'segmentCount')
+              'pendingCount', 'missingTextCount', 'missingAbstentionCount', 'missingThemeCount', 'segmentCount',
+              'urgencyCount')
     coverage = {key: sum(snapshot['coverage'].get(key, 0) for snapshot, _ in parts) for key in counts}
     period = {'start': parts[0][0]['period']['start'], 'end': parts[-1][0]['period']['end']}
     years = sorted({snapshot['period']['start'][:4] for snapshot, _ in parts})
@@ -425,7 +429,7 @@ def main(argv=None):
     if args.reviews and len(throughs) > 1:
         parser.error('--reviews só pode ser usado com um único --through.')
     try:
-        parts, entries, caches, segment_reviews = [], {}, {}, []
+        parts, entries, caches, segment_reviews, urgency_reviews = [], {}, {}, [], []
         for through in throughs:
             # Revisões versionadas em reviews/, com data/reviews/ como alternativa (ingest/review_paths.py).
             reviews_path = args.reviews or find_review(args.root, f'chamber-vote-reviews-{through}.json')
@@ -437,6 +441,10 @@ def main(argv=None):
             segments_path = find_review(args.root, f'chamber-vote-segment-reviews-{through}.json')
             if segments_path.exists():
                 segment_reviews.extend(json.loads(segments_path.read_text()))
+            # Pedidos de urgência: piloto, ligados à primeira votação principal depois de cada pedido.
+            urgencies_path = find_review(args.root, f'chamber-vote-urgency-reviews-{through}.json')
+            if urgencies_path.exists():
+                urgency_reviews.extend(json.loads(urgencies_path.read_text()))
             cache = (args.root / 'data' / 'raw' / 'chamber-vote-inventory'
                      / f"{inventory['period']['start']}_{inventory['period']['end']}")
             for entry in inventory['entries']:
@@ -447,6 +455,12 @@ def main(argv=None):
             details.update(build_segments(snapshot['items'], entries, segment_reviews, cache=caches.__getitem__,
                                           collect=args.collect, refresh=args.refresh, request=request_bytes))
             snapshot['coverage']['segmentCount'] = sum(len(item.get('segments', [])) for item in snapshot['items'])
+        if urgency_reviews:
+            details.update(build_urgencies(snapshot['items'], entries, urgency_reviews, taken=set(details),
+                                           cache=caches.__getitem__, collect=args.collect, refresh=args.refresh,
+                                           request=request_bytes))
+            snapshot['coverage']['urgencyCount'] = sum(len(item.get('urgencies', [])) for item in snapshot['items'])
+        if segment_reviews or urgency_reviews:
             snapshot['detailsVersion'] = hashlib.sha256(_json_bytes(details)).hexdigest()
         write_catalogue(snapshot, details, args.root / 'data' / 'snapshots')
     except (OSError, ValueError, KeyError, TypeError) as error:

@@ -71,8 +71,37 @@ function scoreboardSegments(segments, mainDate = '') {
       </li>`;
     }).join('')}</ol></section>`;
 }
+/* Pedidos de urgência: votados antes do texto principal, sobre acelerar a tramitação, não sobre o conteúdo. */
+const SCOREBOARD_URGENCY_OUTCOMES = { approved: 'Urgência aprovada', rejected: 'Urgência rejeitada' };
+function scoreboardQuorumNote(quorum) {
+  return Number.isInteger(quorum) && quorum > 0
+    ? `<p class="muted scoreboard-quorum-note">A urgência do art. 155 do Regimento Interno só é aprovada com pelo menos ${scoreboardCount(quorum)} votos Sim, a maioria absoluta da Câmara. Por isso um pedido pode ter mais Sim que Não e ainda assim ser rejeitado.</p>` : '';
+}
+function scoreboardUrgencies(urgencies) {
+  const rows = Array.isArray(urgencies) ? urgencies.filter(urgency => SCOREBOARD_VOTE_ID.test(scoreboardText(urgency?.id))) : [];
+  if (!rows.length) return '';
+  return `<section class="card wide scoreboard-segments scoreboard-urgencies"><span class="k">Antes desta votação: ${rows.length === 1 ? 'pedido de urgência' : 'pedidos de urgência'}</span>
+    <p class="muted">Antes de votar o texto, a Câmara votou ${rows.length === 1 ? 'um pedido' : `${rows.length} pedidos`} para acelerar a tramitação do projeto. Esse voto não aprova nem rejeita o conteúdo, e o texto pode ter mudado até a votação principal.</p>
+    <ol class="scoreboard-segment-list">${rows.map(urgency => {
+      const tally = urgency.tally || {};
+      return `<li class="scoreboard-segment">
+        <p class="scoreboard-segment-kind">Pedido de urgência${urgency.request?.label ? ` · ${scoreboardEscape(urgency.request.label)}` : ''} · ${scoreboardEscape(scoreboardPeriodDate(urgency.date))}</p>
+        <h3>${scoreboardEscape(urgency.title || 'Título não informado')}</h3>
+        ${urgency.summary ? `<p>${scoreboardEscape(urgency.summary)}</p>` : ''}
+        <dl class="scoreboard-segment-meaning"><div><dt><i class="vote-yes"></i>Sim</dt><dd>${scoreboardEscape(urgency.yesMeaning || 'Não informado')}</dd></div><div><dt><i class="vote-no"></i>Não</dt><dd>${scoreboardEscape(urgency.noMeaning || 'Não informado')}</dd></div></dl>
+        <div class="scoreboard-segment-result"><p class="scoreboard-outcome" data-outcome="${scoreboardEscape(urgency.outcome || '')}">${scoreboardEscape(urgency.decisionLabel || SCOREBOARD_URGENCY_OUTCOMES[urgency.outcome] || 'Resultado não informado')}</p>
+          ${scoreboardTallyBar(tally)}<p class="scoreboard-meta"><span><b>${scoreboardCount(tally.yes)}</b> sim</span><span><b>${scoreboardCount(tally.no)}</b> não</span><span>${Number.isFinite(tally.abstention) ? `${scoreboardCount(tally.abstention)} abst.` : 'abst. não publicada'}</span></p></div>
+        <button type="button" class="more" data-vote="${scoreboardEscape(urgency.id)}">Ver como cada deputado votou →</button>
+      </li>`;
+    }).join('')}</ol>${scoreboardQuorumNote(rows[0].quorum)}</section>`;
+}
 function scoreboardParentDecision(parent) {
   if (!parent || !SCOREBOARD_VOTE_ID.test(scoreboardText(parent.id))) return '';
+  if (parent.relation === 'urgency') {
+    return `<section class="card scoreboard-related" role="note"><span class="k">Ligado a uma votação do texto principal</span>
+    <p>Este é um pedido para acelerar a tramitação, votado antes do texto principal: <strong>${scoreboardEscape(parent.title || 'texto principal')}</strong>${parent.date ? `, votado em ${scoreboardEscape(scoreboardPeriodDate(parent.date))}` : ''} (${scoreboardEscape(scoreboardOutcome(parent.outcome).toLowerCase())}). Apoiar ou rejeitar a urgência não equivale a apoiar ou rejeitar o conteúdo.</p>
+    <button type="button" class="more" data-vote="${scoreboardEscape(parent.id)}">Ver a votação do texto principal →</button></section>`;
+  }
   return `<section class="card scoreboard-related" role="note"><span class="k">Parte de uma votação maior</span>
     <p>Esta é uma decisão sobre um trecho, ressalvado na votação do texto principal: <strong>${scoreboardEscape(parent.title || 'texto principal')}</strong> (${scoreboardEscape(scoreboardOutcome(parent.outcome).toLowerCase())}).</p>
     <button type="button" class="more" data-vote="${scoreboardEscape(parent.id)}">Ver a votação do texto principal →</button></section>`;
@@ -185,6 +214,7 @@ function scoreboardCoverage(data) {
       <p><strong>De onde vêm as votações.</strong> A Câmara publicou ${inventory} registros de votação ${timeframe}. Muitos são etapas do mesmo projeto: urgência, emendas, destaques, procedimentos e redação final. Ficamos só com as votações do texto principal de PL, PLP e PEC no Plenário. Votações simbólicas (sem registro de voto de cada deputado) e outros tipos de proposta ficam de fora.</p>
       <p><strong>Como escolhemos.</strong> Dos ${inventory} registros, ${candidates} pareciam votações do texto principal. ${review}: ${excluded}${published} entraram no Placar. ${pendingNote}</p>
       ${Number.isInteger(coverage.segmentCount) && coverage.segmentCount > 0 ? `<p><strong>Decisões sobre trechos.</strong> Em alguns projetos, mostramos também ${scoreboardCount(coverage.segmentCount)} ${coverage.segmentCount === 1 ? 'votação nominal' : 'votações nominais'} de destaques e emendas ressalvados no texto principal, com o que significava votar Sim e Não. É um piloto: cada uma é conferida no relatório nominal e no texto oficial do destaque ou da emenda, e elas não entram na contagem acima nem nas comparações entre deputados e partidos.</p>` : ''}
+      ${Number.isInteger(coverage.urgencyCount) && coverage.urgencyCount > 0 ? `<p><strong>Pedidos de urgência.</strong> Em alguns projetos, mostramos também ${scoreboardCount(coverage.urgencyCount)} ${coverage.urgencyCount === 1 ? 'votação nominal' : 'votações nominais'} de pedidos para acelerar a tramitação (art. 155 do Regimento Interno), votados antes do texto principal. É um piloto, restrito a projetos que já têm a votação do texto principal no Placar; por isso não representa todos os pedidos de urgência do mandato. O voto na urgência não aprova o conteúdo e não entra na contagem acima nem nas comparações.</p>` : ''}
       <p><strong>Por que quase todas foram aprovadas.</strong> Antes da votação final, um projeto passa por comissões, pedidos de urgência e acordos entre os partidos. Quando não tem apoio, ele costuma parar no caminho: fica na comissão, é retirado da pauta ou é derrotado numa votação simbólica, sem registro do voto de cada deputado. As derrotas também aparecem em votações de emendas, destaques e requerimentos, que não entram aqui. Por isso, quando o texto principal chega a uma votação nominal, ele quase sempre é aprovado. Uma rejeição aqui pode ser de uma versão alternativa, como o substitutivo de uma comissão: nesse caso, a página da votação mostra a decisão seguinte, que aprovou o projeto.</p>
       <p><strong>Limites.</strong></p>
       <ul>${gaps}
@@ -224,6 +254,7 @@ function scoreboardItemCard(item) {
       ${item?.summary ? `<p class="muted scoreboard-summary">${scoreboardEscape(item.summary)}</p>` : ''}
       ${themes.length ? `<p class="scoreboard-themes">${themes.map(theme => `<span class="pill">${scoreboardEscape(theme)}</span>`).join(' ')}</p>` : ''}
       ${Number.isInteger(item?.segmentCount) && item.segmentCount > 0 ? `<p class="scoreboard-segment-count">+ ${item.segmentCount} ${item.segmentCount === 1 ? 'decisão sobre um trecho' : 'decisões sobre trechos'}, com voto de cada deputado</p>` : ''}
+      ${Number.isInteger(item?.urgencyCount) && item.urgencyCount > 0 ? `<p class="scoreboard-segment-count">+ ${item.urgencyCount} ${item.urgencyCount === 1 ? 'pedido de urgência' : 'pedidos de urgência'} votado${item.urgencyCount === 1 ? '' : 's'} antes</p>` : ''}
     </div>
     <div class="scoreboard-card-result">
       <p class="scoreboard-outcome" data-outcome="${scoreboardEscape(item?.outcome || '')}">${scoreboardEscape(scoreboardOutcome(item?.outcome, item?.related))}</p>
@@ -320,6 +351,7 @@ function scoreboardDetailSources(sources, dataNotes) {
     [source.rollCall, 'Relatório nominal', 'Voto de cada deputado'],
     [source.text, 'Texto votado', 'Versão do texto decidida'],
     [source.decision, 'Decisão na Câmara', 'Registro da decisão em Plenário'],
+    [source.request, 'Requerimento de urgência', 'Pedido votado'],
     [source.proposition, 'Ficha da proposição', 'Tramitação da proposta'],
     [source.referenceProposition, 'Proposição de referência nos Dados Abertos', ''],
   ].map(([url, label, note]) => {
@@ -400,20 +432,21 @@ function scoreboardDetailView() {
   const tally = vote.tally || {};
   const themes = Array.isArray(vote.themes) ? vote.themes.map(theme => scoreboardText(theme?.label)).filter(Boolean) : [];
   const isSegment = Boolean(vote.parent);
-  const outcome = isSegment ? (vote.decisionLabel || SCOREBOARD_SEGMENT_OUTCOMES[vote.outcome] || 'Resultado não informado') : scoreboardOutcome(vote.outcome, vote.related);
+  const isUrgency = vote.parent?.relation === 'urgency';
+  const outcome = isSegment ? (vote.decisionLabel || (isUrgency ? SCOREBOARD_URGENCY_OUTCOMES : SCOREBOARD_SEGMENT_OUTCOMES)[vote.outcome] || 'Resultado não informado') : scoreboardOutcome(vote.outcome, vote.related);
   const hasParticipants = payload.participantsAvailable !== false;
   const type = scoreboardVoteType(vote);
   const participants = Array.isArray(payload.participants) ? payload.participants : [];
   const pecNote = type === 'PEC' && !isSegment ? `<p class="muted scoreboard-pec-note">PEC precisa de 308 votos favoráveis (3/5 da Câmara) em cada um dos dois turnos.</p>` : '';
   return `<button type="button" class="back" data-back>‹ Voltar ao Placar</button>
     <header class="scoreboard-detail-head">
-      <p class="scoreboard-kicker">${scoreboardTypeBadge(type)}${type ? `<span class="scoreboard-type-name">${scoreboardEscape(isSegment ? SCOREBOARD_SEGMENT_KINDS[vote.kind] || 'Decisão sobre um trecho' : SCOREBOARD_TYPE_NAMES[type])}</span>` : ''}<span class="k">${scoreboardEscape(vote.proposition || 'Proposição não informada')} · votado em ${scoreboardEscape(scoreboardDate(vote.date))}</span></p>
+      <p class="scoreboard-kicker">${scoreboardTypeBadge(type)}${type ? `<span class="scoreboard-type-name">${scoreboardEscape(isUrgency ? 'Pedido de urgência' : isSegment ? SCOREBOARD_SEGMENT_KINDS[vote.kind] || 'Decisão sobre um trecho' : SCOREBOARD_TYPE_NAMES[type])}</span>` : ''}<span class="k">${scoreboardEscape(isUrgency && vote.request?.label ? `${vote.request.label} · ` : '')}${scoreboardEscape(vote.proposition || 'Proposição não informada')} · votado em ${scoreboardEscape(scoreboardDate(vote.date))}</span></p>
       <h1 class="h scoreboard-detail-title">${scoreboardEscape(vote.title || 'Título não informado')}</h1>
       <p class="scoreboard-themes"><span class="scoreboard-outcome" data-outcome="${scoreboardEscape(vote.outcome || '')}">${scoreboardEscape(outcome)}</span>${themes.map(theme => `<span class="pill">${scoreboardEscape(theme)}</span>`).join(' ')}</p>
     </header>
     <section class="card scoreboard-decision"><span class="k">O que foi decidido</span><h2 class="h">${scoreboardEscape(vote.decisionLabel || 'Decisão não informada')}</h2>${vote.summary ? `<p>${scoreboardEscape(vote.summary)}</p>` : '<p class="muted">Resumo não informado para esta versão.</p>'}
       <div class="scoreboard-meaning"><div><span class="k"><i class="vote-yes"></i>Sim significava</span><p>${scoreboardEscape(vote.yesMeaning || 'Informação não disponível neste registro.')}</p></div><div><span class="k"><i class="vote-no"></i>Não significava</span><p>${scoreboardEscape(vote.noMeaning || 'Informação não disponível neste registro.')}</p></div></div>
-      ${pecNote}<p class="muted">O resultado é o desta votação, não a situação atual da proposta.</p></section>
+      ${pecNote}${isUrgency ? scoreboardQuorumNote(vote.quorum) : ''}<p class="muted">O resultado é o desta votação, não a situação atual da proposta.</p></section>
     ${scoreboardRelatedDecision(vote.related)}
     ${scoreboardParentDecision(vote.parent)}
     <section class="card scoreboard-result"><span class="k">Resultado desta votação</span><dl class="scoreboard-tally"><div><dt>Sim</dt><dd>${scoreboardCount(tally.yes)}</dd></div><div><dt>Não</dt><dd>${scoreboardCount(tally.no)}</dd></div><div><dt>Abstenção</dt><dd>${scoreboardCount(tally.abstention)}</dd>${Number.isFinite(tally.abstention) ? '' : '<small>não publicada</small>'}</div><div><dt>Total</dt><dd>${scoreboardCount(tally.total)}</dd></div></dl>
@@ -421,6 +454,7 @@ function scoreboardDetailView() {
       <p class="muted">${scoreboardEscape(outcome)}. O resultado se refere a esta decisão registrada. O total soma Sim, Não e Abstenção.</p></section>
     ${hasParticipants ? scoreboardParticipants(payload.participants) : '<section class="card scoreboard-voters"><span class="k">Votos individuais</span><p class="muted">A lista individual não está disponível para esta votação.</p></section>'}
     ${scoreboardPartyTotals(payload.partyTotals)}
+    ${scoreboardUrgencies(vote.urgencies)}
     ${scoreboardSegments(vote.segments, vote.date)}
     ${scoreboardDetailSources(vote.sources, vote.dataNotes)}
     <span class="src">Fonte: Câmara dos Deputados · revisão em ${scoreboardEscape(scoreboardPeriodDate(vote.reviewedAt))}. O resultado descreve esta votação, sem indicar a situação atual da proposta.</span>`;

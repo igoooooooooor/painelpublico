@@ -205,7 +205,8 @@ function profileVotes(id) {
     profileChamberVotesEnsure(canonical);
     const items = CHAMBER_PERSON_VOTES.data[canonical]?.items;
     return Array.isArray(items) ? items.map(item => ({
-      vote: { id: item.id, titulo: item.title, proposicao: item.proposition, data: item.date, secreta: false, outcome: item.outcome },
+      vote: { id: item.id, titulo: item.title, proposicao: item.proposition, data: item.date, secreta: false, outcome: item.outcome,
+        urgencias: Array.isArray(item.urgencies) ? item.urgencies : [] },
       recordedVote: item.vote ?? null })) : [];
   }
   return profileVoteList(chamber).map(vote => ({ vote, recordedVote: profileVoteRows(vote)

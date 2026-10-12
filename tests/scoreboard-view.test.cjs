@@ -298,3 +298,39 @@ test('decisions on parts of the text list under the main vote and open as their 
   assert.doesNotMatch(app.innerHTML, /PEC precisa de 308/);
   assert.doesNotMatch(app.innerHTML, /Decisões sobre trechos do projeto/);
 });
+
+test('urgency requests list under the main vote, explain the quorum and open as their own page', async () => {
+  const urgency = { id: '9-8', date: '2026-10-01', request: { label: 'REQ 900/2026', url: 'https://www.camara.leg.br/ficha-req' },
+    title: 'Urgência para o <PL> 123/2026', summary: 'O REQ 900/2026 pediu urgência.', decisionLabel: 'Urgência rejeitada',
+    yesMeaning: 'Aprovar o pedido para acelerar a tramitação. Esse voto não aprova o conteúdo do projeto.',
+    noMeaning: 'Rejeitar o pedido de urgência.', outcome: 'rejected', quorum: 257,
+    tally: { yes: 244, no: 115, abstention: null, total: 359 }, sources: { request: 'https://www.camara.leg.br/ficha-req' } };
+  const main = { available: true, vote: item('1-1', 'Texto principal', { urgencies: [urgency] }), participants: [], partyTotals: [], participantsAvailable: false };
+  const request = { available: true, vote: { ...urgency, proposition: 'PL 123/2026', type: 'PL', themes: [],
+    parent: { id: '1-1', title: 'Texto principal', outcome: 'approved', date: '2026-10-08', relation: 'urgency' } },
+    participants: [], partyTotals: [], participantsAvailable: false };
+  const { context, app, click } = loadApp({ fetch: async url => url.startsWith('/api/c/votes?')
+    ? jsonResponse(listPayload({ items: [item('1-1', 'Texto principal', { urgencyCount: 1 })] }))
+    : jsonResponse(url.endsWith('/9-8') ? request : main) });
+  vm.runInContext("navigateToView('votes')", context);
+  await flush();
+  assert.match(app.innerHTML, /\+ 1 pedido de urgência votado antes/);
+  click({ vote: '1-1' });
+  await flush();
+  assert.match(app.innerHTML, /Antes desta votação: pedido de urgência/);
+  assert.match(app.innerHTML, /Esse voto não aprova nem rejeita o conteúdo/);
+  assert.match(app.innerHTML, /Pedido de urgência · REQ 900\/2026 · 01\/10\/2026/);
+  assert.match(app.innerHTML, /Urgência para o &lt;PL&gt; 123\/2026/);
+  assert.match(app.innerHTML, /pelo menos 257 votos Sim/);
+  assert.match(app.innerHTML, /data-vote="9-8"/);
+  click({ vote: '9-8' });
+  await flush();
+  assert.match(app.innerHTML, /Ligado a uma votação do texto principal/);
+  assert.match(app.innerHTML, /votado em 08\/10\/2026/);
+  assert.match(app.innerHTML, /não equivale a apoiar ou rejeitar o conteúdo/);
+  assert.match(app.innerHTML, /pelo menos 257 votos Sim/);
+  assert.match(app.innerHTML, /Requerimento de urgência ↗/);
+  assert.match(app.innerHTML, /Urgência rejeitada/);
+  assert.doesNotMatch(app.innerHTML, /Parte de uma votação maior/);
+  assert.doesNotMatch(app.innerHTML, /tentou barrar|incoerên/i);
+});

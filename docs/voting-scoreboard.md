@@ -635,6 +635,61 @@ de ampliar para as cerca de 216 candidatas nos projetos do Placar, decidir se a 
 contexto da relatoria (por exemplo, emendas rejeitadas "por não integrarem o acordo") entra
 sempre ou só quando o parecer a traz.
 
+## Pedidos de urgência (piloto de 12/10/2026)
+
+O voto no texto principal mostra só uma parte da atuação parlamentar. Os deputados também decidem
+quais trechos ficam no texto e se o projeto tramita com urgência. O Placar já mostrava os trechos;
+o piloto acrescenta os pedidos de urgência do art. 155 do Regimento Interno, com voto nominal. O voto
+na urgência aprova ou rejeita o pedido para acelerar a tramitação, não o conteúdo do projeto.
+
+**Contagem reproduzível.** No inventário de fev/2023 a 9/10/2026, 194 registros de votação da API
+descrevem um requerimento de urgência e trazem placar: 187 aprovados e 7 rejeitados. A contagem é de
+votações, não de requerimentos nem de projetos, e o método nominal só é confirmado no relatório
+oficial de cada uma. Só 56 dessas votações têm como projeto-alvo uma proposição com votação do texto
+principal no catálogo (55 votações principais). O piloto começa por esse recorte, que **não
+representa** toda a atuação sobre urgência: ficam de fora justamente os projetos cujo texto não teve
+votação nominal no catálogo.
+
+**Identidade e ligação.** Na API, a votação da urgência pertence ao próprio requerimento: o ID da
+votação começa pelo ID do REQ, e o relatório nominal identifica a proposição como esse REQ
+("REQ 4140/2024 - URGÊNCIA PARA APRECIAÇÃO DO PL Nº 3.802/2024"). Cada requerimento tem página própria;
+pode haver mais de um por projeto. A coleta (`ingest/chamber_vote_urgencies.py`) confere, falhando
+fechado:
+
+- o REQ da ficha (`/proposicoes/<id>`) com o número da revisão e do relatório; `objetosPossiveis`
+  não é usado, porque pode listar outro requerimento (no marco temporal, listava o REQ 1530/2023,
+  pedido de retirada de assinatura do REQ 1526/2023 votado);
+- o projeto-alvo: único projeto em `proposicoesAfetadas`, igual ao da votação principal ligada e
+  citado no objeto do relatório;
+- a descrição da API como requerimento de urgência do art. 155 e o resultado (`aprovacao`);
+- a votação principal ligada como a primeira deliberação do texto principal do projeto depois do
+  pedido, sem outra no meio no inventário (inclusive candidatos fora do catálogo). Sem essa regra, a
+  urgência do PL 5.230/2023 (dez/2023) ficaria ligada à votação do texto do Senado (jul/2024);
+- quórum: urgência aprovada precisa de pelo menos 257 votos Sim (maioria absoluta da composição).
+  Por isso há urgências rejeitadas com mais Sim que Não (244 × 115 no PL 3.802/2024);
+- relatório nominal, placar e votos individuais com as mesmas regras das decisões sobre trechos
+  (função comum `verify_nominal`).
+
+**Revisões.** `reviews/chamber-vote-urgency-reviews-<data>.json`, no ano da votação da urgência, com
+`request.label` ("REQ 4140/2024"), `parentId`, `reportObject` literal do relatório, textos em
+linguagem simples, fontes (relatório, ficha do REQ, ficha do projeto) e evidência. Regras editoriais:
+"Sim = aprovar o pedido para acelerar a tramitação; esse voto não aprova o conteúdo do projeto";
+datas e objetos das duas votações sempre visíveis; nenhuma combinação de votos é apresentada como
+incoerência (o texto pode mudar entre as duas decisões); "votou contra a urgência", nunca "tentou
+barrar"; não afirmar que o projeto "pulou as comissões". Urgências rejeitadas seguem a mesma regra.
+
+**Na tela.** A votação do texto principal mostra "Antes desta votação: pedido(s) de urgência", com
+placar, significado de Sim e Não e a nota do quórum; cada pedido abre como página própria ligada ao
+texto principal; a lista mostra "+ N pedidos de urgência votados antes"; a ficha do deputado mostra,
+sob o voto no texto, o voto no pedido com data e resultado. Os pedidos ficam fora de `publishedCount`,
+da concordância (`pairAgreement`), da unidade e das comparações de partidos.
+
+Piloto de 12/10/2026: 10 pedidos revisados, todos publicados, ligados a 9 votações principais
+(o PL 3.802/2024 tem dois pedidos: rejeitado em 17/12/2024 e aprovado no dia seguinte). Inclui um
+pedido aprovado com exatamente 257 Sim (PLP 233/2023), casos do mesmo dia e um de quase três meses
+(PL 2.162/2023). Fora do piloto, para decidir depois: autoria dos requerimentos (as fichas listam de
+2 a 261 signatários) e a estatística de projetos aprovados em urgência, que depende do regime na data.
+
 ## Fila editorial
 
 Desde 11/10/2026, a atualização semanal do servidor refaz o inventário do ano corrente até o dia e

@@ -2,7 +2,8 @@
 
 Aqui ficam as revisões editoriais das votações do Plenário que entram no Placar:
 `chamber-vote-reviews-<data>.json` (decisões principais) e
-`chamber-vote-segment-reviews-<data>.json` (destaques e emendas). São arquivos escritos à mão,
+`chamber-vote-segment-reviews-<data>.json` (destaques e emendas) e
+`chamber-vote-urgency-reviews-<data>.json` (pedidos de urgência, piloto). São arquivos escritos à mão,
 com ID, status, data, textos em linguagem simples, links oficiais e evidência, conforme a
 [Metodologia do Placar](../docs/voting-scoreboard.md).
 

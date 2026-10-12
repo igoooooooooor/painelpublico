@@ -1,6 +1,7 @@
 """Onde ficam as revisões do Placar.
 
-As revisões (``chamber-vote-reviews-<data>.json`` e ``chamber-vote-segment-reviews-<data>.json``)
+As revisões (``chamber-vote-reviews-<data>.json``, ``chamber-vote-segment-reviews-<data>.json`` e
+``chamber-vote-urgency-reviews-<data>.json``)
 são decisões editoriais escritas à mão. Desde 11/10/2026 elas moram em ``reviews/``, na raiz do
 repositório, versionadas no Git: quem revisa commita, e o deploy automático as leva ao servidor
 junto com o código, sem comando à parte. ``data/reviews/`` continua sendo a pasta dos arquivos
@@ -14,7 +15,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 REPO_DIR_NAME = 'reviews'
 LOCAL_DIR_NAME = 'data/reviews'
-REVIEW_PATTERNS = ('chamber-vote-reviews-*.json', 'chamber-vote-segment-reviews-*.json')
+REVIEW_PATTERNS = ('chamber-vote-reviews-*.json', 'chamber-vote-segment-reviews-*.json',
+                   'chamber-vote-urgency-reviews-*.json')
 
 
 def review_dirs(root: Path = ROOT) -> tuple[Path, Path]:

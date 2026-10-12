@@ -21,9 +21,7 @@ def build_segments(items, inventory_entries, reviews, *, cache, collect, refresh
     """Valida as revisões e pendura cada decisão na votação principal; devolve os detalhes novos."""
     # Importado aqui: chamber_votes chama esta função e guarda as regras comuns de conferência.
     from ingest.chamber_votes import (PROPOSITION_LABEL as proposition_label, VOTE_ID as vote_id,
-                                      _nominal_report as nominal_report, _official_source as official_source,
-                                      _registered_after_report as registered_after_report, _source_bytes,
-                                      _valid_review_date as valid_date, normalize_participants)
+                                      _official_source as official_source, _valid_review_date as valid_date)
     if not isinstance(reviews, list):
         raise CollectionError('A revisão de trechos deve ser uma lista.')
     # Um cache por inventário anual: com vários anos, cada decisão usa o cache do seu ano.
@@ -91,11 +89,6 @@ def build_segments(items, inventory_entries, reviews, *, cache, collect, refresh
         if review['outcome'] != api_outcome(record.get('descricao'), record.get('aprovacao')):
             raise CollectionError(f'{identifier}: resultado da revisão diverge do registro da API.')
 
-        content, report_source = _source_bytes(safe_sources['rollCall'], segment_cache / 'reports' / f'{identifier}.html',
-                                               collect=collect, refresh=refresh, request=request)
-        if not nominal_report(content):
-            raise CollectionError(f'{identifier}: relatório não confirma método nominal eletrônico.')
-        report = parse_roll_call(content)
         match = proposition_label.fullmatch(parent['proposition'])
         allowed = [{'type': match.group(1), 'number': int(match.group(2)), 'year': int(match.group(3))}] if match else []
         # Projeto apensado: o relatório pode usar a numeração da proposição dos Dados Abertos (a afetada
@@ -103,43 +96,13 @@ def build_segments(items, inventory_entries, reviews, *, cache, collect, refresh
         for affected in record.get('proposicoesAfetadas') or []:
             if isinstance(affected, dict) and str(affected.get('id')) == prefix:
                 allowed.append({'type': affected.get('siglaTipo'), 'number': affected.get('numero'), 'year': affected.get('ano')})
-        if allowed and report['proposition'] != allowed[0] and report['proposition'] in allowed:
+        report, tally, notes, detail = verify_nominal(
+            identifier, record, entry, review, safe_sources['rollCall'], allowed, notes, detail_source,
+            cache=segment_cache, collect=collect, refresh=refresh, request=request)
+        if allowed and report['proposition'] != allowed[0]:
             label = f"{report['proposition']['type']} {report['proposition']['number']}/{report['proposition']['year']}"
             notes = [*notes, f'O relatório nominal identifica a proposição pela numeração dos Dados Abertos ({label}); '
                              f"a votação principal publicada usa {parent['proposition']}."]
-        if (report['date'] != entry['date'] or report['proposition'] not in allowed
-                or report['object'] != review['reportObject']
-                or not registered_after_report(report['endedAt'], record.get('dataHoraRegistro'))):
-            raise CollectionError(f'{identifier}: relatório não corresponde à proposição, objeto e horário da decisão.')
-        api_tally = _recorded_partial_tally(record.get('descricao'))
-        if api_tally.get('yes') is None:
-            raise CollectionError(f'{identifier}: a API não publica placar nominal.')
-        chair = sum(row.get('vote') in ('Artigo 17', 'Presidiu') for row in report['participants'])
-        if (chair and api_tally.get('total') is not None and report['tally'].get('total') is not None
-                and api_tally['total'] == report['tally']['total'] + chair):
-            # O total do relatório soma Sim, Não e Abstenção; o da API às vezes inclui quem presidiu.
-            api_tally = {**api_tally, 'total': None}
-            notes = [*notes, 'O total da descrição da API inclui o registro de quem presidiu a sessão (art. 17); '
-                             'o Placar usa o total do relatório nominal, com Sim, Não e Abstenção.']
-        for key, value in api_tally.items():
-            if value is not None and report['tally'].get(key) is not None and value != report['tally'][key]:
-                raise CollectionError(f'{identifier}: placar da API diverge do relatório nominal.')
-        tally = {key: value if value is not None else report['tally'].get(key) for key, value in api_tally.items()}
-        if api_tally.get('no') is None:
-            if tally['no'] is None:
-                raise CollectionError(f'{identifier}: placar nominal sem votos Não em nenhuma fonte.')
-            notes = [*notes, 'A descrição da API não traz os votos Não; a contagem vem do relatório nominal oficial.']
-
-        rows, participant_sources = _paged(f'{url}/votos', segment_cache / 'participants' / identifier,
-                                           collect=collect, refresh=refresh, request=request)
-        origin, identity_sources = 'api', []
-        if not rows:
-            deputies, identity_sources = _paged(
-                f'{API_BASE}/deputados?dataInicio={entry["date"]}&dataFim={entry["date"]}&itens=100',
-                segment_cache / 'deputies' / entry['date'], collect=collect, refresh=refresh, request=request)
-            rows, origin = identify_participants(report['participants'], deputies), 'rollCall'
-            notes = [*notes, 'Os votos individuais vêm do relatório nominal oficial. A lista dos Dados Abertos está vazia nesta decisão.']
-        participants, party_totals = normalize_participants(rows, tally)
 
         segment = {'id': identifier, 'date': entry['date'], 'kind': review['kind'],
                    **{field: review[field] for field in SEGMENT_FIELDS}, 'outcome': review['outcome'], 'tally': tally,
@@ -147,17 +110,69 @@ def build_segments(items, inventory_entries, reviews, *, cache, collect, refresh
                    'registeredAt': str(record.get('dataHoraRegistro') or ''),
                    **({'dataNotes': notes} if notes else {})}
         parent.setdefault('segments', []).append(segment)
-        details[identifier] = {'id': identifier, 'participants': participants, 'partyTotals': party_totals,
-                               'sourceMetadata': {'vote': detail_source, 'rollCall': report_source,
-                                                  'participants': participant_sources,
-                                                  **({'participantsOrigin': origin, 'identities': identity_sources}
-                                                     if origin == 'rollCall' else {})}}
+        details[identifier] = detail
     for item in items:
         if 'segments' in item:
             # Na ordem em que a Câmara registrou as votações na sessão.
             item['segments'].sort(key=lambda segment: (segment.pop('registeredAt'), segment['id']))
     return details
 
+
+def verify_nominal(identifier, record, entry, review, roll_call_url, allowed, notes, detail_source, *,
+                   cache, collect, refresh, request):
+    """Confere relatório nominal, placar e votos individuais de uma decisão; devolve o detalhe público.
+
+    Regras comuns às decisões penduradas numa votação principal (trechos e pedidos de urgência):
+    o relatório oficial tem de ser nominal eletrônico, da mesma data, de uma proposição em ``allowed``,
+    com o objeto revisado e encerrado antes do registro da API; os placares têm de concordar.
+    """
+    from ingest.chamber_votes import (_nominal_report as nominal_report, _registered_after_report as registered_after_report,
+                                      _source_bytes, normalize_participants)
+    content, report_source = _source_bytes(roll_call_url, cache / 'reports' / f'{identifier}.html',
+                                           collect=collect, refresh=refresh, request=request)
+    if not nominal_report(content):
+        raise CollectionError(f'{identifier}: relatório não confirma método nominal eletrônico.')
+    report = parse_roll_call(content)
+    if (report['date'] != entry['date'] or report['proposition'] not in allowed
+            or report['object'] != review['reportObject']
+            or not registered_after_report(report['endedAt'], record.get('dataHoraRegistro'))):
+        raise CollectionError(f'{identifier}: relatório não corresponde à proposição, objeto e horário da decisão.')
+    api_tally = _recorded_partial_tally(record.get('descricao'))
+    if api_tally.get('yes') is None:
+        raise CollectionError(f'{identifier}: a API não publica placar nominal.')
+    chair = sum(row.get('vote') in ('Artigo 17', 'Presidiu') for row in report['participants'])
+    if (chair and api_tally.get('total') is not None and report['tally'].get('total') is not None
+            and api_tally['total'] == report['tally']['total'] + chair):
+        # O total do relatório soma Sim, Não e Abstenção; o da API às vezes inclui quem presidiu.
+        api_tally = {**api_tally, 'total': None}
+        notes = [*notes, 'O total da descrição da API inclui o registro de quem presidiu a sessão (art. 17); '
+                         'o Placar usa o total do relatório nominal, com Sim, Não e Abstenção.']
+    for key, value in api_tally.items():
+        if value is not None and report['tally'].get(key) is not None and value != report['tally'][key]:
+            raise CollectionError(f'{identifier}: placar da API diverge do relatório nominal.')
+    tally = {key: value if value is not None else report['tally'].get(key) for key, value in api_tally.items()}
+    if api_tally.get('no') is None:
+        if tally['no'] is None:
+            raise CollectionError(f'{identifier}: placar nominal sem votos Não em nenhuma fonte.')
+        notes = [*notes, 'A descrição da API não traz os votos Não; a contagem vem do relatório nominal oficial.']
+
+    url = f'{API_BASE}/votacoes/{identifier}'
+    rows, participant_sources = _paged(f'{url}/votos', cache / 'participants' / identifier,
+                                       collect=collect, refresh=refresh, request=request)
+    origin, identity_sources = 'api', []
+    if not rows:
+        deputies, identity_sources = _paged(
+            f'{API_BASE}/deputados?dataInicio={entry["date"]}&dataFim={entry["date"]}&itens=100',
+            cache / 'deputies' / entry['date'], collect=collect, refresh=refresh, request=request)
+        rows, origin = identify_participants(report['participants'], deputies), 'rollCall'
+        notes = [*notes, 'Os votos individuais vêm do relatório nominal oficial. A lista dos Dados Abertos está vazia nesta decisão.']
+    participants, party_totals = normalize_participants(rows, tally)
+    detail = {'id': identifier, 'participants': participants, 'partyTotals': party_totals,
+              'sourceMetadata': {'vote': detail_source, 'rollCall': report_source,
+                                 'participants': participant_sources,
+                                 **({'participantsOrigin': origin, 'identities': identity_sources}
+                                    if origin == 'rollCall' else {})}}
+    return report, tally, notes, detail
 
 
 def _roll_call_number(url):

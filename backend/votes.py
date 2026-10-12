@@ -23,7 +23,10 @@ _ITEM_FIELDS = ('id', 'date', 'proposition', 'type', 'title', 'summary', 'decisi
                 'yesMeaning', 'noMeaning', 'outcome', 'tally', 'themes', 'sources', 'reviewedAt')
 _COVERAGE_FIELDS = ('inventoryCount', 'candidateCount', 'reviewedCount', 'publishedCount', 'pendingCount')
 _OPTIONAL_COVERAGE_FIELDS = ('excludedCount', 'missingTextCount', 'missingAbstentionCount', 'missingThemeCount',
-                             'segmentCount')
+                             'segmentCount', 'urgencyCount')
+# Pedidos de urgência (art. 155): votados antes do texto principal, sobre acelerar a tramitação.
+_URGENCY_OUTCOMES = {'approved', 'rejected'}
+_REQUEST_LABEL = re.compile(r'^REQ \d+/\d{4}$')
 # Decisões sobre trechos (destaques e emendas) penduradas na votação do texto principal.
 _SEGMENT_KINDS = {'destaque', 'emenda', 'emendas', 'emenda_redacao', 'dispositivos'}
 _SEGMENT_OUTCOMES = {'approved', 'rejected', 'kept', 'removed'}
@@ -110,6 +113,36 @@ def _segment_item(value, parent_date):
             **({'dataNotes': notes} if 'dataNotes' in value else {})}
 
 
+def _urgency_item(value, parent_date):
+    """Validate one reviewed urgency request, voted on or before its main vote."""
+    if (not isinstance(value, dict) or not _VOTE_ID.fullmatch(str(value.get('id', '')))
+            or not _text(value.get('date'), limit=10) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}', value['date'])
+            or value['date'] > parent_date or value.get('outcome') not in _URGENCY_OUTCOMES
+            or not _count(value.get('quorum'))):
+        return None
+    for key, limit in (('title', 300), ('summary', 5000), ('decisionLabel', 300), ('yesMeaning', 500),
+                       ('noMeaning', 500), ('reviewedAt', 80)):
+        if not _text(value.get(key), limit=limit):
+            return None
+    request = value.get('request')
+    if (not isinstance(request, dict) or not _text(request.get('label'), limit=40)
+            or not _REQUEST_LABEL.fullmatch(request['label']) or not _https(request.get('url'))):
+        return None
+    tally, sources = _tally(value.get('tally')), value.get('sources')
+    if tally is None or not isinstance(sources, dict) or any(not _https(sources.get(key))
+                                                             for key in ('vote', 'rollCall', 'request', 'proposition')):
+        return None
+    notes = value.get('dataNotes')
+    if 'dataNotes' in value and (not isinstance(notes, list) or len(notes) > 4
+                                or any(not _text(note, limit=500) for note in notes)):
+        return None
+    return {**{key: value[key] for key in ('id', 'date', 'title', 'summary', 'decisionLabel', 'yesMeaning',
+                                           'noMeaning', 'outcome', 'quorum', 'reviewedAt')},
+            'request': {'label': request['label'], 'url': request['url']}, 'tally': tally,
+            'sources': {key: sources[key] for key in ('vote', 'rollCall', 'request', 'proposition')},
+            **({'dataNotes': notes} if 'dataNotes' in value else {})}
+
+
 def _summary_item(value):
     """Validate and project the public summary fields, excluding all detail-only data."""
     if not isinstance(value, dict) or not _VOTE_ID.fullmatch(str(value.get('id', ''))):
@@ -189,6 +222,13 @@ def _summary_item(value):
         segments = [_segment_item(segment, value['date']) for segment in segments]
         if any(segment is None for segment in segments) or len({segment['id'] for segment in segments}) != len(segments):
             return None
+    urgencies = value.get('urgencies')
+    if 'urgencies' in value:
+        if not isinstance(urgencies, list) or not urgencies:
+            return None
+        urgencies = [_urgency_item(urgency, value['date']) for urgency in urgencies]
+        if any(urgency is None for urgency in urgencies) or len({urgency['id'] for urgency in urgencies}) != len(urgencies):
+            return None
 
     return {
         'id': value['id'], 'date': value['date'], 'proposition': value['proposition'], 'type': value['type'],
@@ -198,6 +238,7 @@ def _summary_item(value):
         'themes': safe_themes, 'sources': safe_sources, 'reviewedAt': value['reviewedAt'],
         **({'dataNotes': notes} if 'dataNotes' in value else {}),
         **({'segments': segments} if 'segments' in value else {}),
+        **({'urgencies': urgencies} if 'urgencies' in value else {}),
         **({'related': {'id': related['id'], 'relation': related['relation'], 'outcome': related['outcome'],
                         'tally': {key: related['tally'][key] for key in ('yes', 'no', 'abstention', 'total')}}}
            if 'related' in value else {}),
@@ -249,12 +290,15 @@ def _index(path=None):
         item = _summary_item(raw_item)
         if item is None:
             return None
-        ids = [item['id'], *(segment['id'] for segment in item.get('segments', []))]
+        ids = [item['id'], *(segment['id'] for segment in item.get('segments', [])),
+               *(urgency['id'] for urgency in item.get('urgencies', []))]
         if len(set(ids)) != len(ids) or any(identifier in seen_ids for identifier in ids):
             return None
         seen_ids.update(ids)
         safe_items.append(item)
     if coverage.get('segmentCount', 0) != sum(len(item.get('segments', [])) for item in safe_items):
+        return None
+    if coverage.get('urgencyCount', 0) != sum(len(item.get('urgencies', [])) for item in safe_items):
         return None
     if coverage['publishedCount'] != len(safe_items):
         return None
@@ -311,9 +355,10 @@ def listing(params=None, path=None):
     total = len(filtered)
     page_count = (total + page_size - 1) // page_size
     offset = (page - 1) * page_size
-    # A lista mostra só quantas decisões sobre trechos cada votação tem; o conteúdo fica no detalhe.
-    page_items = [{**{key: value for key, value in item.items() if key != 'segments'},
-                   **({'segmentCount': len(item['segments'])} if item.get('segments') else {})}
+    # A lista mostra só quantos trechos e pedidos de urgência cada votação tem; o conteúdo fica no detalhe.
+    page_items = [{**{key: value for key, value in item.items() if key not in ('segments', 'urgencies')},
+                   **({'segmentCount': len(item['segments'])} if item.get('segments') else {}),
+                   **({'urgencyCount': len(item['urgencies'])} if item.get('urgencies') else {})}
                   for item in filtered[offset:offset + page_size]]
     return {'available': True, 'items': page_items, 'total': total,
             'page': page, 'pageSize': page_size, 'pageCount': page_count,
@@ -385,11 +430,19 @@ def detail(identifier, path=None):
         # Decisão sobre um trecho: mesma página, com a proposição e o link da votação principal.
         parent = next((item for item in snapshot['items']
                        if any(segment['id'] == identifier for segment in item.get('segments', []))), None)
+        relation = 'segment'
+        if parent is None:
+            # Pedido de urgência: também ligado à votação do texto principal, que vem depois dele.
+            parent = next((item for item in snapshot['items']
+                           if any(urgency['id'] == identifier for urgency in item.get('urgencies', []))), None)
+            relation = 'urgency'
         if parent is None:
             return None
-        segment = next(segment for segment in parent['segments'] if segment['id'] == identifier)
-        vote = {**segment, 'proposition': parent['proposition'], 'type': parent['type'], 'themes': parent['themes'],
-                'parent': {'id': parent['id'], 'title': parent['title'], 'outcome': parent['outcome']}}
+        child = next(entry for entry in parent['segments' if relation == 'segment' else 'urgencies']
+                     if entry['id'] == identifier)
+        vote = {**child, 'proposition': parent['proposition'], 'type': parent['type'], 'themes': parent['themes'],
+                'parent': {'id': parent['id'], 'title': parent['title'], 'outcome': parent['outcome'],
+                           'date': parent['date'], 'relation': relation}}
 
     participants, party_totals, available = _vote_details(snapshot_path, snapshot, identifier)
     return {'available': True, 'vote': vote, 'participants': participants,
@@ -452,6 +505,14 @@ def _person_index(snapshot_path, snapshot):
     # a referência "dois deputados quaisquer" da comparação, no mesmo critério do cartão.
     pairs = agreeing_pairs = 0
     for vote in snapshot['items']:
+        # Pedidos de urgência: voto de cada pessoa guardado à parte, fora da referência de concordância.
+        for urgency in vote.get('urgencies', []):
+            urgency_participants, _, urgency_available = _vote_details(snapshot_path, snapshot, urgency['id'])
+            if not urgency_available:
+                missing_details.add(urgency['id'])
+                continue
+            for participant in urgency_participants:
+                by_person.setdefault(participant['id'], {})[urgency['id']] = participant['vote']
         participants, _, available = _vote_details(snapshot_path, snapshot, vote['id'])
         if not available:
             missing_details.add(vote['id'])
@@ -487,8 +548,14 @@ def person_votes(identifier, path=None):
         return {'available': False, 'items': [], 'period': None, 'coverage': None, 'generatedAt': None}
     index = _person_index(snapshot_path, snapshot)
     choices = index['byPerson'].get(identifier, {})
+    def urgencies(vote):
+        return [{'id': urgency['id'], 'date': urgency['date'], 'request': urgency['request']['label'],
+                 'outcome': urgency['outcome'], 'vote': choices.get(urgency['id']),
+                 'detailsAvailable': urgency['id'] not in index['missingDetails']}
+                for urgency in vote.get('urgencies', [])]
     items = [{key: vote[key] for key in ('id', 'date', 'proposition', 'type', 'title', 'outcome')}
              | {'vote': choices.get(vote['id']), 'detailsAvailable': vote['id'] not in index['missingDetails']}
+             | ({'urgencies': urgencies(vote)} if vote.get('urgencies') else {})
              for vote in snapshot['items']]
     return {'available': True, 'items': items, 'period': snapshot['period'],
             'coverage': snapshot['coverage'], 'generatedAt': snapshot['generatedAt'],

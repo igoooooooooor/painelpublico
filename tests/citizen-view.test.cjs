@@ -879,3 +879,18 @@ test('presence card lists the published justifications without inventing missing
   const without = api.profileAttendanceCard({ id: 'camara:1', person, presence: { presente: 10, dias: 10, justificadas: 0, falta: 0 } });
   assert.doesNotMatch(without, /Justificativas/);
 });
+
+test('a vote with an urgency request shows both choices with dates, without calling them contradictory', () => {
+  const { api, state, context } = makeView();
+  setChamberVotes(context, 'camara:1', [
+    { ...placarVote('1-1', '2026-09-03', 'Texto principal', 'Não'),
+      urgencies: [{ id: '9-8', date: '2026-08-27', request: 'REQ 900/2026', outcome: 'approved', vote: 'Sim', detailsAvailable: true }] },
+    placarVote('2-1', '2026-09-02', 'Outra votação', 'Sim'),
+  ]);
+  setProfileFixture(api, state, 'camara:1');
+  const votes = profileSection(api.profileView(), 'votes');
+  assert.match(votes, /data-vote="1-1"><b>não<\/b>[\s\S]*Pedido de urgência \(REQ 900\/2026\) em 27\/08\/2026: sim · pedido aprovado/);
+  assert.match(votes, /decide se a tramitação é acelerada, não o conteúdo/);
+  assert.match(votes, /Votou em <b>2 de 2<\/b> votações do Placar/);
+  assert.doesNotMatch(votes, /contradi|incoerên|tentou barrar/i);
+});
