@@ -291,8 +291,7 @@ b.warn { color: var(--warn); }
 .party-who { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; min-width: 0; }
 .party-acronym { font-family: var(--f-display); font-size: 30px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; overflow-wrap: anywhere; }
 .party-acronym.sm { display: block; font-size: 20px; padding-bottom: 4px; }
-.party-who small, .party-stack small { font-size: 11px; color: var(--muted); }
-.party-stack { display: flex; flex-direction: column; gap: 2px; }
+.party-who small { font-size: 11px; color: var(--muted); }
 .party-vote { grid-template-columns: minmax(0, 1fr) 84px 84px; }
 .party-v { display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .party-score { font-size: 11px; color: var(--muted); }
@@ -1218,6 +1217,47 @@ body[data-view="city"] .view:has(> .city-hero) > .back[data-city-search] { displ
   .city-govern-part:last-child { padding-right: 0; }
   .city-govern-congress { padding-top: 0; border-top: 0; }
   .city-govern .city-mini-seats { padding-top: 0; border-top: 0; }
+}
+
+/* Comparar partidos (protótipo): escolha em pílulas numa faixa, um cartão por partido, cada métrica com o
+   rótulo em cima e os dois valores lado a lado (com barra quando os dois existem). Os cartões ficam na mesma ordem das colunas, então dizem de quem é cada valor. */
+.parties-page { display: flex; flex-direction: column; gap: 20px; }
+.party-pick { display: flex; flex-direction: column; gap: 10px; padding: 16px 0; border-block: 1px solid var(--line); }
+.party-pick .fchip { border-radius: 999px; }
+.party-pick .fchip b { font-family: var(--f-data); font-weight: 500; color: var(--muted); }
+.party-pick .fchip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
+.party-pick .fchip[aria-pressed="true"] b { color: var(--accent); }
+.party-pick > .muted { font-size: 13px; line-height: 1.5; }
+.party-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.party-card { align-items: flex-start; gap: 8px; padding: 18px; box-shadow: var(--shadow-raised); }
+.party-card .party-acronym { font-size: min(var(--fit, 56px), 40px); }
+.party-card-count { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.party-card-count b { font-size: 17px; font-weight: 600; }
+.party-card-count small { font-size: 13px; line-height: 1.4; color: var(--muted); }
+.parties-page .party-cmp { padding: 8px 16px 16px; box-shadow: var(--shadow-raised); }
+.parties-page .party-cmp .cmp-head { display: none; }
+.parties-page .party-cmp .cmp-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px; align-items: start; padding-block: 18px 6px; }
+.parties-page .party-cmp .cmp-head + .cmp-row { border-top: 0; }
+.parties-page .party-cmp .cmp-row:not(:has(> .cmp-l)) { border-top: 0; padding-top: 0; }
+.parties-page .party-cmp .cmp-l { grid-column: 1 / -1; font-size: 15px; font-weight: 600; color: var(--ink); }
+.parties-page .party-cmp .cmp-l small { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; color: var(--muted); }
+.party-note { display: block; margin-top: 4px; font-size: 12px; line-height: 1.4; color: var(--muted); }
+.parties-page .party-cmp .cmp-v { text-align: left; padding: 6px 10px; margin-inline: -10px; font-size: 14px; line-height: 1.45; }
+.parties-page .party-cmp .cmp-v > b { font-family: var(--f-data); font-size: clamp(20px, 2.4vw, 28px); font-weight: 600; letter-spacing: -0.02em; }
+.parties-page .party-cmp .cmp-v[style*="grid-column"] { grid-column: 1 / -1 !important; font-size: 12px; }
+.party-bar { display: block; height: 8px; margin-top: 8px; border-radius: 999px; background: var(--chip); overflow: hidden; }
+.party-bar i { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+.parties-page > .card.wide { box-shadow: var(--shadow-raised); }
+.party-votes-headline { font-family: var(--f-display); font-weight: 600; font-size: clamp(22px, 3vw, 30px); line-height: 1.2; letter-spacing: -0.015em; }
+.party-code { font-size: 11px; font-weight: 600; color: var(--muted); }
+.parties-page .citizen-more { align-self: center; border-radius: 999px; padding-inline: 24px; }
+@media (min-width: 721px) {
+  .party-card { flex-direction: row; align-items: center; gap: 20px; padding: 24px; }
+  .party-card .party-acronym { font-size: var(--fit, 56px); }
+  .party-card-count b { font-size: 22px; }
+  .parties-page .party-cmp { padding-inline: 24px; }
+  .parties-page .party-cmp .cmp-row { gap: 8px 24px; }
+  .parties-page .party-vote { grid-template-columns: minmax(0, 1fr) 110px 110px; }
 }
 
 /* Placar: decisões sobre trechos (destaques e emendas) */

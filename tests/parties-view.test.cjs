@@ -218,8 +218,8 @@ test('party share card tags lower quota and higher presence, and shows unity and
   ];
   const ctx = load(DATA, undefined, { ...CHAMBER_CATALOG, items });
   const card = ctx.partyShareCard(
-    { ...party('AAA', { membros: 3, comDados: 3, media: 34000, alertas: 3 }), cotaCategorias: { total: 100, itens: [{ nome: 'Divulgação', valor: 42 }] } },
-    { ...party('BBB', { membros: 2, comDados: 2, media: 32000, alertas: 1 }), cotaCategorias: null });
+    { ...party('AAA', { membros: 3, comDados: 3, media: 34000, alertas: 3, comAlerta: 2 }), cotaCategorias: { total: 100, itens: [{ nome: 'Divulgação', valor: 42 }] } },
+    { ...party('BBB', { membros: 2, comDados: 2, media: 32000, alertas: 1, comAlerta: 1 }), cotaCategorias: null });
   const [aaa, bbb] = card.people;
   assert.equal(card.layout, 'faceoff');
   assert.equal(bbb.stats[0].tag, 'R$ 2000 a menos por mês');
@@ -234,5 +234,44 @@ test('party share card tags lower quota and higher presence, and shows unity and
   assert.equal(aaa.meter.share, 7 / 8);
   assert.equal(bbb.meter.share, 1);
   assert.deepEqual([card.agreement.matching, card.agreement.total], [1, 2]);
-  assert.deepEqual([...card.alerts], ['10', '5']);
+  assert.deepEqual([...card.alerts], ['2 de 3', '1 de 2']);
+});
+
+test('party cards carry the list records, bars appear only when both values exist and chamber votes show the date', () => {
+  const ctx = load(DATA);
+  const html = ctx.partyComparisonTable(party('AAA', { membros: 3, comDados: 2, media: 100, alertas: 1 }),
+    party('BBB', { membros: 3, comDados: 1, media: 200, alertas: 0 }));
+  assert.match(html, /aria-label="Registros na lista disponível"/);
+  assert.match(html, /<b class="mono">3 na lista<\/b><small>3 deputados\(as\)<\/small>/);
+  const quotaRow = html.split('\n').find(line => line.includes('Cota por mês, média por deputado(a)'));
+  assert.match(quotaRow, /party-bar[^>]*><i style="width:50\.0%"><\/i>[\s\S]*party-bar[^>]*><i style="width:100\.0%"><\/i>/);
+  assert.match(html, /01\/10\/2026 · lados opostos/);
+  assert.match(html, /<small class="party-code">AAA<\/small>/);
+  const missing = ctx.partyComparisonTable(party('AAA', { membros: 3, comDados: 2, media: 100, alertas: 1 }),
+    party('BBB', { membros: 3, comDados: 0, media: null, alertas: 0 }));
+  const missingRow = missing.split('\n').find(line => line.includes('Cota por mês, média por deputado(a)'));
+  assert.doesNotMatch(missingRow, /party-bar/);
+});
+
+test('alerts compare people with at least one alert, never an extrapolated rate per 10 members', () => {
+  const ctx = load(DATA);
+  const html = ctx.partyComparisonTable(party('AAA', { membros: 1, comDados: 1, media: 100, alertas: 2, comAlerta: 1 }),
+    party('BBB', { membros: 3, comDados: 3, media: 200, alertas: 0, comAlerta: 0 }));
+  const row = html.split('\n').find(line => line.includes('Parlamentares com algum alerta na cota'));
+  assert.match(row, /<b>1<\/b><small> de 1 com notas · 2 alertas no total<\/small>/);
+  assert.match(row, /<b>0<\/b><small> de 3 com notas · 0 alertas no total<\/small>/);
+  assert.doesNotMatch(row, /cmp-v best|a cada 10|<b>20<\/b>/);
+  assert.doesNotMatch(row, /fora da conta/);
+  const partial = ctx.partyComparisonTable(party('AAA', { membros: 74, comDados: 73, media: 100, alertas: 105, comAlerta: 41 }),
+    party('BBB', { membros: 3, comDados: 3, media: 200, alertas: 0, comAlerta: 0 }));
+  const partialRow = partial.split('\n').find(line => line.includes('Parlamentares com algum alerta na cota'));
+  assert.match(partialRow, /<b>41<\/b><small> de 73 com notas · 105 alertas no total<\/small><small class="party-note">1 dos\(as\) 74 na lista não tem notas da cota e fica fora da conta\.<\/small>/);
+  const older = ctx.partyComparisonTable(party('AAA', { membros: 1, comDados: 1, media: 100, alertas: 2 }),
+    party('BBB', { membros: 3, comDados: 0, media: null, alertas: 0, comAlerta: 0 }));
+  const olderRow = older.split('\n').find(line => line.includes('Parlamentares com algum alerta na cota'));
+  assert.equal((olderRow.match(/Sem dados/g) || []).length, 2);
+  const card = ctx.partyShareCard(party('AAA', { membros: 1, comDados: 1, media: 100, alertas: 2, comAlerta: 1 }),
+    party('BBB', { membros: 3, comDados: 3, media: 200, alertas: 0, comAlerta: 0 }));
+  assert.equal(card.alertsLabel, 'Parlamentares com algum alerta');
+  assert.deepEqual([...card.alerts], ['1 de 1', '0 de 3']);
 });

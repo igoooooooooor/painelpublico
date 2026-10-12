@@ -221,6 +221,10 @@ class CitizenPoliticiansTests(unittest.TestCase):
             {**self.authority('camara:outro', 'Fábio Outro', 'deputado', 'camara_deputies_current'), 'party': 'OUTRO'})
         self.import_data()
         with closing(store.connect(self.db_path)) as db, db:
+            # Dois alertas da mesma pessoa e um tipo fora das regras: a pessoa conta uma vez só.
+            db.executemany("INSERT OR REPLACE INTO signals(id,authorityId,sourceId,type) VALUES (?,?,?,?)",
+                [('t:1', 'camara:paid', 'camara_ceap', 'pico'), ('t:2', 'camara:paid', 'camara_ceap', 'fornecedor'),
+                 ('t:3', 'camara:zero', 'camara_ceap', 'outro')])
             result = citizen.parties(db)
         parties = {item['sigla']: item for item in result['itens']}
 
@@ -231,6 +235,9 @@ class CitizenPoliticiansTests(unittest.TestCase):
         self.assertAlmostEqual(teste['deputado']['gasto'], 123.45)
         self.assertAlmostEqual(teste['deputado']['media'], 61.725)
         self.assertEqual(teste['senador']['membros'], 1)
+        self.assertGreaterEqual(teste['deputado']['alertas'], 2)
+        self.assertEqual(teste['deputado']['comAlerta'], 1)
+        self.assertLessEqual(teste['deputado']['comAlerta'], teste['deputado']['comDados'])
         self.assertEqual([person['id'] for person in teste['top']], ['camara:paid', 'senado:current', 'camara:zero'])
         self.assertNotIn('camara:former', [person['id'] for person in teste['top']])
         # Categorias da cota: só deputados(as) da lista atual, somando o mesmo total do gasto da bancada.
@@ -241,6 +248,7 @@ class CitizenPoliticiansTests(unittest.TestCase):
         self.assertEqual(outro['deputado']['comDados'], 0)
         self.assertIsNone(outro['deputado']['gasto'])
         self.assertIsNone(outro['deputado']['media'])
+        self.assertEqual(outro['deputado']['comAlerta'], 0)
         self.assertIsNone(outro['senador'])
         self.assertEqual(outro['top'], [])
         self.assertIsNone(outro['cotaCategorias'])

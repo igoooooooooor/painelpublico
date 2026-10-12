@@ -97,14 +97,40 @@ function registeredAttendanceRow(a, b, pending, source) {
   return `<div class="cmp-row"><span class="cmp-l">Presenças registradas por senador(a) · Senado</span><div class="cmp-v">${show(a)}</div><div class="cmp-v">${show(b)}</div></div>
     <div class="cmp-row"><div class="cmp-v muted cmp-source" style="grid-column:1 / -1">${sessionCount === null ? '' : `${sessionCount} listas de sessões consultadas. `}${esc(detail)}${sourceHtml}</div></div>`;
 }
-function comparisonRow(label, valueA, valueB, format, betterWhen, pending = false) {
+function comparisonRow(label, valueA, valueB, format, betterWhen, pending = false, bars = null) {
   // betterWhen: 'lower', 'higher' or null (information only). Missing values never get highlighted.
+  // bars: 'max' (escala do maior dos dois), 'share' (proporção de 0 a 1) ou null. Só com os dois valores.
   const isNumber = value => value !== null && value !== undefined && Number.isFinite(value);
   const winner = !betterWhen || !isNumber(valueA) || !isNumber(valueB) || valueA === valueB ? '' : (valueA < valueB) === (betterWhen === 'lower') ? 'a' : 'b';
-  const show = value => pending ? '<i class="sk" style="display:inline-block;width:48px;height:12px"></i>' : isNumber(value) ? format(value) : PARTY_UNAVAILABLE_LABEL;
+  const scale = bars === 'share' ? 1 : Math.max(valueA || 0, valueB || 0);
+  const bar = value => bars && !pending && isNumber(valueA) && isNumber(valueB) && scale > 0 ? `<span class="party-bar" aria-hidden="true"><i style="width:${Math.min(100, Math.max(0, value / scale * 100)).toFixed(1)}%"></i></span>` : '';
+  const show = value => pending ? '<i class="sk" style="display:inline-block;width:48px;height:12px"></i>' : isNumber(value) ? format(value) + bar(value) : PARTY_UNAVAILABLE_LABEL;
   return `<div class="cmp-row"><span class="cmp-l">${label}</span><div class="cmp-v ${!pending && winner === 'a' ? 'best' : ''}">${show(valueA)}</div><div class="cmp-v ${!pending && winner === 'b' ? 'best' : ''}">${show(valueB)}</div></div>`;
 }
 const formatPercent = v => `<b>${Math.round(v * 100)}%</b>`;
+/* Quantos(as) parlamentares têm ao menos um alerta, entre os(as) que têm notas. Sem taxa "a cada 10": em
+   partidos pequenos ela extrapola (1 pessoa com 2 alertas virava 20) e passa de 10 porque uma pessoa pode ter
+   vários alertas. Sem o campo na resposta, fica sem dados (ausência não é zero). */
+function partyAlertPeople(party) {
+  const roles = [party.deputado, party.senador].filter(Boolean);
+  if (!roles.length || roles.some(role => !Number.isFinite(role.comAlerta))) return null;
+  const base = roles.reduce((sum, role) => sum + (role.comDados || 0), 0);
+  if (!base) return null;
+  return { flagged: roles.reduce((sum, role) => sum + role.comAlerta, 0), base, alerts: roles.reduce((sum, role) => sum + (role.alertas || 0), 0),
+    members: roles.reduce((sum, role) => sum + (role.membros || 0), 0) };
+}
+function partyAlertRow(a, b) {
+  const show = party => {
+    const people = partyAlertPeople(party);
+    if (!people) return PARTY_UNAVAILABLE_LABEL;
+    // Quem não tem notas não pode ser avaliado(a) pelas regras: fica fora da base, e a tela diz quantos(as).
+    const outside = people.members - people.base;
+    return `<b>${people.flagged}</b><small> de ${people.base} com notas · ${people.alerts} ${people.alerts === 1 ? 'alerta' : 'alertas'} no total</small>${outside > 0
+      ? `<small class="party-note">${outside} dos(as) ${people.members} na lista não ${outside === 1 ? 'tem' : 'têm'} notas da cota e ${outside === 1 ? 'fica' : 'ficam'} fora da conta.</small>` : ''}`;
+  };
+  return `<div class="cmp-row"><span class="cmp-l">Parlamentares com algum alerta na cota<small>Mandato atual. Alertas não indicam irregularidade; sem destaque.</small></span><div class="cmp-v">${show(a)}</div><div class="cmp-v">${show(b)}</div></div>`;
+}
+const partyVoteDate = vote => /^\d{4}-\d{2}-\d{2}/.test(String(vote?.data || '')) && typeof dateBR === 'function' ? `${dateBR(vote.data)} · ` : '';
 function partyVoteChip(record) {
   if (!record.majority) return PARTY_UNAVAILABLE_LABEL;
   const className = record.majority === 'Sim' ? 'yes' : record.majority === 'Não' ? 'no' : '';
@@ -122,8 +148,7 @@ function partyShareCard(a, b) {
   const quotaWinner = winner(quota.map(value => value == null ? null : Math.round(value / 100)), true);
   const presenceWinner = winner(presence.map(value => value == null ? null : Math.round(value * 100)), false);
   const votes = parties.map(party => partyVotes(party.sigla));
-  const perTen = party => { const alerts = (party.deputado?.alertas || 0) + (party.senador?.alertas || 0); const members = (party.deputado?.comDados || 0) + (party.senador?.comDados || 0);
-    return members ? (alerts / members * 10).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : 'Sem dados'; };
+  const flaggedText = party => { const people = partyAlertPeople(party); return people ? `${people.flagged} de ${people.base}` : 'Sem dados'; };
   const people = parties.map((party, index) => {
     const unity = partyVoteAlignment(votes[index]);
     const categories = party.cotaCategorias?.total > 0 ? party.cotaCategorias.itens.map(item => ({ name: item.nome, share: item.valor / party.cotaCategorias.total })) : [];
@@ -146,7 +171,7 @@ function partyShareCard(a, b) {
     layout: 'faceoff', title: `${a.sigla} × ${b.sigla}`, people,
     agreement: shared.length ? { lead: 'As bancadas votaram igual em', matching: shared.filter(id => majorities[0].get(id) === majorities[1].get(id)).length,
       total: shared.length, source: 'votações do Placar · Câmara' } : null,
-    alertsLabel: 'Alertas a cada 10 parlamentares', alerts: parties.map(perTen),
+    alertsLabel: 'Parlamentares com algum alerta', alerts: parties.map(flaggedText),
     fileName: `${a.sigla}-x-${b.sigla}`,
     footnote: 'Câmara e Senado, mandato atual. Cota, presença e votações: deputados(as). Legenda pelo cadastro atual.',
   };
@@ -162,7 +187,6 @@ function partyComparisonTable(a, b) {
   const isSenateLoading = typeof profileSenateLoading === 'function' && profileSenateLoading();
   const senatePresenceSource = typeof profileSenateSource === 'function' ? profileSenateSource('presenca') : null;
   const senateVoteSource = typeof profileSenateSource === 'function' ? profileSenateSource('votacoes') : null;
-  const alertsPerTenMembers = party => { const alertCount = (party.deputado?.alertas || 0) + (party.senador?.alertas || 0); const memberCount = (party.deputado?.comDados || 0) + (party.senador?.comDados || 0); return memberCount ? alertCount / memberCount * 10 : null; };
   const comparableVotes = va.map((record, index) => [record, vb[index]]).filter(([first, second]) => first.majority && second.majority);
   const matchingVoteCount = comparableVotes.filter(([first, second]) => first.majority === second.majority).length;
   // Porcentagem em destaque, com a contagem entre parênteses para mostrar a base.
@@ -188,25 +212,25 @@ function partyComparisonTable(a, b) {
   const senateVoteRows = sa.slice(0, partyState.senateVoteLimit).map((record, index) => {
     const pair = sb[index];
     if (!pair) return '';
-    const content = `<span>${esc(record.vote.titulo || record.vote.proposicao || 'Votação nominal')}</span><span class="party-v">${partyVoteChip(record)}</span><span class="party-v">${partyVoteChip(pair)}</span><em>${record.majority && pair.majority ? (record.majority === pair.majority ? 'mesmo lado' : 'lados opostos') : 'sem votos registrados de um dos partidos'}</em>`;
+    const content = `<span>${esc(record.vote.titulo || record.vote.proposicao || 'Votação nominal')}</span><span class="party-v"><small class="party-code">${esc(a.sigla)}</small>${partyVoteChip(record)}</span><span class="party-v"><small class="party-code">${esc(b.sigla)}</small>${partyVoteChip(pair)}</span><em>${partyVoteDate(record.vote)}${record.majority && pair.majority ? (record.majority === pair.majority ? 'mesmo lado' : 'lados opostos') : 'sem votos registrados de um dos partidos'}</em>`;
     return typeof profileVoteButton === 'function' ? profileVoteButton(record.vote, content, 'cmp-vote party-vote') : `<button type="button" class="cmp-vote party-vote" data-vote="${esc(record.vote.id)}">${content}</button>`;
   }).join('');
   const senateVotesUnavailable = senateVoteSource?.status === 'unavailable';
-  const chamberVoteRows = va.slice(0, partyState.chamberVoteLimit).map((record, index) => `<button type="button" class="cmp-vote party-vote" data-vote="${esc(record.vote.id)}"><span>${esc(record.vote.titulo)}</span><span class="party-v">${partyVoteChip(record)}</span><span class="party-v">${partyVoteChip(vb[index])}</span><em>${record.majority && vb[index]?.majority ? (record.majority === vb[index].majority ? 'mesmo lado' : 'lados opostos') : 'sem votos registrados de um dos partidos'}</em></button>`).join('');
-  const recordSummary = party => `<b>${party.membros}</b><small>${[party.deputado ? `${party.deputado.membros} dep.` : '', party.senador ? `${party.senador.membros} sen.` : ''].filter(Boolean).join(' · ')}</small>`;
-  return `<section class="card cmp wide party-cmp">
+  const chamberVoteRows = va.slice(0, partyState.chamberVoteLimit).map((record, index) => `<button type="button" class="cmp-vote party-vote" data-vote="${esc(record.vote.id)}"><span>${esc(record.vote.titulo)}</span><span class="party-v"><small class="party-code">${esc(a.sigla)}</small>${partyVoteChip(record)}</span><span class="party-v"><small class="party-code">${esc(b.sigla)}</small>${partyVoteChip(vb[index])}</span><em>${partyVoteDate(record.vote)}${record.majority && vb[index]?.majority ? (record.majority === vb[index].majority ? 'mesmo lado' : 'lados opostos') : 'sem votos registrados de um dos partidos'}</em></button>`).join('');
+  const recordSummary = party => [party.deputado ? `${party.deputado.membros} ${party.deputado.membros === 1 ? 'deputado(a)' : 'deputados(as)'}` : '', party.senador ? `${party.senador.membros} ${party.senador.membros === 1 ? 'senador(a)' : 'senadores(as)'}` : ''].filter(Boolean).join(' + ');
+  return `<section class="party-cards" aria-label="Registros na lista disponível">${[a, b].map(party => `<div class="card party-card"><span class="party-acronym" style="--fit:${Math.min(56, Math.round(300 / Math.max(5, party.sigla.length)))}px">${esc(party.sigla)}</span><span class="party-card-count"><b class="mono">${party.membros} na lista</b><small>${recordSummary(party)}</small></span></div>`).join('')}</section>
+  <section class="card cmp wide party-cmp">
     <div class="cmp-head"><span></span>${[a, b].map(party => `<div class="party-who"><span class="party-acronym" style="--fit:${Math.min(30, Math.round(170 / Math.max(5, party.sigla.length)))}px">${esc(party.sigla)}</span><small>${party.membros} registros da lista</small></div>`).join('')}</div>
-    <div class="cmp-row"><span class="cmp-l">Registros na lista disponível</span><div class="cmp-v party-stack">${recordSummary(a)}</div><div class="cmp-v party-stack">${recordSummary(b)}</div></div>
-    ${comparisonRow('Cota por mês, média por deputado(a) · desde fev/2023', a.deputado?.media, b.deputado?.media, value => `<b class="mono">${formatCitizenAmount(value)}</b>`, 'lower')}
-    ${comparisonRow('Cota por mês, média por senador(a) · desde fev/2023', a.senador?.media, b.senador?.media, value => `<b class="mono">${formatCitizenAmount(value)}</b>`, 'lower')}
-    ${comparisonRow('Alertas a cada 10 parlamentares', alertsPerTenMembers(a), alertsPerTenMembers(b), value => `<b>${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}</b>`, null)}
-    ${comparisonRow('Presença média dos(as) deputados(as) no Plenário · Câmara', pa?.media, pb?.media, formatPercent, 'higher')}
+    ${comparisonRow('Cota por mês, média por deputado(a) · desde fev/2023', a.deputado?.media, b.deputado?.media, value => `<b class="mono">${formatCitizenAmount(value)}</b>`, 'lower', false, 'max')}
+    ${comparisonRow('Cota por mês, média por senador(a) · desde fev/2023', a.senador?.media, b.senador?.media, value => `<b class="mono">${formatCitizenAmount(value)}</b>`, 'lower', false, 'max')}
+    ${partyAlertRow(a, b)}
+    ${comparisonRow('Presença média dos(as) deputados(as) no Plenário · Câmara', pa?.media, pb?.media, formatPercent, 'higher', false, 'share')}
     ${registeredAttendanceRow(psa, psb, isSenateLoading, senatePresenceSource)}
-    ${comparisonRow('Unidade nas votações · Câmara', partyVoteAlignment(va), partyVoteAlignment(vb), formatPercent, null)}
-    ${comparisonRow('Unidade nas votações nominais · Senado', partyVoteAlignment(sa), partyVoteAlignment(sb), formatPercent, null, isSenateLoading)}
+    ${comparisonRow('Unidade nas votações · Câmara', partyVoteAlignment(va), partyVoteAlignment(vb), formatPercent, null, false, 'share')}
+    ${comparisonRow('Unidade nas votações nominais · Senado', partyVoteAlignment(sa), partyVoteAlignment(sb), formatPercent, null, isSenateLoading, 'share')}
   </section>
   <section class="card wide"><span class="k">Como votaram · Câmara</span>
-    ${chamberCatalog ? `<h2 class="h" style="font-size:21px">${comparableVotes.length ? `${sameSideHeadline(matchingVoteCount, comparableVotes.length, nominalNoun)}` : 'Sem votações com escolhas nominais registradas para ambos os partidos neste recorte.'}</h2>
+    ${chamberCatalog ? `<h2 class="h party-votes-headline">${comparableVotes.length ? `${sameSideHeadline(matchingVoteCount, comparableVotes.length, nominalNoun)}` : 'Sem votações com escolhas nominais registradas para ambos os partidos neste recorte.'}</h2>
     ${chamberVoteRows}${va.length > partyState.chamberVoteLimit ? `<button type="button" class="opt citizen-more" data-party-chamber-votes-more>Mostrar mais (${va.length - partyState.chamberVoteLimit})</button>` : ''}
     <p class="muted">Votações do Placar: texto principal de PL, PLP e PEC no Plenário${chamberCatalog.period ? `, de ${dateBR(chamberCatalog.period.start)} a ${dateBR(chamberCatalog.period.end)}` : ''}. Placar dentro de cada partido: votos sim–não dos(as) deputados(as) pela sigla publicada em cada votação. Votações secretas, simbólicas e de outros tipos de proposição ficam de fora.</p>
     ${chamberCatalog.coverage?.detail ? `<p class="muted">${esc(datesInTextBR(chamberCatalog.coverage.detail))}</p>` : ''}`
@@ -215,7 +239,7 @@ function partyComparisonTable(a, b) {
     : '<p class="muted">Catálogo de votações nominais da Câmara ainda não disponível.</p>'}
   </section>
   <section class="card wide"><span class="k">Como votaram · Senado</span>
-    ${isSenateLoading ? (typeof skel === 'function' ? skel('linhas', 3) : '<i class="sk" style="display:block;width:100%;height:14px"></i>') : senateVoteSource ? `<h2 class="h" style="font-size:21px">${senateVotesUnavailable ? 'Dados de votações nominais do Senado indisponíveis neste recorte.' : senateComparableVotes.length ? sameSideHeadline(senateMatchingVoteCount, senateComparableVotes.length, nominalNoun) : 'Sem votações com escolhas nominais registradas para ambos os partidos neste recorte.'}</h2>
+    ${isSenateLoading ? (typeof skel === 'function' ? skel('linhas', 3) : '<i class="sk" style="display:block;width:100%;height:14px"></i>') : senateVoteSource ? `<h2 class="h party-votes-headline">${senateVotesUnavailable ? 'Dados de votações nominais do Senado indisponíveis neste recorte.' : senateComparableVotes.length ? sameSideHeadline(senateMatchingVoteCount, senateComparableVotes.length, nominalNoun) : 'Sem votações com escolhas nominais registradas para ambos os partidos neste recorte.'}</h2>
       ${sa.length ? senateVoteRows : `<p class="muted">${senateVotesUnavailable ? 'Dados de votações nominais indisponíveis neste recorte.' : 'Sem votações nominais do Senado com registro neste recorte.'}</p>`}
       ${sa.length > partyState.senateVoteLimit ? `<button type="button" class="opt citizen-more" data-party-senate-votes-more>Mostrar mais (${sa.length - partyState.senateVoteLimit})</button>` : ''}
       ${senateVoteSource.detail ? `<p class="muted">${esc(datesInTextBR(senateVoteSource.detail))}</p>` : ''}${sourceMeta(senateVoteSource)}`
@@ -229,19 +253,24 @@ function partyComparisonTable(a, b) {
 function partiesView() {
   if (typeof profileSenateEnsure === 'function') profileSenateEnsure();
   loadParties();
-  const head = `<button type="button" class="back" data-back>‹ Voltar</button>
-  ${pageHead('Câmara e Senado', 'Comparar partidos', 'Registros da lista, gastos com a cota, presença e votos de dois partidos lado a lado.')}`;
-  if (partyState.error) return `${head}<section class="card wide"><p>Não deu para carregar os partidos agora.</p><p class="muted">${esc(partyState.error)}</p><button type="button" class="more" data-party-retry>Tentar de novo</button></section>`;
-  if (!partyState.data) return `${head}<section class="card wide party-pick sk-card">${skL('140px', 10)}${skel('chips', 12)}</section>${skel('cmp')}`;
+  const head = `<div class="compare-intro">
+      <button type="button" class="back" data-back>‹ Voltar</button>
+      <span class="k">Câmara e Senado</span>
+      <h1 class="h ph-t">Partidos lado a lado</h1>
+      <p class="ph-lead">Registros da lista, gastos com a cota, presença e votos de dois partidos. Compare a média, não o total: partidos maiores têm mais gente.</p>
+    </div>`;
+  const page = content => `<div class="parties-page">${head}${content}</div>`;
+  if (partyState.error) return page(`<section class="card wide"><p>Não deu para carregar os partidos agora.</p><p class="muted">${esc(partyState.error)}</p><button type="button" class="more" data-party-retry>Tentar de novo</button></section>`);
+  if (!partyState.data) return page(`<section class="card wide party-pick sk-card">${skL('140px', 10)}${skel('chips', 12)}</section>${skel('cmp')}`);
   const partiesByAcronym = Object.fromEntries(partyState.data.itens.map(party => [party.sigla, party]));
   const [a, b] = partyState.selected.map(acronym => partiesByAcronym[acronym]).filter(Boolean);
-  return `${head}
-  <section class="card wide party-pick"><span class="k">Escolha dois partidos</span>
+  return page(`<section class="party-pick" aria-label="Escolha dois partidos">
     <div class="chips" role="group" aria-label="Partidos">${partyState.data.itens.map(p => `<button type="button" class="fchip" data-party="${esc(p.sigla)}" aria-pressed="${partyState.selected.includes(p.sigla)}">${esc(p.sigla)} <b>${p.membros}</b></button>`).join('')}</div>
     <span class="muted">O número ao lado conta registros incluídos na lista (deputados(as) + senadores(as)); o Senado tem 81 cadeiras e a lista pode incluir suplentes em transição. Toque para trocar; o mais antigo da comparação sai.</span>
   </section>
-  ${a && b ? shareActionsHTML(partyShareCard(a, b), 'Compartilhar') + partyComparisonTable(a, b) : '<p class="note">Escolha dois partidos para comparar.</p>'}
-  <span class="src">Destaque em roxo: menor gasto médio, menos alertas ou mais presença na Câmara. Registros de presença do Senado são contagens informativas, sem ranking, e não contam sessões sem linha publicada. Partidos maiores tendem a ter mais variação interna; compare a média, não o total. Gastos pelas notas da cota (sem passagens aéreas da Câmara); presença e votos são mostrados separadamente por casa e pelos recortes das respectivas fontes.</span>`;
+  ${a && b ? partyComparisonTable(a, b) : '<p class="note">Escolha dois partidos para comparar.</p>'}
+  <span class="src">Destaque em roxo: menor gasto médio ou mais presença na Câmara; alertas e unidade nas votações só informam, sem destaque. Registros de presença do Senado são contagens informativas, sem ranking, e não contam sessões sem linha publicada. Partidos maiores tendem a ter mais variação interna; compare a média, não o total. Gastos pelas notas da cota (sem passagens aéreas da Câmara); presença e votos são mostrados separadamente por casa e pelos recortes das respectivas fontes.</span>
+  ${a && b ? `<div class="compare-actions">${shareActionsHTML(partyShareCard(a, b), 'Compartilhar imagem')}<button type="button" class="fchip" data-cmp-start="">Comparar políticos →</button></div>` : ''}`);
 }
 
 document.addEventListener('click', e => {

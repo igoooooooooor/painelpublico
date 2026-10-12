@@ -667,7 +667,9 @@ def parties(db):
             COUNT(*) membros,
             SUM(CASE WHEN t.authorityId IS NOT NULL THEN 1 ELSE 0 END) comDados,
             SUM(t.amountCents)/100.0 gasto,AVG({MONTHLY})/100.0 media,
-            SUM((SELECT COUNT(*) FROM signals s WHERE s.authorityId=a.id AND s.type IN ('pico','fornecedor'))) alertas
+            SUM((SELECT COUNT(*) FROM signals s WHERE s.authorityId=a.id AND s.type IN ('pico','fornecedor'))) alertas,
+            SUM(CASE WHEN EXISTS (SELECT 1 FROM signals s WHERE s.authorityId=a.id AND s.type IN ('pico','fornecedor'))
+                THEN 1 ELSE 0 END) comAlerta
         FROM authorities a LEFT JOIN authority_totals t ON t.authorityId=a.id AND t.kind='reembolso'
         WHERE {condition} AND TRIM(COALESCE(a.party,''))<>''
         GROUP BY a.party, a.role''', args)
@@ -694,7 +696,9 @@ def parties(db):
         person = out.setdefault(r['sigla'], {'sigla': r['sigla'], 'membros': 0, 'deputado': None, 'senador': None, 'top': []})
         # Média por pessoa do gasto médio mensal; sem notas, nula (ausência não é zero).
         person[r['role']] = {'membros': r['membros'], 'comDados': r['comDados'], 'gasto': r['gasto'],
-                        'media': r['media'] if r['comDados'] else None, 'alertas': r['alertas'] or 0}
+                        'media': r['media'] if r['comDados'] else None, 'alertas': r['alertas'] or 0,
+                        # Pessoas com ao menos um alerta: base para comparar partidos sem extrapolar a taxa.
+                        'comAlerta': r['comAlerta'] or 0}
         person['membros'] += r['membros']
     for r in top_rows:
         out[r['sigla']]['top'].append({k: r[k] for k in ('id', 'name', 'role', 'gasto', 'gastoMensal')})
