@@ -111,6 +111,7 @@
 /* ---------- Identidade comum (Painel Público) ---------- */
 .brand { display: inline-flex; align-items: center; gap: 9px; font-size: 24px; }
 .brand-ic { flex: none; }
+.brand-name { color: var(--accent); }
 .ph { display: flex; flex-direction: column; gap: 6px; padding-top: 4px; }
 .ph-t { font-size: 34px; }
 .ph-lead { margin: 0; font-size: 15px; line-height: 1.45; color: var(--ink-2); }

@@ -8,7 +8,7 @@ const citizenState = {
 };
 /* Peças de identidade usadas em todas as abas */
 function brandMark() {
-  return `<span class="brand"><svg class="brand-ic" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect width="26" height="26" rx="8" fill="var(--accent)"/><rect x="6" y="13" width="3.2" height="7" rx="1.2" fill="#fff"/><rect x="11.4" y="9" width="3.2" height="11" rx="1.2" fill="#fff"/><rect x="16.8" y="5.5" width="3.2" height="14.5" rx="1.2" fill="#fff" opacity=".7"/></svg><span class="sr-only">Painel Público</span></span>`;
+  return `<span class="brand"><svg class="brand-ic" width="26" height="26" viewBox="0 0 64 64" aria-hidden="true"><circle cx="20" cy="44" r="4.8" fill="var(--muted)" opacity=".7"/><circle cx="32" cy="32" r="4.8" fill="var(--muted)" opacity=".7"/><circle cx="44" cy="44" r="4.8" fill="var(--muted)" opacity=".7"/><circle cx="9" cy="44" r="4.8" fill="var(--muted)" opacity=".7"/><circle cx="15.74" cy="27.74" r="4.8" fill="var(--muted)" opacity=".7"/><circle cx="32" cy="21" r="4.8" fill="var(--muted)" opacity=".7"/><circle cx="48.26" cy="27.74" r="6" fill="var(--accent)"/><circle cx="55" cy="44" r="4.8" fill="var(--muted)" opacity=".7"/></svg><span class="brand-name">Painel Público</span></span>`;
 }
 /* Skeleton: a forma do conteúdo em cinza, com brilho suave, enquanto os dados chegam.
    Toda espera do app usa uma destas formas; o texto fica só para leitores de tela. */
