@@ -229,13 +229,53 @@ class StandaloneUrgencyTests(unittest.TestCase):
 
     def test_procedures_do_not_count_and_a_symbolic_text_vote_is_recorded(self):
         regime = {"id": "42-8", "date": THROUGH, "category": "procedure", "registeredAt": f"{THROUGH}T10:40:00"}
-        text = {"id": "42-9", "date": THROUGH, "category": "main_text", "candidate": True, "registeredAt": f"{THROUGH}T11:00:00"}
+        text = {"id": "42-9", "date": THROUGH, "category": "main_text", "candidate": True, "registeredAt": f"{THROUGH}T11:00:00",
+                "description": "Aprovado o Projeto de Lei nº 1, de 2026."}
         # Emenda de comissão votada na mesma sessão, logo antes do texto.
         amendment = {"id": "42-7", "date": THROUGH, "category": "amendment", "registeredAt": f"{THROUGH}T10:50:00"}
         _, standalone = self.build(extra=[regime, amendment, text], excluded={"42-9": "Votação simbólica na transcrição."})
         self.assertEqual(standalone[0]["textStatus"], {"kind": "symbolic", "date": THROUGH})
         with self.assertRaisesRegex(CollectionError, "sem votação simbólica confirmada"):
             self.build(extra=[text], excluded={"42-9": "Outro motivo."})
+        with self.assertRaisesRegex(CollectionError, "não registra aprovação"):
+            self.build(extra=[{**text, "description": "Rejeitado o Projeto de Lei nº 1, de 2026."}],
+                       excluded={"42-9": "Votação simbólica."})
+
+    def build_with_published(self, published_id, registered, extra=(), excluded=None):
+        """Catálogo em que uma votação nominal do texto do projeto 42 está publicada no Placar."""
+        root = Path(tempfile.mkdtemp(dir=self.root))
+        api = UrgencyAPI()
+        data = urgency_inventory([{"id": published_id, "date": THROUGH, "category": "main_text", "candidate": True,
+                                   "registeredAt": registered, "description": "Aprovado o Projeto de Lei nº 1, de 2026."}, *extra])
+        snapshot, details = chamber_votes.build_catalogue(data, [review()], root=root, collect=True, request=api)
+        published = {**snapshot["items"][0], "id": published_id,
+                     "sources": {**snapshot["items"][0]["sources"],
+                                 "rollCall": "https://www.camara.leg.br/internet/votacao/mostraVotacao.asp?ideVotacao=100"}}
+        items = [published]
+        entries = {entry["id"]: entry for entry in data["entries"]}
+        cache = root / "data" / "raw" / "chamber-vote-inventory" / f"{data['period']['start']}_{data['period']['end']}"
+        standalone = []
+        build_urgencies(items, entries, [urgency_review(parentId=None)], taken=set(details), cache=cache, collect=True,
+                        refresh=False, request=api, standalone=standalone, excluded=excluded or {}, through=THROUGH)
+        return items, standalone
+
+    def test_a_request_is_linked_automatically_when_the_text_enters_the_scoreboard(self):
+        items, standalone = self.build_with_published("42-9", f"{THROUGH}T11:00:00")
+        self.assertEqual(standalone, [])
+        self.assertEqual([urgency["id"] for urgency in items[0]["urgencies"]], [URGENCY_ID])
+        # A ligação automática passa pelas mesmas conferências de ordem.
+        with self.assertRaisesRegex(CollectionError, "ordem é ambígua"):
+            self.build_with_published("42-9", f"{THROUGH}T11:00:00", extra=[
+                {"id": "42-8", "date": THROUGH, "category": "main_text", "candidate": True, "registeredAt": f"{THROUGH}T11:02:00",
+                 "description": "Rejeitado o Substitutivo."}], excluded={"42-8": "Votação simbólica."})
+
+    def test_a_later_roll_call_on_the_text_is_pointed_from_the_symbolic_status(self):
+        symbolic = {"id": "42-7", "date": THROUGH, "category": "main_text", "candidate": True,
+                    "registeredAt": f"{THROUGH}T10:45:00", "description": "Aprovado o Projeto de Lei nº 1, de 2026."}
+        _, standalone = self.build_with_published("42-9", f"{THROUGH}T12:40:00", extra=[symbolic],
+                                                  excluded={"42-7": "Votação simbólica."})
+        self.assertEqual(standalone[0]["textStatus"], {"kind": "symbolic", "date": THROUGH,
+                                                       "laterVote": {"id": "42-9", "date": THROUGH}})
 
     def test_other_deliberations_without_the_main_text_fail_closed(self):
         senate = {"id": "42-9", "date": THROUGH, "category": "amendment", "registeredAt": f"{THROUGH}T11:00:00"}

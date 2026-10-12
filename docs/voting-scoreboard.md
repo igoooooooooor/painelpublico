@@ -708,10 +708,15 @@ ficha em `sources.proposition` é a do projeto-alvo, conferida contra `proposico
 relatório. A situação do texto não é escrita à mão: `text_status` a calcula do inventário na geração do
 catálogo. Procedimentos (requerimentos, "Alteração do Regime de Tramitação") não contam como
 deliberação. Sem deliberação depois do pedido, o texto **não foi votado** até o fim do inventário. Se a
-primeira deliberação é o texto principal excluído do Placar por votação simbólica (motivo da revisão),
-o texto foi **aprovado em votação simbólica** naquela data; emendas votadas na mesma sessão, logo antes do
-texto, são aceitas. Qualquer outro caso falha fechado: emendas do Senado, subemenda sem o texto como
-candidato, texto publicado no Placar (então a revisão precisa de `parentId`). Só entram urgências do
+primeira deliberação é o texto principal excluído do Placar por votação simbólica (motivo da revisão) e
+o registro diz aprovação, o texto foi **aprovado em votação simbólica** naquela data; emendas votadas na
+mesma sessão, logo antes do texto, são aceitas. Se depois o texto voltar a ser votado com voto nominal no
+Placar (texto do Senado, por exemplo), a situação aponta para essa votação (`laterVote`). Se a primeira
+deliberação for uma votação do texto publicada no Placar, o pedido é **ligado automaticamente** a ela, com
+as mesmas conferências de ordem dos pedidos ligados; a revisão não precisa ser reescrita. Qualquer outro
+caso falha fechado: emendas do Senado, subemenda sem o texto como candidato, simbólica sem aprovação.
+Lacuna conhecida: uma votação registrada nos Dados Abertos sob o ID de outra proposição (apensada) não
+é vista pelo cálculo; nos 111 atuais, nenhum caso foi encontrado. Só entram urgências do
 art. 155: a descrição da API não pode citar outro artigo, e, quando não cita nenhum, a ementa oficial do
 requerimento tem de citar o art. 155.
 
@@ -723,7 +728,8 @@ deputados e 1 com o relatório citando outro projeto. No catálogo, eles ficam e
 índice (`coverage.standaloneUrgencyCount`), fora de `items`. Na tela: filtro "Tipo de decisão" no Placar
 (`/api/c/votes?kind=urgency` lista os ligados e estes juntos, com a situação do texto); o mesmo filtro tem "Destaques e emendas" (`kind=segment`), com os 212 trechos, cada um com a votação do texto a que pertence, e o filtro de resultado conta trecho mantido como Sim vencedor e trecho retirado como Sim derrotado, página própria com
 o bloco "E o texto do projeto?" e, na ficha, uma linha "urgência · voto" com a situação do texto, fora da
-contagem de votações. Para esses projetos, o pedido é o único voto registrado de cada deputado. Os títulos
+contagem de votações. Para esses projetos, o pedido tem votos individuais mesmo sem votação nominal do texto principal no
+Placar; outras etapas (emendas do Senado, por exemplo) podem ter tido votação nominal. Os títulos
 curtos partem da ementa oficial; quando ela só cita as leis alteradas, o título diz só isso.
 
 **Localizar o relatório.** `python3 -m ingest.chamber_vote_report_locator <id> ... [--collect]` procura,

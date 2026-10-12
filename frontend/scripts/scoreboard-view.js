@@ -99,7 +99,7 @@ function scoreboardUrgencies(urgencies) {
    (sem voto de cada deputado) ou ainda não votado até o fim do levantamento. */
 function scoreboardTextStatus(status) {
   if (status?.kind === 'placar') return `Texto votado no Placar em ${scoreboardPeriodDate(status.date)}`;
-  if (status?.kind === 'symbolic') return `Texto aprovado em votação simbólica em ${scoreboardPeriodDate(status.date)}, sem voto de cada deputado`;
+  if (status?.kind === 'symbolic') return `Texto aprovado em votação simbólica em ${scoreboardPeriodDate(status.date)}, sem voto de cada deputado${status.laterVote ? `; votado de novo no Placar em ${scoreboardPeriodDate(status.laterVote.date)}` : ''}`;
   if (status?.kind === 'not_voted') return `Texto ainda não votado no Plenário (até ${scoreboardPeriodDate(status.through)})`;
   return '';
 }
@@ -108,12 +108,14 @@ function scoreboardTextStatusCard(vote) {
   if (!status || vote?.parent) return '';
   const project = scoreboardEscape(vote.proposition || 'o projeto');
   const body = status.kind === 'symbolic'
-    ? `O texto do ${project} foi aprovado em ${scoreboardEscape(scoreboardPeriodDate(status.date))} em votação simbólica, em que não se registra o voto de cada deputado. Por isso o texto não está no Placar, e este pedido de urgência é o único voto registrado de cada deputado sobre o projeto.`
+    ? `O texto do ${project} foi aprovado em ${scoreboardEscape(scoreboardPeriodDate(status.date))} em votação simbólica, em que não se registra o voto de cada deputado. Por isso o texto principal não está no Placar. Este pedido tem votos individuais disponíveis, mesmo sem votação nominal do texto principal; outras etapas do projeto podem ter tido votação nominal.`
     : status.kind === 'not_voted'
-      ? `Até ${scoreboardEscape(scoreboardPeriodDate(status.through))}, a Câmara não votou o texto do ${project} no Plenário. Por enquanto, este pedido de urgência é o único voto registrado de cada deputado sobre o projeto. Aprovar a urgência não garante que o texto será votado, nem quando.`
+      ? `Até ${scoreboardEscape(scoreboardPeriodDate(status.through))}, a Câmara não votou o texto do ${project} no Plenário. Este pedido tem votos individuais disponíveis, mesmo sem votação do texto principal. Aprovar a urgência não garante que o texto será votado, nem quando.`
       : '';
   if (!body) return '';
-  return `<section class="card scoreboard-related" role="note"><span class="k">E o texto do projeto?</span><p>${body}</p></section>`;
+  const later = status.kind === 'symbolic' && SCOREBOARD_VOTE_ID.test(scoreboardText(status.laterVote?.id))
+    ? `<p>Depois, o texto voltou a ser votado, com voto de cada deputado, em ${scoreboardEscape(scoreboardPeriodDate(status.laterVote.date))}.</p><button type="button" class="more" data-vote="${scoreboardEscape(status.laterVote.id)}">Ver essa votação no Placar →</button>` : '';
+  return `<section class="card scoreboard-related" role="note"><span class="k">E o texto do projeto?</span><p>${body}</p>${later}</section>`;
 }
 function scoreboardParentDecision(parent) {
   if (!parent || !SCOREBOARD_VOTE_ID.test(scoreboardText(parent.id))) return '';
@@ -237,7 +239,7 @@ function scoreboardCoverage(data) {
       ${Number.isInteger(coverage.segmentCount) && coverage.segmentCount > 0 ? `<p><strong>Decisões sobre trechos.</strong> Em alguns projetos, mostramos também ${scoreboardCount(coverage.segmentCount)} ${coverage.segmentCount === 1 ? 'votação nominal' : 'votações nominais'} de destaques e emendas ressalvados no texto principal, com o que significava votar Sim e Não. É um piloto: cada uma é conferida no relatório nominal e no texto oficial do destaque ou da emenda, e elas não entram na contagem acima nem nas comparações entre deputados e partidos. Elas aparecem na página da votação do texto e também no filtro “Destaques e emendas”.</p>` : ''}
       ${Number.isInteger(coverage.urgencyCount) && coverage.urgencyCount > 0 ? (() => {
         const linked = coverage.urgencyCount, alone = Number.isInteger(coverage.standaloneUrgencyCount) ? coverage.standaloneUrgencyCount : 0;
-        return `<p><strong>Pedidos de urgência.</strong> Mostramos também ${scoreboardCount(linked + alone)} votações nominais de pedidos para acelerar a tramitação (art. 155 do Regimento Interno), no filtro “Pedidos de urgência”. Em ${scoreboardCount(linked)}, o texto do projeto foi votado depois no Placar, e o pedido aparece também na página dessa votação.${alone ? ` Nas outras ${scoreboardCount(alone)}, o texto foi aprovado em votação simbólica, sem voto de cada deputado, ou ainda não foi votado; o pedido é o único voto registrado sobre o projeto.` : ''} O voto na urgência não aprova o conteúdo e não entra na contagem acima nem nas comparações. Pedidos de outros tipos de proposta e casos que ainda pedem conferência ficam de fora.</p>`;
+        return `<p><strong>Pedidos de urgência.</strong> Mostramos também ${scoreboardCount(linked + alone)} votações nominais de pedidos para acelerar a tramitação (art. 155 do Regimento Interno), no filtro “Pedidos de urgência”. Em ${scoreboardCount(linked)}, o texto do projeto foi votado depois no Placar, e o pedido aparece também na página dessa votação.${alone ? ` Nas outras ${scoreboardCount(alone)}, o texto foi aprovado em votação simbólica, sem voto de cada deputado, ou ainda não foi votado; o pedido tem votos individuais mesmo sem votação nominal do texto principal.` : ''} O voto na urgência não aprova o conteúdo e não entra na contagem acima nem nas comparações. Pedidos de outros tipos de proposta e casos que ainda pedem conferência ficam de fora.</p>`;
       })() : ''}
       <p><strong>Por que quase todas foram aprovadas.</strong> Quase todas as votações do texto principal no Placar terminaram em aprovação. Isso não quer dizer consenso: um texto aprovado por margem estreita pode ter sido muito disputado, e o placar de cada votação mostra o tamanho da divisão. O Placar também não mostra os projetos que não chegaram a uma votação nominal do texto, por exemplo os que ficaram nas comissões ou foram decididos em votação simbólica. Parte das disputas aparece nas decisões sobre trechos e nos pedidos de urgência, mostrados à parte quando já conferidos. Uma rejeição aqui pode ser de uma versão alternativa, como o substitutivo de uma comissão: nesse caso, a página da votação mostra a decisão seguinte, que aprovou o projeto.</p>
       <p><strong>Limites.</strong></p>

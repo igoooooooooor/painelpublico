@@ -782,7 +782,7 @@ function profileUrgencyVotes(vote) {
 function profileStandaloneUrgencyNote(vote) {
   const info = vote.urgenciaAvulsa || {};
   const result = ({ approved: 'aprovado', rejected: 'rejeitado' })[vote.outcome] || 'resultado não informado';
-  const status = info.textStatus?.kind === 'symbolic' ? `Texto aprovado em votação simbólica em ${dateBR(info.textStatus.date)}, sem voto individual`
+  const status = info.textStatus?.kind === 'symbolic' ? `Texto aprovado em votação simbólica em ${dateBR(info.textStatus.date)}, sem voto individual${info.textStatus.laterVote ? `; votado de novo no Placar em ${dateBR(info.textStatus.laterVote.date)}` : ''}`
     : info.textStatus?.kind === 'not_voted' ? `Texto ainda não votado (até ${dateBR(info.textStatus.through)})` : '';
   return `<small class="profile-vote-urgency">Pedido de urgência${info.request ? ` (${esc(info.request)})` : ''} em ${esc(dateBR(vote.data))} · pedido ${esc(result)}</small>${status ? `<small class="profile-vote-urgency">${esc(status)}</small>` : ''}`;
 }
@@ -802,7 +802,7 @@ function profileVoteDetails(shared) {
       return profileVoteButton(vote, `<b>${esc(voteLabel)}</b><span>${esc(vote.titulo)}</span>${senate ? `<small>${esc(dateBR(vote.data))} · fonte oficial ↗</small>` : profileUrgencyVotes(vote)}`);
     }).join('')}</div>` : `<p class="muted">${senate ? 'Votos nominais do Senado ainda não disponíveis neste recorte.' : 'Votações do Placar indisponíveis no momento.'}</p>`}
     ${votes.length > limit ? `<button type="button" class="more" data-profile-votes-more="${esc(shared.id)}">Mostrar mais votações (${votes.length - limit})</button>` : ''}
-    ${!senate && votes.some(({ vote }) => vote.urgencias?.length || vote.urgenciaAvulsa) ? '<p class="muted">Aparecem também os votos em pedidos de urgência, que decidem se a tramitação é acelerada, não o conteúdo. O texto pode ter mudado entre as duas votações. Quando o texto foi aprovado em votação simbólica ou ainda não foi votado, o pedido é o único voto registrado sobre o projeto. Esses votos não entram no resumo acima.</p>' : ''}
+    ${!senate && votes.some(({ vote }) => vote.urgencias?.length || vote.urgenciaAvulsa) ? '<p class="muted">Aparecem também os votos em pedidos de urgência, que decidem se a tramitação é acelerada, não o conteúdo. O texto pode ter mudado entre as duas votações. Quando o texto foi aprovado em votação simbólica ou ainda não foi votado, o pedido tem votos individuais mesmo sem votação nominal do texto principal. Esses votos não entram no resumo acima.</p>' : ''}
     <p class="muted">O resumo conta votos identificados na fonte. ${senate ? 'Presença sem voto, atividade parlamentar, licenças e presidência não contam como voto nominal.' : 'Presença em voto secreto e quem presidiu aparecem à parte.'} Ausência de registro não significa que a pessoa não votou.</p>
     ${source ? `${profileSource(source, 'Fonte das votações do Senado')}${source.detail ? `<p class="muted">${esc(datesInTextBR(source.detail))}</p>` : ''}` : ''}
 `;

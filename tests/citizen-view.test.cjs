@@ -911,5 +911,6 @@ test('urgency requests without a main vote join the vote list with the state of 
   assert.match(votes, /data-vote="1-1">[\s\S]*data-vote="9-10"><b>urgência · sim<\/b>[\s\S]*data-vote="9-9"><b>urgência · não<\/b>/);
   assert.match(votes, /Texto aprovado em votação simbólica em 01\/09\/2026, sem voto individual/);
   assert.match(votes, /Texto ainda não votado \(até 09\/10\/2026\)/);
-  assert.match(votes, /o pedido é o único voto registrado sobre o projeto/);
+  assert.match(votes, /o pedido tem votos individuais mesmo sem votação nominal do texto principal/);
+  assert.doesNotMatch(votes, /único voto/);
 });

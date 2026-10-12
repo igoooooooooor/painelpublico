@@ -161,11 +161,18 @@ def _standalone_urgency(value):
             or not isinstance(status, dict) or status.get('kind') not in _TEXT_STATUS):
         return None
     if status['kind'] == 'symbolic':
-        if not _iso_date(status.get('date')) or status['date'] < base['date'] or set(status) != {'kind', 'date'}:
+        later = status.get('laterVote')
+        if (not _iso_date(status.get('date')) or status['date'] < base['date'] or set(status) - {'laterVote'} != {'kind', 'date'}
+                or ('laterVote' in status and (not isinstance(later, dict) or set(later) != {'id', 'date'}
+                                               or not _VOTE_ID.fullmatch(str(later.get('id', '')))
+                                               or not _iso_date(later.get('date')) or later['date'] < status['date']))):
             return None
     elif not _iso_date(status.get('through')) or status['through'] < base['date'] or set(status) != {'kind', 'through'}:
         return None
-    return {**base, 'project': {'label': project['label'], 'type': project['type']}, 'textStatus': dict(status)}
+    safe_status = {key: status[key] for key in ('kind', 'date', 'through') if key in status}
+    if 'laterVote' in status:
+        safe_status['laterVote'] = {'id': status['laterVote']['id'], 'date': status['laterVote']['date']}
+    return {**base, 'project': {'label': project['label'], 'type': project['type']}, 'textStatus': safe_status}
 
 
 def _summary_item(value):

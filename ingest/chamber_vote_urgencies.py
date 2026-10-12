@@ -87,10 +87,42 @@ def text_status(target_id, registered, entry, inventory_entries, parents, exclud
     if any(other.get('category') != 'amendment' or other['date'] != first['date'] for other in before):
         raise CollectionError(f"{entry['id']}: a primeira deliberação depois do pedido não é a do texto principal.")
     if first['id'] in parents:
-        raise CollectionError(f"{entry['id']}: o texto foi votado no Placar ({first['id']}); ligue o pedido a essa votação.")
+        # O texto ganhou votação nominal no Placar: o pedido passa a ser ligado a ela (build_urgencies confere a ordem).
+        return {'kind': 'placar', 'voteId': first['id']}
     if 'simbolic' not in _folded(excluded.get(first['id'], '')):
         raise CollectionError(f"{entry['id']}: texto votado sem votação simbólica confirmada na revisão.")
-    return {'kind': 'symbolic', 'date': first['date']}
+    if not _folded(first.get('description')).lstrip().startswith('aprovad'):
+        raise CollectionError(f"{entry['id']}: a votação simbólica do texto não registra aprovação.")
+    status = {'kind': 'symbolic', 'date': first['date']}
+    # Depois da simbólica, o texto pode voltar ao Plenário (texto do Senado, por exemplo) com votação nominal no Placar.
+    published = [other for _, other in later if other['id'] in parents]
+    if published:
+        status['laterVote'] = {'id': published[0]['id'], 'date': published[0]['date']}
+    return status
+
+
+def _check_link_order(identifier, entry, registered, parent, targets, inventory_entries, roll_call_url, lag):
+    """A votação principal ligada é a primeira deliberação do texto principal depois do pedido.
+
+    A ordem vem do número sequencial dos relatórios nominais (ideVotacao); o horário de registro da API, que
+    pode atrasar alguns minutos, só decide com folga, e o que cai dentro da folga fica ambíguo.
+    """
+    parent_entry = inventory_entries.get(parent['id'])
+    parent_registered = _moment((parent_entry or {}).get('registeredAt'))
+    own_number = _roll_call_number(roll_call_url)
+    parent_number = _roll_call_number(parent['sources'].get('rollCall'))
+    if (parent_registered is None or not registered < parent_registered
+            or own_number is None or parent_number is None or not own_number < parent_number):
+        raise CollectionError(f'{identifier}: pedido não é anterior à votação principal ligada.')
+    for other in inventory_entries.values():
+        if (not other.get('candidate') or other['id'] == parent['id']
+                or int(other['id'].split('-')[0]) not in targets
+                or not entry['date'] <= other['date'] <= parent['date']):
+            continue
+        moment = _moment(other.get('registeredAt'))
+        if moment is None or registered - lag < moment < parent_registered + lag:
+            raise CollectionError(f'{identifier}: outra deliberação do texto principal fica entre o pedido '
+                                  'e a votação ligada, ou a ordem é ambígua.')
 
 
 def build_urgencies(items, inventory_entries, reviews, *, taken, cache, collect, refresh, request,
@@ -150,25 +182,7 @@ def build_urgencies(items, inventory_entries, reviews, *, taken, cache, collect,
                 raise CollectionError(f'{identifier}: ficha do projeto diferente da votação principal ligada.')
 
         if parent is not None:
-            # A votação principal ligada é a primeira deliberação do texto principal depois do pedido. A ordem
-            # vem do número sequencial dos relatórios nominais (ideVotacao); o horário de registro da API, que
-            # pode atrasar alguns minutos, só decide com folga, e o que cai dentro da folga fica ambíguo.
-            parent_entry = inventory_entries.get(parent['id'])
-            parent_registered = _moment((parent_entry or {}).get('registeredAt'))
-            own_number = _roll_call_number(safe_sources['rollCall'])
-            parent_number = _roll_call_number(parent['sources'].get('rollCall'))
-            if (parent_registered is None or not registered < parent_registered
-                    or own_number is None or parent_number is None or not own_number < parent_number):
-                raise CollectionError(f'{identifier}: pedido não é anterior à votação principal ligada.')
-            for other in inventory_entries.values():
-                if (not other.get('candidate') or other['id'] == parent['id']
-                        or int(other['id'].split('-')[0]) not in targets
-                        or not entry['date'] <= other['date'] <= parent['date']):
-                    continue
-                moment = _moment(other.get('registeredAt'))
-                if moment is None or registered - REGISTRATION_LAG < moment < parent_registered + REGISTRATION_LAG:
-                    raise CollectionError(f'{identifier}: outra deliberação do texto principal fica entre o pedido '
-                                          'e a votação ligada, ou a ordem é ambígua.')
+            _check_link_order(identifier, entry, registered, parent, targets, inventory_entries, safe_sources['rollCall'], REGISTRATION_LAG)
 
         urgency_cache = cache_for(identifier)
         url = f'{API_BASE}/votacoes/{identifier}'
@@ -227,11 +241,22 @@ def build_urgencies(items, inventory_entries, reviews, *, taken, cache, collect,
                    'quorum': URGENCY_QUORUM, 'tally': tally,
                    'sources': {'vote': url, **safe_sources}, 'reviewedAt': review['reviewedAt'],
                    'registeredAt': registered.isoformat(), **({'dataNotes': notes} if notes else {})}
+        status = None if parent is not None else text_status(target['id'], registered, entry, inventory_entries,
+                                                              parents, excluded, through)
+        if status is not None and status['kind'] == 'placar':
+            # Ligação automática: o texto do projeto entrou no Placar depois da revisão do pedido.
+            parent = parents[status['voteId']]
+            parent_targets = {_proposition_id(parent['sources'].get(key)) for key in ('proposition', 'referenceProposition')}
+            if target['id'] not in parent_targets:
+                raise CollectionError(f'{identifier}: projeto afetado diferente do projeto da votação principal.')
+            _check_link_order(identifier, entry, registered, parent, parent_targets - {None}, inventory_entries,
+                              safe_sources['rollCall'], REGISTRATION_LAG)
+            urgency['sources']['proposition'] = parent['sources']['proposition']
         if parent is not None:
             parent.setdefault('urgencies', []).append(urgency)
         else:
             urgency['project'] = {'label': f"{target['siglaTipo']} {target['numero']}/{target['ano']}", 'type': target['siglaTipo']}
-            urgency['textStatus'] = text_status(target['id'], registered, entry, inventory_entries, parents, excluded, through)
+            urgency['textStatus'] = status
             urgency.pop('registeredAt')
             standalone.append(urgency)
         details[identifier] = detail

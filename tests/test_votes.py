@@ -426,7 +426,12 @@ class VoteSnapshotTests(unittest.TestCase):
         self.assertNotIn('2650000-8', [item['id'] for item in person['items']])
 
     def test_invalid_urgencies_without_main_vote_make_the_index_unavailable(self):
-        for changes in ({'textStatus': {'kind': 'placar', 'date': '2026-09-21'}}, {'textStatus': {'kind': 'symbolic'}},
+        valid = self.standalone_data(textStatus={'kind': 'symbolic', 'date': '2026-09-21', 'laterVote': {'id': '2611313-31', 'date': '2026-09-30'}})
+        self.write(self.index, valid)
+        self.assertEqual(votes.detail('2650000-8', self.index)['vote']['textStatus']['laterVote']['id'], '2611313-31')
+        for changes in ({'textStatus': {'kind': 'symbolic', 'date': '2026-09-21', 'laterVote': {'id': 'x', 'date': '2026-09-30'}}},
+                        {'textStatus': {'kind': 'symbolic', 'date': '2026-09-21', 'laterVote': {'id': '2611313-31', 'date': '2026-09-20'}}},
+                        {'textStatus': {'kind': 'placar', 'date': '2026-09-21'}}, {'textStatus': {'kind': 'symbolic'}},
                         {'textStatus': {'kind': 'symbolic', 'date': '2026-09-19'}}, {'project': {'label': 'PDL 1/2026', 'type': 'PDL'}},
                         {'project': {'label': 'PL 849/2025', 'type': 'PLP'}}, {'id': '2611400-8'}):
             with self.subTest(changes=changes):
