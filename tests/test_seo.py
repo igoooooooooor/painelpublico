@@ -6,6 +6,7 @@ import unittest
 import urllib.error
 import urllib.request
 from pathlib import Path
+from unittest.mock import patch
 
 from backend import public_store as store, seo, server as srv
 
@@ -16,6 +17,29 @@ PAGE = ('<!doctype html><html><head><title>Painel Público</title></head>'
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, *args, **kwargs):
         return None
+
+
+class PresenceSummaryTests(unittest.TestCase):
+    def test_search_summary_rejects_impossible_or_missing_attendance(self):
+        valid = {'id': 1, 'presente': 9, 'falta': 1, 'justificadas': 0, 'dias': 10}
+        invalid = [
+            {**valid, 'presente': 20},
+            {**valid, 'falta': -1},
+            {**valid, 'dias': 0},
+            {**valid, 'justificadas': None},
+            {**valid, 'presente': True},
+        ]
+        with tempfile.TemporaryDirectory() as directory, patch.object(seo, 'SNAPSHOTS_PATH', Path(directory)):
+            snapshot = Path(directory) / 'presenca.json'
+            for row in invalid:
+                with self.subTest(row=row):
+                    snapshot.write_text(json.dumps([row]), encoding='utf-8')
+                    self.assertIsNone(seo._chamber_presence('1'))
+            snapshot.write_text(json.dumps([valid]), encoding='utf-8')
+            self.assertEqual(seo._chamber_presence('1'), valid)
+            self.assertIsNone(seo._chamber_presence('2'))
+            snapshot.write_text('{}', encoding='utf-8')
+            self.assertIsNone(seo._chamber_presence('1'))
 
 
 class SeoPagesTests(unittest.TestCase):

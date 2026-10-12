@@ -42,6 +42,7 @@ python3 -m backend.server --port 8000
 | `make fetch-data` | Baixar o release de dados mais recente, instalar em `data/` e montar a página; `TAG=data-AAAA-MM-DD` escolhe outro, `FORCE=1` substitui o banco |
 | `make db-init` | Criar/atualizar esquema sem apagar dados |
 | `make db-check` | Conferir integridade e cobertura numérica |
+| `make audit-numbers` | Conferir consistência de proporções, cobertura, custos, presença e placares na base local, sem alterar dados |
 | `make db-backup` | Backup SQLite consistente e datado |
 | `make import` | Importar arquivos locais de `data/imports/` |
 | `make collect-legislative YEAR=2026` | Baixar dados da Câmara e do Senado |

@@ -125,9 +125,32 @@ test('spending is compared per resident with the typical city of the same size, 
   assert.match(accounts, /title="R\$ 0,00"/);
   assert.match(accounts, /Receita/);
   assert.doesNotMatch(accounts, /<img src=x/);
-  assert.match(accounts, /mediana[\s\S]*46 cidades com mais de 500 mil habitantes/);
+  assert.match(accounts, /mediana[\s\S]*cidades com mais de 500 mil habitantes[\s\S]*dado válido para cada indicador/);
+  assert.match(accounts, /R\$ 6\.176 · 40 cidades/);
   assert.match(accounts, /não é o limite da Lei de Responsabilidade Fiscal/);
   assert.match(accounts, /Tesouro &lt;dados&gt; ↗/);
+});
+
+test('account comparisons show each indicator’s own valid sample count', () => {
+  const { context } = makeView();
+  const html = showCity(context, SP, { accounts: {
+    year: 2025, status: 'available',
+    source: { label: 'Tesouro', url: 'https://dados.example/contas' },
+    metrics: [
+      { id: 'total-expense', label: 'Despesa', amountCents: 10000000, perCapitaCents: 10000 },
+      { id: 'health', label: 'Saúde', amountCents: 2000000, perCapitaCents: 2000 },
+    ],
+    comparison: { available: true, band: { minPopulation: 10001, maxPopulation: 20000 }, reportingCount: 1331,
+      metrics: [
+        { id: 'total-expense', perCapitaMedianCents: 5000, perCapitaSampleSize: 1331 },
+        { id: 'health', perCapitaMedianCents: 4500, perCapitaSampleSize: 1330 },
+      ] },
+  } });
+  const accounts = html.match(/<section[^>]*data-profile-section="accounts"[\s\S]*?<\/section>/)?.[0] || '';
+  assert.match(accounts, /R\$ 50 · 1\.331 cidades/);
+  assert.match(accounts, /R\$ 45 · 1\.330 cidades/);
+  assert.match(accounts, /dado válido para cada indicador[\s\S]*amostra usada aparece ao lado de cada valor/);
+  assert.doesNotMatch(accounts, /1\.331 cidades com contas/);
 });
 
 test('amendments lead with reserved and paid values, top authors and a Pix subset that is not added again', () => {

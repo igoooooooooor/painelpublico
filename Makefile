@@ -8,12 +8,13 @@ CURRENT_YEAR := $(shell date +%Y)
 HISTORY_YEARS := $(shell seq 2023 $$(( $(CURRENT_YEAR) - 1 )))
 
 
-.PHONY: ci deploy-data publish-data fetch-data remote-build collect-vote-inventory collect-votes update-daily update-monthly update-weekly pipeline-status pipeline-test-mail
+.PHONY: ci audit-numbers deploy-data publish-data fetch-data remote-build collect-vote-inventory collect-votes update-daily update-monthly update-weekly pipeline-status pipeline-test-mail
 .PHONY: help build dev prod test check db-init db-check db-backup import collect-legislative collect-profiles collect-senate collect-senate-mandate collect-project-status collect-elections collect-cities collect-amendments collect-accounts collect-mandate-cost audit-mandate-cost collect-mandate-history collect-senate-cost collect-tenure collect-senate-participation deploy deploy-db deploy-status
 help:
 	@echo "make dev                Gera o app e inicia em localhost:8000"
 	@echo "make check              Build, sintaxe e testes (sem downloads)"
 	@echo "make db-init/db-check/db-backup  Preparação, verificação e backup SQLite"
+	@echo "make audit-numbers      Confere proporções e totais da base e dos snapshots locais, sem alterá-los"
 	@echo "make import             Importa snapshots normalizados locais"
 	@echo "make collect-legislative [YEAR=AAAA]  Coleta Câmara e Senado (padrão: ano corrente)"
 	@echo "make collect-profiles   Coleta manual de contatos, projetos e gabinete"
@@ -69,6 +70,9 @@ db-init:
 
 db-check:
 	$(PYTHON) -m backend.database check
+
+audit-numbers:
+	$(PYTHON) -m scripts.audit_numbers
 
 db-backup:
 	$(PYTHON) -m backend.database backup

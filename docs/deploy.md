@@ -43,6 +43,15 @@ visitante → Cloudflare (HTTPS, cache, proteção) → túnel → 127.0.0.1:800
 
 Logs: `ssh SERVIDOR journalctl -u painel -f`.
 
+Antes de publicar uma base ou uma mudança nos cálculos, rode `make audit-numbers` no ambiente com
+o banco e os snapshots que serão usados. A auditoria lê os dados sem alterá-los, informa inconsistências
+e termina com erro quando encontra uma violação. Snapshots opcionais ausentes aparecem como não
+verificados, não como zero. Para caminhos específicos, use
+`python3 -m scripts.audit_numbers --db CAMINHO --snapshots DIRETORIO`.
+Essa checagem complementa `make check` e `make db-check`: verifica relações numéricas conhecidas,
+mas não certifica os valores publicados pelas fontes oficiais nem substitui a revisão do significado
+de cada indicador.
+
 ## Atualização automática dos dados
 
 A cota da Câmara e do Senado do ano corrente, os projetos e a situação dos projetos são atualizados

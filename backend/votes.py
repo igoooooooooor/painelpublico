@@ -17,6 +17,7 @@ _DETAILS_VERSION = re.compile(r'^[0-9a-f]{64}$')
 _THEME_ID = re.compile(r'^[a-z0-9][a-z0-9-]{0,63}$')
 _PARTICIPANT_ID = re.compile(r'^camara:\d+$')
 _VOTE_CHOICES = {'Sim', 'Não', 'Abstenção', 'Obstrução', 'Presidiu'}
+_COMPARABLE_VOTE_CHOICES = _VOTE_CHOICES - {'Presidiu'}
 _OUTCOMES = {'approved', 'rejected', 'not_approved'}
 _ITEM_FIELDS = ('id', 'date', 'proposition', 'type', 'title', 'summary', 'decisionLabel',
                 'yesMeaning', 'noMeaning', 'outcome', 'tally', 'themes', 'sources', 'reviewedAt')
@@ -458,7 +459,7 @@ def _person_index(snapshot_path, snapshot):
         choices = {}
         for participant in participants:
             by_person.setdefault(participant['id'], {})[vote['id']] = participant['vote']
-            if participant['vote'] is not None:
+            if participant['vote'] in _COMPARABLE_VOTE_CHOICES:
                 choices[participant['vote']] = choices.get(participant['vote'], 0) + 1
         voters = sum(choices.values())
         pairs += voters * (voters - 1) // 2

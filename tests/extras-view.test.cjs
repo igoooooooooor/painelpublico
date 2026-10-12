@@ -49,7 +49,7 @@ function comparison(a, b) {
     : `<button type="button" class="${className}" data-vote="${vote.id}">${content}</button>`;
   context.profileData = value => ({ id: value.id, person: value, contact: null, projects: null, compensation: null, mandate: null });
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../frontend/scripts/dates.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '../frontend/scripts/extras-view.js'), 'utf8') +
-    '\nthis.__api = { extrasState, comparisonTable, comparisonShareCard, searchComparisonPeople, comparisonPickerList, comparisonView, taxCard, voteRowsForItem, votesForPerson, attendanceForPerson, attendanceRows, attendanceBar, attendanceView, comparisonPersonCard, profileExtras };', context);
+    '\nthis.__api = { extrasState, comparisonTable, comparisonShareCard, searchComparisonPeople, comparisonPickerList, comparisonView, taxCard, taxWidget, taxTick, voteRowsForItem, votesForPerson, attendanceForPerson, attendanceRows, attendanceBar, attendanceView, comparisonPersonCard, profileExtras };', context);
   return { html: context.__api.comparisonTable([a, b]), api: context.__api, context, senate };
 }
 const profile = (id, total) => ({ pessoa: { id, name: id, role: 'senador' }, total, mediaMensal: total, media: 100,
@@ -98,6 +98,16 @@ test('attendance page keeps the three absence categories, the reported reason an
   assert.match(html, /Falta justificada<\/span><span><i class="absent"><\/i>Falta/);
   assert.match(html, /entre os\(as\) 2 deputados\(as\) com dados de presença disponíveis/);
   assert.match(html, /Fonte: página de presença em Plenário/);
+});
+
+test('empty attendance data stays unavailable instead of displaying zero presence', () => {
+  const { api, context } = comparison(profile('camara:a', 1), profile('camara:b', 2));
+  context.DATA.presencaTodos = [];
+  const html = api.attendanceView();
+  assert.match(html, /Dados de presença indisponíveis neste recorte/);
+  assert.match(html, /Sem dados/);
+  assert.match(html, /Não há registros de presença para calcular a média/);
+  assert.doesNotMatch(html, /0%|0 dias com sessão|entre os\(as\) 0 deputados/);
 });
 
 test('compare person card links to the profile and swaps the person out of the comparison', () => {
@@ -364,7 +374,7 @@ test('tax card receives the observed Chamber roster total as an argument', () =>
     inicio: '2026-01-01', ate: '2026-10-06', acumulado: 1000000,
     populacao: 100, url: 'https://example.test/arrecadacao',
   };
-  const html = api.taxCard(300000);
+  const html = api.taxCard(300000, Date.parse('2026-10-07T12:00:00-03:00'));
   assert.match(html, /cota registrada para os deputados\(as\) da lista no recorte \(R\$ 300000\)/);
   assert.doesNotMatch(html, /Tudo o que a Câmara gastou/);
 });
@@ -375,18 +385,62 @@ test('tax counter adds the 27 states to the federal revenue and says what is sti
   const federalOnly = context.taxWidget(Date.parse('2026-08-31T12:00:00-03:00'));
   assert.equal(Math.round(federalOnly.value), 2_000_000_000_000);
   assert.equal(federalOnly.state, null);
-  assert.match(api.taxCard(), /Não inclui impostos estaduais e municipais/);
+  assert.match(api.taxCard(null, Date.parse('2026-08-31T12:00:00-03:00')), /Não inclui impostos estaduais e municipais/);
   context.DATA.arrecadacaoEstadual = { inicio: '2026-01-01', ate: '2026-08-31', acumulado: 700_000_000_000, url: 'https://example.test/siconfi' };
   const both = context.taxWidget(Date.parse('2026-08-31T12:00:00-03:00'));
   assert.equal(Math.round(both.value), 2_700_000_000_000);
   assert.ok(both.perSecond > federalOnly.perSecond);
-  const html = api.taxCard(1_000_000);
+  const html = api.taxCard(1_000_000, Date.parse('2026-08-31T12:00:00-03:00'));
   assert.match(html, /impostos federais e estaduais pagos/);
   assert.match(html, /Federal <b class="mono" data-tax-federal>R\$ [0-9],[0-9][0-9] tri/);
   assert.match(html, /Estadual <b class="mono" data-tax-state>R\$ 0,[0-9][0-9] tri/);
   assert.match(html, /ICMS, IPVA e ITCD dos 27 estados/);
   assert.match(html, /Não inclui impostos municipais \(IPTU, ISS e ITBI\)/);
   assert.match(html, /href="https:\/\/example\.test\/siconfi"/);
+});
+
+test('tax counter becomes unavailable when the federal source belongs to the previous year', () => {
+  const { api, context } = comparison(profile('camara:1', 100), profile('camara:2', 200));
+  context.DATA.arrecadacao = { inicio: '2026-01-01', ate: '2026-12-31', acumulado: 2_000_000_000_000, populacao: 200, url: 'https://example.test/federal' };
+  context.DATA.arrecadacaoEstadual = { inicio: '2026-01-01', ate: '2026-12-31', acumulado: 700_000_000_000, url: 'https://example.test/siconfi' };
+  const utcNewYearButSaoPauloStill2026 = Date.parse('2027-01-01T02:30:00Z');
+  assert.ok(api.taxWidget(utcNewYearButSaoPauloStill2026));
+  const newYear = Date.parse('2027-01-01T00:30:00-03:00');
+  assert.equal(api.taxWidget(newYear), null);
+  assert.equal(api.taxCard(1_000_000, newYear), '');
+});
+
+test('tax counter ignores state data from a different annual period and guards population', () => {
+  const { api, context } = comparison(profile('camara:1', 100), profile('camara:2', 200));
+  const now = Date.parse('2026-08-31T12:00:00-03:00');
+  context.DATA.arrecadacao = { inicio: '2026-01-01', ate: '2026-08-31', acumulado: 2_000_000_000_000, populacao: 0, url: 'https://example.test/federal' };
+  context.DATA.arrecadacaoEstadual = { inicio: '2025-01-01', ate: '2025-12-31', acumulado: 700_000_000_000, url: 'https://example.test/siconfi' };
+  const tax = api.taxWidget(now);
+  assert.equal(tax.state, null);
+  assert.equal(Math.round(tax.value), 2_000_000_000_000);
+  const html = api.taxCard(null, now);
+  assert.match(html, /Sem dados<\/b><span>por pessoa no ano/);
+  assert.doesNotMatch(html, /NaN|Infinity|federais e estaduais pagos/);
+});
+
+test('tax counter tick removes the stale widget after the year changes', () => {
+  const { api, context } = comparison(profile('camara:1', 100), profile('camara:2', 200));
+  context.DATA.arrecadacao = { inicio: '2026-01-01', ate: '2026-12-31', acumulado: 2_000_000_000_000, populacao: 200, url: 'https://example.test/federal' };
+  let removed = 0;
+  const card = { remove() { removed += 1; } };
+  const value = { firstChild: { data: 'R$ 2 tri' } };
+  context.document.querySelector = selector => selector === '[data-tax]' ? value : selector === '.tax-card' ? card : null;
+  api.taxTick(Date.parse('2027-01-01T00:30:00-03:00'));
+  assert.equal(removed, 1);
+});
+
+test('tax counter rejects malformed or non-current federal periods', () => {
+  const { api, context } = comparison(profile('camara:1', 100), profile('camara:2', 200));
+  const now = Date.parse('2026-08-31T12:00:00-03:00');
+  context.DATA.arrecadacao = { inicio: '2026-02-01', ate: '2026-08-31', acumulado: 2_000_000_000_000, populacao: 200 };
+  assert.equal(api.taxWidget(now), null);
+  context.DATA.arrecadacao = { inicio: '2026-01-01', ate: '2026-02-31', acumulado: 2_000_000_000_000, populacao: 200 };
+  assert.equal(api.taxWidget(now), null);
 });
 
 test('share card for two deputies tags only who costs less and who attended more, never alerts', () => {
@@ -408,4 +462,20 @@ test('share card for two deputies tags only who costs less and who attended more
   assert.equal(ana.meta, 'ABC · SP');
   assert.deepEqual([...card.alerts], ['2', '4']);
   assert.equal(JSON.stringify(card).includes('menos alertas'), false);
+});
+
+test('presiding stays visible but does not count as agreement or disagreement', () => {
+  const a = profile('camara:1', 100), b = profile('camara:2', 100);
+  const { api, context } = comparison(a, b);
+  context.DATA.votacoes = [{ id: 'v1', titulo: 'Voto nominal' }, { id: 'v2', titulo: 'Presidência' }];
+  context.DATA.votosCompletos = {
+    v1: [[1, 'Ana', 'ABC', 'SP', 'Sim'], [2, 'Bia', 'ABC', 'RJ', 'Sim']],
+    v2: [[1, 'Ana', 'ABC', 'SP', 'Presidiu'], [2, 'Bia', 'ABC', 'RJ', 'Não']],
+  };
+  const html = api.comparisonTable([a, b]);
+  assert.match(html, /mesmo voto em 1 de 1 votações/);
+  assert.match(html, /presidiu<\/span>[\s\S]*sem registro comparável/);
+  const card = api.comparisonShareCard([a, b]);
+  assert.equal(card.agreement.matching, 1);
+  assert.equal(card.agreement.total, 1);
 });

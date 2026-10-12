@@ -466,17 +466,16 @@ function cityAccountsDetail(data, isDf, isFernando) {
   const rows = metrics.map(metric => {
     const typical = cityAccountTypical(accounts, metric.id), typicalValue = cityTypicalPerResident(accounts, metric.id);
     const typicalText = !comparison.available ? 'Sem comparação'
-      : typicalValue !== null ? cityPerResident(typicalValue)
+      : typicalValue !== null ? `${cityPerResident(typicalValue)} · ${cityNumber(typical.perCapitaSampleSize)} cidades`
         : Number(typical?.perCapitaSampleSize ?? typical?.sampleSize) < 3 ? 'Menos de 3 cidades para comparar' : 'Não informado';
     return `<div class="city-account-row"><b>${esc(CITY_ACCOUNT_LABELS[metric.id] || metric.label || 'Indicador')}</b>
       <div><span>Total</span><b class="mono">${cityExactCompact(metric.amountCents)}</b></div>
       <div><span>Por morador</span><b class="mono">${cityPerResident(metric.perCapitaCents) || 'Não informado'}</b></div>
       <div><span>Típico por morador</span><b class="mono">${esc(typicalText)}</b></div></div>`;
   }).join('');
-  const peers = Number.isInteger(comparison.reportingCount) ? comparison.reportingCount : null;
   return `${accounts.status !== 'available' && accounts.message ? `<p class="note">${esc(accounts.message)}</p>` : ''}
     <div class="city-account-table">${rows}</div>
-    ${comparison.available ? `<p class="muted"><b>Típico</b> é o valor do meio (mediana) por morador entre ${peers ? `${cityNumber(peers)} ` : ''}${esc(cityBandText(comparison.band))} com contas de ${esc(cityYear(accounts.year) || 'mesmo ano')}. A própria cidade fica de fora. Não é meta nem ranking.</p>`
+    ${comparison.available ? `<p class="muted"><b>Típico</b> é o valor do meio (mediana) por morador entre ${esc(cityBandText(comparison.band))} com dado válido para cada indicador, nas contas de ${esc(cityYear(accounts.year) || 'mesmo ano')}. A amostra usada aparece ao lado de cada valor. A própria cidade fica de fora. Não é meta nem ranking.</p>`
       : `<p class="muted">${esc(comparison.message || 'Comparação com cidades do mesmo porte indisponível.')}</p>`}
     <p class="muted">Gasto é o valor empenhado, isto é, os compromissos assumidos no ano, e não só o que já foi pago. Receita e gasto total incluem repasses entre órgãos da própria prefeitura; pessoal, saúde e educação não. Saúde e educação também incluem salários, então as linhas não devem ser somadas. Pessoal aqui não é o limite da Lei de Responsabilidade Fiscal.</p>
     ${citySource(accounts.source, 'Tesouro Nacional')}`;

@@ -271,6 +271,16 @@ class VoteSnapshotTests(unittest.TestCase):
         # 3 pares na primeira (1 igual) e 1 na segunda (igual): 2 de 4.
         self.assertEqual(votes.person_votes('camara:1', self.index)['pairAgreement'], 0.5)
 
+    def test_presiding_is_kept_in_the_roll_call_but_not_in_agreement(self):
+        self.write(self.root / votes.DETAILS_DIRECTORY / '2611313-31.json', {'id': '2611313-31', 'participants': [
+            {'id': 'camara:1', 'name': 'Ana', 'party': 'ABC', 'uf': 'SP', 'vote': 'Sim'},
+            {'id': 'camara:2', 'name': 'Bia', 'party': 'ABC', 'uf': 'RJ', 'vote': 'Sim'},
+            {'id': 'camara:3', 'name': 'Caio', 'party': 'DEF', 'uf': 'MG', 'vote': 'Presidiu'}],
+            'partyTotals': [{'party': 'ABC', 'yes': 2, 'no': 0, 'other': 0}, {'party': 'DEF', 'yes': 0, 'no': 0, 'other': 1}]})
+        result = votes.person_votes('camara:3', self.index)
+        self.assertEqual(result['pairAgreement'], 1)
+        self.assertEqual(next(item for item in result['items'] if item['id'] == '2611313-31')['vote'], 'Presidiu')
+
     def segment_snapshot(self, **segment_changes):
         segment = {'id': '2611313-35', 'date': '2026-09-03', 'kind': 'destaque', 'title': 'Destaque do art. 1º',
                    'summary': 'Destaque para retirar o art. 1º.', 'decisionLabel': 'Artigo mantido',

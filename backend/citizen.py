@@ -107,11 +107,13 @@ def _monthly_series(db, authority, source, year):
 
 def _context(db, person, authority, source, year, cache, total=None):
     """Escala do ano: um alerta de quem gasta pouco não pode parecer igual ao de quem gasta muito."""
-    if '__averages' not in cache:
-        cache['__averages'] = _averages(db)
+    year = int(year)
+    averages_key = f'__averages_{year}'
+    if averages_key not in cache:
+        cache[averages_key] = _averages(db, year)
     # A média do cargo é mensal (meses com notas); compara com a média mensal da pessoa no mesmo ano.
-    average = (cache['__averages'].get(person.get('role')) or {}).get('media')
-    series = _monthly_series(db, authority, source, int(year))
+    average = (cache[averages_key].get(person.get('role')) or {}).get('media')
+    series = _monthly_series(db, authority, source, year)
     if total is None:
         total = sum(series.values())
     months = len(series)
@@ -121,10 +123,10 @@ def _context(db, person, authority, source, year, cache, total=None):
     difference = monthly / average - 1
     group_label = ROLE_LABELS.get(person.get('role'), 'parlamentares')
     if abs(difference) < 0.1:
-        comparison = f'parecido com a média mensal dos(as) {group_label}'
+        comparison = f'parecido com a média mensal dos(as) {group_label} em {year}'
     else:
         comparison = (f'{round(abs(difference) * 100)}% {"mais" if difference > 0 else "menos"} que a média mensal '
-                      f'dos(as) {group_label} ({store_money(average)})')
+                      f'dos(as) {group_label} em {year} ({store_money(average)})')
     return {'total': total, 'mediaMensal': monthly, 'meses': months, 'media': average, 'diferenca': difference,
             'frase': f'Em {year}, gastou {store_money(total)} na cota, {store_money(monthly)} por mês em média, {comparison}.'}
 
@@ -357,11 +359,21 @@ def _snapshot(db):
     return r[0] if r else None
 
 
-def _averages(db):
+def _averages(db, year=None):
     out = {}
     for role in ROLES:
-        r = db.execute(f'''SELECT AVG({MONTHLY})/100.0, COUNT(*) FROM authority_totals t JOIN authorities a ON a.id=t.authorityId
-            WHERE t.kind='reembolso' AND a.role=? AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?)''', (role, CURRENT[role])).fetchone()
+        if year is None:
+            r = db.execute(f'''SELECT AVG({MONTHLY})/100.0, COUNT(*) FROM authority_totals t JOIN authorities a ON a.id=t.authorityId
+                WHERE t.kind='reembolso' AND a.role=? AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?)''',
+                (role, CURRENT[role])).fetchone()
+        else:
+            r = db.execute(f'''SELECT AVG(y.amountCents*1.0/y.monthCount)/100.0,COUNT(*) FROM (
+                    SELECT x.authorityId,SUM(x.amountCents) amountCents,
+                        COUNT(DISTINCT printf('%04d-%02d',x.year,x.month)) monthCount
+                    FROM {QUOTA_MONTHS} x JOIN authorities a ON a.id=x.authorityId
+                    WHERE x.kind='reembolso' AND x.year=? AND a.role=?
+                        AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?)
+                    GROUP BY x.authorityId) y''', (int(year), role, CURRENT[role])).fetchone()
         out[role] = {'media': r[0] or 0, 'n': r[1]}
     return out
 

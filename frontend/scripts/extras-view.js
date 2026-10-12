@@ -3,31 +3,65 @@
 const extrasState = { votes: {}, voteLimit: 40, voteQuery: '', attendanceOrder: 'less', attendanceQuery: '', attendanceLimit: 40, senateVoteLimit: 20, comparisonVoteLimit: 20, comparisonIds: [], comparisonQuery: '', comparisonKey: null, comparisonResults: null, comparisonError: null, comparisonLoading: false };
 const chamberPersonId = id => 'camara:' + id;
 const percent = (a, b) => b ? Math.round(a / b * 100) : 0;
+const TAX_DATE_FORMATTER = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' });
 
 /* ---------- Contador de impostos (estimativa a partir do dado oficial) ----------
    Soma a arrecadação federal (Receita Federal) e a estadual (ICMS, IPVA e ITCD dos RREOs dos 27 estados).
    Cada esfera segue no ritmo médio diário do próprio ano depois da última data publicada. */
-function taxRate(source) {
-  if (!source || !Number.isFinite(source.acumulado) || !source.inicio || !source.ate) return null;
-  const startTime = Date.parse(source.inicio + 'T00:00:00-03:00'), endTime = Date.parse(source.ate + 'T00:00:00-03:00') + 864e5;
-  if (!(endTime > startTime)) return null;
-  return { amount: source.acumulado, endTime, perMillisecond: source.acumulado / (endTime - startTime), source };
+function taxLocalDate(now) {
+  if (!Number.isFinite(now)) return null;
+  try {
+    const parts = TAX_DATE_FORMATTER.formatToParts(new Date(now));
+    const part = type => parts.find(item => item.type === type)?.value;
+    const year = part('year'), month = part('month'), day = part('day');
+    return year && month && day ? { year, date: `${year}-${month}-${day}` } : null;
+  } catch (error) { return null; }
+}
+function taxDateTime(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ''));
+  if (!match) return null;
+  const [, year, month, day] = match, utc = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+  if (Number(year) < 1900 || utc.getUTCFullYear() !== Number(year) || utc.getUTCMonth() + 1 !== Number(month) || utc.getUTCDate() !== Number(day)) return null;
+  const timestamp = Date.parse(`${value}T00:00:00-03:00`);
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+function taxRate(source, local = taxLocalDate(Date.now())) {
+  if (!local || !source || !Number.isFinite(source.acumulado) || source.acumulado <= 0) return null;
+  if (source.inicio !== `${local.year}-01-01` || typeof source.ate !== 'string' || source.ate < source.inicio || source.ate > local.date) return null;
+  const startTime = taxDateTime(source.inicio), endDateTime = taxDateTime(source.ate);
+  if (startTime === null || endDateTime === null) return null;
+  const endTime = endDateTime + 864e5, duration = endTime - startTime;
+  if (!(duration > 0) || !Number.isFinite(endTime)) return null;
+  const perMillisecond = source.acumulado / duration;
+  if (!(perMillisecond > 0) || !Number.isFinite(perMillisecond)) return null;
+  return { amount: source.acumulado, endTime, perMillisecond, source };
 }
 function taxWidget(now = Date.now()) {
-  const federal = taxRate(DATA.arrecadacao);
+  const local = taxLocalDate(now);
+  const federal = taxRate(DATA.arrecadacao, local);
   if (!federal) return null;
-  const state = taxRate(DATA.arrecadacaoEstadual);
+  const stateCandidate = taxRate(DATA.arrecadacaoEstadual, local);
+  const state = stateCandidate?.source.inicio === federal.source.inicio ? stateCandidate : null;
   const valueOf = part => part ? part.amount + part.perMillisecond * Math.max(0, now - part.endTime) : 0;
   const perMillisecond = federal.perMillisecond + (state ? state.perMillisecond : 0);
-  return { value: valueOf(federal) + valueOf(state), federal: valueOf(federal), state: state ? valueOf(state) : null,
-    perSecond: perMillisecond * 1000, source: federal.source, stateSource: state ? state.source : null };
+  const value = valueOf(federal) + valueOf(state), federalValue = valueOf(federal), stateValue = state ? valueOf(state) : null;
+  const perSecond = perMillisecond * 1000;
+  if (![value, federalValue, perSecond].every(Number.isFinite) || !(perSecond > 0) || (stateValue !== null && !Number.isFinite(stateValue))) return null;
+  return { value, federal: federalValue, state: stateValue, perSecond, source: federal.source, stateSource: state ? state.source : null };
 }
 const formatCurrency = v => 'R$ ' + Math.floor(v).toLocaleString('pt-BR');
 const formatTrillions = v => 'R$ ' + (v / 1e12).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' tri';
-function taxCard(quota = null) {
-  const tax = taxWidget();
+function taxPerPerson(tax) {
+  const population = tax?.source?.populacao;
+  if (!Number.isSafeInteger(population) || population <= 0) return 'Sem dados';
+  const amount = tax.value / population;
+  return Number.isFinite(amount) ? formatCurrency(amount) : 'Sem dados';
+}
+function taxCard(quota = null, now = Date.now()) {
+  const tax = taxWidget(now);
   if (!tax) return '';
   const observedQuota = Number.isFinite(quota) ? quota : 0, minutes = observedQuota / tax.perSecond / 60;
+  const perPerson = taxPerPerson(tax);
   const scope = tax.state != null ? 'federais e estaduais' : 'federais';
   const sameDate = !tax.stateSource || tax.stateSource.ate === tax.source.ate;
   const dates = sameDate ? `até ${formatShortDate(tax.source.ate)}` : `até ${formatShortDate(tax.source.ate)} (federal) e ${formatShortDate(tax.stateSource.ate)} (estadual)`;
@@ -42,21 +76,27 @@ function taxCard(quota = null) {
     ${split}
     <div class="tax-grid">
       <div><b class="mono" data-tax-second>${formatCurrency(tax.perSecond)}</b><span>por segundo</span></div>
-      <div><b class="mono" data-tax-person>${formatCurrency(tax.value / tax.source.populacao)}</b><span>por pessoa no ano</span></div>
+      <div><b class="mono" data-tax-person>${perPerson}</b><span>por pessoa no ano</span></div>
     </div>
     ${observedQuota ? `<p class="tax-related">A cota registrada para os deputados(as) da lista no recorte (${formatCitizenAmount(observedQuota)}) equivale ao que o país paga de impostos ${scope} em <b>${minutes < 1 ? Math.round(minutes * 60) + ' segundos' : Math.round(minutes) + ' minutos'}</b>.</p>` : ''}
     <p class="tax-sources src">Fontes: <a href="${esc(tax.source.url)}" target="_blank" rel="noopener">Receita Federal (impostos e contribuições administrados pela Receita até ${formatShortDate(tax.source.ate)}) ↗</a>${tax.stateSource ? `; <a href="${esc(tax.stateSource.url)}" target="_blank" rel="noopener">Tesouro Nacional, Siconfi (ICMS, IPVA e ITCD dos 27 estados até ${formatShortDate(tax.stateSource.ate)}) ↗</a>` : ''}. ${tax.stateSource ? 'Não inclui impostos municipais (IPTU, ISS e ITBI), porque nem todas as cidades publicam o dado mensal, nem taxas e contribuições estaduais.' : 'Não inclui impostos estaduais e municipais.'}</p>
   </section>`;
 }
-(function tick() {
+function taxTick(now = Date.now()) {
   const el = document.querySelector('[data-tax]');
   if (el) { // troca só o texto (characterData), sem disparar o reencaixe da grade
-    const tax = taxWidget(), set = (node, value) => { if (node && node.firstChild) node.firstChild.data = value; };
-    set(el, formatCurrency(tax.value)); set(document.querySelector('[data-tax-person]'), formatCurrency(tax.value / tax.source.populacao));
-    if (tax.state != null) { set(document.querySelector('[data-tax-federal]'), formatTrillions(tax.federal)); set(document.querySelector('[data-tax-state]'), formatTrillions(tax.state)); }
+    const tax = taxWidget(now), card = document.querySelector('.tax-card');
+    if (!tax) card?.remove();
+    else {
+      const set = (node, value) => { if (node && node.firstChild) node.firstChild.data = value; };
+      const perPerson = taxPerPerson(tax);
+      set(el, formatCurrency(tax.value)); set(document.querySelector('[data-tax-person]'), perPerson);
+      if (tax.state != null) { set(document.querySelector('[data-tax-federal]'), formatTrillions(tax.federal)); set(document.querySelector('[data-tax-state]'), formatTrillions(tax.state)); }
+    }
   }
-  setTimeout(tick, 120);
-})();
+  setTimeout(taxTick, 120);
+}
+taxTick();
 
 /* ---------- Presença de todos(as) ---------- */
 function attendanceRows(chamber = 'camara') {
@@ -83,10 +123,10 @@ function attendanceSorted(all = attendanceRows()) {
 }
 function attendanceView() {
   const all = attendanceRows(), people = attendanceSorted(all);
-  const average = all.reduce((sum, person) => sum + person.presente / person.dias, 0) / (all.length || 1);
+  const average = all.length ? all.reduce((sum, person) => sum + person.presente / person.dias, 0) / all.length : null;
   const fullAttendanceCount = all.filter(person => person.presente === person.dias).length;
   const belowHalfCount = all.filter(person => person.presente / person.dias < 0.5).length;
-  const sessionCount = all.length ? Math.max(...all.map(person => person.dias)) : 0;
+  const sessionCount = all.length ? Math.max(...all.map(person => person.dias)) : null;
   const starts = all.map(person => person.inicio).filter(Boolean).sort(), ends = all.map(person => person.fim).filter(Boolean).sort();
   const period = typeof citizenQuotaPeriod === 'function' && starts.length ? citizenQuotaPeriod(starts[0], ends.at(-1)) : '';
   const stat = (value, label) => `<div class="card attendance-stat"><b class="mono">${value}</b><span>${label}</span></div>`;
@@ -96,15 +136,15 @@ function attendanceView() {
         <button type="button" class="back" data-back>‹ Voltar</button>
         <span class="k">Câmara · ${period || 'mandato'}</span>
         <h1 class="h ph-t">Presença no Plenário</h1>
-        <p class="ph-lead">Quantos dias cada deputado(a) foi às ${sessionCount} sessões de votação do Plenário no mandato atual${period ? ` (${period})` : ''}.</p>
+        <p class="ph-lead">${sessionCount === null ? 'Dados de presença indisponíveis neste recorte.' : `Quantos dias cada deputado(a) foi às ${sessionCount} sessões de votação do Plenário no mandato atual${period ? ` (${period})` : ''}.`}</p>
       </div>
       <div class="attendance-summary">
         <div class="attendance-stats">
-          ${stat(`${Math.round(average * 100)}%`, 'presença média')}
-          ${stat(fullAttendanceCount, 'não faltaram nenhum dia')}
-          ${stat(belowHalfCount, 'foram a menos da metade')}
+          ${stat(average === null ? 'Sem dados' : `${Math.round(average * 100)}%`, 'presença média')}
+          ${stat(average === null ? '—' : fullAttendanceCount, 'não faltaram nenhum dia')}
+          ${stat(average === null ? '—' : belowHalfCount, 'foram a menos da metade')}
         </div>
-        <p class="muted">Média dos dados disponíveis: dos dias com sessão, em média, entre os(as) ${all.length} deputados(as) com dados de presença disponíveis.</p>
+        <p class="muted">${average === null ? 'Não há registros de presença para calcular a média.' : `Média dos dados disponíveis: dos dias com sessão, em média, entre os(as) ${all.length} deputados(as) com dados de presença disponíveis.`}</p>
       </div>
     </section>
     <section class="attendance-filters" aria-label="Filtros">
@@ -113,7 +153,7 @@ function attendanceView() {
       <div class="legend attendance-legend"><span><i></i>Presente</span><span><i class="justified"></i>Falta justificada</span><span><i class="absent"></i>Falta</span></div>
     </section>
     <div id="attendance-list" class="attendance-results">${attendanceList(people)}</div>
-    <p class="src attendance-source">Fonte: página de presença em Plenário de cada deputado(a) na Câmara, ${sessionCount} dias com sessão deliberativa no mandato atual${period ? ` (${period})` : ''}. Falta justificada inclui missão autorizada, licença e atestado. Quem assumiu no meio do mandato tem menos dias na conta.</p>
+    <p class="src attendance-source">${sessionCount === null ? 'Fonte: página de presença em Plenário de cada deputado(a) na Câmara; nenhum registro está disponível neste recorte.' : `Fonte: página de presença em Plenário de cada deputado(a) na Câmara, ${sessionCount} dias com sessão deliberativa no mandato atual${period ? ` (${period})` : ''}. Falta justificada inclui missão autorizada, licença e atestado. Quem assumiu no meio do mandato tem menos dias na conta.`}</p>
   </div>`;
 }
 /* Linha de apoio: ausências justificadas (com o motivo mais comum informado pela Câmara) e faltas. */
@@ -374,7 +414,7 @@ function comparisonShareCard([a, b]) {
       who: f.maiores[0].fornecedor ? citizenName(f.maiores[0].fornecedor) : '' } : null,
   }));
   const { chamber: voteChamber, votes } = comparisonVotes(a, b);
-  const comparable = votes.filter(record => record.voteA !== null && record.voteB !== null);
+  const comparable = votes.filter(comparableVotePair);
   const typical = voteChamber === 'camara' && typeof chamberPairAgreement === 'function' ? chamberPairAgreement() : null;
   const agreement = comparable.length ? { matching: comparable.filter(record => record.voteA === record.voteB).length, total: comparable.length,
     source: voteChamber === 'senado' ? 'votações nominais do Senado' : 'votações do Placar', typical } : null;
@@ -513,6 +553,10 @@ function comparisonAttendanceRows(a, b, pA, pB) {
   return `<div class="cmp-row"><span class="cmp-l">Presença</span><div class="cmp-v">${cell(chamberA, pA, firstRecord)}</div><div class="cmp-v">${cell(chamberB, pB, secondRecord)}</div></div>
     <div class="cmp-row"><div class="cmp-v muted cmp-source" style="grid-column:1 / -1">A Câmara publica presença e faltas de cada sessão, por isso aparece em porcentagem; o Senado publica só os registros de presença, por isso aparece em número de sessões. As medidas são diferentes e nenhuma é destacada. No Senado: ${esc(sourceDetail.charAt(0).toLowerCase() + sourceDetail.slice(1))}${activitySource(source, 'Fonte e período')}</div></div>`;
 }
+function comparableVotePair(record) {
+  const choices = ['Sim', 'Não', 'Abstenção', 'Obstrução'];
+  return choices.includes(record.voteA) && choices.includes(record.voteB);
+}
 function comparisonVotes(a, b) {
   const idA = String(a.pessoa.id), idB = String(b.pessoa.id);
   const chamberA = idA.split(':')[0], chamberB = idB.split(':')[0];
@@ -535,9 +579,8 @@ function comparisonVotes(a, b) {
     const secondVote = rows.find(row => String(row[0]) === key(idB));
     return { vote, voteA: firstVote?.[4] ?? null, voteB: secondVote?.[4] ?? null };
   });
-  const senateRecordedVotes = new Set(['Sim', 'Não', 'Abstenção', 'Obstrução']);
   return { chamber, votes: chamber === 'senado'
-    ? votes.filter(record => senateRecordedVotes.has(record.voteA) && senateRecordedVotes.has(record.voteB))
+    ? votes.filter(comparableVotePair)
     : votes };
 }
 function comparisonTable([a, b]) {
@@ -558,7 +601,7 @@ function comparisonTable([a, b]) {
   const topCategory = f => f.categorias[0] ? `${esc(f.categorias[0].nome)} <small>${percent(f.categorias[0].valor, f.total)}%</small>` : '—';
   const topSupplier = f => f.fornecedores[0] ? `${esc(citizenName(f.fornecedores[0].name))} <small>${percent(f.fornecedores[0].valor, f.total)}%</small>` : '—';
   const { chamber: voteChamber, votes, loading: chamberVotesLoading } = comparisonVotes(a, b);
-  const comparableVotes = votes.filter(record => record.voteA !== null && record.voteB !== null);
+  const comparableVotes = votes.filter(comparableVotePair);
   const matchingVoteCount = comparableVotes.filter(record => record.voteA === record.voteB).length;
   const senateVoteSource = voteChamber === 'senado' && typeof profileSenateSource === 'function' ? profileSenateSource('votacoes') : null;
   const isSenateLoading = voteChamber === 'senado' && senateLoading();
@@ -573,7 +616,7 @@ function comparisonTable([a, b]) {
     const voteBClass = record.voteB === 'Sim' ? 'yes' : record.voteB === 'Não' ? 'no' : '';
     const voteA = record.voteA === null ? 'Sem registro importado' : String(record.voteA).toLowerCase();
     const voteB = record.voteB === null ? 'Sem registro importado' : String(record.voteB).toLowerCase();
-    const content = `<span>${esc(record.vote.titulo || record.vote.proposicao || 'Votação nominal')}</span><span class="vchip ${voteAClass}">${esc(voteA)}</span><span class="vchip ${voteBClass}">${esc(voteB)}</span><em>${record.voteA === null || record.voteB === null ? 'sem registro comparável' : record.voteA === record.voteB ? 'igual' : 'diferente'}</em>`;
+    const content = `<span>${esc(record.vote.titulo || record.vote.proposicao || 'Votação nominal')}</span><span class="vchip ${voteAClass}">${esc(voteA)}</span><span class="vchip ${voteBClass}">${esc(voteB)}</span><em>${!comparableVotePair(record) ? 'sem registro comparável' : record.voteA === record.voteB ? 'igual' : 'diferente'}</em>`;
     return typeof profileVoteButton === 'function' ? profileVoteButton(record.vote, content, 'cmp-vote') : `<button type="button" class="cmp-vote" data-vote="${esc(record.vote.id)}">${content}</button>`;
   }).join('');
   return `<section class="card cmp wide">

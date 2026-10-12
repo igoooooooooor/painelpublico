@@ -110,8 +110,17 @@ def _chamber_presence(number):
         rows = json.loads((SNAPSHOTS_PATH / 'presenca.json').read_text(encoding='utf-8'))
     except (OSError, ValueError):
         return None
+    if not isinstance(rows, list):
+        return None
     row = next((r for r in rows if isinstance(r, dict) and str(r.get('id')) == number), None)
-    return row if row and row.get('dias') else None
+    if not row:
+        return None
+    counts = [row.get(key) for key in ('presente', 'falta', 'justificadas', 'dias')]
+    # O resumo para buscadores respeita a mesma consistência exigida na ficha.
+    if (any(not isinstance(value, int) or isinstance(value, bool) or value < 0 for value in counts)
+            or counts[3] <= 0 or sum(counts[:3]) != counts[3]):
+        return None
+    return row
 
 
 def profile_facts(db, identifier):

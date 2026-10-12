@@ -321,6 +321,20 @@ class PeakRuleTests(unittest.TestCase):
         self.assertEqual(ranking[0]['id'], 'camara:30')
         self.assertEqual(ranking[0]['valorAlertas'], 200000)  # abril e maio, cada nota uma vez
 
+    def test_context_uses_the_current_roster_average_for_each_alert_year(self):
+        with closing(store.connect(self.db_path)) as db, db:
+            person = citizen._people(db, ['camara:30'])['camara:30']
+            cache = {}
+            older = citizen._context(db, person, 'camara:30', 'camara_ceap_2025', 2025, cache)
+            newer = citizen._context(db, person, 'camara:30', 'camara_ceap', 2026, cache)
+            missing = citizen._context(db, person, 'camara:30', 'camara_ceap_2024', 2024, cache)
+
+        self.assertAlmostEqual(older['media'], 35250)
+        self.assertAlmostEqual(newer['media'], 38583.3333333333)
+        self.assertIn('média mensal dos(as) deputados(as) em 2025', older['frase'])
+        self.assertIn('média mensal dos(as) deputados(as) em 2026', newer['frase'])
+        self.assertIsNone(missing)  # sem notas para o ano, não há comparação nem valor zero
+
     def test_radar_reads_ids_with_extra_colons_and_lists_only_politicians(self):
         with closing(store.connect(self.db_path)) as db, db:
             group_label = citizen.rows(db, "SELECT * FROM signals WHERE authorityId='camara:group:9' AND type='pico'")[0]
