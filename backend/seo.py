@@ -253,13 +253,15 @@ def profile_page(db, page_html, path, origin):
     match = PROFILE_PATH.match(path)
     house, role = ROLE_BY_PREFIX[match.group(1)]
     identifier = f'{house}:{match.group(2)}'
-    facts = profile_facts(db, identifier)
-    if facts is None or facts['person'].get('role') != role:
+    # Nome e cargo bastam para o 404 e o redirecionamento; os números só são calculados na URL canônica.
+    person = citizen._people(db, [identifier]).get(identifier)
+    if person is None or person.get('role') != role:
         return 404, render(page_html, 'Ficha não encontrada', DEFAULT_DESCRIPTION, origin + path, noindex=True), None
-    person = facts['person']
     canonical = profile_path(identifier, person['name'])
     if path.rstrip('/') != canonical:
         return 301, None, canonical
+    facts = profile_facts(db, identifier)
+    person = facts['person']
     role_label = ROLE_LABEL[role]
     subtitle = ' · '.join(filter(None, [role_label, person.get('party'), person.get('uf')]))
     description = shorten(f'{subtitle}. ' + ' '.join(text for _, text in facts['lines']))

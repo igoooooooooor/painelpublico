@@ -24,9 +24,16 @@ CURRENT = {'deputado': 'camara_deputies_current', 'senador': 'senado_senators_cu
 MONTH_COUNT = 't.monthCount'
 # Média mensal da cota: compara deputados (mandato desde fev/2023) e senadores (2026) no mesmo critério.
 MONTHLY = f't.amountCents*1.0/{MONTH_COUNT}'
-# Notas detalhadas (ano corrente) mais as notas enxutas dos anos anteriores do mandato (visão quota_history).
-QUOTA_MONTHS = '''(SELECT authorityId,year,month,category,kind,amountCents,1 count FROM expenses
-    UNION ALL SELECT authorityId,year,month,category,kind,amountCents,1 FROM quota_history)'''
+# Reembolsos de quem está na lista atual de um cargo (:source, :role): notas detalhadas (ano corrente) mais as
+# notas enxutas dos anos anteriores do mandato (visão quota_history). Parte da lista e busca as notas de cada
+# parlamentar pelo índice; juntar depois da união varria as notas do mandato inteiro a cada ficha.
+ROSTER_QUOTA = '''(SELECT a.party,e.authorityId,e.year,e.month,e.category,e.amountCents
+        FROM roster r JOIN authorities a ON a.id=r.authorityId
+        JOIN expenses e INDEXED BY expense_authority ON e.authorityId=r.authorityId
+        WHERE r.sourceId=:source AND a.role=:role AND e.kind='reembolso'
+    UNION ALL SELECT a.party,h.authorityId,h.year,h.month,h.category,h.amountCents
+        FROM roster r JOIN authorities a ON a.id=r.authorityId JOIN quota_history h ON h.authorityId=r.authorityId
+        WHERE r.sourceId=:source AND a.role=:role AND h.kind='reembolso')'''
 MONTHS = ['', 'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto',
          'setembro', 'outubro', 'novembro', 'dezembro']
 
@@ -368,12 +375,9 @@ def _averages(db, year=None):
                 (role, CURRENT[role])).fetchone()
         else:
             r = db.execute(f'''SELECT AVG(y.amountCents*1.0/y.monthCount)/100.0,COUNT(*) FROM (
-                    SELECT x.authorityId,SUM(x.amountCents) amountCents,
-                        COUNT(DISTINCT printf('%04d-%02d',x.year,x.month)) monthCount
-                    FROM {QUOTA_MONTHS} x JOIN authorities a ON a.id=x.authorityId
-                    WHERE x.kind='reembolso' AND x.year=? AND a.role=?
-                        AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?)
-                    GROUP BY x.authorityId) y''', (int(year), role, CURRENT[role])).fetchone()
+                    SELECT x.authorityId,SUM(x.amountCents) amountCents,COUNT(DISTINCT x.month) monthCount
+                    FROM {ROSTER_QUOTA} x WHERE x.year=:year
+                    GROUP BY x.authorityId) y''', {'year': int(year), 'role': role, 'source': CURRENT[role]}).fetchone()
         out[role] = {'media': r[0] or 0, 'n': r[1]}
     return out
 
@@ -428,10 +432,8 @@ def summary(db):
             'periodo': {'inicio': row['inicio'], 'fim': row['fim']},
         }
 
-    category_rows = rows(db, f'''SELECT e.category,SUM(e.amountCents) cents
-        FROM authorities a JOIN {QUOTA_MONTHS} e ON e.authorityId=a.id
-        WHERE a.role='deputado' AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?) AND e.kind='reembolso'
-        GROUP BY e.category''', (CURRENT['deputado'],))
+    category_rows = rows(db, f'SELECT x.category,SUM(x.amountCents) cents FROM {ROSTER_QUOTA} x GROUP BY x.category',
+                         {'role': 'deputado', 'source': CURRENT['deputado']})
     categories = {}
     for row in category_rows:
         name = category_name(row['category'])
@@ -696,12 +698,8 @@ def parties(db):
         WHERE n<=3 ORDER BY sigla, n''', args)
     # Para onde vai a cota dos(as) deputados(as) de cada partido no mandato: só a Câmara, que publica as mesmas
     # categorias para todos(as); senadores(as) têm outra cota e ficam de fora.
-    category_rows = rows(db, '''SELECT a.party sigla, x.category, SUM(x.amountCents)/100.0 valor FROM (
-            SELECT authorityId, category, amountCents FROM expenses WHERE kind='reembolso'
-            UNION ALL SELECT authorityId, category, amountCents FROM quota_history WHERE kind='reembolso') x
-        JOIN authorities a ON a.id=x.authorityId
-        WHERE a.role='deputado' AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?) AND TRIM(COALESCE(a.party,''))<>''
-        GROUP BY a.party, x.category''', (CURRENT['deputado'],))
+    category_rows = rows(db, f'''SELECT x.party sigla, x.category, SUM(x.amountCents)/100.0 valor FROM {ROSTER_QUOTA} x
+        WHERE TRIM(COALESCE(x.party,''))<>'' GROUP BY x.party, x.category''', {'role': 'deputado', 'source': CURRENT['deputado']})
     party_categories = {}
     for r in category_rows:
         named = party_categories.setdefault(r['sigla'], {})
