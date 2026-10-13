@@ -111,13 +111,24 @@ Ranking, home e comparação não consomem o novo valor.
 ## Endereços e buscadores
 
 Cada deputado(a) e senador(a) tem endereço próprio (`/deputado/<id>-<nome>`, `/senador/<id>-<nome>`), assim
-como as seções (`/alertas`, `/placar`, `/politicos`, `/partidos`, `/comparar`, `/presenca`, `/minha-cidade`).
+como cada município (`/minha-cidade/<código IBGE>-<nome>`), as seções (`/alertas`, `/placar`, `/politicos`,
+`/partidos`, `/comparar`, `/presenca`, `/minha-cidade`), cada votação (`/placar/<id>`) e os pares de comparação
+(`/comparar/deputado-<id>-vs-senador-<id>`, `/partidos/<sigla>-vs-<sigla>`).
 `backend/seo.py` entrega o mesmo `dist/index.html` com título, descrição, endereço canônico, Open Graph,
-dados estruturados (schema.org) e, nas fichas, um resumo em texto das três respostas dentro de `#app`; o app
+dados estruturados (schema.org) e, nas fichas e cidades, um resumo em texto dentro de `#app`; o app
 substitui esse resumo ao abrir. Endereço sem o nome redireciona (301) para o canônico. As páginas usam o cache
-do modo de produção, invalidado quando o banco muda. O servidor também responde `robots.txt` (a API fica fora do
-rastreamento), `sitemap.xml` (seções e fichas da lista atual) e `llms.txt`.
+do modo de produção, invalidado quando o banco muda (as cidades e o sitemap, também quando os snapshots mudam).
+O servidor também responde `robots.txt` (a API fica fora do rastreamento), `sitemap.xml` (seções, fichas da lista
+atual e municípios) e `llms.txt`.
+
+Filtros, buscas e página das listas vão na query string da própria seção, com nomes em português, para o endereço
+poder ser compartilhado e recarregado: `/alertas?tipo=pico&casa=senado&ano=2025`,
+`/politicos?q=tabata&cargo=deputado&ordem=cota`, `/placar?q=saude&tipo=PEC&resultado=aprovadas&decisao=urgencia&pagina=2`
+e `/presenca?ordem=mais&q=MG`. Valores padrão ficam fora do endereço e valores fora da lista caem no padrão. A API
+mantém os próprios nomes (`result=approved`, `kind=urgency`); a tradução fica só na camada da página. O canônico
+dessas páginas continua sendo a seção sem filtros; o servidor ignora a query string ao escolher a página.
 
 O endereço público vem de `PAINEL_SITE_URL` (ex.: `https://seudominio.com.br`) ou, sem ela, do `Host` recebido
-pelo túnel. No app, `app.script.js` lê o endereço ao abrir, atualiza a barra ao navegar e trata o voltar do
-navegador; o título da aba acompanha a tela.
+pelo túnel. No app, `app.script.js` lê o endereço ao abrir (caminho e query string), atualiza a barra ao navegar
+(filtros trocam o endereço sem criar entrada no histórico) e trata o voltar do navegador; o título da aba
+acompanha a tela e, na cidade, o nome dela.

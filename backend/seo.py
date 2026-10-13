@@ -13,7 +13,7 @@ import os
 import re
 from urllib.parse import unquote
 
-from . import citizen, profiles
+from . import cities, citizen, profiles
 from .config import SNAPSHOTS_PATH
 from .database import fold
 
@@ -45,6 +45,8 @@ PARTY_PAIR_PATH = re.compile(r'^/partidos/([^/]{1,60})-vs-([^/]{1,60})$')
 # Comparação compartilhável de dois políticos: /comparar/deputado-73604-vs-senador-22.
 COMPARE_PAIR_PATH = re.compile(r'^/comparar/(deputado|senador)-(\d{1,9})-vs-(deputado|senador)-(\d{1,9})$')
 PROFILE_PATH = re.compile(r'^/(deputado|senador)/(\d{1,9})(?:-[a-z0-9-]*)?/?$')
+# Página de uma cidade: /minha-cidade/3550308-sao-paulo (código IBGE de 7 dígitos e nome).
+CITY_PATH = re.compile(r'^/minha-cidade/(\d{7})(?:-[a-z0-9-]*)?/?$')
 ROLE_BY_PREFIX = {'deputado': ('camara', 'deputado'), 'senador': ('senado', 'senador')}
 PREFIX_BY_HOUSE = {'camara': 'deputado', 'senado': 'senador'}
 ROLE_LABEL = {'deputado': 'Deputado(a) federal', 'senador': 'Senador(a)'}
@@ -68,6 +70,11 @@ def slug(name):
 def profile_path(identifier, name=None):
     house, number = identifier.split(':', 1)
     return f'/{PREFIX_BY_HOUSE[house]}/{number}' + (f'-{slug(name)}' if name else '')
+
+
+def city_path(city):
+    name = slug(city.get('name') or '')
+    return f'/minha-cidade/{city["id"]}' + (f'-{name}' if name else '')
 
 
 def money(value):
@@ -280,6 +287,37 @@ def profile_page(db, page_html, path, origin):
     return 200, render(page_html, title, description, origin + canonical, body, json_ld), None
 
 
+def city_page(page_html, path, origin):
+    """(status, html, redirect) para /minha-cidade/<ibge>-<nome>; a cidade vem do snapshot, sem o SQLite."""
+    identifier = CITY_PATH.match(path).group(1)
+    city = next((row for row in cities._city_rows(cities._snapshot()) if str(row['id']) == identifier), None)
+    if city is None:
+        return 404, render(page_html, 'Cidade não encontrada', DEFAULT_DESCRIPTION, origin + path, noindex=True), None
+    canonical = city_path(city)
+    if path.rstrip('/') != canonical:
+        return 301, None, canonical
+    name, uf = str(city.get('name') or 'Cidade'), str(city.get('uf') or '')
+    place = f'{name} ({uf})' if uf else name
+    population = city.get('population')
+    population_text = ''
+    if isinstance(population, (int, float)) and not isinstance(population, bool) and population > 0:
+        year = city.get('populationYear')
+        population_text = f'{int(population):,}'.replace(',', '.') + ' habitantes' + (f' (estimativa de {year})' if year else '') + '.'
+    summary = ('Quem governa a cidade e quem ela elegeu, em quem votou para deputado(a) federal, contas da prefeitura por '
+               'morador e emendas parlamentares para o município, com dados públicos do IBGE, do TSE, do Portal da '
+               'Transparência e do Tesouro Nacional.')
+    title = f'{place}: quem governa, contas da prefeitura e emendas'
+    description = shorten(f'{place}. {population_text} {summary}'.replace('  ', ' '))
+    json_ld = {'@context': 'https://schema.org', '@type': 'City', 'name': name, 'url': origin + canonical}
+    if uf:
+        json_ld['containedInPlace'] = {'@type': 'State', 'name': uf}
+    body = (f'<article class="seo-summary"><h1>{_escape(name)}</h1><p>{_escape("Minha cidade · " + uf if uf else "Minha cidade")}</p>'
+            + (f'<p>{_escape(population_text)}</p>' if population_text else '')
+            + f'<p>{_escape(summary)}</p>'
+            f'<p>{SITE_NAME} é um projeto pessoal e apartidário que reúne dados públicos. Ausência de dado não significa zero.</p></article>')
+    return 200, render(page_html, title, description, origin + canonical, body, json_ld), None
+
+
 def robots(origin):
     # Buscadores e ferramentas de IA podem ler as páginas; a API não precisa ser rastreada.
     return f'User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: {origin}/sitemap.xml\n'
@@ -293,6 +331,8 @@ def sitemap(db, origin):
             WHERE r.sourceId IN ('camara_deputies_current','senado_senators_current') ORDER BY a.id'''):
         if identifier.split(':', 1)[0] in PREFIX_BY_HOUSE and identifier.split(':', 1)[1].isdigit():
             urls.append(origin + profile_path(identifier, name))
+    # Cidades vêm do snapshot; sem ele, o sitemap segue só com seções e fichas.
+    urls.extend(origin + city_path(city) for city in cities._city_rows(cities._snapshot()))
     entries = ''.join(f'<url><loc>{_escape(url)}</loc>{lastmod}</url>' for url in dict.fromkeys(urls))
     return f'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{entries}</urlset>\n'
 
@@ -303,7 +343,8 @@ def llms(origin):
 > {DEFAULT_DESCRIPTION}
 
 Cada deputado(a) federal e senador(a) tem uma página com endereço próprio, no formato
-{origin}/deputado/<id>-<nome> ou {origin}/senador/<id>-<nome> (lista completa no sitemap).
+{origin}/deputado/<id>-<nome> ou {origin}/senador/<id>-<nome>, e cada município, no formato
+{origin}/minha-cidade/<código IBGE>-<nome> (lista completa no sitemap).
 Os números vêm de dados públicos oficiais (Câmara dos Deputados, Senado Federal, Portal da Transparência,
 IBGE, TSE e Tesouro) e cada página indica fonte e data. Alertas seguem regras fixas e iguais para todos(as)
 e não indicam irregularidade. Ausência de dado não significa zero.

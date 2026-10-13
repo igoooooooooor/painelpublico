@@ -263,6 +263,10 @@ class Handler(BaseHTTPRequestHandler):
                 return Response.build(200, 'text/html; charset=utf-8', seo.party_pair_page(page_html, path, origin).encode('utf-8')), True
             if path in seo.SECTIONS:
                 return Response.build(200, 'text/html; charset=utf-8', seo.section_page(page_html, path, origin).encode('utf-8')), True
+            if seo.CITY_PATH.match(path):
+                # A cidade vem do snapshot, como /api/c/cities; o banco não é necessário.
+                status, content, redirect = seo.city_page(page_html, path, origin)
+                return Response.build(status, 'text/html; charset=utf-8', (content or '').encode('utf-8'), redirect), True
             if not database_ready:
                 # Sem banco, a ficha ainda abre pelo app; só não há resumo nem sitemap.
                 sitemap = path == '/sitemap.xml'
@@ -280,8 +284,11 @@ class Handler(BaseHTTPRequestHandler):
                 db.close()
 
         if cache is not None and database_ready:
-            key = ('page', (self.database_generation(), BUILD_PATH.stat().st_mtime_ns), path, origin)
-            response = cache.fetch(key, compute, BUSY_HTML)
+            generation = (self.database_generation(), BUILD_PATH.stat().st_mtime_ns)
+            if path == '/sitemap.xml' or seo.CITY_PATH.match(path):
+                # Páginas montadas a partir do snapshot de cidades mudam quando ele muda.
+                generation += (self.snapshot_generation(cache),)
+            response = cache.fetch(('page', generation, path, origin), compute, BUSY_HTML)
         else:
             response = compute()[0]
         if response.redirect:
@@ -322,7 +329,7 @@ class Handler(BaseHTTPRequestHandler):
             # Endereços compartilháveis usam a mesma página e metadados gerais do Placar.
             self.send_page('/placar', prod)
             return
-        if (path in seo.SECTIONS or path == '/sitemap.xml' or seo.PROFILE_PATH.match(path)
+        if (path in seo.SECTIONS or path == '/sitemap.xml' or seo.PROFILE_PATH.match(path) or seo.CITY_PATH.match(path)
                 or seo.PARTY_PAIR_PATH.match(path) or seo.COMPARE_PAIR_PATH.match(path)):
             self.send_page(path, prod)
             return

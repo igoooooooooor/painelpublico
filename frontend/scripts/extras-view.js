@@ -117,6 +117,16 @@ function attendanceBar(p) {
   if (!p || !Number.isFinite(p.dias) || p.dias <= 0) return '';
   return `<span class="pbar" role="img" aria-label="${p.presente} presenças, ${p.justificadas} faltas justificadas, ${p.falta} faltas em ${p.dias} dias"><i style="width:${p.presente / p.dias * 100}%"></i><i class="j" style="width:${p.justificadas / p.dias * 100}%"></i><i class="f" style="width:${p.falta / p.dias * 100}%"></i></span>`;
 }
+/* Ordem e busca no endereço: /presenca?ordem=mais&q=PL. O padrão (menos presentes, sem busca) fica fora. */
+function attendanceQueryParams() {
+  return { ordem: extrasState.attendanceOrder === 'more' ? 'mais' : '', q: extrasState.attendanceQuery.trim() };
+}
+function attendanceApplyQueryParams(params) {
+  extrasState.attendanceOrder = params.ordem === 'mais' ? 'more' : 'less';
+  extrasState.attendanceQuery = String(params.q || '').slice(0, 120);
+  extrasState.attendanceLimit = 40;
+}
+function extrasSyncLocation() { if (typeof syncFilters === 'function') syncFilters(); }
 function attendanceSorted(all = attendanceRows()) {
   const q = foldText(extrasState.attendanceQuery);
   const rate = person => person.presente / person.dias;
@@ -651,7 +661,7 @@ function comparisonTable([a, b]) {
 document.addEventListener('click', e => {
   const t = e.target.closest('[data-attendance-order],[data-attendance-more],[data-vote-group],[data-vote-more],[data-senate-votes-more],[data-cmp-votes-more],[data-cmp-add],[data-cmp-del],[data-cmp-start],[data-cmp-retry]');
   if (!t) return;
-  if (t.dataset.attendanceOrder) { extrasState.attendanceOrder = t.dataset.attendanceOrder; extrasState.attendanceLimit = 40; return rerender(); }
+  if (t.dataset.attendanceOrder) { extrasState.attendanceOrder = t.dataset.attendanceOrder; extrasState.attendanceLimit = 40; extrasSyncLocation(); return rerender(); }
   if (t.hasAttribute('data-attendance-more')) { extrasState.attendanceLimit += 60; return rerender(); }
   if (t.dataset.voteGroup) { extrasState.votes[t.dataset.voteId] = t.dataset.voteGroup; extrasState.voteLimit = 40; extrasState.voteQuery = ''; return rerender(); }
   if (t.hasAttribute('data-vote-more')) { extrasState.voteLimit += 80; return rerender(); }
@@ -662,10 +672,14 @@ document.addEventListener('click', e => {
   if (t.dataset.cmpDel) { extrasState.comparisonIds = extrasState.comparisonIds.filter(x => x !== t.dataset.cmpDel); extrasState.comparisonQuery = ''; extrasState.comparisonKey = null; extrasState.comparisonResults = null; extrasState.comparisonError = null; rerender(); return syncComparisonLocation(); }
   if (t.hasAttribute('data-cmp-start')) { if (t.dataset.cmpStart) { extrasState.comparisonIds = []; addComparisonPerson(t.dataset.cmpStart); } navigateToView('compare'); }
 }, true);
-let extrasTimer = null;
+let extrasTimer = null, attendanceLocationTimer = null;
 document.addEventListener('input', e => {
   const id = e.target.id;
-  if (id === 'attendance-q') { extrasState.attendanceQuery = e.target.value; extrasState.attendanceLimit = 40; const listElement = document.getElementById('attendance-list'); if (listElement) listElement.innerHTML = attendanceList(attendanceSorted()); }
+  if (id === 'attendance-q') {
+    extrasState.attendanceQuery = e.target.value; extrasState.attendanceLimit = 40;
+    const listElement = document.getElementById('attendance-list'); if (listElement) listElement.innerHTML = attendanceList(attendanceSorted());
+    clearTimeout(attendanceLocationTimer); attendanceLocationTimer = setTimeout(extrasSyncLocation, 250);
+  }
   if (id === 'vote-search-q') { extrasState.voteQuery = e.target.value; const pos = e.target.selectionStart; rerender(); const i = document.getElementById('vote-search-q'); if (i) { i.focus(); i.setSelectionRange(pos, pos); } }
   if (id === 'comparison-q') { clearTimeout(extrasTimer); const v = e.target.value; extrasState.comparisonQuery = v; extrasState.comparisonKey = null; extrasState.comparisonResults = null; extrasState.comparisonError = null; extrasState.comparisonLoading = false; extrasTimer = setTimeout(() => searchComparisonPeople(v), 250); }
 });

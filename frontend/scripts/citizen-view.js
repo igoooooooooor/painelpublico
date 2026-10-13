@@ -282,6 +282,19 @@ function alertTopPeople() {
     <div class="faces citizen-top5">${topPeople.map(person => `<button type="button" class="face" data-politician="${esc(person.id)}">${citizenAvatar(person, 54)}<span>${esc(citizenName(person.name).split(' ')[0])}</span><em>${person.valorAlertas ? esc(formatCitizenAmount(person.valorAlertas)) + (person.valorAlertasParcial ? ' · parcial' : '') : `${person.alertas} ${person.alertas === 1 ? 'ALERTA' : 'ALERTAS'}`}</em></button>`).join('')}</div>
     <span class="muted">Soma das despesas observadas nos alertas, cada nota contada uma vez. Não é estimativa de prejuízo. "Parcial": inclui concentração calculada com o ano ainda aberto.</span></div>`;
 }
+/* Filtros no endereço: /alertas?tipo=pico&casa=senado&ano=2025. "casa" usa o nome da Casa, não o do cargo da API. */
+const ALERT_HOUSE_PARAM = { deputado: 'camara', senador: 'senado' };
+function alertsQueryParams() {
+  const l = citizenState.alerts;
+  return { tipo: l.type === 'pico,fornecedor' ? '' : l.type, casa: ALERT_HOUSE_PARAM[l.role] || '', ano: l.year };
+}
+function alertsApplyQueryParams(params) {
+  const l = citizenState.alerts;
+  l.type = ['pico', 'fornecedor'].includes(params.tipo) ? params.tipo : 'pico,fornecedor';
+  l.role = Object.keys(ALERT_HOUSE_PARAM).find(role => ALERT_HOUSE_PARAM[role] === params.casa) || '';
+  l.year = /^\d{4}$/.test(params.ano || '') ? params.ano : '';
+}
+function citizenSyncLocation() { if (typeof syncFilters === 'function') syncFilters(); }
 function alertFilterGroup(label, attr, options, current) {
   return `<span class="alerts-seg" role="group" aria-label="${label}">${options.map(([k, n]) => `<button type="button" data-${attr}="${k}" aria-pressed="${current === k}">${n}</button>`).join('')}</span>`;
 }
@@ -325,6 +338,18 @@ function alertsView() {
 /* "Quem mais custa" com "Todos": as Casas não publicam as mesmas partes do custo, então a lista mostra
    dois blocos (Câmara e Senado), cada um ordenado por dentro, em vez de uma ordem única. */
 const POLITICIAN_BLOCK_SIZE = 10;
+/* Busca e filtros no endereço: /politicos?q=tabata&cargo=deputado&ordem=cota. A ordem padrão (A–Z) fica fora. */
+const POLITICIAN_ORDERS = ['nome', 'gasto', 'cota', 'alertas', 'quantidade-alertas'];
+function politiciansQueryParams() {
+  const p = citizenState.politicians;
+  return { q: p.query, cargo: p.role, ordem: p.order === 'nome' ? '' : p.order };
+}
+function politiciansApplyQueryParams(params) {
+  const p = citizenState.politicians;
+  p.query = String(params.q || '').trim().slice(0, 120);
+  p.role = ROLES_ORDER.includes(params.cargo) ? params.cargo : '';
+  p.order = POLITICIAN_ORDERS.includes(params.ordem) ? params.ordem : 'nome';
+}
 function loadPoliticians(more) {
   const p = citizenState.politicians, key = `q=${p.query}&cargo=${p.role}&ordem=${p.order}`;
   if (!more && p.key === key) return;
@@ -986,13 +1011,13 @@ document.addEventListener('click', e => {
   if (t.dataset.politician) { e.preventDefault(); openPolitician(t.dataset.politician); return; }
   if (t.hasAttribute('data-home-retry')) { const path = '/api/c/radar?pageSize=8&tipo=pico,fornecedor'; citizenState.cache.delete(path); citizenState.pending.delete(path); return rerender(); }
   const l = citizenState.alerts, p = citizenState.politicians;
-  if (t.dataset.alertType !== undefined) { l.type = t.dataset.alertType; return rerender(); }
-  if (t.dataset.alertRole !== undefined) { l.role = t.dataset.alertRole; return rerender(); }
-  if (t.dataset.alertYear !== undefined) { l.year = t.dataset.alertYear; return rerender(); }
+  if (t.dataset.alertType !== undefined) { l.type = t.dataset.alertType; citizenSyncLocation(); return rerender(); }
+  if (t.dataset.alertRole !== undefined) { l.role = t.dataset.alertRole; citizenSyncLocation(); return rerender(); }
+  if (t.dataset.alertYear !== undefined) { l.year = t.dataset.alertYear; citizenSyncLocation(); return rerender(); }
   if (t.hasAttribute('data-alert-more')) { l.page += 1; loadAlerts(true); return rerender(); }
   if (t.hasAttribute('data-alert-retry')) { l.key = ''; citizenState.cache.clear(); return rerender(); }
-  if (t.dataset.politicianRole !== undefined) { p.role = t.dataset.politicianRole; return rerender(); }
-  if (t.dataset.politicianOrder !== undefined) { p.order = t.dataset.politicianOrder; return rerender(); }
+  if (t.dataset.politicianRole !== undefined) { p.role = t.dataset.politicianRole; citizenSyncLocation(); return rerender(); }
+  if (t.dataset.politicianOrder !== undefined) { p.order = t.dataset.politicianOrder; citizenSyncLocation(); return rerender(); }
   if (t.hasAttribute('data-politician-more')) { p.page += 1; loadPoliticians(true); renderPoliticianList(); return; }
   if (t.hasAttribute('data-politician-retry')) { p.key = ''; citizenState.cache.clear(); return rerender(); }
 });
@@ -1001,7 +1026,7 @@ document.addEventListener('input', e => {
   if (e.target.id !== 'citizen-search') return;
   clearTimeout(citizenSearchTimer);
   citizenState.politicians.query = e.target.value.trim();
-  citizenSearchTimer = setTimeout(() => { loadPoliticians(false); renderPoliticianList(); }, 250);
+  citizenSearchTimer = setTimeout(() => { loadPoliticians(false); renderPoliticianList(); citizenSyncLocation(); }, 250);
 });
 // Atualiza apenas os padrões responsivos; escolhas feitas nos acordeões são preservadas.
 if (typeof matchMedia === 'function') {

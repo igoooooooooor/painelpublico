@@ -147,6 +147,55 @@ class SeoPagesTests(unittest.TestCase):
         _, wrong_role = self.get('/comparar/senador-1-vs-senador-2')
         self.assertIn('<title>Comparar políticos · Painel Público</title>', wrong_role)
 
+    def test_city_path_has_metadata_canonical_name_and_works_without_the_database(self):
+        self.httpd.snapshot_check_seconds = 0  # o teste troca o snapshot e lê em seguida
+        snapshot = Path(self.temp.name) / 'cities.json'
+        snapshot.write_text(json.dumps({'municipalities': [
+            {'id': '3550308', 'name': 'São Paulo', 'uf': 'SP', 'population': 11451245, 'populationYear': 2024},
+            {'id': '2605459', 'name': 'Fernando de Noronha', 'uf': 'PE', 'population': None}]}), encoding='utf-8')
+        with patch.object(seo.cities, 'SNAPSHOTS_PATH', Path(self.temp.name)):
+            response, page = self.get('/minha-cidade/3550308-sao-paulo')
+            self.assertEqual(response.status, 200)
+            self.assertIn('<title>São Paulo (SP): quem governa, contas da prefeitura e emendas · Painel Público</title>', page)
+            self.assertIn(f'<link rel="canonical" href="{self.base}/minha-cidade/3550308-sao-paulo">', page)
+            self.assertIn('"@type": "City"', page)
+            self.assertIn('11.451.245 habitantes (estimativa de 2024)', page)
+            self.assertIn('<h1>São Paulo</h1>', page)
+            self.assertNotIn('noindex', page)
+            with self.assertRaises(urllib.error.HTTPError) as moved:
+                self.get('/minha-cidade/3550308')
+            self.assertEqual(moved.exception.code, 301)
+            self.assertEqual(moved.exception.headers['Location'], '/minha-cidade/3550308-sao-paulo')
+            moved.exception.close()
+            with self.assertRaises(urllib.error.HTTPError) as moved:
+                self.get('/minha-cidade/3550308-outro-nome/')
+            self.assertEqual(moved.exception.headers['Location'], '/minha-cidade/3550308-sao-paulo')
+            moved.exception.close()
+            with self.assertRaises(urllib.error.HTTPError) as missing:
+                self.get('/minha-cidade/9999999-nenhuma')
+            self.assertEqual(missing.exception.code, 404)
+            self.assertIn('Cidade não encontrada', gzip.decompress(missing.exception.read()).decode('utf-8'))
+            missing.exception.close()
+            _, noronha = self.get('/minha-cidade/2605459-fernando-de-noronha')
+            self.assertIn('<title>Fernando de Noronha (PE): quem governa', noronha)
+            self.assertNotIn('habitantes', noronha)
+            _, sitemap = self.get('/sitemap.xml')
+            self.assertIn(f'<loc>{self.base}/minha-cidade/3550308-sao-paulo</loc>', sitemap)
+            _, llms = self.get('/llms.txt')
+            self.assertIn('/minha-cidade/<código IBGE>-<nome>', llms)
+            # Sem banco, a página da cidade continua inteira: ela só depende do snapshot.
+            self.httpd.db_path = Path(self.temp.name) / 'absent.sqlite3'
+            response, page = self.get('/minha-cidade/3550308-sao-paulo')
+            self.assertEqual(response.status, 200)
+            self.assertIn('<h1>São Paulo</h1>', page)
+            self.httpd.db_path = self.db
+        # Sem snapshot, qualquer cidade é 404 e o sitemap segue com seções e fichas.
+        with patch.object(seo.cities, 'SNAPSHOTS_PATH', Path(self.temp.name) / 'nowhere'):
+            with self.assertRaises(urllib.error.HTTPError) as missing:
+                self.get('/minha-cidade/3550308-sao-paulo')
+            self.assertEqual(missing.exception.code, 404)
+            missing.exception.close()
+
     def test_favicon_is_served_for_both_names(self):
         for path in ('/favicon.svg', '/favicon.ico'):
             response, body = self.get(path)
