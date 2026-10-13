@@ -112,7 +112,7 @@ A lista e a comparação mostram o mesmo mês principal da ficha, com a média d
 ## Endereços e buscadores
 
 Cada deputado(a) e senador(a) tem endereço próprio (`/deputado/<id>-<nome>`, `/senador/<id>-<nome>`), cada
-votação do Placar também (`/placar/<id>`), assim como as seções (`/picos-e-concentracoes`, antes `/alertas`, que redireciona; `/placar`, `/politicos`, `/partidos`,
+votação do Placar também (`/placar/<id>`) e cada município (`/minha-cidade/<código IBGE>-<nome>`), assim como as seções (`/picos-e-concentracoes`, antes `/alertas`, que redireciona; `/placar`, `/politicos`, `/partidos`,
 `/comparar`, `/presenca`, `/minha-cidade`, `/metodologia`, `/sobre`). `backend/seo.py` entrega o mesmo
 `dist/index.html` com título, descrição, endereço canônico, Open Graph (com `og-image.png`), dados estruturados
 (schema.org: `WebSite`, `WebPage`/`CollectionPage`/`AboutPage`, `Person`, `BreadcrumbList`) e, dentro de `#app`,
@@ -133,5 +133,13 @@ endereço desconhecido recebe a página 404 do site, com `noindex`. Pares de com
 
 As páginas usam o cache do modo de produção, invalidado quando o banco, o build ou qualquer snapshot muda. O
 servidor também responde `robots.txt` (a API fica fora do rastreamento), `sitemap.xml` (seções, fichas da lista
-atual e votações do Placar, com a data da revisão de cada votação) e `llms.txt`. O endereço público vem de
+atual, votações do Placar, com a data da revisão de cada votação, e municípios) e `llms.txt`. Filtros, buscas e página das listas vão na query string da própria seção, com nomes em português, para o endereço
+poder ser compartilhado e recarregado: `/picos-e-concentracoes?tipo=pico&casa=senado&ano=2025`,
+`/politicos?q=tabata&cargo=deputado&ordem=cota`, `/placar?q=saude&tipo=PEC&resultado=aprovadas&decisao=urgencia&pagina=2`
+e `/presenca?ordem=mais&q=MG`. Valores padrão ficam fora do endereço e valores fora da lista caem no padrão. A API
+mantém os próprios nomes (`result=approved`, `kind=urgency`); a tradução fica só na camada da página. O canônico
+dessas páginas continua sendo a seção sem filtros; o servidor ignora a query string ao escolher a página. Filtros
+trocam o endereço sem criar entrada no histórico.
+
+O endereço público vem de
 `PAINEL_SITE_URL` (ex.: `https://seudominio.com.br`) ou, sem ela, do `Host` recebido pelo túnel.

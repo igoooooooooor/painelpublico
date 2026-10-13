@@ -230,3 +230,93 @@ test('real links keep working as links with modifier keys and as app navigation 
   assert.equal(document.body.dataset.view, 'vote');
   assert.match(vm.runInContext('viewPath()', loadApp({ pathname: '/placar/2611313-31' }).context), /^\/placar\/2611313-31$/);
 });
+
+const jsonResponse = body => Promise.resolve({ ok: true, status: 200, json: async () => body });
+const settle = () => new Promise(resolve => setImmediate(resolve));
+
+test('city paths open the city, load it by its IBGE code and complete the address with the name', async () => {
+  const calls = [];
+  const history = { pushState: (_, __, url) => { calls.push(['push', url]); context.location.pathname = url; },
+    replaceState: (_, __, url) => { calls.push(['replace', url]); context.location.pathname = url; } };
+  const requested = [];
+  const { context, document, app } = loadApp({ pathname: '/minha-cidade/3550308', history,
+    fetch: url => { requested.push(String(url)); return jsonResponse({ municipality: { id: '3550308', name: 'São Paulo', uf: 'SP', population: 11451245 },
+      sources: {}, municipalElected: [], stateElected: [], topFederalVotes: [], currentFederal: [], messages: {} }); } });
+  assert.equal(document.body.dataset.view, 'city');
+  assert.equal(vm.runInContext('cityViewState.selectedId', context), '3550308');
+  assert.ok(requested.includes('/api/c/cities/3550308'));
+  assert.equal(vm.runInContext('viewPath()', context), '/minha-cidade/3550308');
+  await settle();
+  assert.equal(vm.runInContext('viewPath()', context), '/minha-cidade/3550308-sao-paulo');
+  assert.deepEqual(calls.at(-1), ['replace', '/minha-cidade/3550308-sao-paulo']);
+  assert.equal(context.document.title, 'São Paulo · Minha cidade · Painel Público');
+  assert.match(app.innerHTML, /São Paulo em 3 respostas/);
+  // Voltar do navegador para a busca sem cidade limpa a seleção; o endereço com o nome continua valendo.
+  context.location.pathname = '/minha-cidade';
+  vm.runInContext('applyLocation(); render(); syncLocation("replace")', context);
+  assert.equal(vm.runInContext('cityViewState.selectedId', context), null);
+  assert.match(app.innerHTML, /Sua cidade/);
+  context.location.pathname = '/minha-cidade/3550308-sao-paulo';
+  vm.runInContext('applyLocation(); render(); syncLocation("replace")', context);
+  assert.equal(vm.runInContext('cityViewState.selectedCity.name', context), 'São Paulo');
+  assert.equal(calls.filter(([, url]) => url === '/minha-cidade/3550308-sao-paulo').length, 1, 'o endereço já certo não é reescrito');
+  assert.equal(vm.runInContext("cityIdFromPath('/minha-cidade/12345')", context), null);
+});
+
+test('list filters are read from the query string, written back on change and reset when the address loses them', () => {
+  const calls = [];
+  const setAddress = url => { context.location.pathname = url.split('?')[0]; context.location.search = url.includes('?') ? '?' + url.split('?')[1] : ''; };
+  const history = { pushState: (_, __, url) => { calls.push(['push', url]); setAddress(url); }, replaceState: (_, __, url) => { calls.push(['replace', url]); setAddress(url); } };
+  const requested = [];
+  const { context, document, click } = loadApp({ pathname: '/picos-e-concentracoes', search: '?tipo=pico&casa=senado&ano=2025&lixo=1', history,
+    fetch: url => { requested.push(String(url)); return new Promise(() => {}); } });
+  assert.equal(document.body.dataset.view, 'alerts');
+  assert.deepEqual([...vm.runInContext('[citizenState.alerts.type, citizenState.alerts.role, citizenState.alerts.year]', context)], ['pico', 'senador', '2025']);
+  assert.ok(requested.some(url => url.includes('/api/c/radar?') && url.includes('tipo=pico') && url.includes('cargo=senador') && url.includes('ano=2025')));
+  assert.deepEqual(calls, [['replace', '/picos-e-concentracoes?tipo=pico&casa=senado&ano=2025']], 'o parâmetro desconhecido sai do endereço');
+  click({ alertRole: 'deputado' });
+  assert.deepEqual(calls.at(-1), ['replace', '/picos-e-concentracoes?tipo=pico&casa=camara&ano=2025']);
+  click({ alertType: 'pico,fornecedor' });
+  click({ alertYear: '' });
+  assert.deepEqual(calls.at(-1), ['replace', '/picos-e-concentracoes?casa=camara']);
+  // Valores fora da lista caem no padrão e o padrão não aparece no endereço.
+  context.location.search = '?tipo=qualquer&casa=prefeitura&ano=25';
+  vm.runInContext('applyLocation(); render(); syncLocation("replace")', context);
+  assert.deepEqual([...vm.runInContext('[citizenState.alerts.type, citizenState.alerts.role, citizenState.alerts.year]', context)], ['pico,fornecedor', '', '']);
+  assert.deepEqual(calls.at(-1), ['replace', '/picos-e-concentracoes']);
+  // Políticos: busca, cargo e ordem; a ordem A–Z é o padrão.
+  vm.runInContext("Object.assign(citizenState.politicians, { query: 'Tabata Amaral', role: 'deputado', order: 'cota', key: '' }); navigateToView('politicians')", context);
+  assert.deepEqual(calls.at(-1), ['push', '/politicos?q=Tabata%20Amaral&cargo=deputado&ordem=cota']);
+  context.location.search = '?q=PL&ordem=nome&cargo=vereador';
+  vm.runInContext('applyLocation()', context);
+  assert.deepEqual([...vm.runInContext('[citizenState.politicians.query, citizenState.politicians.role, citizenState.politicians.order]', context)], ['PL', '', 'nome']);
+  // Presença: ordem e busca.
+  context.location.pathname = '/presenca'; context.location.search = '?ordem=mais&q=MG';
+  vm.runInContext('applyLocation(); render()', context);
+  assert.equal(document.body.dataset.view, 'attendance');
+  assert.deepEqual([...vm.runInContext('[extrasState.attendanceOrder, extrasState.attendanceQuery]', context)], ['more', 'MG']);
+  click({ attendanceOrder: 'less' });
+  assert.deepEqual(calls.at(-1), ['replace', '/presenca?q=MG']);
+});
+
+test('Placar filters and page travel in the address with public names and reach the API with its own names', () => {
+  const calls = [];
+  const history = { pushState: (_, __, url) => calls.push(['push', url]), replaceState: (_, __, url) => calls.push(['replace', url]) };
+  const requested = [];
+  const { context, document } = loadApp({ pathname: '/placar', search: '?q=sa%C3%BAde&tipo=PEC&resultado=aprovadas&decisao=urgencia&pagina=2', history, includeScoreboard: true,
+    fetch: url => { requested.push(String(url)); return new Promise(() => {}); } });
+  assert.equal(document.body.dataset.view, 'votes');
+  const list = vm.runInContext('({ ...scoreboardState.list, data: null })', context);
+  assert.deepEqual([list.query, list.type, list.result, list.kind, list.page], ['saúde', 'PEC', 'approved', 'urgency', 2]);
+  const api = requested.find(url => url.startsWith('/api/c/votes?'));
+  assert.ok(api, 'a lista é pedida com os filtros do endereço');
+  for (const part of ['q=sa%C3%BAde', 'type=PEC', 'result=approved', 'kind=urgency', 'page=2']) assert.ok(api.includes(part), part);
+  assert.equal(vm.runInContext('viewPath() + viewQuery()', context), '/placar?q=sa%C3%BAde&tipo=PEC&resultado=aprovadas&decisao=urgencia&pagina=2');
+  vm.runInContext("scoreboardApplyFilters({ query: '', type: 'PL', theme: '', result: 'not_approved', kind: '' })", context);
+  assert.deepEqual(calls.at(-1), ['replace', '/placar?tipo=PL&resultado=rejeitadas']);
+  // Parâmetros inválidos caem no padrão sem derrubar a tela.
+  context.location.search = '?tipo=XYZ&resultado=talvez&decisao=outra&pagina=abc';
+  vm.runInContext('applyLocation()', context);
+  const reset = vm.runInContext('({ ...scoreboardState.list, data: null })', context);
+  assert.deepEqual([reset.type, reset.result, reset.kind, reset.page], ['', '', '', 1]);
+});

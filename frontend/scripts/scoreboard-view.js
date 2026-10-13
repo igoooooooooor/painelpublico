@@ -596,6 +596,27 @@ function scoreboardViewEntered(view) {
   if (view === 'vote' && scoreboardState.detail.id !== String(state.voteId)) scoreboardLoadDetail(String(state.voteId || ''));
   if (view === 'vote' && scoreboardState.detail.id === String(state.voteId) && scoreboardState.detail.status === 'idle') scoreboardLoadDetail(String(state.voteId || ''));
 }
+/* Filtros no endereço: /placar?q=saude&tipo=PEC&resultado=aprovadas&decisao=urgencia&pagina=2. Os nomes públicos ficam
+   em português; a API continua com os seus (result=approved, kind=urgency). */
+const SCOREBOARD_RESULT_PARAM = { approved: 'aprovadas', not_approved: 'rejeitadas' };
+const SCOREBOARD_KIND_PARAM = { segment: 'destaques', urgency: 'urgencia' };
+const scoreboardParamKey = (map, value) => Object.keys(map).find(key => map[key] === value) || '';
+function scoreboardQueryParams() {
+  const list = scoreboardState.list;
+  return { q: list.query, tipo: list.type, tema: list.theme, resultado: SCOREBOARD_RESULT_PARAM[list.result] || '',
+    decisao: SCOREBOARD_KIND_PARAM[list.kind] || '', pagina: list.page > 1 ? String(list.page) : '' };
+}
+function scoreboardApplyQueryParams(params) {
+  const list = scoreboardState.list, page = Number(params.pagina);
+  const next = { query: scoreboardText(params.q).slice(0, 120), type: ['PL', 'PLP', 'PEC'].includes(params.tipo) ? params.tipo : '',
+    theme: scoreboardText(params.tema).slice(0, 80), result: scoreboardParamKey(SCOREBOARD_RESULT_PARAM, params.resultado),
+    kind: scoreboardParamKey(SCOREBOARD_KIND_PARAM, params.decisao), page: Number.isInteger(page) && page > 1 ? page : 1 };
+  const changed = Object.keys(next).some(key => list[key] !== next[key]);
+  Object.assign(list, next);
+  // Voltar do navegador com a lista já carregada: busca de novo com os filtros do endereço.
+  if (changed && list.status !== 'idle') scoreboardLoadList();
+}
+function scoreboardSyncLocation() { if (typeof syncFilters === 'function') syncFilters(); }
 function scoreboardApplyFilters(values) {
   const list = scoreboardState.list;
   list.query = scoreboardText(values?.query).slice(0, 120);
@@ -604,6 +625,7 @@ function scoreboardApplyFilters(values) {
   list.result = ['approved', 'not_approved'].includes(values?.result) ? values.result : '';
   list.kind = ['urgency', 'segment'].includes(values?.kind) ? values.kind : '';
   list.page = 1;
+  scoreboardSyncLocation();
   return scoreboardLoadList();
 }
 function scoreboardHandlePage(page) {
@@ -612,6 +634,7 @@ function scoreboardHandlePage(page) {
   const target = Number(page);
   if (!Number.isInteger(target) || target < 1 || target > pageCount || target === scoreboardState.list.page) return;
   scoreboardState.list.page = target;
+  scoreboardSyncLocation();
   return scoreboardLoadList();
 }
 function scoreboardHandleClick(event, target) {

@@ -141,6 +141,7 @@ function render() {
 const PATH_BY_VIEW = { home: '/', alerts: '/picos-e-concentracoes', votes: '/placar', vote: '/placar', politicians: '/politicos',
   parties: '/partidos', compare: '/comparar', attendance: '/presenca', city: '/minha-cidade', methodology: '/metodologia', about: '/sobre' };
 const currentPath = () => (typeof location === 'undefined' || typeof location.pathname !== 'string' ? '/' : location.pathname.replace(/^\/index\.html$/, '/').replace(/\/+$/, '') || '/');
+const currentSearch = () => (typeof location === 'undefined' || typeof location.search !== 'string' ? '' : location.search);
 const currentQuery = name => { try { return new URLSearchParams(typeof location !== 'undefined' ? location.search || '' : '').get(name); } catch (error) { return null; } };
 /* Título e descrição de cada seção: os mesmos do servidor (frontend/data/site-pages.json), para o título que o
    buscador lê depois do JavaScript ser o mesmo do HTML. */
@@ -176,6 +177,8 @@ function pageTitle() {
     return legacy ? `${shortenText(legacy, 90)} · Placar · Painel Público` : `${TITLE_BY_VIEW.votes || 'Placar'} · Painel Público`;
   }
   if (state.view === 'notFound') return 'Página não encontrada · Painel Público';
+  const cityName = state.view === 'city' && typeof cityViewState !== 'undefined' ? cityViewState.selectedCity?.name : null;
+  if (cityName) return `${cityName} · Minha cidade · Painel Público`;
   if (SERVER_RENDER && SERVER_RENDER.path === path && path !== PATH_BY_VIEW[state.view]) return SERVER_RENDER.title;
   const page = TITLE_BY_VIEW[state.view];
   return page ? `${page} · Painel Público` : SITE_TITLE;
@@ -199,9 +202,39 @@ function syncHead() {
   if (noindex && !robots && document.head) { robots = document.createElement('meta'); robots.setAttribute('name', 'robots'); robots.setAttribute('content', 'noindex'); document.head.appendChild(robots); }
   else if (!noindex && robots && typeof robots.remove === 'function') robots.remove();
 }
+/* Filtros, buscas e página das listas vão na query string da própria seção (/picos-e-concentracoes?tipo=pico&casa=senado), para o
+   endereço poder ser compartilhado e recarregado. Cada tela declara como escreve e lê seus parâmetros, com nomes em
+   português por serem a URL pública; valores padrão ficam fora do endereço. */
+function queryHandlers(view) {
+  const handlers = {
+    alerts: () => [alertsQueryParams, alertsApplyQueryParams],
+    politicians: () => [politiciansQueryParams, politiciansApplyQueryParams],
+    votes: () => [scoreboardQueryParams, scoreboardApplyQueryParams],
+    attendance: () => [attendanceQueryParams, attendanceApplyQueryParams],
+  };
+  try { return handlers[view] ? handlers[view]() : null; } catch (error) { return null; } // tela ausente neste build
+}
+function viewQuery() {
+  const handlers = queryHandlers(state.view);
+  const entries = Object.entries(handlers ? handlers[0]() || {} : {}).filter(([, value]) => value !== '' && value !== null && value !== undefined);
+  return entries.length ? '?' + entries.map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`).join('&') : '';
+}
+function parseQuery(search) {
+  const params = {};
+  String(search || '').replace(/^\?/, '').split('&').filter(Boolean).forEach(pair => {
+    const [key, ...rest] = pair.split('=');
+    try { params[decodeURIComponent(key)] = decodeURIComponent(rest.join('=').replace(/\+/g, ' ')); } catch (error) { /* parâmetro malformado: ignora */ }
+  });
+  return params;
+}
+function applyQuery() {
+  const handlers = queryHandlers(state.view);
+  if (handlers) handlers[1](parseQuery(currentSearch()));
+}
 function viewPath() {
   if (state.view === 'compare' && typeof comparisonPath === 'function') return comparisonPath();
   if (state.view === 'parties' && typeof partyPairPath === 'function') return partyPairPath();
+  if (state.view === 'city' && typeof cityPath === 'function') return cityPath();
   if (state.view === 'vote' && VOTE_PATH_ID.test(String(state.voteId || ''))) return `/placar/${state.voteId}`;
   if (state.view === 'notFound') return currentPath();
   const [house, number] = String(state.politicianId || '').split(':');
@@ -238,23 +271,34 @@ function applyLocation() {
     state.deputyId = profile[1] === 'deputado' ? profile[2] : null;
     return;
   }
+  const city = typeof cityIdFromPath === 'function' ? cityIdFromPath(path) : null;
+  if (city) {
+    state.view = 'city';
+    cityApplyPath(city);
+    return;
+  }
   const view = Object.keys(PATH_BY_VIEW).find(key => key !== 'vote' && PATH_BY_VIEW[key] === path);
   if (view) {
     state.view = view;
+    if (view === 'city' && typeof cityApplyPath === 'function') cityApplyPath(null);
     // /politicos?q=nome: a busca da home sem JavaScript chega por aqui com a pergunta no endereço.
     const query = view === 'politicians' ? String(currentQuery('q') || '').trim().slice(0, 120) : '';
     if (query && typeof citizenState !== 'undefined') { citizenState.politicians.query = query; citizenState.politicians.key = ''; }
+    applyQuery();
     return;
   }
   state.view = path === '/' ? 'home' : 'notFound';
 }
 function syncLocation(mode = 'push') {
   if (typeof history === 'undefined' || typeof history.pushState !== 'function') return;
-  const path = viewPath(), current = currentPath();
-  // Endereços com o nome (/deputado/123-nome) continuam valendo para a mesma ficha.
-  if (current === path || current.startsWith(path + '-')) return;
-  history[mode === 'replace' ? 'replaceState' : 'pushState'](null, '', path);
+  const path = viewPath(), target = path + viewQuery(), current = currentPath() + currentSearch();
+  // Endereços com o nome (/deputado/123-nome, /minha-cidade/3550308-sao-paulo) continuam valendo para a mesma página.
+  if (current === target || (target === path && current.startsWith(path + '-'))) return;
+  // Navegadores limitam a frequência de pushState/replaceState; sem a barra atualizada, o app segue normal.
+  try { history[mode === 'replace' ? 'replaceState' : 'pushState'](null, '', target); } catch (error) { /* endereço fica como está */ }
 }
+// Filtros e buscas trocam o endereço sem criar entrada no histórico.
+function syncFilters() { syncLocation('replace'); }
 const navigationHistory = [];
 function navigateToView(view, keep) {
   view = normalizeView(view);

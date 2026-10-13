@@ -157,6 +157,37 @@ function citySearchKeydown(event) {
   return false;
 }
 
+/* Endereço próprio da cidade: /minha-cidade/<ibge>-<nome>, no padrão das fichas. O servidor redireciona para o
+   nome certo; aqui o nome entra assim que é conhecido. */
+const citySlug = name => String(name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+function cityPath() {
+  const id = cityViewState.selectedId;
+  if (!/^\d{7}$/.test(String(id || ''))) return '/minha-cidade';
+  const slug = citySlug(cityViewState.selectedCity?.name);
+  return `/minha-cidade/${id}${slug ? `-${slug}` : ''}`;
+}
+function cityIdFromPath(path) {
+  const match = String(path || '').match(/^\/minha-cidade\/(\d{7})(?:-[a-z0-9-]*)?$/);
+  return match ? match[1] : null;
+}
+/* Endereço aberto direto ou pelo voltar do navegador: mostra a cidade do caminho, ou volta à busca sem cidade. */
+function cityApplyPath(cityId) {
+  const city = cityViewState;
+  if (!cityId) {
+    if (!city.selectedId) return;
+    city.selectedId = null; city.selectedCity = null; city.detail = null;
+    city.detailError = null; city.detailLoading = false; city.detailSequence++;
+    return;
+  }
+  const id = String(cityId);
+  if (city.selectedId === id) return;
+  const known = city.items.find(candidate => String(candidate.id) === id) || city.detailCache.get(id)?.municipality;
+  city.selectedId = id; city.selectedCity = known || { id };
+  city.detail = city.detailCache.get(id) || null;
+  city.detailError = null; city.detailLoading = !city.detail; city.suggestionsOpen = false; city.detailSequence++;
+  if (!city.detail) cityLoadDetail(id);
+}
+
 function citySelect(cityId) {
   const item = cityViewState.items.find(candidate => String(candidate.id) === String(cityId));
   if (!item || !/^\d{7}$/.test(String(item.id))) return;
@@ -180,12 +211,17 @@ async function cityLoadDetail(cityId = cityViewState.selectedId) {
     if (sequence !== cityViewState.detailSequence || id !== cityViewState.selectedId) return;
     cityViewState.detailCache.set(id, data); cityViewState.detail = data;
     cityViewState.detailLoading = false;
+    // Aberta pelo endereço, a cidade só tinha o código; com o nome, o endereço ganha o nome e a aba, o título.
+    if (data?.municipality && !cityViewState.selectedCity?.name) cityViewState.selectedCity = data.municipality;
   } catch (error) {
     if (sequence !== cityViewState.detailSequence || id !== cityViewState.selectedId) return;
     cityViewState.detailLoading = false;
     cityViewState.detailError = typeof citizenErrorMessage === 'function' ? citizenErrorMessage(error) : error.message || 'Não deu para carregar agora.';
   }
-  if (sequence === cityViewState.detailSequence && state.view === 'city') rerender();
+  if (sequence === cityViewState.detailSequence && state.view === 'city') {
+    rerender();
+    if (typeof syncLocation === 'function') syncLocation('replace');
+  }
 }
 
 function cityOfficeKey(value) {

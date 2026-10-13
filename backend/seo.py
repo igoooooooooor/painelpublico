@@ -18,7 +18,7 @@ import sys
 from urllib.parse import unquote
 
 from .settlement import settled_cutoff
-from . import citizen, costs, profiles, seo_sections as sections, votes
+from . import cities, citizen, costs, profiles, seo_sections as sections, votes
 from .config import ROOT, SNAPSHOTS_PATH
 from .database import fold
 
@@ -53,6 +53,8 @@ PROFILE_PATH = re.compile(r'^/(deputado|senador)/(\d{1,9})(?:-[a-z0-9-]*)?/?$')
 VOTE_DETAIL_PATH = re.compile(r'^/placar/(\d{1,12}-\d{1,6})$')
 # Endereços antigos de seções, mantidos para os links já compartilhados.
 LEGACY_SECTION_PATHS = {'/alertas': '/picos-e-concentracoes'}
+# Página de uma cidade: /minha-cidade/3550308-sao-paulo (código IBGE de 7 dígitos e nome).
+CITY_PATH = re.compile(r'^/minha-cidade/(\d{7})(?:-[a-z0-9-]*)?/?$')
 ROLE_BY_PREFIX = {'deputado': ('camara', 'deputado'), 'senador': ('senado', 'senador')}
 PREFIX_BY_HOUSE = {'camara': 'deputado', 'senado': 'senador'}
 ROLE_LABEL = {'deputado': 'Deputado(a) federal', 'senador': 'Senador(a)'}
@@ -72,6 +74,16 @@ def site_origin(headers):
 
 def slug(name):
     return re.sub(r'[^a-z0-9]+', '-', fold(name)).strip('-')
+
+
+def city_path(city):
+    name = slug(city.get('name') or '')
+    return f'/minha-cidade/{city["id"]}' + (f'-{name}' if name else '')
+
+
+def city_rows():
+    """Municípios do snapshot de Minha cidade; sem o snapshot, lista vazia."""
+    return cities._city_rows(cities._snapshot())
 
 
 def profile_path(identifier, name=None):
@@ -495,6 +507,40 @@ def vote_page(page_html, path, origin):
     return 200, render(page_html, title, description, url, origin, body, json_ld, marker=path), None
 
 
+def city_page(page_html, path, origin):
+    """(status, html, redirect) para /minha-cidade/<ibge>-<nome>; a cidade vem do snapshot, sem o SQLite."""
+    identifier = CITY_PATH.match(path).group(1)
+    city = next((row for row in city_rows() if str(row['id']) == identifier), None)
+    if city is None:
+        return 404, render(page_html, 'Cidade não encontrada', DEFAULT_DESCRIPTION, origin + path, origin,
+                           sections.not_found_body(), noindex=True, marker=path), None
+    canonical = city_path(city)
+    if path.rstrip('/') != canonical:
+        return 301, None, canonical
+    name, uf = str(city.get('name') or 'Cidade'), str(city.get('uf') or '')
+    place = f'{name} ({uf})' if uf else name
+    population = city.get('population')
+    population_text = ''
+    if isinstance(population, (int, float)) and not isinstance(population, bool) and population > 0:
+        year = city.get('populationYear')
+        population_text = f'{int(population):,}'.replace(',', '.') + ' habitantes' + (f' (estimativa de {year})' if year else '') + '.'
+    summary = ('Quem governa a cidade e quem ela elegeu, em quem votou para deputado(a) federal, contas da prefeitura por '
+               'morador e emendas parlamentares para o município, com dados públicos do IBGE, do TSE, do Portal da '
+               'Transparência e do Tesouro Nacional.')
+    title = f'{place}: quem governa, contas da prefeitura e emendas'
+    description = shorten(f'{place}. {population_text} {summary}'.replace('  ', ' '))
+    url = origin + canonical
+    city_ld = {'@context': 'https://schema.org', '@type': 'City', 'name': name, 'url': url}
+    if uf:
+        city_ld['containedInPlace'] = {'@type': 'State', 'name': uf}
+    json_ld = [city_ld, breadcrumb_ld(origin, [('Início', '/'), ('Minha cidade', '/minha-cidade'), (name, canonical)])]
+    body = (f'<article class="seo-summary"><h1>{_escape(name)}</h1><p>{_escape("Minha cidade · " + uf if uf else "Minha cidade")}</p>'
+            + (f'<p>{_escape(population_text)}</p>' if population_text else '')
+            + f'<p>{_escape(summary)}</p>'
+            f'<p>{SITE_NAME} é um projeto pessoal e apartidário que reúne dados públicos. Ausência de dado não significa zero.</p></article>')
+    return 200, render(page_html, title, description, url, origin, body, json_ld, marker=canonical), None
+
+
 def not_found_page(page_html, path, origin):
     return render(page_html, 'Página não encontrada', DEFAULT_DESCRIPTION, origin + path, origin, sections.not_found_body(),
                   noindex=True, marker=path)
@@ -514,6 +560,9 @@ def page(db, page_html, path, origin):
         if db is None:
             return 200, section_page(db, page_html, '/comparar', origin), None
         return compare_pair_page(db, page_html, path, origin)
+    if CITY_PATH.match(path):
+        # A cidade vem do snapshot, como /api/c/cities; o banco não é necessário.
+        return city_page(page_html, path, origin)
     if PROFILE_PATH.match(path):
         if db is None:
             # Sem banco, a ficha ainda abre pelo app; só não há resumo nem nome.
@@ -544,6 +593,8 @@ def sitemap(db, origin):
             entries.append((origin + profile_path(identifier, name), data_lastmod))
     for identifier, reviewed_at in votes.sitemap_entries():
         entries.append((f'{origin}/placar/{identifier}', _lastmod(reviewed_at)))
+    # Cidades vêm do snapshot; sem ele, o sitemap segue sem elas.
+    entries.extend((origin + city_path(city), data_lastmod) for city in city_rows())
     seen, xml = set(), []
     for url, lastmod in entries:
         if url not in seen:
@@ -562,6 +613,7 @@ Cada deputado(a) federal e senador(a) tem uma página com endereço próprio, no
 {origin}/deputado/<id>-<nome> ou {origin}/senador/<id>-<nome>, com o custo de um mês de referência e a média do mandato, cota, presença, votos,
 picos e concentrações, sempre com o período dos dados e a data da fotografia. Cada votação do Placar tem endereço próprio,
 {origin}/placar/<id>, com a decisão, o que significava votar Sim e Não, o resultado e o voto de cada deputado(a).
+Cada município tem página própria, {origin}/minha-cidade/<código IBGE>-<nome>.
 A lista completa está no sitemap: {origin}/sitemap.xml. O conteúdo essencial de cada página está no HTML inicial,
 sem depender de JavaScript.
 
