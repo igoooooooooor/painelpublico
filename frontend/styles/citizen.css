@@ -636,6 +636,8 @@ nav.tabs button svg { flex: none; }
 .city-account-row > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .city-account-row > div span { font-size: 11px; color: var(--muted); }
 .city-account-row > div b { font-size: 13px; overflow-wrap: anywhere; }
+.city-account-row > div small { font-size: 11px; color: var(--muted); }
+.city-account-missing { margin: 0; font-size: 12px; color: var(--ink-2); }
 @media (max-width: 520px) {
   .city-figures { grid-template-columns: 1fr; }
   .city-account-row { grid-template-columns: 1fr 1fr; }
@@ -643,8 +645,6 @@ nav.tabs button svg { flex: none; }
 }
 @media (min-width: 640px) { .city-name-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } .city-name-list.city-people, .city-authors, .city-rank { grid-template-columns: 1fr; } }
 @media (min-width: 900px) {
-  .city-account-row { grid-template-columns: 1.2fr repeat(3, minmax(0, 1fr)); align-items: center; }
-  .city-account-row > b { grid-column: auto; }
   .city-rank li { grid-template-columns: 22px minmax(170px, 1.3fr) 80px minmax(0, 1fr) 100px; }
   .city-rank .city-profile-link { justify-self: end; }
   .city-rank .city-bar { grid-column: auto; }

@@ -126,7 +126,7 @@ test('spending is compared per resident with the typical city of the same size, 
   assert.match(accounts, /Receita/);
   assert.doesNotMatch(accounts, /<img src=x/);
   assert.match(accounts, /mediana[\s\S]*cidades com mais de 500 mil habitantes[\s\S]*dado válido para cada indicador/);
-  assert.match(accounts, /R\$ 6\.176 · 40 cidades/);
+  assert.match(accounts, /R\$ 6\.176<\/b><small>40 cidades<\/small>/);
   assert.match(accounts, /não é o limite da Lei de Responsabilidade Fiscal/);
   assert.match(accounts, /Tesouro &lt;dados&gt; ↗/);
 });
@@ -147,8 +147,8 @@ test('account comparisons show each indicator’s own valid sample count', () =>
       ] },
   } });
   const accounts = html.match(/<section[^>]*data-profile-section="accounts"[\s\S]*?<\/section>/)?.[0] || '';
-  assert.match(accounts, /R\$ 50 · 1\.331 cidades/);
-  assert.match(accounts, /R\$ 45 · 1\.330 cidades/);
+  assert.match(accounts, /R\$ 50<\/b><small>1\.331 cidades<\/small>/);
+  assert.match(accounts, /R\$ 45<\/b><small>1\.330 cidades<\/small>/);
   assert.match(accounts, /dado válido para cada indicador[\s\S]*amostra usada aparece ao lado de cada valor/);
   assert.doesNotMatch(accounts, /1\.331 cidades com contas/);
 });

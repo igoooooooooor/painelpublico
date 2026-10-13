@@ -465,13 +465,15 @@ function cityAccountsDetail(data, isDf, isFernando) {
   const comparison = accounts.comparison || {};
   const rows = metrics.map(metric => {
     const typical = cityAccountTypical(accounts, metric.id), typicalValue = cityTypicalPerResident(accounts, metric.id);
-    const typicalText = !comparison.available ? 'Sem comparação'
-      : typicalValue !== null ? `${cityPerResident(typicalValue)} · ${cityNumber(typical.perCapitaSampleSize)} cidades`
-        : Number(typical?.perCapitaSampleSize ?? typical?.sampleSize) < 3 ? 'Menos de 3 cidades para comparar' : 'Não informado';
+    // Valor e amostra em linhas separadas: juntos, não cabem na coluna.
+    const typicalHtml = comparison.available && typicalValue !== null
+      ? `<b class="mono">${cityPerResident(typicalValue)}</b><small>${cityNumber(typical.perCapitaSampleSize)} cidades</small>`
+      : `<p class="city-account-missing">${!comparison.available ? 'Sem comparação'
+        : Number(typical?.perCapitaSampleSize ?? typical?.sampleSize) < 3 ? 'Menos de 3 cidades para comparar' : 'Não informado'}</p>`;
     return `<div class="city-account-row"><b>${esc(CITY_ACCOUNT_LABELS[metric.id] || metric.label || 'Indicador')}</b>
       <div><span>Total</span><b class="mono">${cityExactCompact(metric.amountCents)}</b></div>
       <div><span>Por morador</span><b class="mono">${cityPerResident(metric.perCapitaCents) || 'Não informado'}</b></div>
-      <div><span>Típico por morador</span><b class="mono">${esc(typicalText)}</b></div></div>`;
+      <div><span>Típico por morador</span>${typicalHtml}</div></div>`;
   }).join('');
   return `${accounts.status !== 'available' && accounts.message ? `<p class="note">${esc(accounts.message)}</p>` : ''}
     <div class="city-account-table">${rows}</div>
