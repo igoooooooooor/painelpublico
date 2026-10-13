@@ -1,0 +1,540 @@
+{
+  "_comment": "Textos das páginas institucionais (/metodologia e /sobre). O app (methodology-view.js) e o servidor (backend/seo.py) leem este arquivo: o mesmo conteúdo vale para pessoas e para buscadores. Ao mudar uma regra, mude aqui e em docs/alerts.md ou docs/voting-scoreboard.md.",
+  "repository": "https://github.com/igoooooooooor/painelpublico",
+  "sections": [
+    {
+      "path": "/",
+      "view": "home",
+      "title": null,
+      "description": "Quanto custa, se trabalha e se há gastos incomuns: deputados(as) e senadores(as) em dados públicos oficiais da Câmara e do Senado, com fonte e data. Projeto pessoal e apartidário."
+    },
+    {
+      "path": "/alertas",
+      "view": "alerts",
+      "title": "Alertas de gastos incomuns na cota parlamentar",
+      "description": "Gastos da cota de deputados(as) e senadores(as) que fogem do padrão pelas mesmas regras para todos(as). Alertas não indicam irregularidade."
+    },
+    {
+      "path": "/placar",
+      "view": "votes",
+      "title": "Placar das votações da Câmara",
+      "description": "Como os(as) deputados(as) votaram nas propostas selecionadas do Plenário, com resumo e fonte oficial."
+    },
+    {
+      "path": "/politicos",
+      "view": "politicians",
+      "title": "Deputados(as) e senadores(as)",
+      "description": "Busque qualquer deputado(a) federal ou senador(a) e veja custo do mandato, presença, votos e alertas."
+    },
+    {
+      "path": "/partidos",
+      "view": "parties",
+      "title": "Comparar partidos",
+      "description": "Gasto médio de cota, presença, alertas e votos de dois partidos lado a lado, na Câmara e no Senado."
+    },
+    {
+      "path": "/comparar",
+      "view": "compare",
+      "title": "Comparar políticos",
+      "description": "Dois(duas) parlamentares lado a lado: custo, cota, alertas, presença e votos."
+    },
+    {
+      "path": "/presenca",
+      "view": "attendance",
+      "title": "Presença no Plenário da Câmara",
+      "description": "Presença de cada deputado(a) nas sessões deliberativas do mandato atual, desde fev/2023, com faltas justificadas e não justificadas."
+    },
+    {
+      "path": "/minha-cidade",
+      "view": "city",
+      "title": "Minha cidade",
+      "description": "Quem representa sua cidade, emendas parlamentares e contas da prefeitura, com dados do IBGE, TSE e Tesouro."
+    },
+    {
+      "path": "/metodologia",
+      "view": "methodology",
+      "title": "Metodologia e perguntas",
+      "description": "Como o painel calcula custo, cota, presença, alertas, Placar e contador de impostos: fontes oficiais, regras, prazos e limites de cada número."
+    },
+    {
+      "path": "/sobre",
+      "view": "about",
+      "title": "Sobre o projeto",
+      "description": "O que é o Painel Público, quem mantém, de onde vêm os dados, como são atualizados, licença de uso e como pedir uma correção."
+    }
+  ],
+  "methodology": {
+    "title": "Como o painel funciona",
+    "lead": "Cada número do site vem de uma fonte oficial e segue uma regra escrita aqui. As regras são iguais para todos(as) e o código é aberto: qualquer pessoa pode refazer as contas.",
+    "notice": "Alertas não indicam irregularidade. Eles detectam variação de gasto e concentração em fornecedor. Um contrato recorrente legítimo pode gerar um alerta, e um gasto problemático pode não gerar nenhum. Confira sempre as notas na fonte oficial.",
+    "sections": [
+      {
+        "id": "alerts",
+        "title": "Alertas da cota",
+        "view": [
+          "alerts",
+          "Ver os alertas"
+        ],
+        "lead": "Duas regras fixas, aplicadas igualmente a deputados(as) e senadores(as), nas notas do mandato inteiro (fev/2023 em diante). Versão em uso: cota-alertas-v3, desde 8/10/2026.",
+        "questions": [
+          {
+            "question": "O que é um alerta de “mês acima da referência”?",
+            "answer": [
+              "Aparece quando o gasto de um mês com a cota:",
+              [
+                "é pelo menos 1,75 vez a referência da própria pessoa;",
+                "fica pelo menos R$ 10 mil acima dela;",
+                "e também fica acima do gasto mensal típico dos(as) colegas (o piso: mediana dos meses fechados dos parlamentares da mesma Casa e ano)."
+              ],
+              "A referência é a mediana dos 12 meses anteriores completos, atravessando o ano. Os 12 meses precisam ter notas. Como o mandato começa em fev/2023, o primeiro mês avaliado é fev/2024. Meses seguidos marcados contam como um alerta só, dentro do mesmo ano."
+            ]
+          },
+          {
+            "question": "O que é uma “concentração em fornecedor”?",
+            "answer": [
+              "Aparece quando pelo menos 50% e pelo menos R$ 30 mil das notas do ano foram para um mesmo fornecedor. É avaliada ano a ano desde 2023. O cartão sempre mostra a porcentagem junto com o valor pago, o total observado no ano e os meses com notas."
+            ]
+          },
+          {
+            "question": "E “passagens intermediadas por uma agência”?",
+            "answer": [
+              "Quando a maioria das notas de uma concentração cita, no registro oficial, uma companhia aérea (LATAM/TAM, GOL ou Azul) que não é o fornecedor pago, o alerta sai com esse título. O valor é o total pago pelas passagens, não a receita da agência nem gasto com uma só companhia. Só o Senado publica a companhia; na Câmara não há essa evidência."
+            ]
+          },
+          {
+            "question": "Por que alguns meses não são avaliados?",
+            "answer": [
+              "Só entram meses cujo prazo de apresentação das notas já terminou na data da coleta:",
+              [
+                "Câmara: 90 dias após o fim do mês.",
+                "Senado: até o fim de abril do ano seguinte. Por isso, em 2026, nenhum mês do Senado é avaliado para pico."
+              ],
+              "Também ficam de fora meses com histórico insuficiente (menos de 12 meses anteriores com notas), sem base (algum mês sem notas na janela) ou sem piso dos colegas. A ficha de cada pessoa lista esses meses e o motivo."
+            ],
+            "links": [
+              [
+                "Guia da Câmara sobre a cota",
+                "https://www2.camara.leg.br/comunicacao/assessoria-de-imprensa/guia-para-jornalistas/cota-parlamentar"
+              ],
+              [
+                "Ato do Senado sobre a cota (APS 5/2014)",
+                "https://adm.senado.gov.br/normas/ui/pub/normaConsultada?idNorma=203003"
+              ]
+            ]
+          },
+          {
+            "question": "Por que novembro e dezembro aparecem tanto?",
+            "answer": [
+              "Nas duas Casas, o saldo da cota não usado num mês se acumula ao longo do ano e expira em 31 de dezembro. Parte dos picos de fim de ano reflete o uso desse saldo. Os meses são avaliados como os outros, e o cartão informa a regra do saldo anual, sem tratá-la como justificativa."
+            ]
+          },
+          {
+            "question": "O que significa “período parcial”?",
+            "answer": [
+              "A concentração do ano corrente pode mudar: o ano ainda pode receber notas. O cartão mostra os meses observados (por exemplo, jan–set/2026) e a data da coleta."
+            ]
+          },
+          {
+            "question": "O que é o “valor das despesas nos alertas”?",
+            "answer": [
+              "A soma das notas que estão em algum alerta do mandato, contando cada lançamento uma vez só e preservando estornos. É a soma de despesas observadas, não estimativa de prejuízo."
+            ]
+          },
+          {
+            "question": "Os alertas estão ordenados por gravidade?",
+            "answer": [
+              "Não. Eles aparecem dos mais recentes aos mais antigos, com títulos factuais e sem selo de intensidade. Ter menos alertas não torna ninguém “melhor”: os alertas não medem irregularidade."
+            ]
+          },
+          {
+            "question": "Posso refazer as contas?",
+            "answer": [
+              "Sim. O cálculo está num único arquivo do código aberto, usado para gerar os alertas, explicar cada cartão e rodar a simulação. A simulação é somente leitura, usa semente fixa e grava os parâmetros, a fotografia do banco e os resultados por Casa e ano."
+            ],
+            "links": [
+              [
+                "Regra no GitHub",
+                "https://github.com/igoooooooooor/painelpublico/blob/main/backend/alert_rules.py"
+              ],
+              [
+                "Documentação dos alertas",
+                "https://github.com/igoooooooooor/painelpublico/blob/main/docs/alerts.md"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cost",
+        "title": "Quanto custa por mês",
+        "view": [
+          "politicians",
+          "Ver os políticos"
+        ],
+        "lead": "O custo mensal soma as partes publicadas por cada Casa. Câmara e Senado publicam partes diferentes, então os valores servem para comparar dentro da mesma Casa, nunca entre elas.",
+        "questions": [
+          {
+            "question": "O que entra no custo de um deputado(a)?",
+            "answer": [
+              "Salário bruto, auxílios, cota parlamentar e verba do gabinete. A média usa só os meses com as quatro partes publicadas; meses parciais não são estimados para o mês inteiro.",
+              "Ficam de fora: 13º salário (mostrado à parte), diárias, vantagens indenizatórias, encargos do gabinete e apartamento funcional."
+            ]
+          },
+          {
+            "question": "E de um senador(a)?",
+            "answer": [
+              "Remuneração do(a) senador(a), equipe do gabinete e cota, com a média de cada parte nos meses em que as três foram publicadas, somadas. São partes diferentes das da Câmara, por isso os números não são comparáveis."
+            ]
+          },
+          {
+            "question": "Os valores são corrigidos pela inflação?",
+            "answer": [
+              "Não. São valores da época em que foram pagos."
+            ]
+          }
+        ]
+      },
+      {
+        "id": "quota",
+        "title": "Cota parlamentar",
+        "view": [
+          "politicians",
+          "Ver os políticos"
+        ],
+        "lead": "A Cota para o Exercício da Atividade Parlamentar reembolsa despesas do trabalho, como divulgação, escritório, combustível e passagens. Não é salário.",
+        "questions": [
+          {
+            "question": "Como é calculada a média mensal da cota?",
+            "answer": [
+              "É o total dividido pelos meses com notas no período indicado. Mês sem nota é ausência de dado, não gasto zero, então licenças e trocas de suplente não diluem a média. Estornos são preservados nos totais. Valores altos não indicam irregularidade."
+            ]
+          },
+          {
+            "question": "De onde vêm as notas?",
+            "answer": [
+              "Dos dados abertos da Câmara e do portal de transparência do Senado. Na Câmara, as passagens aéreas não estão no arquivo aberto das notas e ficam fora da conta. No Senado, a análise usa os registros publicados; a imagem do documento não está disponível nesta base."
+            ]
+          }
+        ]
+      },
+      {
+        "id": "attendance",
+        "title": "Presença",
+        "view": [
+          "attendance",
+          "Ver a presença"
+        ],
+        "lead": "Dias com sessão deliberativa no Plenário da Câmara, no mandato atual, pela página de presença de cada deputado(a).",
+        "questions": [
+          {
+            "question": "O que conta como falta justificada?",
+            "answer": [
+              "O motivo informado pela Câmara, como missão autorizada, licença e atestado. Quem assumiu no meio do mandato tem menos dias na conta."
+            ]
+          },
+          {
+            "question": "E no Senado?",
+            "answer": [
+              "O Senado publica só os registros de presença, por isso a presença de senadores(as) aparece em número de sessões, e não em porcentagem. As medidas das duas Casas são diferentes e não se comparam."
+            ]
+          }
+        ]
+      },
+      {
+        "id": "scoreboard",
+        "title": "Placar",
+        "view": [
+          "votes",
+          "Ver o Placar"
+        ],
+        "lead": "Votações nominais do Plenário da Câmara sobre o texto principal de projetos de lei e de mudanças na Constituição, conferidas uma a uma nas fontes oficiais.",
+        "questions": [
+          {
+            "question": "Quais votações entram?",
+            "answer": [
+              "Só as votações do texto principal de PL, PLP e PEC no Plenário, com o voto de cada deputado(a) registrado. Entram aprovações e rejeições, pela mesma regra, sem escolha por partido, autor ou tema.",
+              "Essa é a contagem do Placar. Em alguns projetos, destaques, emendas e pedidos de urgência já conferidos aparecem à parte, dentro da votação do projeto, sem entrar na contagem nem nas comparações. Procedimentos, redação final e votações simbólicas ficam de fora. O Placar não é tudo o que a Câmara votou, e um projeto aprovado ainda pode não ter virado lei."
+            ]
+          },
+          {
+            "question": "Como são escritos o resumo e o que significava votar Sim e Não?",
+            "answer": [
+              "Cada votação é conferida no registro do resultado, no texto efetivamente votado e no relatório nominal. O resumo e os significados de Sim e Não partem desse texto, e a página de cada votação mostra a data da revisão. Quando não dá para identificar com segurança a versão votada, a votação fica pendente e não é publicada."
+            ],
+            "links": [
+              [
+                "Metodologia do Placar",
+                "https://github.com/igoooooooooor/painelpublico/blob/main/docs/voting-scoreboard.md"
+              ]
+            ]
+          },
+          {
+            "question": "Por que quase todas foram aprovadas?",
+            "answer": [
+              "Aprovação não quer dizer consenso: um texto aprovado por margem estreita pode ter sido muito disputado, e o placar de cada votação mostra o tamanho da divisão. O Placar também não mostra os projetos que não chegaram a uma votação nominal do texto principal, como os que ficaram nas comissões ou foram decididos em votação simbólica. Parte das disputas aparece nos destaques, emendas e pedidos de urgência, mostrados à parte quando já conferidos."
+            ]
+          }
+        ]
+      },
+      {
+        "id": "city",
+        "title": "Minha cidade",
+        "view": [
+          "city",
+          "Ver Minha cidade"
+        ],
+        "lead": "Dados do município a partir do IBGE, do TSE, do Tesouro Nacional (Siconfi) e do Portal da Transparência.",
+        "questions": [
+          {
+            "question": "O que é “empenhado” e “pago” nas emendas?",
+            "answer": [
+              "Empenhado é o valor reservado no orçamento: um compromisso, que ainda não é pagamento. Pago é o que de fato saiu do caixa federal. Restos a pagar pagos são pagamentos de agora de compromissos de anos anteriores."
+            ]
+          },
+          {
+            "question": "Como é o gasto por morador?",
+            "answer": [
+              "A despesa empenhada da prefeitura no ano, dividida pela população do mesmo ano. Saúde e educação também incluem salários, então essas linhas não devem ser somadas. O valor “típico” é a mediana entre cidades de porte parecido; não é meta nem ranking."
+            ]
+          }
+        ]
+      },
+      {
+        "id": "taxes",
+        "title": "Contador de impostos",
+        "view": [
+          "home",
+          "Ver o contador"
+        ],
+        "lead": "Impostos federais e estaduais pagos no ano, a partir da arrecadação publicada pela Receita Federal e pelos estados.",
+        "questions": [
+          {
+            "question": "O contador é exato?",
+            "answer": [
+              "Não. É uma estimativa: os valores oficiais até o último mês publicado mais a média diária do ano."
+            ]
+          },
+          {
+            "question": "O que entra na conta?",
+            "answer": [
+              "No federal, os impostos e contribuições administrados pela Receita Federal. No estadual, ICMS, IPVA e ITCD dos 27 estados, pelos relatórios entregues ao Tesouro Nacional (Siconfi). Ficam de fora os impostos municipais (IPTU, ISS e ITBI), porque nem todas as cidades publicam o dado mensal, e as taxas e contribuições estaduais."
+            ]
+          }
+        ]
+      },
+      {
+        "id": "sources",
+        "title": "Fontes, datas e erros",
+        "lead": "Cada tela informa a fonte e a data da coleta.",
+        "questions": [
+          {
+            "question": "Quais são as fontes oficiais?",
+            "answer": [
+              [
+                "Câmara dos Deputados: dados abertos (lista de deputados(as), cota parlamentar, votações do Plenário, projetos) e páginas de presença e de remuneração.",
+                "Senado Federal: portal da transparência (cota, remuneração e equipe dos gabinetes), lista de senadores(as), votações e presença.",
+                "Portal da Transparência (Controladoria-Geral da União): emendas parlamentares por município.",
+                "IBGE: lista de municípios e população.",
+                "TSE: candidaturas e resultados eleitorais.",
+                "Tesouro Nacional (Siconfi): contas anuais das prefeituras e arrecadação dos estados.",
+                "Receita Federal: arrecadação federal mensal."
+              ],
+              "A lista completa, com a cobertura e os limites de cada coleta, está na documentação do projeto."
+            ],
+            "links": [
+              [
+                "Dados abertos da Câmara",
+                "https://dadosabertos.camara.leg.br/"
+              ],
+              [
+                "Transparência do Senado",
+                "https://www12.senado.leg.br/transparencia"
+              ],
+              [
+                "Portal da Transparência",
+                "https://portaldatransparencia.gov.br/"
+              ],
+              [
+                "Siconfi (Tesouro Nacional)",
+                "https://siconfi.tesouro.gov.br/"
+              ],
+              [
+                "Dados abertos do TSE",
+                "https://dadosabertos.tse.jus.br/"
+              ],
+              [
+                "Cobertura de cada fonte (documentação)",
+                "https://github.com/igoooooooooor/painelpublico/blob/main/docs/data.md"
+              ]
+            ]
+          },
+          {
+            "question": "Com que frequência os dados são atualizados?",
+            "answer": [
+              "As notas da cota do ano corrente são coletadas todos os dias. O custo do mandato, o histórico da cota e os dados do Senado são refeitos todo mês, e a base é publicada como release de dados. Cada tela mostra a data da fotografia dos dados, que é diferente da data em que o site foi publicado: uma mudança no código não atualiza os dados."
+            ]
+          },
+          {
+            "question": "Por que alguns valores aparecem como “não informado”?",
+            "answer": [
+              "Dado ausente não significa zero. Quando a fonte oficial não publicou um valor, o painel diz isso, em vez de estimar ou completar com zero."
+            ]
+          },
+          {
+            "question": "Encontrei um erro. O que faço?",
+            "answer": [
+              "Abra um aviso no GitHub com o link da página e o que está diferente da fonte oficial, ou escreva para contato@painelpublico.com."
+            ],
+            "links": [
+              [
+                "Informar um erro",
+                "https://github.com/igoooooooooor/painelpublico/issues"
+              ]
+            ]
+          },
+          {
+            "question": "Posso usar os dados?",
+            "answer": [
+              "Sim. A base do painel é publicada sob a licença CC BY 4.0: pode ser usada e redistribuída, citando “Painel Público” e o link do release. As informações continuam pertencendo às fontes oficiais."
+            ],
+            "links": [
+              [
+                "Releases de dados",
+                "https://github.com/igoooooooooor/painelpublico/releases"
+              ]
+            ]
+          },
+          {
+            "question": "O painel tem vínculo com algum partido ou governo?",
+            "answer": [
+              "Não. É um projeto pessoal e independente, sem vínculo com partidos, políticos, governos ou órgãos públicos."
+            ],
+            "links": [
+              [
+                "Aviso legal",
+                "https://github.com/igoooooooooor/painelpublico/blob/main/LEGAL-NOTICE.md"
+              ],
+              [
+                "Sobre o projeto",
+                "/sobre"
+              ]
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "about": {
+    "title": "Sobre o Painel Público",
+    "lead": "Um site para entender, em linguagem simples, quanto custa e como trabalha cada deputado(a) federal e senador(a), sempre com link para a fonte oficial.",
+    "sections": [
+      {
+        "id": "what",
+        "title": "O que é",
+        "paragraphs": [
+          "O Painel Público reúne e organiza informações que a Câmara dos Deputados, o Senado Federal e outros órgãos já publicam: custo do mandato, notas da cota parlamentar, presença no Plenário, votações e, em Minha cidade, quem governa cada município, as emendas e as contas da prefeitura.",
+          "Cada número vem de uma fonte oficial, mostra o período a que se refere e a data da fotografia dos dados. As regras de cálculo estão descritas na página de metodologia e no código aberto."
+        ],
+        "links": [
+          [
+            "Como o painel funciona",
+            "/metodologia"
+          ],
+          [
+            "Código no GitHub",
+            "https://github.com/igoooooooooor/painelpublico"
+          ]
+        ]
+      },
+      {
+        "id": "independence",
+        "title": "Independência",
+        "paragraphs": [
+          "É um projeto pessoal, independente e apartidário, mantido por uma pessoa física, por iniciativa própria. Não tem vínculo com partidos, políticos, candidaturas, governos, órgãos públicos, empresas ou organizações. Não é um site oficial e não fala em nome de nenhum órgão.",
+          "Não apoia nem se opõe a pessoas, partidos ou correntes políticas. As mesmas regras, os mesmos textos e os mesmos critérios valem para todos os parlamentares, de qualquer partido ou estado."
+        ],
+        "links": [
+          [
+            "Aviso legal e de independência",
+            "https://github.com/igoooooooooor/painelpublico/blob/main/LEGAL-NOTICE.md"
+          ]
+        ]
+      },
+      {
+        "id": "alerts",
+        "title": "Alertas não são acusações",
+        "paragraphs": [
+          "Os alertas da cota são calculados por regras fixas, documentadas e iguais para todos(as). Eles apontam registros para conferir: um mês acima da referência da própria pessoa ou a concentração das notas de um ano em um mesmo fornecedor.",
+          "“Incomum” e “acima do habitual” descrevem apenas uma diferença numérica. Não são acusação, juízo de valor nem indício de irregularidade. Um gasto incomum pode ter explicação legítima, como um evento, um contrato fixo ou atraso na publicação das notas."
+        ],
+        "links": [
+          [
+            "Regras dos alertas",
+            "/metodologia#methodology-alerts"
+          ]
+        ]
+      },
+      {
+        "id": "data",
+        "title": "De onde vêm os dados e quando são atualizados",
+        "paragraphs": [
+          "Todas as informações vêm de fontes públicas: dados abertos e páginas oficiais da Câmara dos Deputados, do Senado Federal, do Portal da Transparência, do IBGE, do TSE, do Tesouro Nacional e da Receita Federal. O projeto não produz dados novos sobre ninguém e não usa informações sigilosas.",
+          "As notas da cota do ano corrente são coletadas todos os dias. O custo do mandato, o histórico da cota e os dados do Senado são refeitos todo mês. Cada tela mostra a data da fotografia dos dados, que é diferente da data de publicação do site.",
+          "Os dados podem estar incompletos, atrasados ou conter erros das fontes ou do processamento. Ausência de registro não significa valor zero. Para qualquer decisão ou uso formal, consulte a fonte oficial."
+        ],
+        "links": [
+          [
+            "Fontes e cobertura",
+            "/metodologia#methodology-sources"
+          ],
+          [
+            "Documentação dos dados",
+            "https://github.com/igoooooooooor/painelpublico/blob/main/docs/data.md"
+          ]
+        ]
+      },
+      {
+        "id": "reuse",
+        "title": "Uso dos dados e do código",
+        "paragraphs": [
+          "A base do painel (banco, snapshots e revisões do Placar) é publicada como release de dados sob a licença Creative Commons Atribuição 4.0 (CC BY 4.0): pode ser usada, copiada e redistribuída, inclusive comercialmente, citando “Painel Público” e o link do release. As informações em si continuam pertencendo às fontes oficiais.",
+          "O código é aberto, sob licença MIT. Jornalistas, pesquisadores(as) e organizações podem citar as páginas do site pelo endereço de cada ficha ou seção, junto com a data da fotografia dos dados indicada na página."
+        ],
+        "links": [
+          [
+            "Releases de dados",
+            "https://github.com/igoooooooooor/painelpublico/releases"
+          ],
+          [
+            "Licença do código",
+            "https://github.com/igoooooooooor/painelpublico/blob/main/LICENSE"
+          ]
+        ]
+      },
+      {
+        "id": "corrections",
+        "title": "Erros, correções e contato",
+        "paragraphs": [
+          "Se você encontrar um erro, ou se uma informação sobre você estiver incorreta ou fora de contexto, escreva para contato@painelpublico.com ou abra um aviso no GitHub, indicando a página, o registro e, se possível, a fonte oficial correta. Pedidos de correção são analisados e, quando procedentes, corrigidos."
+        ],
+        "links": [
+          [
+            "contato@painelpublico.com",
+            "mailto:contato@painelpublico.com?subject=Pedido%20de%20corre%C3%A7%C3%A3o"
+          ],
+          [
+            "Informar um erro no GitHub",
+            "https://github.com/igoooooooooor/painelpublico/issues"
+          ]
+        ]
+      },
+      {
+        "id": "privacy",
+        "title": "Visitantes e privacidade",
+        "paragraphs": [
+          "O site não tem cadastro nem anúncios. As estatísticas de acesso usam o Cloudflare Web Analytics, que conta visitas de forma agregada, sem cookies e sem identificar visitantes. No seu navegador, o site guarda apenas a escolha de tema (claro ou escuro). O servidor, a rede de entrega (Cloudflare) e o serviço de fontes tipográficas (Google Fonts) podem registrar dados técnicos de acesso para funcionamento e segurança."
+        ]
+      }
+    ]
+  }
+}

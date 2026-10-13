@@ -18,7 +18,11 @@ from . import cities, citizen, database, photos, profiles, public_store as store
 from .config import BUILD_PATH, ROOT
 
 FAVICON_PATH = ROOT / 'frontend' / 'static' / 'favicon.svg'
-VOTE_DETAIL_PATH = re.compile(r'^/placar/\d+-\d+$')
+OG_IMAGE_PATH = ROOT / 'frontend' / 'static' / 'og-image.png'
+ASSETS_PATH = BUILD_PATH.parent / 'assets'
+# Só os arquivos gerados pelo build (nome com hash do conteúdo) saem da pasta dist; nada de dados ou snapshots.
+ASSET_NAME = re.compile(r'^app\.[0-9a-f]{12}\.(js|css)$')
+ASSET_TYPES = {'js': 'text/javascript; charset=utf-8', 'css': 'text/css; charset=utf-8'}
 
 QUERY_SECONDS = 8      # consulta que passar disso é abortada (protege o servidor público)
 CACHE_ENTRIES = 3000   # respostas guardadas em memória no modo --prod
@@ -30,7 +34,7 @@ QUERY_ERRORS = (sqlite3.Error, ValueError, TypeError, ArithmeticError)
 
 
 def compressible(body, content_type):
-    return len(body) > 1024 and not content_type.startswith('image/jpeg')  # JPEG já é comprimido
+    return len(body) > 1024 and not content_type.startswith('image/')  # JPEG e PNG já são comprimidos
 
 
 class Response(NamedTuple):
@@ -248,7 +252,8 @@ class Handler(BaseHTTPRequestHandler):
         return (cache.snapshot_generation(check_seconds), self.database_generation())
 
     def send_page(self, path, prod):
-        """Páginas do app com metadados e resumo para buscadores; cacheadas como a API."""
+        """Páginas do app com metadados e conteúdo inicial para pessoas sem JavaScript e buscadores; cacheadas como a API.
+        A chave inclui o banco, o build e os snapshots: as seções leem Placar, presença e cidades dos arquivos locais."""
         if not BUILD_PATH.is_file():
             content = 'Aplicativo ainda não compilado. Execute python3 scripts/build.py.'.encode('utf-8')
             self.send_body(content, 'text/plain; charset=utf-8', 503)
@@ -259,35 +264,51 @@ class Handler(BaseHTTPRequestHandler):
 
         def compute():
             page_html = BUILD_PATH.read_text(encoding='utf-8')
-            if seo.PARTY_PAIR_PATH.match(path):
-                return Response.build(200, 'text/html; charset=utf-8', seo.party_pair_page(page_html, path, origin).encode('utf-8')), True
-            if path in seo.SECTIONS:
-                return Response.build(200, 'text/html; charset=utf-8', seo.section_page(page_html, path, origin).encode('utf-8')), True
-            if not database_ready:
-                # Sem banco, a ficha ainda abre pelo app; só não há resumo nem sitemap.
-                sitemap = path == '/sitemap.xml'
-                return Response.build(503 if sitemap else 200, 'text/html; charset=utf-8', b'' if sitemap else page_html.encode('utf-8')), False
-            db = store.connect(self.server.db_path)
+            db = store.connect(self.server.db_path) if database_ready else None
             try:
                 if path == '/sitemap.xml':
+                    if db is None:
+                        return Response.build(503, 'text/plain; charset=utf-8', b'Base ainda nao importada.'), False
                     return Response.build(200, 'application/xml; charset=utf-8', seo.sitemap(db, origin).encode('utf-8')), True
-                if seo.COMPARE_PAIR_PATH.match(path):
-                    status, content, redirect = seo.compare_pair_page(db, page_html, path, origin)
-                else:
-                    status, content, redirect = seo.profile_page(db, page_html, path, origin)
-                return Response.build(status, 'text/html; charset=utf-8', (content or '').encode('utf-8'), redirect), True
+                if db is not None:
+                    db.execute('BEGIN')  # os números de uma página saem da mesma fotografia do banco
+                status, content, redirect = seo.page(db, page_html, path, origin)
+                # Só páginas e redirecionamentos ficam em cache: endereços inexistentes não ocupam as vagas da memória.
+                return Response.build(status, 'text/html; charset=utf-8', (content or '').encode('utf-8'), redirect), database_ready and status in (200, 301)
+            except QUERY_ERRORS as error:
+                return error_response(error), False
             finally:
-                db.close()
+                if db is not None:
+                    db.close()
 
         if cache is not None and database_ready:
-            key = ('page', (self.database_generation(), BUILD_PATH.stat().st_mtime_ns), path, origin)
+            key = ('page', (self.database_generation(), BUILD_PATH.stat().st_mtime_ns, cache.snapshot_generation(
+                getattr(self.server, 'snapshot_check_seconds', SNAPSHOT_CHECK_SECONDS))), path, origin)
             response = cache.fetch(key, compute, BUSY_HTML)
         else:
             response = compute()[0]
         if response.redirect:
             self.send_prepared(response, 'public, max-age=3600' if prod else 'no-store')
-        else:
+        elif response.status == 200:
             self.send_prepared(response, 'public, max-age=60' if prod else 'no-store')
+        else:
+            self.send_prepared(response, 'no-store')
+
+    def send_asset(self, name, prod):
+        """JavaScript e CSS do build, com nome que muda a cada conteúdo: cache longo e imutável."""
+        path = ASSETS_PATH / name
+        cache = getattr(self.server, 'cache', None)
+        try:
+            generation = path.stat().st_mtime_ns
+        except OSError:
+            self.send_json({'error': 'Recurso não encontrado.'}, 404)
+            return
+
+        def compute():
+            return Response.build(200, ASSET_TYPES[name.rsplit('.', 1)[1]], path.read_bytes()), True
+
+        response = cache.fetch(('asset', generation, name), compute) if cache is not None else compute()[0]
+        self.send_prepared(response, 'public, max-age=31536000, immutable' if prod else 'no-store')
 
     def send_snapshot_route(self, compute, prod):
         """Rotas montadas a partir dos snapshots locais (Placar, cidades, perfis, Senado), sem o SQLite.
@@ -313,17 +334,23 @@ class Handler(BaseHTTPRequestHandler):
             # Um ícone só, em SVG; /favicon.ico (pedido automático de navegadores e robôs) recebe o mesmo arquivo.
             self.send_body(FAVICON_PATH.read_bytes(), 'image/svg+xml', cache='public, max-age=86400' if prod else 'no-store')
             return
+        if url.path.startswith('/assets/'):
+            name = url.path[len('/assets/'):]
+            if ASSET_NAME.fullmatch(name):
+                self.send_asset(name, prod)
+            else:
+                self.send_json({'error': 'Recurso não encontrado.'}, 404)
+            return
+        if url.path == '/og-image.png' and OG_IMAGE_PATH.is_file():
+            self.send_body(OG_IMAGE_PATH.read_bytes(), 'image/png', cache='public, max-age=86400' if prod else 'no-store')
+            return
         if url.path in ('/robots.txt', '/llms.txt'):
             text = seo.robots(seo.site_origin(self.headers)) if url.path == '/robots.txt' else seo.llms(seo.site_origin(self.headers))
             self.send_body(text.encode(), 'text/plain; charset=utf-8', cache='public, max-age=3600' if prod else 'no-store')
             return
         path = '/' if url.path == '/index.html' else url.path.rstrip('/') or '/'
-        if VOTE_DETAIL_PATH.fullmatch(path):
-            # Endereços compartilháveis usam a mesma página e metadados gerais do Placar.
-            self.send_page('/placar', prod)
-            return
-        if (path in seo.SECTIONS or path == '/sitemap.xml' or seo.PROFILE_PATH.match(path)
-                or seo.PARTY_PAIR_PATH.match(path) or seo.COMPARE_PAIR_PATH.match(path)):
+        if not path.startswith('/api/'):
+            # Páginas conhecidas recebem metadados e conteúdo; qualquer outro endereço, a página 404 do site.
             self.send_page(path, prod)
             return
         snapshot_route = self.snapshot_route(url)
@@ -337,9 +364,6 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({'error': 'Foto não disponível.'}, 404, 'public, max-age=3600' if prod else 'no-store')
             else:
                 self.send_body(data, 'image/jpeg', cache='public, max-age=604800' if prod else 'no-store')
-            return
-        if not url.path.startswith('/api/'):
-            self.send_json({'error': 'Recurso não encontrado.'}, 404)
             return
         params = {key: values[-1] for key, values in parse_qs(url.query).items()}
         if not self.server.db_path.exists():

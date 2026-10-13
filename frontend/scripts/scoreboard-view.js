@@ -262,7 +262,7 @@ function scoreboardLegacyCard(vote) {
     <h2 class="h">${scoreboardEscape(vote.titulo || 'Título não informado')}</h2>
     <p class="scoreboard-meta">${type ? `<span class="pill">${scoreboardEscape(type)}</span>` : ''}<span>${scoreboardEscape(tally)} · ${scoreboardEscape(outcome)}</span></p>
     ${vote.curto ? `<p class="muted">${scoreboardEscape(vote.curto)}</p>` : ''}
-    ${SCOREBOARD_VOTE_ID.test(id) ? `<button type="button" class="more" data-vote="${scoreboardEscape(id)}">Entender essa votação</button>` : ''}
+    ${SCOREBOARD_VOTE_ID.test(id) ? `<a class="more" href="/placar/${scoreboardEscape(id)}" data-vote="${scoreboardEscape(id)}">Entender essa votação</a>` : ''}
   </article>`;
 }
 function scoreboardItemCard(item) {
@@ -300,7 +300,7 @@ function scoreboardItemCard(item) {
       <p class="scoreboard-outcome" data-outcome="${scoreboardEscape(item?.outcome || '')}">${scoreboardEscape(outcome)}</p>
       ${scoreboardTallyBar(tally)}
       <p class="scoreboard-meta"><span><b>${scoreboardCount(tally.yes)}</b> sim</span><span><b>${scoreboardCount(tally.no)}</b> não</span><span>${abstention}</span></p>
-      ${SCOREBOARD_VOTE_ID.test(id) ? `<button type="button" class="more" data-vote="${scoreboardEscape(id)}">Ver decisão e votos →</button>` : '<p class="muted">Identificador desta votação indisponível.</p>'}
+      ${SCOREBOARD_VOTE_ID.test(id) ? `<a class="more" href="/placar/${scoreboardEscape(id)}" data-vote="${scoreboardEscape(id)}">Ver decisão e votos →</a>` : '<p class="muted">Identificador desta votação indisponível.</p>'}
     </div>
   </article>`;
 }
@@ -349,6 +349,8 @@ function scoreboardPagination(data, fallbackCount) {
 }
 function scoreboardVotesView() {
   const list = scoreboardState.list;
+  // Primeira abertura: a lista que o servidor já pôs na página fica até o catálogo paginado chegar.
+  if (['idle', 'loading'].includes(list.status) && !list.data && typeof serverRendered === 'function' && serverRendered('/placar')) return serverRendered('/placar');
   const fallback = list.available === false || (list.status === 'error' && (!list.data || list.data.available === false));
   const data = list.data && list.data.available !== false ? list.data : null;
   const legacyVotes = fallback ? scoreboardLegacyVisibleVotes() : [];
@@ -374,16 +376,16 @@ function scoreboardVotesView() {
 function scoreboardRelatedDecision(related) {
   if (!related || !SCOREBOARD_VOTE_ID.test(scoreboardText(related.id))) return '';
   const tally = `Sim ${scoreboardCount(related.tally?.yes)} × Não ${scoreboardCount(related.tally?.no)}`;
-  const link = `<button type="button" class="more" data-vote="${scoreboardEscape(related.id)}">`;
+  const link = `<a class="more" href="/placar/${scoreboardEscape(related.id)}" data-vote="${scoreboardEscape(related.id)}">`;
   if (related.relation === 'approvedAfter') {
     return `<section class="card scoreboard-related" role="note"><span class="k">O que valeu para o projeto</span>
       <p>Esta votação decidiu sobre uma <strong>versão alternativa</strong> do texto, que foi rejeitada. Na mesma sessão, logo depois, a Câmara aprovou o projeto (${scoreboardEscape(tally)}).</p>
-      ${link}Ver a votação que aprovou o projeto →</button></section>`;
+      ${link}Ver a votação que aprovou o projeto →</a></section>`;
   }
   if (related.relation === 'rejectedBefore') {
     return `<section class="card scoreboard-related" role="note"><span class="k">Antes desta votação</span>
       <p>Na mesma sessão, a Câmara rejeitou antes uma versão alternativa do texto (${scoreboardEscape(tally)}). Esta é a votação que aprovou o projeto.</p>
-      ${link}Ver a versão rejeitada →</button></section>`;
+      ${link}Ver a versão rejeitada →</a></section>`;
   }
   return '';
 }
@@ -465,9 +467,12 @@ function scoreboardPartyTotals(partyTotals) {
 }
 function scoreboardDetailView() {
   const detail = scoreboardState.detail;
-  if (detail.id !== String(state.voteId || '')) return `<button type="button" class="back" data-back>‹ Voltar ao Placar</button><p class="scoreboard-status" role="status" aria-live="polite">Carregando detalhes e votos individuais…</p>`;
+  // A página da votação já veio do servidor com decisão, resultado e votos: fica até o detalhe completo chegar.
+  const served = typeof serverRendered === 'function' ? serverRendered(`/placar/${state.voteId}`) : '';
+  if (detail.id !== String(state.voteId || '')) return served || `<button type="button" class="back" data-back>‹ Voltar ao Placar</button><p class="scoreboard-status" role="status" aria-live="polite">Carregando detalhes e votos individuais…</p>`;
   if (detail.status === 'legacy') return typeof selectedVoteView === 'function' ? selectedVoteView() : '<p class="note">Esta votação está disponível no recorte selecionado.</p>';
-  if (detail.status === 'loading' || detail.status === 'idle') return `<button type="button" class="back" data-back>‹ Voltar ao Placar</button><p class="scoreboard-status" role="status" aria-live="polite">Carregando detalhes e votos individuais…</p>`;
+  if (detail.status === 'loading' || detail.status === 'idle') return served || `<button type="button" class="back" data-back>‹ Voltar ao Placar</button><p class="scoreboard-status" role="status" aria-live="polite">Carregando detalhes e votos individuais…</p>`;
+  if (detail.status === 'error' && served) return served;
   if (detail.status === 'missing') return `<button type="button" class="back" data-back>‹ Voltar ao Placar</button><section class="card scoreboard-error" role="alert"><h1 class="h">Votação não encontrada</h1><p>O identificador não está disponível no catálogo público.</p></section>`;
   if (detail.status === 'error') return `<button type="button" class="back" data-back>‹ Voltar ao Placar</button><section class="card scoreboard-error" role="alert"><p>${scoreboardEscape(detail.error || 'Não foi possível carregar esta votação.')}</p><button type="button" class="fchip" data-scoreboard-retry>Carregar novamente</button></section>`;
   const payload = detail.data || {};

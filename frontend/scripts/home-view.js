@@ -26,7 +26,7 @@ function homeCostCard(data) {
   if (!data) return home.error ? `<section class="card home-cost"><span class="k">Resumo da base</span><p>${esc(home.error)}</p><button type="button" class="opt" data-summary-retry>Tentar novamente</button></section>` : skel('ficha');
   const chamber = data.custoMensal?.deputado, senate = data.custoMensal?.senador;
   if (!chamber || !Number.isFinite(chamber.media)) {
-    return `<section class="card home-cost"><span class="home-cost-label">Um(a) deputado(a) custa, em média, por mês</span><div class="home-cost-value">Sem dados</div><p class="muted">O custo mensal ainda não foi calculado para a lista atual.</p><button type="button" class="more" data-go="politicians">Ver a lista de políticos →</button></section>`;
+    return `<section class="card home-cost"><span class="home-cost-label">Um(a) deputado(a) custa, em média, por mês</span><div class="home-cost-value">Sem dados</div><p class="muted">O custo mensal ainda não foi calculado para a lista atual.</p><a class="more" href="/politicos" data-go="politicians">Ver a lista de políticos →</a></section>`;
   }
   const hasRange = Number.isFinite(chamber.minimo) && Number.isFinite(chamber.maximo) && chamber.maximo > chamber.minimo;
   const position = hasRange ? (chamber.media - chamber.minimo) / (chamber.maximo - chamber.minimo) * 100 : 50;
@@ -37,7 +37,7 @@ function homeCostCard(data) {
     ${hasRange ? `<div class="home-range" role="img" aria-label="Média de R$ ${mil(chamber.media)} mil, entre R$ ${mil(chamber.minimo)} mil e R$ ${mil(chamber.maximo)} mil"><span class="home-range-track"><i style="left:${position.toFixed(1)}%"></i></span><span class="home-range-ends"><span>menor R$ ${mil(chamber.minimo)} mil</span><span>maior R$ ${mil(chamber.maximo)} mil</span></span></div>` : ''}
     ${senate && Number.isFinite(senate.media) ? `<div class="home-cost-senate"><span>Senador(a), em média</span><b>R$ ${mil(senate.media)} mil/mês</b></div>` : ''}
     <p class="home-cost-note">Média de ${chamber.comCusto} deputados(as) com custo identificado, dos ${chamber.total} da lista atual, nos meses com todas as partes publicadas; valores da época. Na Câmara, ficam fora 13º, encargos do gabinete e apartamento funcional. Câmara e Senado publicam partes diferentes do custo: compare só dentro da mesma Casa.</p>
-    <button type="button" class="more" data-go="politicians">Ver quanto custa cada um(a) →</button>
+    <a class="more" href="/politicos" data-go="politicians">Ver quanto custa cada um(a) →</a>
   </section>`;
 }
 function homeStats(data) {
@@ -72,7 +72,7 @@ function homeTopCard(data) {
   const ranking = data.topCamara, top = ranking.slice(0, 5), max = Math.max(1, ...top.map(p => p.gastoMensal));
   return `<section class="card home-panel">
     <div class="home-panel-head"><h2 class="h">Quem mais usa a cota</h2><span class="muted">Média mensal nos meses com notas</span></div>
-    ${top.length ? `<ol class="home-ranking">${top.map((p, i) => `<li><button type="button" data-politician="${esc(p.id)}"><span class="home-rank">${i + 1}</span><span class="home-rank-name"><b>${esc(p.nome)}</b><small>${esc(p.partido || '')} · ${esc(p.uf || '')}</small></span><span class="home-rank-value">R$ ${mil(p.gastoMensal)} mil</span><i style="width:${(Math.max(0, p.gastoMensal) / max * 100).toFixed(2)}%"></i></button></li>`).join('')}</ol>` : '<p>Sem reembolsos importados para ordenar.</p>'}
+    ${top.length ? `<ol class="home-ranking">${top.map((p, i) => `<li>${profileLinkOpen(p.id, '')}<span class="home-rank">${i + 1}</span><span class="home-rank-name"><b>${esc(p.nome)}</b><small>${esc(p.partido || '')} · ${esc(p.uf || '')}</small></span><span class="home-rank-value">R$ ${mil(p.gastoMensal)} mil</span><i style="width:${(Math.max(0, p.gastoMensal) / max * 100).toFixed(2)}%"></i>${profileLinkClose(p.id)}</li>`).join('')}</ol>` : '<p>Sem reembolsos importados para ordenar.</p>'}
     <span class="muted">Os cinco maiores valores entre ${ranking.length} deputados(as) com dados. ${esc(homePeriod(data.reembolsos.deputado.periodo))}. Valores altos não indicam irregularidade.</span>
     <button type="button" class="more" data-home-quota-list>Ver a lista completa →</button>
   </section>`;
@@ -81,16 +81,18 @@ function homeHero() {
   return `<div class="home-intro">
     <h1 class="home-title">Quanto custa cada parlamentar — e como ele trabalha.</h1>
     <p class="home-lead">Gastos, presença e votos de deputados(as) e senadores(as), a partir dos dados oficiais da Câmara e do Senado.</p>
-    <form class="home-search" data-home-search role="search">
+    <form class="home-search" data-home-search action="/politicos" method="get" role="search">
       <label for="home-search-input">Busque um nome, partido ou estado</label>
       <div class="home-search-box"><input id="home-search-input" name="q" type="search" maxlength="120" autocomplete="off" placeholder="Ex.: Tabata, PL, Minas Gerais"><button type="submit">Buscar</button></div>
     </form>
-    <div class="home-shortcuts"><button type="button" data-go="city">Minha cidade</button><button type="button" data-cmp-start="">Comparar dois políticos</button><button type="button" data-go="votes">Placar das votações</button></div>
+    <div class="home-shortcuts"><a href="/minha-cidade" data-go="city">Minha cidade</a><button type="button" data-cmp-start="">Comparar dois políticos</button><a href="/placar" data-go="votes">Placar das votações</a></div>
   </div>`;
 }
 function homeView() {
   homeLoad();
   const data = home.data;
+  // Conteúdo do servidor (os mesmos números) fica até o resumo chegar; some só se a API falhar, para mostrar o aviso.
+  if (!data && !home.error && typeof serverRendered === 'function' && serverRendered('/')) return `<div class="top">${brandMark()}${themeToggleHTML()}</div>${serverRendered('/')}`;
   return `<div class="top">${brandMark()}${themeToggleHTML()}</div>
     <section class="home-hero">${homeHero()}${homeCostCard(data)}</section>
     ${homeStats(data)}

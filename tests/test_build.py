@@ -1,5 +1,8 @@
 import importlib.util
 import json
+import os
+import re
+import time
 import tempfile
 import unittest
 from pathlib import Path
@@ -13,11 +16,14 @@ SPEC.loader.exec_module(BUILD)
 
 
 def embedded_data(path):
+    """Payload do app, que fica no arquivo JavaScript com hash referenciado pelo HTML (não mais no documento)."""
     html = path.read_text(encoding="utf-8")
+    script_name = re.search(r'<script src="/assets/(app\.[0-9a-f]{12}\.js)" defer></script>', html).group(1)
+    script = (path.parent / "assets" / script_name).read_text(encoding="utf-8")
     marker = "const DATA = "
-    start = html.index(marker) + len(marker)
-    end = html.index(";\n", start)
-    return json.loads(html[start:end]), html
+    start = script.index(marker) + len(marker)
+    end = script.index(";\n", start)
+    return json.loads(script[start:end]), html + script
 
 
 class BuildTests(unittest.TestCase):
@@ -31,8 +37,11 @@ class BuildTests(unittest.TestCase):
             data, _ = embedded_data(output)
             self.assertEqual(set(data), {
                 "geradoEm", "ultimaVotacao", "votacoes", "presencaTodos", "votosCompletos",
-                "arrecadacao", "arrecadacaoEstadual", "perfis", "senado",
+                "arrecadacao", "arrecadacaoEstadual", "perfis", "senado", "sitePages",
             })
+            self.assertEqual([section["path"] for section in data["sitePages"]["sections"]][:3], ["/", "/alertas", "/placar"])
+            self.assertIn("alerts", [section["id"] for section in data["sitePages"]["methodology"]["sections"]])
+            self.assertTrue(data["sitePages"]["about"]["sections"])
             self.assertIsNone(data["geradoEm"])
             self.assertEqual(data["presencaTodos"], [])
             self.assertEqual(data["votosCompletos"], {})
@@ -41,6 +50,37 @@ class BuildTests(unittest.TestCase):
             self.assertEqual(data["perfis"], {"profiles": {}, "sobDemanda": False})
             self.assertEqual(data["senado"], {"sobDemanda": False})
             self.assertEqual(len(data["votacoes"]), 4)
+
+    def test_assets_are_hashed_referenced_by_the_html_and_stale_ones_are_pruned(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            output = root / "dist" / "index.html"
+            assets = root / "dist" / "assets"
+            assets.mkdir(parents=True)
+            stale = assets / "app.000000000000.js"
+            stale.write_text("old", encoding="utf-8")
+            old_time = time.time() - 30 * 86400
+            os.utime(stale, (old_time, old_time))
+            recent = assets / "app.111111111111.css"
+            recent.write_text("recent", encoding="utf-8")
+            foreign = assets / "notes.txt"
+            foreign.write_text("keep", encoding="utf-8")
+            with patch.object(BUILD, "SNAPSHOTS", root / "snapshots"):
+                BUILD.build(output)
+                html = output.read_text(encoding="utf-8")
+                script = re.search(r'<script src="/assets/(app\.[0-9a-f]{12}\.js)" defer></script>', html).group(1)
+                style = re.search(r'<link rel="stylesheet" href="/assets/(app\.[0-9a-f]{12}\.css)">', html).group(1)
+                self.assertTrue((assets / script).is_file())
+                self.assertTrue((assets / style).is_file())
+                self.assertNotIn("const DATA = ", html)
+                self.assertLess(len(html.encode("utf-8")), 20_000)
+                # Mesmo conteúdo, mesmo nome: um build repetido não muda a referência nem o cache.
+                BUILD.build(output)
+                self.assertEqual(sorted(entry.name for entry in assets.iterdir() if entry.name.startswith("app.") and entry.name.endswith(".js")),
+                                 sorted({script}))
+            self.assertFalse(stale.exists(), "arquivo de build antigo e com mais de 7 dias é removido")
+            self.assertTrue(recent.exists(), "arquivo recente fica para páginas ainda em cache")
+            self.assertTrue(foreign.exists())
 
     def test_senate_snapshots_are_markers_only_in_the_build(self):
         with tempfile.TemporaryDirectory() as temp_dir:

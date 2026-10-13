@@ -1,9 +1,11 @@
 """Páginas com endereço próprio para buscadores e ferramentas de IA, robots.txt, sitemap.xml e llms.txt.
 
-O app continua o mesmo: o servidor só acrescenta ao HTML montado (dist/index.html) título, descrição,
-endereço canônico, dados estruturados e um resumo em texto da ficha dentro de #app. O JavaScript substitui
-esse resumo ao abrir a página; robôs que não executam JavaScript leem o resumo. As respostas usam o
-mesmo cache do modo de produção, invalidado quando o banco muda.
+O app continua o mesmo: o servidor acrescenta ao HTML montado (dist/index.html) título, descrição, endereço
+canônico, Open Graph, dados estruturados e, dentro de #app, o conteúdo essencial da página em HTML (resumo da
+ficha, listas, números e fontes das seções), montado por ``seo_sections`` com as mesmas funções do backend que
+servem a API. O JavaScript mantém esse conteúdo até ter o equivalente carregado; robôs e pessoas sem JavaScript
+leem o HTML. As respostas usam o mesmo cache do modo de produção, invalidado quando o banco ou os snapshots mudam.
+Títulos e descrições das seções vêm de frontend/data/site-pages.json, compartilhado com o app.
 """
 from __future__ import annotations
 
@@ -11,44 +13,48 @@ import html
 import json
 import os
 import re
+import sqlite3
+import sys
 from urllib.parse import unquote
 
-from . import citizen, profiles
-from .config import SNAPSHOTS_PATH
+from . import citizen, profiles, seo_sections as sections, votes
+from .config import ROOT, SNAPSHOTS_PATH
 from .database import fold
 
 SITE_NAME = 'Painel Público'
-DEFAULT_DESCRIPTION = ('Quanto custa, se trabalha e se há gastos incomuns: deputados(as) e senadores(as) em dados '
-                       'públicos oficiais da Câmara e do Senado, com fonte e data. Projeto pessoal e apartidário.')
-# Seções do app com endereço próprio: caminho → (view do app, título, descrição).
-SECTIONS = {
-    '/': ('home', None, DEFAULT_DESCRIPTION),
-    '/alertas': ('alerts', 'Alertas de gastos incomuns na cota parlamentar',
-                 'Gastos da cota de deputados(as) e senadores(as) que fogem do padrão pelas mesmas regras para todos(as). Alertas não indicam irregularidade.'),
-    '/placar': ('votes', 'Placar das votações da Câmara',
-                'Como os(as) deputados(as) votaram nas propostas selecionadas do Plenário, com resumo e fonte oficial.'),
-    '/politicos': ('politicians', 'Deputados(as) e senadores(as)',
-                   'Busque qualquer deputado(a) federal ou senador(a) e veja custo do mandato, presença, votos e alertas.'),
-    '/partidos': ('parties', 'Comparar partidos',
-                  'Gasto médio de cota, presença, alertas e votos de dois partidos lado a lado, na Câmara e no Senado.'),
-    '/comparar': ('compare', 'Comparar políticos',
-                  'Dois(duas) parlamentares lado a lado: custo, cota, alertas, presença e votos.'),
-    '/presenca': ('attendance', 'Presença no Plenário da Câmara',
-                  'Presença de cada deputado(a) nas sessões deliberativas do mandato atual, desde fev/2023, com faltas justificadas e não justificadas.'),
-    '/minha-cidade': ('city', 'Minha cidade',
-                      'Quem representa sua cidade, emendas parlamentares e contas da prefeitura, com dados do IBGE, TSE e Tesouro.'),
-    '/metodologia': ('methodology', 'Metodologia e perguntas',
-                     'Como o painel calcula custo, cota, presença, alertas, Placar e contador de impostos: fontes oficiais, regras, prazos e limites de cada número.'),
-}
+CONTACT_EMAIL = 'contato@painelpublico.com'
+SITE_PAGES_PATH = ROOT / 'frontend' / 'data' / 'site-pages.json'
+LEGACY_VOTES_PATH = ROOT / 'frontend' / 'data' / 'votes.json'
+OG_IMAGE_PATH = '/og-image.png'
+OG_IMAGE_SIZE = (1200, 630)
+OG_IMAGE_ALT = 'Painel Público: quanto custa e como trabalha cada parlamentar'
+
+
+def _read_json(path, default):
+    try:
+        return json.loads(path.read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return default
+
+
+SITE_PAGES = _read_json(SITE_PAGES_PATH, {})
+# Seções do app com endereço próprio: caminho → (view do app, título, descrição). Mesma fonte do título da aba no app.
+SECTIONS = {entry['path']: (entry['view'], entry.get('title'), entry['description']) for entry in SITE_PAGES.get('sections', [])}
+SECTION_PATH_BY_VIEW = {view: path for path, (view, _, _) in SECTIONS.items()}
+DEFAULT_DESCRIPTION = SECTIONS.get('/', (None, None, ''))[2]
+# Votações selecionadas que o app ainda mostra sem o catálogo: têm página, mas o catálogo pode não conhecê-las.
+LEGACY_VOTE_IDS = {str(vote.get('id')) for vote in _read_json(LEGACY_VOTES_PATH, []) if isinstance(vote, dict)}
 # Comparação compartilhável de dois partidos: /partidos/PL-vs-PT (siglas codificadas na URL).
 PARTY_PAIR_PATH = re.compile(r'^/partidos/([^/]{1,60})-vs-([^/]{1,60})$')
 # Comparação compartilhável de dois políticos: /comparar/deputado-73604-vs-senador-22.
 COMPARE_PAIR_PATH = re.compile(r'^/comparar/(deputado|senador)-(\d{1,9})-vs-(deputado|senador)-(\d{1,9})$')
 PROFILE_PATH = re.compile(r'^/(deputado|senador)/(\d{1,9})(?:-[a-z0-9-]*)?/?$')
+VOTE_DETAIL_PATH = re.compile(r'^/placar/(\d{1,12}-\d{1,6})$')
 ROLE_BY_PREFIX = {'deputado': ('camara', 'deputado'), 'senador': ('senado', 'senador')}
 PREFIX_BY_HOUSE = {'camara': 'deputado', 'senado': 'senador'}
 ROLE_LABEL = {'deputado': 'Deputado(a) federal', 'senador': 'Senador(a)'}
 MONTHS = ['', 'jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
+BODY_ERRORS = (sqlite3.Error, ValueError, TypeError, KeyError, OSError, ArithmeticError, AttributeError)
 
 
 def site_origin(headers):
@@ -168,6 +174,7 @@ def profile_facts(db, identifier):
         facts['lines'].append(('Alertas na cota', 'Dados insuficientes para avaliar os alertas da cota no mandato.'))
     facts['sourceUrl'] = (f'https://www.camara.leg.br/deputados/{number}' if house == 'camara'
                           else f'https://www25.senado.leg.br/web/senadores/senador/-/perfil/{number}')
+    facts['alerts'] = alerts
     return facts
 
 
@@ -182,41 +189,125 @@ def _escape(value):
     return html.escape(str(value or ''), quote=True)
 
 
-def _head(title, description, url, json_ld=None, noindex=False):
-    full_title = f'{title} · {SITE_NAME}' if title else f'{SITE_NAME}: quanto custa e como trabalha cada parlamentar'
-    tags = [f'<title>{_escape(full_title)}</title>',
+# ---------------------------------------------------------------- dados estruturados
+
+def organization(origin):
+    return {'@type': 'Organization', 'name': SITE_NAME, 'url': origin + '/', 'logo': origin + '/favicon.svg', 'email': CONTACT_EMAIL}
+
+
+def website_ld(origin):
+    return {'@context': 'https://schema.org', '@type': 'WebSite', 'name': SITE_NAME, 'url': origin + '/', 'inLanguage': 'pt-BR',
+            'description': DEFAULT_DESCRIPTION, 'publisher': organization(origin)}
+
+
+def webpage_ld(origin, url, title, description, page_type='WebPage', **extra):
+    data = {'@context': 'https://schema.org', '@type': page_type, 'name': title, 'description': description, 'url': url,
+            'inLanguage': 'pt-BR', 'isPartOf': {'@type': 'WebSite', 'name': SITE_NAME, 'url': origin + '/'}, 'publisher': organization(origin)}
+    data.update(extra)
+    return data
+
+
+def breadcrumb_ld(origin, items):
+    return {'@context': 'https://schema.org', '@type': 'BreadcrumbList',
+            'itemListElement': [{'@type': 'ListItem', 'position': position, 'name': name, 'item': origin + path}
+                                for position, (name, path) in enumerate(items, start=1)]}
+
+
+# ---------------------------------------------------------------- montagem do HTML
+
+def full_title(title):
+    return f'{title} · {SITE_NAME}' if title else f'{SITE_NAME}: quanto custa e como trabalha cada parlamentar'
+
+
+def _head(title, description, url, origin, json_ld=None, noindex=False):
+    page_title = full_title(title)
+    image = origin + OG_IMAGE_PATH
+    tags = [f'<title>{_escape(page_title)}</title>',
             f'<meta name="description" content="{_escape(description)}">',
             f'<link rel="canonical" href="{_escape(url)}">',
             '<meta property="og:type" content="website">',
             f'<meta property="og:site_name" content="{SITE_NAME}">',
-            f'<meta property="og:title" content="{_escape(full_title)}">',
+            f'<meta property="og:title" content="{_escape(page_title)}">',
             f'<meta property="og:description" content="{_escape(description)}">',
             f'<meta property="og:url" content="{_escape(url)}">',
             '<meta property="og:locale" content="pt_BR">',
-            '<meta name="twitter:card" content="summary">']
+            f'<meta property="og:image" content="{_escape(image)}">',
+            f'<meta property="og:image:width" content="{OG_IMAGE_SIZE[0]}">',
+            f'<meta property="og:image:height" content="{OG_IMAGE_SIZE[1]}">',
+            f'<meta property="og:image:alt" content="{_escape(OG_IMAGE_ALT)}">',
+            '<meta name="twitter:card" content="summary_large_image">',
+            f'<meta name="twitter:title" content="{_escape(page_title)}">',
+            f'<meta name="twitter:description" content="{_escape(description)}">',
+            f'<meta name="twitter:image" content="{_escape(image)}">']
     if noindex:
         tags.append('<meta name="robots" content="noindex">')
-    if json_ld:
+    for item in ([json_ld] if isinstance(json_ld, dict) else json_ld or []):
         # "<" escapado: o JSON não consegue fechar o <script>.
-        tags.append('<script type="application/ld+json">' + json.dumps(json_ld, ensure_ascii=False).replace('<', '\\u003c') + '</script>')
+        tags.append('<script type="application/ld+json">' + json.dumps(item, ensure_ascii=False).replace('<', '\\u003c') + '</script>')
     return '\n'.join(tags)
 
 
-def render(page_html, title, description, url, body='', json_ld=None, noindex=False):
-    """Troca o <title> do app pelos metadados da página e põe o resumo dentro de #app."""
-    page_html = re.sub(r'<title>.*?</title>', lambda _: _head(title, description, url, json_ld, noindex), page_html, count=1, flags=re.S)
+def render(page_html, title, description, url, origin, body='', json_ld=None, noindex=False, marker=None):
+    """Troca o <title> do app pelos metadados da página e põe o conteúdo inicial dentro de #app.
+
+    ``marker`` é o endereço que o app compara ao abrir (``data-server-render``): com ele, o app mantém este
+    conteúdo na tela enquanto a API não respondeu e não o mostra em outra página."""
+    page_html = re.sub(r'<title>.*?</title>', lambda _: _head(title, description, url, origin, json_ld, noindex), page_html, count=1, flags=re.S)
     if body:
-        page_html = page_html.replace('<div class="app" id="app"></div>', f'<div class="app" id="app">{body}</div>', 1)
+        wrapper = f'<div class="view" data-server-render="{_escape(marker or url)}">{body}</div>'
+        page_html = page_html.replace('<div class="app" id="app"></div>', f'<div class="app" id="app">{wrapper}</div>', 1)
     return page_html
 
 
-def section_page(page_html, path, origin):
-    _, title, description = SECTIONS[path]
-    json_ld = None
+def _fallback_body(title, description):
+    return sections.page_head(SITE_NAME, title or SITE_NAME, description) + '<p class="note">Os dados desta página não estão disponíveis neste momento.</p>'
+
+
+def section_body(db, path):
+    """Conteúdo inicial de uma seção; sem banco, só as páginas que não dependem dele têm conteúdo completo."""
+    if path == '/metodologia':
+        return sections.methodology_body(SITE_PAGES.get('methodology') or {}, SECTION_PATH_BY_VIEW)
+    if path == '/sobre':
+        return sections.about_body(SITE_PAGES.get('about') or {})
+    if path == '/placar':
+        return sections.scoreboard_body()
+    if path == '/presenca':
+        return sections.attendance_body()
+    if path == '/minha-cidade':
+        return sections.city_body()
+    if path == '/comparar':
+        return sections.compare_body()
+    if db is None:
+        return ''
     if path == '/':
-        json_ld = {'@context': 'https://schema.org', '@type': 'WebSite', 'name': SITE_NAME, 'url': origin + '/',
-                   'inLanguage': 'pt-BR', 'description': DEFAULT_DESCRIPTION}
-    return render(page_html, title, description, origin + path, json_ld=json_ld)
+        return sections.home_body(db)
+    if path == '/alertas':
+        return sections.alerts_body(db)
+    if path == '/politicos':
+        return sections.politicians_body(db)
+    if path == '/partidos':
+        return sections.parties_body(db)
+    return ''
+
+
+def _safe_body(compute, title, description):
+    try:
+        return compute()
+    except BODY_ERRORS as error:
+        print(f'Aviso: conteúdo inicial indisponível ({error.__class__.__name__}: {error})', file=sys.stderr, flush=True)
+        return _fallback_body(title, description)
+
+
+def section_page(db, page_html, path, origin):
+    _, title, description = SECTIONS[path]
+    url = origin + path
+    body = _safe_body(lambda: section_body(db, path), title, description)
+    if path == '/':
+        json_ld = [website_ld(origin)]
+    else:
+        page_type = 'AboutPage' if path == '/sobre' else 'CollectionPage' if path in ('/politicos', '/alertas', '/placar', '/presenca') else 'WebPage'
+        json_ld = [webpage_ld(origin, url, full_title(title), description, page_type), breadcrumb_ld(origin, [('Início', '/'), (title, path)])]
+    return render(page_html, title, description, url, origin, body, json_ld, marker=path)
 
 
 def party_pair_page(page_html, path, origin):
@@ -226,26 +317,31 @@ def party_pair_page(page_html, path, origin):
     title = f'{first} × {second} · Comparar partidos'
     description = (f'{first} e {second} lado a lado: gasto médio de cota, presença, alertas e como votaram '
                    'na Câmara e no Senado, com dados públicos oficiais.')
+    body = (f'<div class="compare-intro"><span class="k">Câmara e Senado</span><h1 class="h ph-t">{_escape(first)} × {_escape(second)}</h1>'
+            f'<p class="ph-lead">{_escape(description)}</p></div><p class="note">A comparação é montada no navegador. <a href="/partidos">Ver os partidos</a>.</p>')
     # noindex: o par é escolha de quem compartilha, não uma página para indexar.
-    return render(page_html, title, description, origin + path, noindex=True)
+    return render(page_html, title, description, origin + path, origin, body, noindex=True, marker=path)
 
 
 def compare_pair_page(db, page_html, path, origin):
     """Metadados com os dois nomes; quem não está na base aparece como "Ficha não encontrada" no app."""
     match = COMPARE_PAIR_PATH.match(path)
-    people = []
+    people, links = [], []
     for prefix, number in (match.group(1, 2), match.group(3, 4)):
         house, role = ROLE_BY_PREFIX[prefix]
         record = citizen.politician(db, f'{house}:{number}')
         person = record['pessoa'] if record else None
         if person is None or person.get('role') != role:
-            return 200, section_page(page_html, '/comparar', origin), None
+            return 200, section_page(db, page_html, '/comparar', origin), None
         party_place = '-'.join(filter(None, [person.get('party'), person.get('uf')]))
         people.append(f'{person["name"]} ({party_place})' if party_place else person['name'])
+        links.append(f'<a class="fchip" href="{profile_path(f"{house}:{number}", person["name"])}">{_escape(person["name"])} →</a>')
     title = f'{people[0]} × {people[1]} · Comparar políticos'
     description = f'{people[0]} e {people[1]} lado a lado: custo, cota, alertas, presença e votos, com dados públicos oficiais.'
+    body = (f'<div class="compare-intro"><span class="k">Comparar</span><h1 class="h ph-t">{_escape(people[0])} × {_escape(people[1])}</h1>'
+            f'<p class="ph-lead">{_escape(description)}</p></div><div class="citizen-actions">{"".join(links)}</div>')
     # noindex: o par é escolha de quem compartilha, não uma página para indexar.
-    return 200, render(page_html, title, description, origin + path, noindex=True), None
+    return 200, render(page_html, title, description, origin + path, origin, body, noindex=True, marker=path), None
 
 
 def profile_page(db, page_html, path, origin):
@@ -256,7 +352,8 @@ def profile_page(db, page_html, path, origin):
     # Nome e cargo bastam para o 404 e o redirecionamento; os números só são calculados na URL canônica.
     person = citizen._people(db, [identifier]).get(identifier)
     if person is None or person.get('role') != role:
-        return 404, render(page_html, 'Ficha não encontrada', DEFAULT_DESCRIPTION, origin + path, noindex=True), None
+        return 404, render(page_html, 'Ficha não encontrada', DEFAULT_DESCRIPTION, origin + path, origin,
+                           sections.not_found_body(), noindex=True, marker=path), None
     canonical = profile_path(identifier, person['name'])
     if path.rstrip('/') != canonical:
         return 301, None, canonical
@@ -267,59 +364,132 @@ def profile_page(db, page_html, path, origin):
     description = shorten(f'{subtitle}. ' + ' '.join(text for _, text in facts['lines']))
     party_place = '-'.join(filter(None, [person.get('party'), person.get('uf')]))
     title = f'{person["name"]} ({party_place}): quanto custa e como trabalha' if party_place else f'{person["name"]}: quanto custa e como trabalha'
-    json_ld = {'@context': 'https://schema.org', '@type': 'Person', 'name': person['name'], 'jobTitle': role_label,
-               'url': origin + canonical, 'sameAs': [facts['sourceUrl']]}
+    url = origin + canonical
+    person_ld = {'@context': 'https://schema.org', '@type': 'Person', 'name': person['name'], 'jobTitle': role_label,
+                 'url': url, 'sameAs': [facts['sourceUrl']], 'mainEntityOfPage': url}
     if person.get('party'):
-        json_ld['affiliation'] = {'@type': 'PoliticalParty', 'name': person['party']}
+        person_ld['affiliation'] = {'@type': 'PoliticalParty', 'name': person['party']}
+    json_ld = [person_ld, breadcrumb_ld(origin, [('Início', '/'), ('Políticos', '/politicos'), (person['name'], canonical)])]
     items = ''.join(f'<li><b>{_escape(label)}:</b> {_escape(text)}</li>' for label, text in facts['lines'])
-    body = (f'<article class="seo-summary"><h1>{_escape(person["name"])}</h1><p>{_escape(subtitle)}</p><ul>{items}</ul>'
-            f'<p>Fontes: dados públicos oficiais da {"Câmara dos Deputados" if house == "camara" else "Senado Federal"}. '
-            f'Retrato de {_escape(facts["snapshotAt"] or "data não informada")}. '
-            f'<a href="{_escape(facts["sourceUrl"])}">Página oficial</a>.</p>'
-            f'<p>{SITE_NAME} é um projeto pessoal e apartidário que reúne dados públicos. Alertas não indicam irregularidade.</p></article>')
-    return 200, render(page_html, title, description, origin + canonical, body, json_ld), None
+    house_name = 'Câmara dos Deputados' if house == 'camara' else 'Senado Federal'
+    body = (f'<a class="back" href="/politicos">‹ Todos os políticos</a>'
+            f'<article class="seo-summary"><h1>{_escape(person["name"])}</h1><p>{_escape(subtitle)}</p><ul>{items}</ul>'
+            f'<p>Fontes: dados públicos oficiais da {house_name}. Retrato de {_escape(facts["snapshotAt"] or "data não informada")}. '
+            f'<a href="{_escape(facts["sourceUrl"])}" rel="noopener">Página oficial ↗</a>.</p>'
+            f'<p>{sections.INDEPENDENCE_NOTE} <a href="/metodologia">Como os números são calculados</a>.</p>'
+            f'<div class="citizen-actions"><a class="fchip" href="/comparar">Comparar com outro(a) →</a><a class="fchip" href="/alertas">Todos os alertas →</a></div></article>')
+    return 200, render(page_html, title, description, url, origin, body, json_ld, marker=profile_path(identifier)), None
 
+
+def vote_page(page_html, path, origin):
+    """Página de uma votação do Placar, com endereço canônico próprio e o conteúdo da decisão no HTML."""
+    identifier = VOTE_DETAIL_PATH.match(path).group(1)
+    payload = votes.detail(identifier)
+    _, section_title, section_description = SECTIONS['/placar']
+    if payload is None:
+        if identifier in LEGACY_VOTE_IDS:
+            # Votação selecionada montada no app a partir dos metadados versionados; sem catálogo, fica fora do índice.
+            return 200, render(page_html, section_title, section_description, origin + path, origin, noindex=True), None
+        return 404, render(page_html, 'Votação não encontrada', section_description, origin + path, origin,
+                           sections.not_found_body(), noindex=True, marker=path), None
+    vote = payload['vote']
+    title = f'{shorten(vote["title"], 90)} · Placar'
+    date = sections.date_br(vote.get('date'))
+    description = shorten(f'{vote.get("proposition")}, votado em {date}: {vote.get("decisionLabel")}. {vote.get("summary")}')
+    url = origin + path
+    about = {'@type': 'Legislation', 'name': vote.get('proposition'), 'legislationIdentifier': vote.get('proposition')}
+    proposition_url = (vote.get('sources') or {}).get('proposition')
+    if isinstance(proposition_url, str) and proposition_url.startswith('https://'):
+        about['url'] = proposition_url
+    json_ld = [webpage_ld(origin, url, full_title(title), description, about=about),
+               breadcrumb_ld(origin, [('Início', '/'), ('Placar', '/placar'), (vote['title'], path)])]
+    body = _safe_body(lambda: sections.vote_body(payload), title, description)
+    return 200, render(page_html, title, description, url, origin, body, json_ld, marker=path), None
+
+
+def not_found_page(page_html, path, origin):
+    return render(page_html, 'Página não encontrada', DEFAULT_DESCRIPTION, origin + path, origin, sections.not_found_body(),
+                  noindex=True, marker=path)
+
+
+def page(db, page_html, path, origin):
+    """(status, html, redirect) de qualquer endereço de página; ``db`` pode ser None antes da primeira importação."""
+    if PARTY_PAIR_PATH.match(path):
+        return 200, party_pair_page(page_html, path, origin), None
+    if path in SECTIONS:
+        return 200, section_page(db, page_html, path, origin), None
+    if VOTE_DETAIL_PATH.match(path):
+        return vote_page(page_html, path, origin)
+    if COMPARE_PAIR_PATH.match(path):
+        if db is None:
+            return 200, section_page(db, page_html, '/comparar', origin), None
+        return compare_pair_page(db, page_html, path, origin)
+    if PROFILE_PATH.match(path):
+        if db is None:
+            # Sem banco, a ficha ainda abre pelo app; só não há resumo nem nome.
+            return 200, render(page_html, 'Ficha', DEFAULT_DESCRIPTION, origin + path, origin, noindex=True), None
+        return profile_page(db, page_html, path, origin)
+    return 404, not_found_page(page_html, path, origin), None
+
+
+# ---------------------------------------------------------------- robots, sitemap, llms
 
 def robots(origin):
-    # Buscadores e ferramentas de IA podem ler as páginas; a API não precisa ser rastreada.
+    # Buscadores e ferramentas de IA podem ler as páginas e os arquivos do app; a API não precisa ser rastreada.
     return f'User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: {origin}/sitemap.xml\n'
+
+
+def _lastmod(value):
+    text = str(value or '')[:10]
+    return f'<lastmod>{text}</lastmod>' if re.fullmatch(r'\d{4}-\d{2}-\d{2}', text) else ''
 
 
 def sitemap(db, origin):
     stamp = db.execute("SELECT value FROM meta WHERE key='snapshotAt'").fetchone()
-    lastmod = f'<lastmod>{stamp[0][:10]}</lastmod>' if stamp and stamp[0] else ''
-    urls = [origin + path for path in SECTIONS]
+    data_lastmod = _lastmod(stamp[0] if stamp else None)
+    entries = [(origin + path, data_lastmod) for path in SECTIONS]
     for identifier, name in db.execute('''SELECT a.id,a.name FROM authorities a JOIN roster r ON r.authorityId=a.id
             WHERE r.sourceId IN ('camara_deputies_current','senado_senators_current') ORDER BY a.id'''):
         if identifier.split(':', 1)[0] in PREFIX_BY_HOUSE and identifier.split(':', 1)[1].isdigit():
-            urls.append(origin + profile_path(identifier, name))
-    entries = ''.join(f'<url><loc>{_escape(url)}</loc>{lastmod}</url>' for url in dict.fromkeys(urls))
-    return f'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{entries}</urlset>\n'
+            entries.append((origin + profile_path(identifier, name), data_lastmod))
+    for identifier, reviewed_at in votes.sitemap_entries():
+        entries.append((f'{origin}/placar/{identifier}', _lastmod(reviewed_at)))
+    seen, xml = set(), []
+    for url, lastmod in entries:
+        if url not in seen:
+            seen.add(url)
+            xml.append(f'<url><loc>{_escape(url)}</loc>{lastmod}</url>')
+    return f'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{"".join(xml)}</urlset>\n'
 
 
 def llms(origin):
+    section_lines = '\n'.join(f'- [{title or "Início"}]({origin}{path}): {description}' for path, (_, title, description) in SECTIONS.items())
     return f"""# {SITE_NAME}
 
 > {DEFAULT_DESCRIPTION}
 
 Cada deputado(a) federal e senador(a) tem uma página com endereço próprio, no formato
-{origin}/deputado/<id>-<nome> ou {origin}/senador/<id>-<nome> (lista completa no sitemap).
+{origin}/deputado/<id>-<nome> ou {origin}/senador/<id>-<nome>, com custo médio por mês, cota, presença, votos
+e alertas, sempre com o período dos dados e a data da fotografia. Cada votação do Placar tem endereço próprio,
+{origin}/placar/<id>, com a decisão, o que significava votar Sim e Não, o resultado e o voto de cada deputado(a).
+A lista completa está no sitemap: {origin}/sitemap.xml. O conteúdo essencial de cada página está no HTML inicial,
+sem depender de JavaScript.
+
+## Seções
+
+{section_lines}
+
+## Como ler os números
+
 Os números vêm de dados públicos oficiais (Câmara dos Deputados, Senado Federal, Portal da Transparência,
-IBGE, TSE e Tesouro) e cada página indica fonte e data. Alertas seguem regras fixas e iguais para todos(as)
-e não indicam irregularidade. Ausência de dado não significa zero.
+IBGE, TSE, Tesouro Nacional e Receita Federal) e cada página indica fonte, período e data da coleta. Câmara e
+Senado publicam partes diferentes do custo: compare só dentro da mesma Casa. Alertas seguem regras fixas e iguais
+para todos(as) e não indicam irregularidade. Ausência de dado não significa zero. Valores são da época, sem
+correção pela inflação. Regras completas: {origin}/metodologia.
 
-## Páginas
+## Uso e citação
 
-- [Início]({origin}/): resumo da Câmara e do Senado
-- [Políticos]({origin}/politicos): busca de deputados(as) e senadores(as)
-- [Alertas]({origin}/alertas): gastos incomuns na cota parlamentar e as regras usadas
-- [Placar]({origin}/placar): votações selecionadas do Plenário da Câmara
-- [Comparar partidos]({origin}/partidos)
-- [Minha cidade]({origin}/minha-cidade)
-- [Metodologia]({origin}/metodologia): fontes, regras e limites de cada número
-- [Sitemap]({origin}/sitemap.xml)
-
-## Sobre
-
-Projeto pessoal, independente e apartidário, com código aberto: https://github.com/igoooooooooor/painelpublico
+A base (banco, snapshots e revisões do Placar) é publicada sob CC BY 4.0 nos releases de dados do repositório
+{SITE_PAGES.get('repository', '')}; o código é aberto (MIT). Ao citar, use o endereço da página e a data da
+fotografia dos dados indicada nela. Projeto pessoal, independente e apartidário; correções: {CONTACT_EMAIL}.
 """

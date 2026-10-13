@@ -224,7 +224,7 @@ const cityInitials = name => String(name || '').split(' ').filter(word => word &
 const cityIsElected = person => /^ELEIT/i.test(String(person?.result || ''));
 const cityNumber = (value, digits = 0) => Number(value).toLocaleString('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 const cityProfileButton = (profileId, label = 'Ver ficha') => /^(?:camara|senado):\d+$/.test(String(profileId || ''))
-  ? `<button type="button" class="city-profile-link" data-deputy="${esc(profileId)}">${esc(label)} →</button>` : '';
+  ? `<a class="city-profile-link" href="/${String(profileId).startsWith('camara:') ? 'deputado' : 'senador'}/${String(profileId).split(':')[1]}" data-deputy="${esc(profileId)}">${esc(label)} →</a>` : '';
 
 function cityCompactMoney(cents, long = false) {
   if (!cityHasCents(cents)) return null;

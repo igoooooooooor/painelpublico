@@ -212,7 +212,7 @@ function alertCard(a, opts = {}) {
     </details>` : '';
   return `<article class="card citizen-alert" data-kind="${cls}">
     <div class="citizen-top"><span class="citizen-chip ${cls}"><i></i>${label}</span><span class="muted">${a.tipo === 'pico' ? SHORT_MONTHS[a.mes] + '/' + String(a.periodo).slice(0, 4) : 'em ' + String(a.periodo).slice(0, 4)}</span></div>
-    ${opts.semPessoa ? '' : `<button type="button" class="citizen-who" data-politician="${esc(p.id)}">${citizenAvatar(p, 40)}<span><b>${esc(citizenName(p.name))}</b><small>${citizenRoleDescription(p)}</small></span></button>`}
+    ${opts.semPessoa ? '' : `${profileLinkOpen(p.id, 'citizen-who')}${citizenAvatar(p, 40)}<span><b>${esc(citizenName(p.name))}</b><small>${citizenRoleDescription(p)}</small></span>${profileLinkClose(p.id)}`}
     <h3 class="citizen-title">${esc(a.titulo)}</h3>
     ${alertVisualization(a)}
     ${alertStatement(a)}
@@ -221,7 +221,7 @@ function alertCard(a, opts = {}) {
     ${profileSupplierHistory}
     <details class="citizen-why"><summary>Por que apareceu aqui?</summary><p>${alertExplanation(a)}</p><p class="muted">A regra mostra variação de gasto ou concentração em fornecedor; não mede irregularidade. Confira as notas na fonte oficial.</p></details>
     ${Array.isArray(a.fontesOficiais) && a.fontesOficiais.length ? `<p class="muted">Detalhamento oficial: ${a.fontesOficiais.map(f => `<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.label)} ↗</a>`).join(', ')}.${a.notaDocumento ? ` ${esc(a.notaDocumento)}` : ''}</p>` : ''}
-    <div class="citizen-actions">${opts.semPessoa ? '' : `<button type="button" class="fchip" data-politician="${esc(p.id)}">Ver a ficha</button>`}${profileSourceUrl ? `<a class="fchip" href="${esc(profileSourceUrl)}" target="_blank" rel="noopener">Conferir na fonte ↗</a>` : ''}</div>
+    <div class="citizen-actions">${opts.semPessoa ? '' : `${profileLinkOpen(p.id, 'fchip')}Ver a ficha${profileLinkClose(p.id)}`}${profileSourceUrl ? `<a class="fchip" href="${esc(profileSourceUrl)}" target="_blank" rel="noopener">Conferir na fonte ↗</a>` : ''}</div>
   </article>`;
 }
 
@@ -238,7 +238,7 @@ function homeAlertCard() {
   return `<section class="citizen-home">
     <div class="citizen-head"><div><h2 class="h">Alertas da cota</h2><span class="muted">Meses acima da referência e concentração em fornecedor nas notas do mandato${data.periodo ? ` (${esc(citizenQuotaPeriod(data.periodo.inicio, data.periodo.fim))})` : ''} de deputados(as) e senadores(as), pelas mesmas regras para todos(as), dos mais recentes aos mais antigos. Não indicam irregularidade.</span></div></div>
     <div class="carousel citizen-carousel">${alerts.map(alert => alertCard(alert)).join('')}</div>
-    <button type="button" class="opt citizen-cta" data-go="alerts">Ver os ${data.total} alertas</button>
+    <a class="opt citizen-cta" href="/alertas" data-go="alerts">Ver os ${data.total} alertas</a>
   </section>`;
 }
 
@@ -279,7 +279,7 @@ function alertTopPeople() {
   const topPeople = (citizenState.cache.get(TOP_ALERTS_PATH)?.itens || []).filter(person => person.alertas);
   if (!topPeople.length) return '';
   return `<div class="alerts-top"><span class="k">Valor das despesas nos alertas do mandato</span>
-    <div class="faces citizen-top5">${topPeople.map(person => `<button type="button" class="face" data-politician="${esc(person.id)}">${citizenAvatar(person, 54)}<span>${esc(citizenName(person.name).split(' ')[0])}</span><em>${person.valorAlertas ? esc(formatCitizenAmount(person.valorAlertas)) + (person.valorAlertasParcial ? ' · parcial' : '') : `${person.alertas} ${person.alertas === 1 ? 'ALERTA' : 'ALERTAS'}`}</em></button>`).join('')}</div>
+    <div class="faces citizen-top5">${topPeople.map(person => `${profileLinkOpen(person.id, 'face')}${citizenAvatar(person, 54)}<span>${esc(citizenName(person.name).split(' ')[0])}</span><em>${person.valorAlertas ? esc(formatCitizenAmount(person.valorAlertas)) + (person.valorAlertasParcial ? ' · parcial' : '') : `${person.alertas} ${person.alertas === 1 ? 'ALERTA' : 'ALERTAS'}`}</em>${profileLinkClose(person.id)}`).join('')}</div>
     <span class="muted">Soma das despesas observadas nos alertas, cada nota contada uma vez. Não é estimativa de prejuízo. "Parcial": inclui concentração calculada com o ano ainda aberto.</span></div>`;
 }
 function alertFilterGroup(label, attr, options, current) {
@@ -287,6 +287,7 @@ function alertFilterGroup(label, attr, options, current) {
 }
 function alertsView() {
   const l = citizenState.alerts; loadAlerts(false); loadTopAlerts();
+  if (l.loading && !l.items.length && !l.error && serverRendered('/alertas')) return serverRendered('/alertas');
   const types = [['pico,fornecedor', 'Todos'], ['pico', 'Mês acima da referência'], ['fornecedor', 'Concentração em fornecedor']];
   const roles = [['', 'Todas'], ['deputado', 'Câmara'], ['senador', 'Senado']];
   const years = [['', 'Mandato'], ...(l.years || []).map(y => [String(y.ano), String(y.ano)])];
@@ -332,8 +333,9 @@ function loadPoliticians(more) {
   if (!more) { p.key = key; p.page = 1; p.items = []; p.total = null; p.blocks = null; }
   p.loading = true; p.error = null;
   const query = `${p.query ? '&q=' + encodeURIComponent(p.query) : ''}`;
-  const done = d => { p.averageSpend = d.medias; p.averageCost = d.custoMedias; p.coverage = d.cobertura; p.loading = false; if (['politicians'].includes(state.view)) renderPoliticianList(); };
-  const fail = e => { if (p.key !== key) return; p.loading = false; p.error = citizenErrorMessage(e); if (['politicians'].includes(state.view)) renderPoliticianList(); };
+  const refresh = () => { if (state.view !== 'politicians') return; if (document.getElementById('citizen-politician-list')) renderPoliticianList(); else rerender(); };
+  const done = d => { p.averageSpend = d.medias; p.averageCost = d.custoMedias; p.coverage = d.cobertura; p.loading = false; refresh(); };
+  const fail = e => { if (p.key !== key) return; p.loading = false; p.error = citizenErrorMessage(e); refresh(); };
   if (blocks) {
     Promise.all(ROLES_ORDER.map(role => citizenGet(`/api/c/politicos?pageSize=${POLITICIAN_BLOCK_SIZE}&page=1&ordem=${p.order}&cargo=${role}${query}`)))
       .then(([deputies, senators]) => { if (p.key !== key) return;
@@ -371,9 +373,9 @@ function politicianRow(person, max) {
     citizenState.politicians.order === 'alertas' && person.valorAlertas ? `${formatCitizenAmount(person.valorAlertas)} em alertas${person.valorAlertasParcial ? ' · parcial' : ''}` : '',
   ].filter(Boolean).join(' · ');
   /* À direita só o valor; os detalhes vão embaixo do nome, que assim não é cortado no celular. */
-  return `<button type="button" class="citizen-row" data-politician="${esc(person.id)}">${citizenAvatar(person, 48)}<span class="citizen-rowtxt"><b>${esc(citizenName(person.name))}</b><small>${[roleLabel, person.party, person.uf].filter(Boolean).map(esc).join(' · ')}</small>
+  return `${profileLinkOpen(person.id, 'citizen-row')}${citizenAvatar(person, 48)}<span class="citizen-rowtxt"><b>${esc(citizenName(person.name))}</b><small>${[roleLabel, person.party, person.uf].filter(Boolean).map(esc).join(' · ')}</small>
       <span class="citizen-rowbar"><i style="width:${barWidth}%" class="${aboveAverage ? 'hi' : ''}"></i></span><small class="citizen-rowdetail">${esc(details)}</small></span>
-    <span class="citizen-rowval">${cost !== null ? `<b class="mono">${esc(formatCitizenAmount(cost))}</b><small>/mês</small>` : '<b class="mono">Sem custo</b>'}${person.alertas ? `<span class="citizen-chip info citizen-mini"><i></i>${person.alertas} ${person.alertas === 1 ? 'alerta' : 'alertas'}</span>` : ''}</span></button>`;
+    <span class="citizen-rowval">${cost !== null ? `<b class="mono">${esc(formatCitizenAmount(cost))}</b><small>/mês</small>` : '<b class="mono">Sem custo</b>'}${person.alertas ? `<span class="citizen-chip info citizen-mini"><i></i>${person.alertas} ${person.alertas === 1 ? 'alerta' : 'alertas'}</span>` : ''}</span>${profileLinkClose(person.id)}`;
 }
 /* Ordem "Quem mais usa a cota": o valor à direita e a barra são a média mensal da cota; o custo vai embaixo. */
 function politicianQuotaRow(person, quota, cost, max) {
@@ -381,9 +383,9 @@ function politicianQuotaRow(person, quota, cost, max) {
   const barWidth = quota !== null && quota > 0 ? Math.max(2, quota / max * 100) : 0;
   const details = [quota !== null ? 'média da cota nos meses com notas' : 'sem despesa de cota observada',
     cost !== null ? `custo total ${formatCitizenAmount(cost)}/mês` : ''].filter(Boolean).join(' · ');
-  return `<button type="button" class="citizen-row" data-politician="${esc(person.id)}">${citizenAvatar(person, 48)}<span class="citizen-rowtxt"><b>${esc(citizenName(person.name))}</b><small>${[roleLabel, person.party, person.uf].filter(Boolean).map(esc).join(' · ')}</small>
+  return `${profileLinkOpen(person.id, 'citizen-row')}${citizenAvatar(person, 48)}<span class="citizen-rowtxt"><b>${esc(citizenName(person.name))}</b><small>${[roleLabel, person.party, person.uf].filter(Boolean).map(esc).join(' · ')}</small>
       <span class="citizen-rowbar"><i style="width:${barWidth}%"></i></span><small class="citizen-rowdetail">${esc(details)}</small></span>
-    <span class="citizen-rowval">${quota !== null ? `<b class="mono">${esc(formatCitizenAmount(quota))}</b><small>/mês de cota</small>` : '<b class="mono">Sem notas</b>'}${person.alertas ? `<span class="citizen-chip info citizen-mini"><i></i>${person.alertas} ${person.alertas === 1 ? 'alerta' : 'alertas'}</span>` : ''}</span></button>`;
+    <span class="citizen-rowval">${quota !== null ? `<b class="mono">${esc(formatCitizenAmount(quota))}</b><small>/mês de cota</small>` : '<b class="mono">Sem notas</b>'}${person.alertas ? `<span class="citizen-chip info citizen-mini"><i></i>${person.alertas} ${person.alertas === 1 ? 'alerta' : 'alertas'}</span>` : ''}</span>${profileLinkClose(person.id)}`;
 }
 function politicianCoverageHTML(coverage) {
   if (!coverage) return skL('260px', 14);
@@ -436,6 +438,7 @@ function renderPoliticianList() {
 }
 function politiciansView() {
   const p = citizenState.politicians; loadPoliticians(false);
+  if (p.loading && !p.items.length && !p.error && !p.query && serverRendered('/politicos')) return serverRendered('/politicos');
   return `${pageHead('Deputados(as) e senadores(as)', 'Políticos', 'Busque qualquer um(a) e veja quanto custa por mês, com os alertas.')}
     <div id="citizen-politician-summary" class="citizen-roster-summary" role="status">${politicianCoverageHTML(p.coverage)}</div>
     <label class="search" for="citizen-search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="citizen-search" type="search" placeholder="Nome, partido ou estado" value="${esc(p.query)}" autocomplete="off"></label>
@@ -443,7 +446,7 @@ function politiciansView() {
       <div class="chips" role="group" aria-label="Cargo">${[['', 'Todos'], ['deputado', 'Deputados(as)'], ['senador', 'Senadores(as)']].map(([k, n]) => `<button type="button" class="fchip" data-politician-role="${k}" aria-pressed="${p.role === k}">${n}</button>`).join('')}</div>
       <div class="chips" role="group" aria-label="Ordenar">${[['nome', 'A–Z'], ['gasto', 'Quem mais custa'], ['cota', 'Quem mais usa a cota'], ['alertas', 'Valor das despesas nos alertas'], ['quantidade-alertas', 'Mais alertas']].map(([k, n]) => `<button type="button" class="fchip" data-politician-order="${k}" aria-pressed="${p.order === k}">${n}</button>`).join('')}</div>
     </div>
-    <div class="citizen-actions"><button type="button" class="fchip" data-cmp-start="">Comparar políticos(as) →</button><button type="button" class="fchip" data-go="parties">Comparar partidos →</button><button type="button" class="fchip" data-go="attendance">Presença dos deputados →</button></div>
+    <div class="citizen-actions"><button type="button" class="fchip" data-cmp-start="">Comparar políticos(as) →</button><a class="fchip" href="/partidos" data-go="parties">Comparar partidos →</a><a class="fchip" href="/presenca" data-go="attendance">Presença dos deputados →</a></div>
     <div id="citizen-politician-list" class="citizen-stack" aria-live="polite">${politicianListHTML()}</div>
     <div id="citizen-politician-notes">${politicianCoverageNotesHTML(p.coverage)}</div>
     <span class="src">${p.order === 'cota'
@@ -929,9 +932,12 @@ function profileView() {
   const id = state.politicianId;
   loadProfile(id);
   const back = '<button type="button" class="back" data-back>‹ Voltar</button>';
-  if (citizenState.profileError) return back + `<section class="card"><p>Não deu para abrir esta ficha.</p><p class="muted">${esc(citizenState.profileError)}</p></section>`;
+  // O servidor já entregou o resumo desta ficha (mesmo endereço): ele fica na tela até a ficha completa chegar,
+  // e permanece se a API falhar. Outra pessoa nunca herda o resumo anterior: o endereço não bate.
+  const summary = typeof serverRendered === 'function' ? serverRendered(viewPath()) : '';
+  if (citizenState.profileError) return back + `<section class="card"><p>Não deu para abrir esta ficha.</p><p class="muted">${esc(citizenState.profileError)}</p></section>` + summary;
   const f = citizenState.profile;
-  if (!f) return back + skel('ficha-respostas');
+  if (!f) return summary ? summary + SK_MSG : back + skel('ficha-respostas');
   const shared = profileData(f.pessoa || id), person = shared.person, election = profileElection(shared);
   const hasExpenseData = f.hasExpenseData === undefined ? f.total != null : Boolean(f.hasExpenseData);
   const alerts = f.alertas || [], isChamberPerson = person.role === 'deputado';
@@ -983,7 +989,7 @@ document.addEventListener('click', e => {
     if (button) { profileToggle(button, true); button.focus(); button.scrollIntoView({ block: 'start', behavior: 'instant' }); }
     return;
   }
-  if (t.dataset.politician) { e.preventDefault(); openPolitician(t.dataset.politician); return; }
+  if (t.dataset.politician) { if (t.tagName === 'A' && (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button)) return; e.preventDefault(); openPolitician(t.dataset.politician); return; }
   if (t.hasAttribute('data-home-retry')) { const path = '/api/c/radar?pageSize=8&tipo=pico,fornecedor'; citizenState.cache.delete(path); citizenState.pending.delete(path); return rerender(); }
   const l = citizenState.alerts, p = citizenState.politicians;
   if (t.dataset.alertType !== undefined) { l.type = t.dataset.alertType; return rerender(); }

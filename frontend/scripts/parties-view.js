@@ -261,6 +261,7 @@ function partiesView() {
     </div>`;
   const page = content => `<div class="parties-page">${head}${content}</div>`;
   if (partyState.error) return page(`<section class="card wide"><p>Não deu para carregar os partidos agora.</p><p class="muted">${esc(partyState.error)}</p><button type="button" class="more" data-party-retry>Tentar de novo</button></section>`);
+  if (!partyState.data && !partyState.error && typeof serverRendered === 'function' && serverRendered('/partidos')) return serverRendered('/partidos');
   if (!partyState.data) return page(`<section class="card wide party-pick sk-card">${skL('140px', 10)}${skel('chips', 12)}</section>${skel('cmp')}`);
   const partiesByAcronym = Object.fromEntries(partyState.data.itens.map(party => [party.sigla, party]));
   const [a, b] = partyState.selected.map(acronym => partiesByAcronym[acronym]).filter(Boolean);

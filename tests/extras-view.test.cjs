@@ -48,6 +48,9 @@ function comparison(a, b) {
     ? `<a class="${className}" href="${vote.sourceUrl || ''}">${content}</a>`
     : `<button type="button" class="${className}" data-vote="${vote.id}">${content}</button>`;
   context.profileData = value => ({ id: value.id, person: value, contact: null, projects: null, compensation: null, mandate: null });
+  context.profileHref = id => /^camara:\d+$/.test(String(id)) ? `/deputado/${String(id).slice(7)}` : /^senado:\d+$/.test(String(id)) ? `/senador/${String(id).slice(7)}` : null;
+  context.profileLinkOpen = (id, className) => context.profileHref(id) ? `<a class="${className}" href="${context.profileHref(id)}" data-politician="${id}">` : `<button type="button" class="${className}" data-politician="${id}">`;
+  context.profileLinkClose = id => context.profileHref(id) ? '</a>' : '</button>';
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../frontend/scripts/dates.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '../frontend/scripts/extras-view.js'), 'utf8') +
     '\nthis.__api = { extrasState, comparisonTable, comparisonShareCard, searchComparisonPeople, comparisonPickerList, comparisonView, taxCard, taxWidget, taxTick, voteRowsForItem, votesForPerson, attendanceForPerson, attendanceRows, attendanceBar, attendanceView, comparisonPersonCard, profileExtras };', context);
   return { html: context.__api.comparisonTable([a, b]), api: context.__api, context, senate };

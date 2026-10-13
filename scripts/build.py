@@ -1,6 +1,14 @@
-"""Build estático sem dependências: python3 scripts/build.py."""
+"""Build estático sem dependências: python3 scripts/build.py.
+
+Gera dist/index.html (o documento, pequeno) e dist/assets/app.<hash>.js e app.<hash>.css, com o hash do
+conteúdo no nome: o HTML de cada página pode ficar pouco tempo em cache enquanto o código e o estilo, iguais
+para todas as páginas, ficam em cache por um ano no navegador e na borda. Um build novo gera nomes novos e o
+HTML passa a apontar para eles; os arquivos anteriores ficam alguns dias para páginas ainda em cache.
+"""
+import hashlib
 import json
 import os
+import time
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -13,6 +21,10 @@ SCRIPTS = ("dates.js", "profile-data.js", "profile-cost.js", "profile-senate-cos
            "extras-view.js", "parties-view.js", "home-view.js", "city-view.js", "scoreboard-view.js",
            "methodology-view.js", "app.script.js")
 VOTE_METADATA = FRONTEND / "data" / "votes.json"
+SITE_PAGES = FRONTEND / "data" / "site-pages.json"
+ASSETS_DIRECTORY = "assets"
+ASSET_PREFIX = "app."
+STALE_ASSET_SECONDS = 7 * 86400
 
 
 def _read_json(path, default):
@@ -39,6 +51,37 @@ def _party_totals(vote, rows):
          "outros": sum(counts.values()) - counts["Sim"] - counts["Não"]}
         for party, counts in sorted(grouped.items(), key=lambda item: (-sum(item[1].values()), item[0]))
     ]
+
+
+def site_pages():
+    """Textos e metadados compartilhados entre o app e o servidor (frontend/data/site-pages.json)."""
+    pages = _read_json(SITE_PAGES, None)
+    if not isinstance(pages, dict) or not isinstance(pages.get("sections"), list):
+        raise ValueError("frontend/data/site-pages.json deve conter 'sections', 'methodology' e 'about'")
+    return {key: pages[key] for key in ("repository", "sections", "methodology", "about")}
+
+
+def _content_hash(text):
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
+
+
+def _write_atomic(path, text):
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(text, encoding="utf-8")
+    temporary.replace(path)
+
+
+def _prune_assets(directory, keep, now=None):
+    """Remove arquivos de builds antigos, deixando os recentes para páginas ainda em cache na borda."""
+    now = time.time() if now is None else now
+    for entry in directory.iterdir():
+        if entry.name in keep or not entry.name.startswith(ASSET_PREFIX) or entry.suffix not in (".js", ".css"):
+            continue
+        try:
+            if now - entry.stat().st_mtime > STALE_ASSET_SECONDS:
+                entry.unlink()
+        except OSError:
+            pass
 
 
 def build(output=None):
@@ -85,6 +128,7 @@ def build(output=None):
             (SNAPSHOTS / name).exists() for name in ("perfis.json", "senado-projetos.json", "eleicoes-2026.json", "mandate-cost.json", "senate-cost.json", "tenure.json")
         )},
         "senado": {"sobDemanda": (SNAPSHOTS / "senado-atividade.json").exists()},
+        "sitePages": site_pages(),
     }
 
     payload = json.dumps(data, ensure_ascii=False, allow_nan=False).replace("<", "\\u003c")
@@ -97,12 +141,18 @@ def build(output=None):
     for marker in ("{{STYLES}}", "{{SCRIPTS}}"):
         if html.count(marker) != 1:
             raise ValueError(f"Marcador {marker} ausente ou duplicado")
-    html = html.replace("{{STYLES}}", styles).replace("{{SCRIPTS}}", script)
+
     output = Path(output) if output else ROOT / "dist" / "index.html"
-    output.parent.mkdir(parents=True, exist_ok=True)
-    temporary = output.with_suffix(".html.tmp")
-    temporary.write_text(html, encoding="utf-8")
-    temporary.replace(output)
+    assets = output.parent / ASSETS_DIRECTORY
+    assets.mkdir(parents=True, exist_ok=True)
+    script_name = f"{ASSET_PREFIX}{_content_hash(script)}.js"
+    style_name = f"{ASSET_PREFIX}{_content_hash(styles)}.css"
+    _write_atomic(assets / script_name, script)
+    _write_atomic(assets / style_name, styles)
+    _prune_assets(assets, {script_name, style_name})
+    html = (html.replace("{{STYLES}}", f'<link rel="stylesheet" href="/{ASSETS_DIRECTORY}/{style_name}">')
+            .replace("{{SCRIPTS}}", f'<script src="/{ASSETS_DIRECTORY}/{script_name}" defer></script>'))
+    _write_atomic(output, html)
     return output
 
 

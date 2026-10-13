@@ -168,10 +168,10 @@ function attendanceAbsences(person) {
 }
 function attendanceList(people) {
   if (!people.length) return '<section class="card"><p>Ninguém encontrado.</p></section>';
-  return `<span class="muted" role="status">${people.length} deputados(as)</span><ol class="attendance-list">${people.slice(0, extrasState.attendanceLimit).map(person => `<li><button type="button" class="attendance-row" data-politician="${chamberPersonId(person.id)}">${citizenAvatar({ id: chamberPersonId(person.id), name: person.nome }, 44)}
+  return `<span class="muted" role="status">${people.length} deputados(as)</span><ol class="attendance-list">${people.slice(0, extrasState.attendanceLimit).map(person => `<li>${profileLinkOpen(chamberPersonId(person.id), 'attendance-row')}${citizenAvatar({ id: chamberPersonId(person.id), name: person.nome }, 44)}
     <span class="attendance-who"><b>${esc(person.nome)}</b><small>${esc(person.partido)} · ${esc(person.uf)}</small></span>
     <span class="attendance-bar">${attendanceBar(person)}<small>${attendanceAbsences(person)}</small></span>
-    <span class="attendance-value"><b class="mono ${person.presente / person.dias < 0.5 ? 'warn' : ''}">${percent(person.presente, person.dias)}%</b><small class="mono">${person.presente} de ${person.dias}</small></span></button></li>`).join('')}</ol>
+    <span class="attendance-value"><b class="mono ${person.presente / person.dias < 0.5 ? 'warn' : ''}">${percent(person.presente, person.dias)}%</b><small class="mono">${person.presente} de ${person.dias}</small></span>${profileLinkClose(chamberPersonId(person.id))}</li>`).join('')}</ol>
   ${people.length > extrasState.attendanceLimit ? `<button type="button" class="opt alerts-more" data-attendance-more>Mostrar mais (${people.length - extrasState.attendanceLimit})</button>` : ''}`;
 }
 const foldText = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -355,7 +355,7 @@ function comparisonView() {
   let content = '', footer = '';
   if (extrasState.comparisonIds.length === 2 && readyProfiles.length === 2) {
     content = comparisonTable(readyProfiles);
-    footer = `<div class="compare-actions">${shareActionsHTML(comparisonShareCard(readyProfiles), 'Compartilhar imagem')}<button type="button" class="fchip" data-go="parties">Comparar partidos →</button></div>`;
+    footer = `<div class="compare-actions">${shareActionsHTML(comparisonShareCard(readyProfiles), 'Compartilhar imagem')}<a class="fchip" href="/partidos" data-go="parties">Comparar partidos →</a></div>`;
   } else if (extrasState.comparisonIds.length === 2) content = extrasState.comparisonError ? `<section class="card wide"><p>Não deu para abrir as fichas.</p><p class="muted">${esc(extrasState.comparisonError)}</p></section>` : skel('cmp');
   return `<div class="compare-page">
     <div class="compare-intro">

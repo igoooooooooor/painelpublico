@@ -11,6 +11,19 @@ function profileId(value) {
   const id = String(value?.id ?? value ?? '');
   return /^\d+$/.test(id) ? 'camara:' + id : id;
 }
+/* Endereço real da ficha (/deputado/<id>, /senador/<id>), para links que também abrem em nova aba. */
+function profileHref(id) {
+  const [chamber, personNumber] = String(id || '').split(':');
+  if (!/^\d+$/.test(personNumber || '')) return null;
+  return chamber === 'camara' ? `/deputado/${personNumber}` : chamber === 'senado' ? `/senador/${personNumber}` : null;
+}
+/* Linha, rosto ou cartão que abre a ficha: link real quando o id é válido; senão, botão só com a navegação interna. */
+function profileLinkOpen(id, className, extra = '') {
+  const href = profileHref(id);
+  const cls = className ? ` class="${className}"` : '';
+  return href ? `<a${cls} href="${href}" data-politician="${esc(id)}"${extra}>` : `<button type="button"${cls} data-politician="${esc(id)}"${extra}>`;
+}
+const profileLinkClose = id => profileHref(id) ? '</a>' : '</button>';
 function profileSafeUrl(value) {
   if (typeof value !== 'string') return null;
   try { const u = new URL(value); return ['http:', 'https:'].includes(u.protocol) && !u.username && !u.password ? u.href : null; }
@@ -223,7 +236,10 @@ function profileStandaloneUrgencies(id) {
     recordedVote: item.vote ?? null })) : [];
 }
 function profileVoteButton(v, content, className = 'vt') {
-  if (!String(v.id).startsWith('senado:')) return `<button type="button" class="${esc(className)}" data-vote="${esc(v.id)}">${content}</button>`;
+  if (!String(v.id).startsWith('senado:')) {
+    return /^\d+-\d+$/.test(String(v.id)) ? `<a class="${esc(className)}" href="/placar/${esc(v.id)}" data-vote="${esc(v.id)}">${content}</a>`
+      : `<button type="button" class="${esc(className)}" data-vote="${esc(v.id)}">${content}</button>`;
+  }
   const url = profileSafeUrl(v.sourceUrl);
   return url ? `<a class="${esc(className)}" href="${esc(url)}" target="_blank" rel="noopener">${content}</a>` : `<div class="${esc(className)}">${content}</div>`;
 }

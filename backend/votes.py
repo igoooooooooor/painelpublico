@@ -531,6 +531,22 @@ def detail(identifier, path=None):
             'partyTotals': party_totals, 'participantsAvailable': available}
 
 
+
+def sitemap_entries(path=None):
+    """(identificador, data da revisão) de cada votação publicada: texto principal, trechos e pedidos de urgência
+    ligados a ele e urgências avulsas. Cada uma tem página própria em /placar/<id>."""
+    snapshot = _index(path)
+    if snapshot is None:
+        return []
+    entries = []
+    for item in snapshot['items']:
+        entries.append((item['id'], item.get('reviewedAt')))
+        for child in list(item.get('segments') or []) + list(item.get('urgencies') or []):
+            entries.append((child['id'], child.get('reviewedAt') or item.get('reviewedAt')))
+    for urgency in snapshot.get('urgencies') or []:
+        entries.append((urgency['id'], urgency.get('reviewedAt')))
+    return entries
+
 # Siglas truncadas ou com grafia diferente na fonte, unificadas pela forma da lista atual.
 _PARTY_ALIASES = {'REPUBLICAN': 'REPUBLICANOS', 'SOLIDARIED': 'SOLIDARIEDADE', 'PODEMOS': 'PODE'}
 

@@ -163,17 +163,25 @@ class VoteApiTests(unittest.TestCase):
         self.assertEqual(self.get_error('/api/c/votes/2611313-30')[0], 404)
         self.assertEqual(self.get_error('/api/c/votes/%2e%2e%2f2611313-31')[0], 404)
 
-    def test_vote_deep_link_serves_generic_scoreboard_shell_and_invalid_paths_stay_404(self):
+    def test_vote_deep_link_without_catalogue_serves_the_scoreboard_shell_out_of_the_index_and_invalid_paths_stay_404(self):
         build_path = self.root / 'index.html'
         build_path.write_text('<html><head><title>App</title></head><body><main id="app"></main></body></html>',
                               encoding='utf-8')
         srv.BUILD_PATH = build_path
+        # Votação selecionada (metadados versionados) que o catálogo local não conhece: o app ainda a monta,
+        # mas a página fica fora do índice até ter conteúdo próprio no catálogo.
         request = urllib.request.Request(self.base + '/placar/2611313-31')
         with urllib.request.urlopen(request) as response:
             html = response.read().decode('utf-8')
         self.assertIn('<title>Placar das votações da Câmara · Painel Público</title>', html)
-        self.assertIn(f'<link rel="canonical" href="{self.base}/placar">', html)
-        self.assertEqual(self.get_error('/placar/not-a-vote')[0], 404)
+        self.assertIn('<meta name="robots" content="noindex">', html)
+        for path in ('/placar/not-a-vote', '/placar/999-9'):
+            # Páginas (não a API) respondem 404 em HTML, com a página de erro do site.
+            with self.assertRaises(urllib.error.HTTPError) as context:
+                self.get(path)
+            self.assertEqual(context.exception.code, 404)
+            self.assertIn('noindex', context.exception.read().decode('utf-8'))
+            context.exception.close()
 
     def test_missing_snapshot_differs_from_valid_empty_snapshot(self):
         _, missing = self.get('/api/c/votes')
