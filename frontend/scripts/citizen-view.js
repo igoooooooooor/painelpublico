@@ -485,38 +485,18 @@ const ALERT_RULES_HTML = `<ul class="citizen-alert-rules">
     <li><b>Concentração em fornecedor:</b> metade ou mais da cota do ano paga a uma só empresa, somando pelo menos R$ 30 mil.</li>
   </ul>`;
 const ALERT_MONTHS = ['', 'jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-/* "abr–jun" para meses seguidos; senão a lista. */
+/* "abr–jun" para meses seguidos; senão a lista. Sem ano quando a linha já mostra o ano. */
 function alertMonthList(months, year) {
   const sorted = [...(months || [])].sort((a, b) => a - b);
   if (!sorted.length) return '';
   const runs = [];
   sorted.forEach(m => { const last = runs.at(-1); if (last && m === last.at(-1) + 1) last.push(m); else runs.push([m]); });
-  return runs.map(run => run.length === 1 ? ALERT_MONTHS[run[0]] : `${ALERT_MONTHS[run[0]]}–${ALERT_MONTHS[run.at(-1)]}`).join(', ') + `/${year}`;
+  return runs.map(run => run.length === 1 ? ALERT_MONTHS[run[0]] : `${ALERT_MONTHS[run[0]]}–${ALERT_MONTHS[run.at(-1)]}`).join(', ') + (year ? `/${year}` : '');
 }
-/* O que cada regra conseguiu avaliar para a pessoa. "Nenhum alerta" só vale para o que foi avaliado. */
+/* Se alguma regra avaliou algo para a pessoa. "Nenhum alerta" só vale para o que foi avaliado. */
 function alertCoverageState(coverage) {
   const rows = Array.isArray(coverage) ? coverage : [];
-  const evaluated = rows.some(r => (r.regra === 'pico' && r.avaliados?.length) || (r.regra === 'fornecedor' && r.avaliado));
-  const lines = rows.map(r => {
-    if (r.regra === 'fornecedor') return r.avaliado
-      ? `<li><b>Concentração em fornecedor:</b> avaliada nas notas de ${esc(r.periodo)}${r.parcial ? ' (período parcial: o ano ainda pode receber notas)' : ''}.</li>`
-      : `<li><b>Concentração em fornecedor:</b> não avaliada em ${r.ano} (sem total positivo de notas).</li>`;
-    const skipped = (r.naoAvaliados || []).filter(n => n.meses?.length).map(n => `${alertMonthList(n.meses, r.ano)}: ${esc(n.texto)}`);
-    return `<li><b>Mês acima da referência:</b> ${r.avaliados?.length ? `avaliados ${alertMonthList(r.avaliados, r.ano)}` : `nenhum mês de ${r.ano} pôde ser avaliado`}.${skipped.length ? ` Não avaliados: ${skipped.join('; ')}.` : ''}</li>`;
-  });
-  return { evaluated, html: lines.length ? `<ul class="citizen-alert-rules">${lines.join('')}</ul>` : '' };
-}
-function profileAlertAnswer(alerts, coverage) {
-  const top = alerts[0], state = alertCoverageState(coverage);
-  return `<section class="card citizen-answer citizen-answer-alert" data-profile-answer="alerts">
-    <h2 class="h">Algum alerta na cota?</h2>
-    ${top ? `<span class="fchip citizen-alert-count">${alerts.length} ${alerts.length === 1 ? 'alerta' : 'alertas'}</span>
-      <h3 class="citizen-title">${esc(top.titulo)}</h3>${alertVisualization(top)}${alertStatement(top)}${top.contexto?.frase ? `<p class="citizen-context">${esc(top.contexto.frase)}</p>` : ''}${alertYearEndNote(top)}
-      <button type="button" class="more" data-profile-open="alerts">${alerts.length > 1 ? `Ver os demais alertas (${alerts.length - 1})` : 'Ver alerta em detalhe'} →</button>`
-    : state.evaluated ? `<p class="citizen-empty">Nenhum alerta nos meses avaliados</p>
-      ${state.html}<p class="muted">As regras são as mesmas para todos(as). Isso não é uma auditoria completa das notas.</p>`
-    : `<p class="citizen-empty">Dados insuficientes para avaliar</p>${state.html || '<p class="muted">Não há notas do mandato desta pessoa para as regras de alerta.</p>'}`}
-  </section>`;
+  return { evaluated: rows.some(r => (r.regra === 'pico' && r.avaliados?.length) || (r.regra === 'fornecedor' && r.avaliado)) };
 }
 function profileSummaryCards(shared, profileRecord, alerts, hasExpenseData) {
   const person = shared.person, senate = person.role === 'senador';
@@ -710,42 +690,67 @@ function profileAlertsSection(alerts, coverage) {
   const coverageState = alertCoverageState(coverage);
   const intro = ordered.length
     ? `${ordered.length} ${ordered.length === 1 ? 'alerta' : 'alertas'} na cota do mandato, dos mais recentes aos mais antigos. As regras detectam variação de gasto ou concentração; não indicam irregularidade.`
-    : coverageState.evaluated ? 'Nenhum alerta nos períodos avaliados pelas regras da cota.' : 'Dados insuficientes para avaliar os alertas da cota.';
+    : coverageState.evaluated ? 'Nenhum alerta nos períodos avaliados pelas regras da cota. A falta de alerta não significa gasto baixo nem regular.' : 'Dados insuficientes para avaliar os alertas da cota.';
   return `<section class="profile-area" id="profile-alerts" aria-labelledby="profile-alerts-title">
     <header class="profile-area-head"><h2 class="h" id="profile-alerts-title">Alertas na cota</h2><p>${esc(intro)}</p></header>
-    <div class="profile-alert-method"><h3 class="k">As duas regras</h3>${ALERT_RULES_HTML}<p>Alertas são registros para conferir, não conclusões de irregularidade. O prazo de apresentação das notas e a cobertura são considerados por Casa e por período.</p><button type="button" class="more" data-go="alerts">Metodologia completa →</button></div>
     ${ordered.length ? `<div class="profile-alert-list">${ordered.map(alert => alertCard(alert, { semPessoa: true, profile: true })).join('')}</div>` : ''}
     ${profileCoverageSection(coverage, ordered)}
-
   </section>`;
+}
+/* Regras, aviso e metodologia: uma vez só, no pé do cartão de cobertura. */
+function profileAlertMethod(footnote = '') {
+  return `<div class="profile-alert-method"><h4>Como funcionam as regras</h4>${ALERT_RULES_HTML}<p>Alertas são registros para conferir, não conclusões de irregularidade.${footnote ? ` ${footnote}` : ''}</p><a class="more" href="/metodologia#methodology-alerts" data-go="methodology">Metodologia completa →</a></div>`;
+}
+/* Uma célula da tabela: situação curta + detalhe do período. */
+function coverageCell(rule, status, detail, tone = '') {
+  return `<div class="profile-coverage-cell" role="cell"${tone ? ` data-tone="${tone}"` : ''}><span class="profile-coverage-rule" aria-hidden="true">${rule}</span><b>${status}</b>${detail ? `<small>${detail}</small>` : ''}</div>`;
 }
 function profileCoverageSection(coverage, alerts = []) {
   const rows = Array.isArray(coverage) ? coverage.filter(row => Number.isInteger(Number(row?.ano))) : [];
-  if (!rows.length) return `<section class="card profile-alert-coverage"><h3 class="k">O que foi avaliado</h3><p class="muted">Sem cobertura de avaliação importada para este perfil.</p></section>`;
+  if (!rows.length) return `<section class="card profile-alert-coverage"><h3 class="k">O que foi avaliado</h3><p class="muted">Sem cobertura de avaliação importada para este perfil.</p>${profileAlertMethod()}</section>`;
   const grouped = new Map();
   rows.forEach(row => {
     const year = Number(row.ano), group = grouped.get(year) || [];
     group.push(row); grouped.set(year, group);
   });
   const orderedAlerts = profileAlertChronology(alerts);
+  const peakLabel = 'Mês acima da referência', supplierLabel = 'Concentração em fornecedor';
   const years = [...grouped.keys()].sort((a, b) => b - a).map(year => {
-    const rules = grouped.get(year).map(row => {
-      const matchesAlert = orderedAlerts.some(alert => Number(alert.ano || String(alert.periodo || '').slice(0, 4)) === year
-        && (row.regra === 'pico' ? alert.tipo === 'pico' : alert.tipo === 'fornecedor'));
-      if (row.regra === 'fornecedor') return `<li><b>Concentração em fornecedor:</b> ${row.avaliado
-        ? `avaliada nas notas de ${esc(row.periodo || year)}${row.parcial ? ' · período parcial, o ano ainda pode receber notas' : ''}${matchesAlert ? ' · alerta registrado' : ' · nenhum alerta encontrado'}`
-        : `não avaliada em ${year} (sem total positivo de notas)`}.</li>`;
-      const evaluated = Array.isArray(row.avaliados) ? row.avaliados : [];
-      const marked = Array.isArray(row.marcados) ? row.marcados : [];
-      const skipped = (Array.isArray(row.naoAvaliados) ? row.naoAvaliados : []).filter(item => item.meses?.length)
-        .map(item => `${alertMonthList(item.meses, year)}: ${esc(item.texto)}`).join('; ');
-      return `<li><b>Mês acima da referência:</b> ${evaluated.length ? `avaliados ${alertMonthList(evaluated, year)}` : `nenhum mês de ${year} pôde ser avaliado`}${marked.length ? ` · alertas em ${alertMonthList(marked, year)}` : matchesAlert ? ' · alerta registrado' : evaluated.length ? ' · nenhum alerta nos meses avaliados' : ''}${skipped ? `. Não avaliados: ${skipped}` : ''}.</li>`;
-    }).join('');
-    const collected = [...new Set(grouped.get(year).map(row => row.coletadoEm).filter(value => typeof value === 'string'))].sort().at(-1);
-    const ruleVersion = [...new Set(grouped.get(year).map(row => row.regraVersao).filter(Boolean))].join(', ');
-    return `<article class="profile-alert-coverage-year"><h4>${year}</h4><ul>${rules}</ul>${collected || ruleVersion ? `<small>${[ruleVersion ? `Regra ${ruleVersion}` : '', collected ? `coleta de ${dateBR(collected)}` : ''].filter(Boolean).join(' · ')}</small>` : ''}</article>`;
+    const group = grouped.get(year);
+    const hasAlert = type => orderedAlerts.some(alert => Number(alert.ano || String(alert.periodo || '').slice(0, 4)) === year && alert.tipo === type);
+    const peak = group.find(row => row.regra === 'pico'), supplier = group.find(row => row.regra === 'fornecedor');
+    let peakCell = coverageCell(peakLabel, 'Sem cobertura', '', 'muted');
+    if (peak) {
+      const evaluated = Array.isArray(peak.avaliados) ? peak.avaliados : [];
+      const marked = Array.isArray(peak.marcados) ? peak.marcados : [];
+      const skipped = (Array.isArray(peak.naoAvaliados) ? peak.naoAvaliados : []).filter(item => item.meses?.length)
+        .map(item => `${alertMonthList(item.meses)}: ${esc(item.texto)}`);
+      // Ano todo sem os 12 meses anteriores (2023, para todos): uma frase curta no lugar da lista.
+      const noHistory = !evaluated.length && skipped.length && peak.naoAvaliados.every(item => !item.meses?.length || item.motivo === 'historico_insuficiente');
+      const detail = noHistory ? 'Sem 12 meses anteriores com notas para comparar; a avaliação começa em fev/2024.'
+        : [evaluated.length ? `Avaliados: ${alertMonthList(evaluated)}.` : '', skipped.length ? `Não avaliados: ${skipped.join('; ')}.` : ''].filter(Boolean).join(' ');
+      peakCell = marked.length ? coverageCell(peakLabel, `Alerta em ${alertMonthList(marked)}`, detail, 'alert')
+        : hasAlert('pico') ? coverageCell(peakLabel, 'Alerta registrado', detail, 'alert')
+        : evaluated.length ? coverageCell(peakLabel, 'Nenhum alerta', detail)
+        : coverageCell(peakLabel, 'Não avaliado', detail, 'muted');
+    }
+    let supplierCell = coverageCell(supplierLabel, 'Sem cobertura', '', 'muted');
+    if (supplier) {
+      const detail = supplier.avaliado ? `Notas de ${esc(supplier.periodo || year)}${supplier.parcial ? ' · período parcial, o ano ainda pode receber notas' : ''}.` : 'Sem total positivo de notas.';
+      supplierCell = !supplier.avaliado ? coverageCell(supplierLabel, 'Não avaliada', detail, 'muted')
+        : coverageCell(supplierLabel, hasAlert('fornecedor') ? 'Alerta registrado' : 'Nenhum alerta', detail, hasAlert('fornecedor') ? 'alert' : '');
+    }
+    return `<div class="profile-coverage-row" role="row"><h4 role="rowheader">${year}</h4>${peakCell}${supplierCell}</div>`;
   }).join('');
-  return `<section class="card profile-alert-coverage"><h3 class="k">O que foi avaliado</h3><div class="profile-alert-coverage-years">${years}</div></section>`;
+  const collected = [...new Set(rows.map(row => row.coletadoEm).filter(value => typeof value === 'string'))].sort().at(-1);
+  const ruleVersion = [...new Set(rows.map(row => row.regraVersao).filter(Boolean))].join(', ');
+  const footnote = [ruleVersion ? `Regra ${esc(ruleVersion)}` : '', collected ? `coleta de ${dateBR(collected)}` : ''].filter(Boolean).join(' · ');
+  return `<section class="card profile-alert-coverage"><h3 class="k">O que foi avaliado</h3>
+    <div class="profile-coverage-table" role="table" aria-label="Avaliação das regras de alerta por ano">
+      <div class="profile-coverage-row profile-coverage-head" role="row"><span role="columnheader">Ano</span><span role="columnheader">${peakLabel}</span><span role="columnheader">${supplierLabel}</span></div>
+      ${years}
+    </div>
+    ${profileAlertMethod(footnote ? `${footnote}.` : '')}</section>`;
 }
 const PROFILE_VOTE_LIMIT = new Map();
 const PROFILE_VOTE_PAGE = 10;
@@ -956,7 +961,6 @@ function profileView() {
     <section class="profile-detail-area" aria-labelledby="profile-more-title"><h2 class="h" id="profile-more-title">Mais detalhes</h2>
     ${profileSectionsHTML(person, {
       expenses: (!shared.cost && !shared.senateCost ? profileExpenseAnswerDetails(f, person, hasExpenseData) : '') + (person.role === 'deputado' ? profileCostDetails(shared.cost) : person.role === 'senador' ? senateCostDetails(shared.senateCost, f) : '') + profileExpenseDetails(f, hasExpenseData, person.role === 'deputado' ? shared.cost : null, shared.mandate),
-      alerts: `<p>Os cartões e a cobertura aparecem acima. Esta seção mantém as regras e os limites metodológicos junto dos demais detalhes.</p>${ALERT_RULES_HTML}<p class="muted">Alertas indicam registros para conferir, não conclusões de irregularidade. A falta de alerta não significa gasto baixo nem regular.</p><button type="button" class="more" data-go="alerts">Metodologia completa →</button>`,
       votes: `${profileVoteCountHTML(shared)}${profileVoteDetails(shared)}`, sources: sourcesHtml,
     })}</section>
   </div>`;

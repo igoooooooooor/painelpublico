@@ -71,9 +71,14 @@ linha tracejada) não dependem só de cor.
 `alert_coverage` registra, por pessoa, regra, fonte e ano do mandato, o que foi avaliado e o que não foi,
 com o motivo: prazo de apresentação aberto, histórico insuficiente (menos de 12 meses com notas antes do
 mês), sem base (mês sem notas entre os 12 anteriores), sem notas no mês, sem piso dos colegas. Meses antes
-de fev/2023 não são do mandato e não aparecem como "sem notas". A ficha lista a cobertura do ano mais
-recente ao mais antigo, diz "Nenhum alerta nos meses avaliados" só quando alguma regra avaliou algo, e
-lista os meses e regras não avaliados. Sem nada avaliável, diz "Dados insuficientes para avaliar".
+de fev/2023 não são do mandato e não aparecem como "sem notas". A ficha mostra a cobertura numa tabela,
+um ano por linha (do mais recente ao mais antigo) e uma coluna por regra: a situação ("Nenhum alerta",
+"Alerta em …", "Não avaliado") e, embaixo, os meses avaliados e os não avaliados com o motivo. Quando
+nenhum mês do ano pôde ser avaliado só por histórico insuficiente (2023, para todos), a célula diz "Sem 12
+meses anteriores com notas para comparar; a avaliação começa em fev/2024". O resumo diz "Nenhum alerta nos
+períodos avaliados" só quando alguma regra avaliou algo; sem nada avaliável, "Dados insuficientes para
+avaliar". As regras, o aviso, a versão da regra e a data da coleta aparecem uma vez, no pé da tabela, com
+o link para a metodologia.
 
 ## Valor das despesas nos alertas
 

@@ -311,7 +311,7 @@ test('profile starts with three ordered answers and keeps the complementary deta
   assert.ok(html.indexOf('Aparece para trabalhar?') < html.indexOf('Algum alerta na cota?'));
   assert.match(html, /class="citizen-details/);
   const detailKeys = [...html.matchAll(/data-profile-section="([^"]+)"/g)].map(match => match[1]);
-  assert.deepEqual(detailKeys, ['expenses', 'alerts', 'votes', 'projects', 'staff', 'contact', 'sources']);
+  assert.deepEqual(detailKeys, ['expenses', 'votes', 'projects', 'staff', 'contact', 'sources']);
   assert.match(html, /Alerta preservado/);
 });
 
@@ -357,10 +357,21 @@ test('profile without alerts explains which rules were checked and keeps neutral
   const html = api.profileView();
   const answer = html.slice(html.indexOf('id="profile-alerts"'));
   assert.match(answer, /Nenhum alerta nos períodos avaliados/);
-  assert.match(answer, /avaliados abr–jun\/2026/);
-  assert.match(answer, /jul–set\/2026: prazo de apresentação das notas ainda aberto/);
+  assert.match(answer, /<h4 role="rowheader">2026<\/h4>/);
+  assert.match(answer, /Avaliados: abr–jun\./);
+  assert.match(answer, /jul–set: prazo de apresentação das notas ainda aberto/);
   assert.match(answer, /período parcial/);
-  assert.match(html, /Mês acima da referência:<\/b> um mês com gasto 1,75 vez/);
+  assert.equal(html.match(/Mês acima da referência:<\/b> um mês com gasto 1,75 vez/g)?.length, 1);
+  assert.doesNotMatch(html, /Alertas em detalhe/);
+
+  setProfileFixture(api, state, 'camara:57', {
+    total: 1, mediaMensal: 1, periodo: { inicio: '2023-02', fim: '2023-12', meses: 11 }, hasExpenseData: true, meses: [], categorias: [], fornecedores: [], maiores: [], alertas: [],
+    coberturaAlertas: [{ regra: 'pico', ano: 2023, avaliados: [], marcados: [], naoAvaliados: [
+      { motivo: 'historico_insuficiente', texto: 'menos de 12 meses com notas antes deste mês', meses: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] }] }],
+  });
+  const firstYear = api.profileView();
+  assert.match(firstYear, /Não avaliado<\/b><small>Sem 12 meses anteriores com notas para comparar; a avaliação começa em fev\/2024\.<\/small>/);
+  assert.doesNotMatch(firstYear, /Não avaliados: fev–dez/);
   assert.match(html, /Concentração em fornecedor:<\/b> metade ou mais/);
   assert.doesNotMatch(html, /regras do painel|fora do normal|estranho/);
   assert.match(html, /Fale com ele\(a\)/);
@@ -813,7 +824,8 @@ test('redesigned profile keeps real quota totals, suppliers and all alerts in th
   assert.match(html, /17 notas/);
   assert.match(html, /Registro mais recente/);
   assert.match(html, /Registro anterior/);
-  assert.match(html, /avaliados jan–fev\/2026/);
+  assert.match(html, /Alerta em jan–fev/);
+  assert.match(html, /Avaliados: jan–fev\./);
   assert.doesNotMatch(html, /\[voto real\]|\[Confirmar|confirmar na cobertura gravada/);
 });
 
