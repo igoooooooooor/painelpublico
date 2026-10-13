@@ -94,13 +94,13 @@ function profileCostNotesHTML(data, personId) {
   const rows = notes.map(note => {
     const url = typeof profileSafeUrl === 'function' ? profileSafeUrl(note.documentUrl) : null;
     return `<li><span class="citizen-cost-note-who">${esc(note.fornecedor || 'Fornecedor não informado')}</span><b class="mono">${esc(money(note.valor))}</b>
-      <small>${esc(note.data ? dateBR(note.data) : 'sem data')} · ${esc(note.categoria || '')}</small>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">Nota ↗</a>` : '<span class="muted">Sem link</span>'}</li>`;
+      <small>${esc(note.data ? dateBR(note.data) : 'sem data')} · ${esc(note.categoria || '')}</small>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">Nota ↗</a>` : '<span class="muted">Documento não publicado pela Câmara</span>'}</li>`;
   }).join('');
   const complement = data.complemento ? `<p class="muted">À parte, fora desse total: complemento do auxílio-moradia, ${esc(money(data.complemento.valor))} em ${data.complemento.notas} ${data.complemento.notas === 1 ? 'nota' : 'notas'}.</p>` : '';
   const fileUrl = typeof profileSafeUrl === 'function' ? profileSafeUrl(data.fonte?.url) : null;
   return `<ul class="citizen-cost-note-list">${rows}</ul>
     <p><b>Total: ${esc(money(data.total))}</b>, soma das ${notes.length} ${notes.length === 1 ? 'nota' : 'notas'} acima.</p>${complement}
-    <p class="muted">Para conferir na planilha da Câmara${fileUrl ? ` (<a href="${esc(fileUrl)}" target="_blank" rel="noopener">arquivo anual</a>, com todos os deputados, cerca de 40 MB)` : ''}: filtre <code>ideCadastro</code> = ${esc(String(personId).split(':')[1])} e <code>numMes</code> = ${Number(month)} e some a coluna <code>vlrLiquido</code>.</p>`;
+    <p class="muted">Todas as notas vêm do arquivo oficial da Câmara, com ou sem documento. O documento é uma cópia da nota que a Câmara nem sempre publica; em outubro de 2026, deixou de publicar os das notas de telefonia. Para conferir na planilha da Câmara${fileUrl ? ` (<a href="${esc(fileUrl)}" target="_blank" rel="noopener">arquivo anual</a>, com todos os deputados, cerca de 40 MB)` : ''}: filtre <code>ideCadastro</code> = ${esc(String(personId).split(':')[1])} e <code>numMes</code> = ${Number(month)} e some a coluna <code>vlrLiquido</code>.</p>`;
 }
 
 /* Carrega as notas só quando a pessoa abre a lista. */

@@ -357,6 +357,8 @@ b.warn { color: var(--warn); }
 .citizen-cost-note-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: baseline; font-size: 13px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
 .citizen-cost-note-who { min-width: 0; overflow-wrap: anywhere; }
 .citizen-cost-note-list small { color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
+.citizen-cost-note-list li > b { justify-self: end; }
+.citizen-cost-note-list li > span.muted { max-width: 18ch; font-size: 11px; line-height: 1.3; text-align: right; justify-self: end; }
 .citizen-cost-notes-body code { overflow-wrap: anywhere; }
 .citizen-cost-year summary { display: flex; align-items: center; justify-content: space-between; min-height: 44px; cursor: pointer; font-weight: 600; color: var(--ink-2); list-style: none; border-top: 1px solid var(--line); }
 .citizen-cost-year summary::-webkit-details-marker { display: none; }

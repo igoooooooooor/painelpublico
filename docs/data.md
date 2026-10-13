@@ -719,6 +719,16 @@ partir de fev/2023.
   serve de fonte: o gráfico dela inclui passagens aéreas, que ficam fora do arquivo
   aberto. O CSV da ficha traz todas as notas desde fev/2023; nas de 2023–2025 a
   coluna Documento fica vazia.
+- **Telefonia sem documento (verificado em 13/10/2026):** entre a coleta de 8/10/2026 e a
+  de 13/10/2026, a Câmara esvaziou `urlDocumento` em todas as notas da categoria TELEFONIA,
+  de todas as operadoras, nos arquivos anuais de 2023 a 2026 (2026: 3.516 de 3.516 notas que
+  tinham link; 2023–2025: nenhuma das 16.296, 15.604 e 13.201 notas da categoria tem link),
+  e os PDFs antigos respondem 404. As outras categorias seguiram com link (cerca de 0,1%
+  perdeu). Não houve aviso oficial e o motivo não foi confirmado. As notas continuam no
+  arquivo com valor, fornecedor e data; o importador grava o link como vem, então a ficha
+  mostra "Documento não publicado pela Câmara". O mesmo texto vale para lançamentos que
+  nunca tiveram documento, como "CELULAR FUNCIONAL" (sem data e com CNPJ
+  `000.000.000/0000-1`). A fonte do valor é o arquivo anual; o PDF é uma cópia complementar.
 - **Alertas:** picos e concentração avaliam o mandato inteiro, nas duas Casas (regra,
   cobertura e prazos em [Alertas](alerts.md)); lançamentos de valor alto seguem só em 2026.
 - **Senado, presença pelo Diário no mandato (9/10/2026):** `make collect-senate` lê as listas de presença das
