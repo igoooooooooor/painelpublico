@@ -29,6 +29,10 @@ Bordas de componentes usam tons neutros do tema: em geral `--line` em superfíci
 
 O foco visível usa contorno neutro de alto contraste, inclusive ao redor do campo de busca. Estados de seleção e navegação são indicados por atributos como `aria-pressed` e `aria-current`; controles indisponíveis mantêm indicação visual própria. Animações só rodam quando o sistema não solicita movimento reduzido.
 
+## Links reais e conteúdo do servidor
+
+Navegação principal, rodapé, linhas de lista (`.citizen-row`, `.attendance-row`, `.citizen-who`, `.face`, ranking da home), atalhos e cartões de votação são `<a href>` com o mesmo desenho dos botões que substituíram: as regras usam `:is(button, a)` e `base.css` tira o sublinhado e herda a cor. Controles que não navegam (filtros, ordenação, "Comparar", tema) continuam botões. O conteúdo que o servidor põe em `#app` antes do JavaScript usa os mesmos componentes das telas, mais três classes só dele em `base.css`: `.seo-directory` (lista de fichas em colunas), `.seo-table` (tabela de partidos) e `.seo-plain-list`; `.seo-summary` é o resumo da ficha. Ao criar um componente de lista, dê a ele uma versão em link quando a linha abre uma página.
+
 ## Como estender
 
 Antes de criar uma medida ou cor, reutilize o token correspondente. Compartilhe regras gerais em `base.css`; mantenha regras de uma área junto ao seu CSS de funcionalidade. Quando vários componentes repetirem uma regra, extraia uma classe ou token comum em vez de copiar declarações. Preserve os indicadores de foco, estados sem depender apenas de cor e as bordas neutras.

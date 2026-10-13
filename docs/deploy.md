@@ -223,7 +223,9 @@ Configuração (uma vez):
 
 ## Peso da página
 
-O HTML contém os metadados curtos dos quatro cartões de votação e os complementos pequenos que existirem nos snapshots. O roster, totais e despesas ficam no SQLite e são consultados pela API; o banco completo não é embutido no HTML. Os perfis complementares (`perfis.json`) ficam no servidor e cada ficha busca o seu em `/api/c/perfil/<id>`.
+O HTML de cada página é pequeno (metadados e o conteúdo inicial daquela página); o código e o estilo do app ficam em `dist/assets/app.<hash>.js` e `.css`, com o hash do conteúdo no nome e `Cache-Control: public, max-age=31536000, immutable`. Uma publicação nova gera nomes novos e o HTML passa a apontar para eles; os arquivos anteriores ficam sete dias na pasta, para páginas ainda em cache na borda (60 s) ou no navegador. O JavaScript contém os metadados curtos dos quatro cartões de votação e os complementos pequenos que existirem nos snapshots. O roster, totais e despesas ficam no SQLite e são consultados pela API; o banco completo não é embutido. Os perfis complementares (`perfis.json`) ficam no servidor e cada ficha busca o seu em `/api/c/perfil/<id>`.
+
+A imagem de compartilhamento (`frontend/static/og-image.png`, 1200×630, usada em `og:image` e `twitter:image` de todas as páginas) é gerada a partir de `frontend/static/og-image-source.html`; o comando para regenerá-la está no próprio arquivo.
 
 ## Endereço público e buscadores
 
@@ -239,3 +241,5 @@ sudo systemctl daemon-reload && sudo systemctl restart painel
 
 Sem a variável, o servidor usa o `Host` que o Cloudflare Tunnel repassa.
 Depois do deploy, envie `https://seudominio.com.br/sitemap.xml` no Google Search Console e no Bing Webmaster Tools.
+
+Para conferir uma publicação no domínio real, sem depender de JavaScript: `curl -s https://seudominio.com.br/politicos | grep -c 'href="/deputado/'` deve listar as fichas; `/placar/<id>` deve trazer a decisão e os votos no HTML; `/nao-existe` deve responder 404 com `noindex`; `/og-image.png` deve responder `image/png`; e o arquivo `/assets/app.<hash>.js` referenciado pelo HTML deve responder 200 com `immutable`. O que o Google recebeu de fato só aparece na inspeção de URL do Search Console.

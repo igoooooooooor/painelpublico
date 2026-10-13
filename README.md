@@ -6,6 +6,9 @@ Site para entender, em linguagem simples, gastos, presença e votações de depu
 - **Placar**: votações nominais do texto principal no Plenário da Câmara e, dentro de cada uma, as decisões sobre trechos (destaques e emendas), com o que significava Sim e Não.
 - **Alertas**: registros da cota que merecem conferência, não conclusões de irregularidade.
 - **Comparar**: políticos ou partidos lado a lado, com imagem para compartilhar.
+- **Metodologia** e **Sobre**: as regras de cada número, as fontes, a licença dos dados e o canal de correção, nas páginas `/metodologia` e `/sobre`.
+
+Cada página (fichas, votações do Placar, seções) chega com o conteúdo essencial no HTML, com título, canonical e dados estruturados: funciona sem JavaScript e pode ser lida por buscadores e assistentes ([Arquitetura](docs/architecture.md#endereços-e-buscadores)).
 
 A área **Minha cidade** reúne a base nacional do IBGE, os resultados eleitorais do TSE, as emendas municipais do Portal da Transparência e as contas anuais do SICONFI, com busca por nome, fontes, períodos e indicação de dados ausentes.
 
@@ -19,7 +22,7 @@ Requer **Python 3.10+**. Para os testes de frontend, **Node.js 18+**. A aplicaç
 make dev
 ```
 
-Abra [localhost:8000](http://127.0.0.1:8000/). `make dev` gera `dist/index.html` e inicia a API local. Não faz downloads nem reimporta o banco. Depois de editar o frontend, rode `make build` e recarregue a página; alterações Python exigem reiniciar o servidor.
+Abra [localhost:8000](http://127.0.0.1:8000/). `make dev` gera `dist/index.html` e `dist/assets/` e inicia a API local. Não faz downloads nem reimporta o banco. Depois de editar o frontend, rode `make build` e recarregue a página; alterações Python exigem reiniciar o servidor.
 
 A base já existente em `data/na-lupa.sqlite3` é preservada. Este repositório publica somente código, testes e documentação: banco, snapshots complementares, downloads e credenciais são locais.
 

@@ -3,14 +3,15 @@
 Aplicação pequena com HTML/CSS/JavaScript sem framework, API Python com biblioteca padrão e SQLite. Não há ORM, bundler JavaScript, serviços separados ou etapa npm.
 
 ```text
-frontend/ + frontend/data/ + snapshots complementares opcionais → scripts/build.py → dist/index.html
+frontend/ + frontend/data/ + snapshots complementares opcionais → scripts/build.py → dist/index.html + dist/assets/app.<hash>.{js,css}
 navegador → /api/* → backend/ → data/na-lupa.sqlite3 (base parlamentar e despesas)
 fontes públicas → ingest/ → data/imports/ → importação transacional → SQLite
 ```
 
 ## Responsabilidades
 
-- `backend/server.py`: HTTP e rotas. Serve apenas o HTML gerado e a API, nunca as pastas de dados.
+- `backend/server.py`: HTTP e rotas. Serve apenas o HTML gerado, os arquivos do build em `dist/assets/` (nome com hash do conteúdo, cache de um ano), a imagem de compartilhamento e a API, nunca as pastas de dados.
+- `backend/seo.py` e `backend/seo_sections.py`: metadados, dados estruturados, sitemap, robots, llms.txt e o conteúdo inicial de cada página em HTML (ver [Endereços e buscadores](#endereços-e-buscadores)).
 - `backend/public_store.py`: importação transacional, agregados e sinais de triagem. Valores monetários em centavos; reembolso e remuneração permanecem separados.
 - `backend/cities.py`: busca de municípios e página individual a partir de `cities.json`; consulta o roster federal em modo somente leitura e liga fichas apenas por correspondência única de nome, UF e cargo.
 - `backend/citizen.py`: apresenta os dados e sinais existentes em linguagem simples para as telas e gera o CSV com as notas de cada ficha.
@@ -19,7 +20,7 @@ fontes públicas → ingest/ → data/imports/ → importação transacional →
 - `frontend/styles/`: tokens, componentes compartilhados e estilos por área. Ver [design system](design-system.md).
 - `frontend/scripts/app.script.js`: estado e roteamento. `home-view.js` mostra resumos consultados no SQLite; os outros scripts agrupam as áreas de políticos, alertas, presença, comparações e partidos.
 - `frontend/scripts/profile-data.js`: identidade canônica e leitura compartilhada de contatos, projetos, gabinete, presença, votos e eleição de 2026. Cada ficha pede seu complemento em `/api/c/perfil/<id>` quando disponível, sem embutir todos os perfis no HTML; salário de referência é separado de pagamento individual.
-- `scripts/build.py`: montagem determinística, com ordem de CSS e JavaScript explícita. O build não precisa de snapshots locais; os quatro resumos do Placar vêm de metadados versionados em `frontend/data/votes.json`.
+- `scripts/build.py`: montagem determinística, com ordem de CSS e JavaScript explícita. Gera `dist/index.html` (só o documento) e `dist/assets/app.<hash>.js` e `.css`; arquivos de builds anteriores ficam sete dias, para páginas ainda em cache. O build não precisa de snapshots locais; os quatro resumos do Placar vêm de metadados versionados em `frontend/data/votes.json`, e os textos de `/metodologia`, `/sobre` e os títulos das seções vêm de `frontend/data/site-pages.json`, compartilhado com o servidor.
 - `ingest/pipeline.py`: orquestrador da atualização automática (coleta da cota, importação em cópia, verificação, publicação atômica, perfis, situação dos projetos e aviso). Roda no servidor por `deploy/painel-ingest.timer`.
 - `ingest/calendar_events.py`: eventos com data (segundo turno, troca de legislatura), sem rede; o job semanal executa as ações pendentes.
 - `ingest/editorial_queue.py`: fila editorial sem rede (candidatos do Placar sem revisão e arquivos mantidos à mão), gerada pelo job semanal; nunca publica.
@@ -110,14 +111,27 @@ Ranking, home e comparação não consomem o novo valor.
 
 ## Endereços e buscadores
 
-Cada deputado(a) e senador(a) tem endereço próprio (`/deputado/<id>-<nome>`, `/senador/<id>-<nome>`), assim
-como as seções (`/alertas`, `/placar`, `/politicos`, `/partidos`, `/comparar`, `/presenca`, `/minha-cidade`).
-`backend/seo.py` entrega o mesmo `dist/index.html` com título, descrição, endereço canônico, Open Graph,
-dados estruturados (schema.org) e, nas fichas, um resumo em texto das três respostas dentro de `#app`; o app
-substitui esse resumo ao abrir. Endereço sem o nome redireciona (301) para o canônico. As páginas usam o cache
-do modo de produção, invalidado quando o banco muda. O servidor também responde `robots.txt` (a API fica fora do
-rastreamento), `sitemap.xml` (seções e fichas da lista atual) e `llms.txt`.
+Cada deputado(a) e senador(a) tem endereço próprio (`/deputado/<id>-<nome>`, `/senador/<id>-<nome>`), cada
+votação do Placar também (`/placar/<id>`), assim como as seções (`/alertas`, `/placar`, `/politicos`, `/partidos`,
+`/comparar`, `/presenca`, `/minha-cidade`, `/metodologia`, `/sobre`). `backend/seo.py` entrega o mesmo
+`dist/index.html` com título, descrição, endereço canônico, Open Graph (com `og-image.png`), dados estruturados
+(schema.org: `WebSite`, `WebPage`/`CollectionPage`/`AboutPage`, `Person`, `BreadcrumbList`) e, dentro de `#app`,
+o conteúdo essencial da página em HTML, montado por `backend/seo_sections.py` com as mesmas funções que servem a
+API (`citizen`, `votes`, `cities`): resumo da ficha, números e alertas da home, diretório de todas as fichas em
+`/politicos`, lista de presença, catálogo do Placar com link para cada votação, decisão e votos de cada votação,
+tabela de partidos, metodologia e sobre. É o que pessoas sem JavaScript, buscadores e assistentes leem; o bloco
+usa o design system e vem marcado com `data-server-render="<endereço>"`.
 
-O endereço público vem de `PAINEL_SITE_URL` (ex.: `https://seudominio.com.br`) ou, sem ela, do `Host` recebido
-pelo túnel. No app, `app.script.js` lê o endereço ao abrir, atualiza a barra ao navegar e trata o voltar do
-navegador; o título da aba acompanha a tela.
+No app, `app.script.js` guarda esse bloco ao abrir e cada tela o mantém enquanto a API não respondeu (e se ela
+falhar), só no endereço a que ele pertence: outra ficha nunca herda o resumo anterior. Título da aba, canonical,
+descrição e `noindex` acompanham a tela, com os mesmos textos do servidor (`frontend/data/site-pages.json`), para
+que o que o buscador lê depois de executar o JavaScript seja o mesmo do HTML. Menu, rodapé, linhas de lista,
+rostos, atalhos e cartões de votação são links reais (`<a href>`), que abrem em nova aba com Ctrl/Cmd ou botão do
+meio; o clique simples continua navegando dentro do app. Endereço sem o nome redireciona (301) para o canônico;
+endereço desconhecido recebe a página 404 do site, com `noindex`. Pares de comparação (`/comparar/a-vs-b`,
+`/partidos/A-vs-B`) têm metadados próprios e `noindex`.
+
+As páginas usam o cache do modo de produção, invalidado quando o banco, o build ou qualquer snapshot muda. O
+servidor também responde `robots.txt` (a API fica fora do rastreamento), `sitemap.xml` (seções, fichas da lista
+atual e votações do Placar, com a data da revisão de cada votação) e `llms.txt`. O endereço público vem de
+`PAINEL_SITE_URL` (ex.: `https://seudominio.com.br`) ou, sem ela, do `Host` recebido pelo túnel.
