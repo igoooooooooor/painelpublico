@@ -55,7 +55,22 @@ Site publicado, código anterior, de uma única origem, com o Cloudflare sem gua
 
 Ou seja, o VPS saturava por volta de 40 a 50 req/s do cenário misto. Cada conexão do teste pede sem
 parar; um visitante real faz algumas requisições e lê, então 50 conexões correspondem a algumas centenas
-de pessoas ao mesmo tempo. Repita a rampa depois de publicar as mudanças para registrar o novo teto.
+de pessoas ao mesmo tempo.
+
+Mesmo dia, depois de publicar as mudanças e ligar a regra de cache do Cloudflare (abaixo):
+
+| Conexões | Resultado |
+|---|---|
+| 50 | 306 req/s, p50 33 ms, p95 0,96 s, sem falhas |
+| 100 | 1.085 req/s, p50 54 ms, p95 0,25 s, sem falhas |
+| 200 | 1.087 req/s, p50 106 ms, p95 0,50 s, sem falhas |
+| 400 | 1.020 req/s, p50 208 ms, p95 1,2 s, sem falhas |
+| 800 | 903 req/s, p50 373 ms, p95 3,4 s, dois timeouts; teste interrompido |
+
+O patamar de cerca de 1.000 req/s e 65 MB/s a partir de 100 conexões é o limite de uma única origem de
+teste (um Mac, uma conexão de internet, um IP) e da borda, não do VPS: a latência cresce com as conexões
+sem que apareçam erros, e `/healthz` respondeu em menos de 0,1 s logo depois. Para medir além disso seria
+preciso gerar carga de vários pontos ao mesmo tempo.
 
 ## Limites conhecidos e o que fazer num pico
 
