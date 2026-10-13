@@ -3,6 +3,7 @@ import json
 import os
 import tempfile
 import threading
+import time
 import unittest
 import urllib.request
 from pathlib import Path
@@ -21,6 +22,7 @@ class ProdServerTests(unittest.TestCase):
         store.import_documents([doc], self.db)
         self.httpd = srv.ThreadingHTTPServer(('127.0.0.1', 0), srv.Handler)
         self.httpd.db_path, self.httpd.prod, self.httpd.cache = self.db, True, srv.ResponseCache()
+        self.httpd.snapshot_check_seconds = 0  # os testes reescrevem snapshots e leem em seguida
         threading.Thread(target=self.httpd.serve_forever, daemon=True).start()
         self.base = f'http://127.0.0.1:{self.httpd.server_address[1]}'
 
@@ -46,10 +48,13 @@ class ProdServerTests(unittest.TestCase):
             _, detail = self.get('/api/c/cities/3550308')
             self.assertIsNone(detail['municipality']['population'])
             self.assertTrue(detail['messages']['votes'])
-            self.assertEqual(len(self.httpd.cache.items), 0)
+            self.assertEqual(len(self.httpd.cache.items), 2)  # busca e detalhe ficam em cache enquanto o snapshot não muda
+            self.get('/api/c/cities/3550308')
+            self.assertEqual(len(self.httpd.cache.items), 2)
             snapshot.unlink()
             _, absent = self.get('/api/c/cities?q=sao')
             self.assertFalse(absent['available'])
+            self.assertEqual([key[0] for key in self.httpd.cache.items], ['snapshot'])  # geração nova descarta as antigas
             with self.assertRaises(urllib.error.HTTPError) as ctx:
                 self.get('/api/c/cities/3550308')
             self.assertEqual(ctx.exception.code, 404)
@@ -251,6 +256,55 @@ class ProdServerTests(unittest.TestCase):
         only_election = srv.profiles.profile('camara:2', profile_path)
         self.assertEqual((only_election['role'], only_election['eleicao2026']['status']), ('deputado', 'sem-correspondencia'))
         self.assertIsNone(srv.profiles.profile('camara:3', profile_path))
+
+    def test_simultaneous_misses_of_one_key_run_the_query_once_and_keep_the_compressed_body(self):
+        cache, calls, started = srv.ResponseCache(), [], threading.Barrier(12)
+
+        def compute():
+            calls.append(1)
+            time.sleep(0.2)
+            return srv.Response.json({'rows': list(range(600))}), True
+
+        def worker(results):
+            started.wait()
+            results.append(cache.fetch(('api', 1, '/api/c/x'), compute))
+
+        results = []
+        threads = [threading.Thread(target=worker, args=(results,)) for _ in range(12)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(len(results), 12)
+        self.assertTrue(all(result is results[0] for result in results))
+        self.assertEqual(gzip.decompress(results[0].gz), results[0].body)  # comprimido uma vez, servido pronto
+        self.assertIsNone(srv.Response.json({'ok': True}).gz)  # corpo pequeno não compensa comprimir
+
+        def failing():
+            return srv.Response.json({'error': 'x'}, 503), False
+
+        self.assertEqual(cache.fetch(('api', 1, '/api/c/y'), failing).status, 503)
+        self.assertEqual(len(cache.items), 1)  # erro não fica em cache
+
+    def test_requests_beyond_the_compute_slots_get_a_quick_busy_answer(self):
+        cache = srv.ResponseCache(slots=1)
+        cache.slot_wait = 0.2
+        release = threading.Event()
+
+        def slow():
+            release.wait(5)
+            return srv.Response.json({'ok': True}), True
+
+        first = threading.Thread(target=lambda: cache.fetch(('api', 1, '/api/c/slow'), slow))
+        first.start()
+        time.sleep(0.05)
+        busy = cache.fetch(('page', 1, '/outra', 'http://x'), slow, srv.BUSY_HTML)
+        self.assertEqual((busy.status, busy.content_type), (503, 'text/html; charset=utf-8'))
+        self.assertEqual(len(cache.items), 0)  # a resposta de ocupado não fica em cache
+        release.set()
+        first.join()
+        self.assertEqual(cache.fetch(('api', 1, '/api/c/slow'), slow).body, b'{"ok": true}')
 
     def test_healthcheck_reports_missing_database(self):
         self.db.unlink()

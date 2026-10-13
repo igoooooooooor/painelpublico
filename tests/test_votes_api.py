@@ -47,6 +47,7 @@ class VoteApiTests(unittest.TestCase):
         self.original_snapshots_path = srv.votes.SNAPSHOTS_PATH
         srv.votes.SNAPSHOTS_PATH = self.snapshots
         self.httpd = srv.ThreadingHTTPServer(('127.0.0.1', 0), srv.Handler)
+        self.httpd.snapshot_check_seconds = 0  # o teste reescreve o snapshot e lê em seguida
         self.httpd.db_path = self.root / 'missing.sqlite3'
         self.httpd.prod = True
         self.httpd.cache = srv.ResponseCache()
@@ -78,15 +79,20 @@ class VoteApiTests(unittest.TestCase):
         error.close()
         return error.code, body
 
-    def test_vote_routes_work_without_database_and_bypass_response_cache(self):
+    def test_vote_routes_work_without_database_and_are_cached_until_the_snapshots_change(self):
         self.write_index()
         response, listing = self.get('/api/c/votes')
         self.assertEqual(response.status, 200)
         self.assertTrue(listing['available'])
         self.assertEqual(listing['total'], 1)
-        self.assertEqual(response.headers['Cache-Control'], 'no-store')
+        self.assertEqual(response.headers['Cache-Control'], 'public, max-age=300')
         self.assertEqual(response.headers['X-Frame-Options'], 'DENY')
-        self.assertEqual(len(self.httpd.cache.items), 0)
+        self.assertEqual(len(self.httpd.cache.items), 1)
+        self.get('/api/c/votes')
+        self.assertEqual(len(self.httpd.cache.items), 1)  # segunda visita sai do cache
+        self.write_index([make_vote(), make_vote('2611313-32')])
+        _, refreshed = self.get('/api/c/votes')
+        self.assertEqual(refreshed['total'], 2)  # arquivo novo na pasta de snapshots: resposta recalculada
 
         detail_dir = self.snapshots / votes.DETAILS_DIRECTORY
         detail_dir.mkdir()

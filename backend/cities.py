@@ -4,6 +4,7 @@ from contextlib import closing
 from pathlib import Path
 import re
 import sqlite3
+import threading
 
 from . import accounts, amendments
 from .config import SNAPSHOTS_PATH
@@ -26,14 +27,30 @@ def _city_rows(data):
             if isinstance(row, dict) and re.fullmatch(r'\d{7}', str(row.get('id', '')))]
 
 
+_search_lock = threading.Lock()
+_search_index = (None, [])  # (fotografia, linhas preparadas)
+
+
+def _search_rows(data):
+    """Linhas válidas com o texto de busca já normalizado e na ordem de exibição, preparadas uma vez por
+    fotografia: a busca só compara strings prontas em vez de normalizar os 5.570 nomes a cada consulta."""
+    global _search_index
+    with _search_lock:
+        snapshot, rows = _search_index
+        if snapshot is not data:
+            rows = [(fold(f"{row.get('name', '')} {row.get('uf', '')}"), row) for row in _city_rows(data)]
+            rows.sort(key=lambda item: (fold(item[1].get('name', '')), item[1].get('uf', '')))
+            _search_index = (data, rows)
+        return rows
+
+
 def search(query='', limit=20):
     data = _snapshot()
+    rows = _search_rows(data)
     words = fold(str(query)[:120]).split()
-    found = [row for row in _city_rows(data)
-             if all(word in fold(f"{row.get('name', '')} {row.get('uf', '')}") for word in words)]
-    found.sort(key=lambda row: (fold(row.get('name', '')), row.get('uf', '')))
+    found = [row for text, row in rows if all(word in text for word in words)]
     return {'items': [{key: row.get(key) for key in CITY_FIELDS} for row in found[:limit]],
-            'total': len(found), 'available': bool(_city_rows(data)),
+            'total': len(found), 'available': bool(rows),
             'source': data.get('sources', {}).get('municipalities', {})}
 
 

@@ -156,7 +156,7 @@ class SeoPagesTests(unittest.TestCase):
     def test_pages_are_cached_like_the_api(self):
         self.get('/deputado/1-ana-avila')
         self.get('/deputado/1-ana-avila')
-        self.assertEqual(sum(1 for key in self.httpd.cache.items if key[1] == 'page'), 1)
+        self.assertEqual(sum(1 for key in self.httpd.cache.items if key[0] == 'page'), 1)
 
     def test_slug_and_money_helpers(self):
         self.assertEqual(seo.slug('Rui Falcão'), 'rui-falcao')

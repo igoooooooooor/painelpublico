@@ -8,10 +8,14 @@ visitante → Cloudflare (HTTPS, cache, proteção) → túnel → 127.0.0.1:800
 
 ## O que o modo `--prod` muda
 
-- Respostas da API ficam em cache na memória e saem com `Cache-Control: public, max-age=300`. A chave inclui a data de modificação do banco: trocar o arquivo SQLite invalida o cache sozinho.
+- Respostas da API e as páginas ficam em cache na memória, já comprimidas, e saem com `Cache-Control: public, max-age=300` (páginas: 60). A chave inclui a data de modificação do banco: trocar o arquivo SQLite invalida o cache sozinho. As rotas montadas a partir dos snapshots (Placar, Minha cidade, perfis, Senado) usam como chave o nome, a data e o tamanho de cada arquivo da pasta de snapshots, então qualquer gravação ou remoção lá invalida só essas respostas.
+- Pedidos simultâneos da mesma resposta ainda não calculada esperam o primeiro cálculo em vez de repetir a consulta: logo depois de uma troca de banco, mil visitas à mesma página geram uma consulta, não mil. Só algumas respostas são calculadas ao mesmo tempo (2 por vCPU, no mínimo 2 e no máximo 8); as demais esperam a vez por até 8 s e, passado isso, recebem 503 com a mensagem "muitos acessos neste momento", que é barata e não fica em cache. A pasta de snapshots é conferida no máximo uma vez por segundo.
+- Uma conexão parada por 120 s é fechada; o túnel do Cloudflare fecha as suas ociosas antes, em 90 s.
+- A fila de conexões do sistema aceita 1024 conexões em espera (o padrão do Python é 5, que recusa o excesso numa rajada).
+- Só respostas de erro (4xx e 5xx) vão ao journal; o acesso normal fica nas métricas do Cloudflare. Localmente, sem `--prod`, todas as requisições aparecem no terminal.
 - Compressão gzip, `HEAD`, `/healthz` (verifica banco e build) e cabeçalhos de segurança (`X-Frame-Options`, `Referrer-Policy`, `nosniff`).
 - Consultas que passam de 8 segundos são abortadas, para uma busca pesada não travar o site.
-- Teste local igual à produção: `make prod`.
+- Teste local igual à produção: `make prod`. Capacidade medida, teste de carga e o que ligar no Cloudflare num pico: [Capacidade e teste de carga](performance.md).
 
 ## Primeira vez
 
