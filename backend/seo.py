@@ -17,7 +17,7 @@ import sqlite3
 import sys
 from urllib.parse import unquote
 
-from . import citizen, profiles, seo_sections as sections, votes
+from . import citizen, costs, profiles, seo_sections as sections, votes
 from .config import ROOT, SNAPSHOTS_PATH
 from .database import fold
 
@@ -134,13 +134,10 @@ def _chamber_presence(number):
 def _latest_cost_month(cost, as_of=None):
     """(mês, centavos) do número principal da ficha: o mês mais recente com as quatro partes e 3 meses de
     folga até a fotografia das notas (`profileCostPickMonth`); sem mês com folga, o mais recente."""
-    used = sorted(period for period in cost.get('usedMonths') or [] if isinstance(period, str))
+    used = costs.settled_periods(cost.get('usedMonths') or [], None)
     if not used or not isinstance(cost.get('monthlyAverageCents'), int):
         return None
-    serial = lambda period: int(period[:4]) * 12 + int(period[5:7])
-    reference = as_of[:7] if isinstance(as_of, str) and len(as_of) >= 7 and as_of[4] == '-' else None
-    settled = [period for period in used if reference is None or serial(reference) - serial(period) >= 3]
-    period = (settled or used)[-1]
+    period = costs.settled_periods(used, as_of)[-1]
     values = ((cost.get('months') or {}).get(period) or {}).get('valuesCents') or {}
     known = [values.get(key) for key in ('remuneration', 'allowances', 'quota', 'office')
              if isinstance(values.get(key), int) and not isinstance(values.get(key), bool)]
@@ -158,12 +155,13 @@ def profile_facts(db, identifier):
     facts = {'person': person, 'snapshotAt': '/'.join(reversed(stamp.split('-'))) if stamp else '', 'lines': []}
     cost = (profiles.profile(identifier) or {}).get('mandateCost') or {}
     latest = _latest_cost_month(cost, record.get('snapshotAt'))
-    if latest:
+    average = costs.chamber_average(cost, record.get('snapshotAt'))
+    if latest and average:
         period, total = latest
         # Os dois números antes da explicação: a descrição para buscadores corta em 160 caracteres.
         facts['lines'].append(('Quanto custa', f'Custou {money_cents(total)} em {MONTHS[int(period[5:7])]}/{period[:4]}; '
-                               f'média do mandato de {money_cents(cost["monthlyAverageCents"])} por mês '
-                               f'({month_range(cost["usedMonths"])}). Soma salário bruto, auxílios, cota parlamentar '
+                               f'média do mandato de {money_cents(average[0])} por mês '
+                               f'({month_range(average[1])}). Soma salário bruto, auxílios, cota parlamentar '
                                'e verba do gabinete, em valores da época.'))
     monthly = record.get('mediaMensal')
     if record.get('hasExpenseData') and monthly is not None:

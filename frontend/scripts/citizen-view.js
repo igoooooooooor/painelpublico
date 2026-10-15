@@ -510,7 +510,8 @@ function profileSummaryCards(shared, profileRecord, alerts, hasExpenseData) {
     if (latest) {
       costValue = profileCostShort(latest.totalCents);
       costUnit = ` em ${PROFILE_COST_MONTHS[latest.period]}`;
-      costNote = `média ${profileCostShort(shared.cost.monthlyAverageCents)}/mês · ${profileCostMonthList(shared.cost.usedMonths)} · Câmara`;
+      const average = profileCostAverage(shared.cost, profileRecord.snapshotAt);
+      costNote = average ? `média ${profileCostShort(average.cents)}/mês · ${profileCostMonthList(average.months)} · Câmara` : 'Câmara';
     } else {
       costValue = 'Sem total';
       costNote = 'Não há mês com as quatro partes identificadas.';
@@ -876,11 +877,13 @@ function profileShareCost(f, shared, hasExpenseData) {
   const senate = shared.person.role === 'senador', cost = shared.cost;
   const latest = !senate && cost && profileCostPeriods(cost.usedMonths).length && profileCostInteger(cost.monthlyAverageCents)
     ? profileCostLatest(cost, f.snapshotAt) : null;
+  const average = latest ? profileCostAverage(cost, f.snapshotAt) : null;
   if (latest) {
     return { label: `Custou em ${PROFILE_COST_MONTHS[latest.period]}`, value: profileCostShort(latest.totalCents), exact: profileCostMoney(latest.totalCents),
       totalCents: latest.totalCents,
       parts: PROFILE_COST_PARTS.map(([key], index) => ({ name: PROFILE_SHARE_PART_NAMES[key], cents: latest.parts[index] })),
-      note: `Média do mandato: ${profileCostShort(cost.monthlyAverageCents)} por mês (${profileCostMonthList(cost.usedMonths)}). Salário, auxílios, cota e verba de gabinete.` };
+      note: average ? `Média do mandato: ${profileCostShort(average.cents)} por mês (${profileCostMonthList(average.months)}). Salário, auxílios, cota e verba de gabinete.`
+        : 'Salário, auxílios, cota e verba de gabinete.' };
   }
   if (senate && shared.senateCost && typeof senateCostFigures === 'function') {
     const figures = senateCostFigures(shared.senateCost, f);

@@ -140,9 +140,17 @@ soma nem total novo que misture as composições.
   `data/raw/senado-exercicios/`) e grava `data/snapshots/senate-cost.json`, publicado com `make deploy-data`.
 - **Cartão "Quanto custa?":** "Senado · despesas identificadas do mandato", com remuneração do(a)
   senador(a), equipe do gabinete e cota parlamentar. O principal é o mês mais recente com as três partes
-  e a cota madura (a mesma regra da Câmara, em `docs/data.md`), com as partes daquele mês, que somam o
-  total. A média vem como contexto: só usa os meses com as três partes e diz quantos foram; as três partes
-  são calculadas sobre os mesmos meses. Sem mês completo, cada parte aparece com os próprios meses e não há
+  e as notas da cota já assentadas, com as partes daquele mês, que somam o total. A média vem como
+  contexto: só usa os meses com as três partes e as notas já assentadas e diz quantos foram; as três
+  partes são calculadas sobre os mesmos meses.
+- **Qual mês aparece no "Quanto custa?":** o mais recente com todas as partes publicadas no mês e 3 meses
+  de folga até `snapshotAt`, a data das notas importadas (`PROFILE_COST_SETTLE_MONTHS` em
+  `frontend/scripts/profile-cost.js`, a mesma regra da Câmara, em `docs/data.md`). As notas da cota entram
+  semanas depois do gasto: na base de out/2026, a cota de setembro estava em cerca de 20% do normal e a de
+  julho perto de 90%. Desde 15/10/2026, a média (cartão, lista e comparação) também deixa de fora os meses
+  sem a folga. O cartão explica o mês num `<details>` fechado ("Por que jul/2026?"): último mês com as três
+  partes (e o que falta no seguinte, ou que a folha dele ainda não saiu), meses completos mais novos com
+  notas ainda chegando, ou nenhum mês com a folga. O mês muda a cada atualização dos dados. Sem mês completo, cada parte aparece com os próprios meses e não há
   total. O comparativo de políticos continua com a média.
 - **Mês a mês (Ver mais):** cada parte com valor ou motivo; "Total parcial — remuneração não identificada"
   quando falta uma parte, sem trocar pelo subsídio tabelado.

@@ -5,25 +5,78 @@ gabinete, nos meses com as quatro partes. Senado: despesas identificadas (``sena
 banco): remuneração, equipe do gabinete e cota, média de cada parte sobre os meses com as três, somadas,
 como no cartão da ficha (``frontend/scripts/profile-senate-cost.js``).
 
+Nas duas Casas, só entram meses com as notas da cota já assentadas: 3 meses de folga até a fotografia do
+banco (``snapshotAt``), como ``PROFILE_COST_SETTLE_MONTHS`` em ``frontend/scripts/profile-cost.js``. Sem
+nenhum mês com a folga, valem todos (a ficha avisa). O snapshot da Câmara não muda: a média é refeita aqui
+sobre os meses assentados, com a mesma conta de ``principal`` em ``ingest/mandate_cost_composition.py``.
+
 As duas Casas não publicam as mesmas partes: os valores servem para ordenar e comparar dentro da mesma
 Casa, nunca entre Câmara e Senado. Sem mês com todas as partes, não há custo (nunca estimado).
 """
 from __future__ import annotations
 
+import math
+import re
 import threading
+from fractions import Fraction
 
 from . import config, profiles
+
+SETTLE_MONTHS = 3
+_PARTS = ('remuneration', 'allowances', 'quota', 'office')
 
 _lock = threading.Lock()
 _cache: dict = {}
 
 
-def _chamber(snapshot):
+def _serial(period):
+    return int(period[:4]) * 12 + int(period[5:7]) - 1
+
+
+def settled_periods(periods, as_of):
+    """Meses com as notas da cota assentadas (3 meses de folga até ``as_of``); sem nenhum, todos, em ordem."""
+    ordered = sorted({period for period in periods if isinstance(period, str) and re.fullmatch(r'\d{4}-\d{2}', period)})
+    reference = as_of[:7] if isinstance(as_of, str) and re.match(r'\d{4}-\d{2}', as_of) else None
+    settled = [period for period in ordered if reference is None or _serial(reference) - _serial(period) >= SETTLE_MONTHS]
+    return settled or ordered
+
+
+def _cents(value):
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def chamber_average(record, as_of):
+    """(centavos, meses) da média do mandato na Câmara sobre os meses assentados, ou None.
+
+    Soma das médias de cada parte, arredondada para baixo uma vez; numa lacuna confirmada, a parte é média só
+    dos meses em que foi publicada. Sem mês fora, vale ``monthlyAverageCents`` do snapshot.
+    """
+    if not isinstance(record, dict) or not _cents(record.get('monthlyAverageCents')):
+        return None
+    used = settled_periods(record.get('usedMonths') or [], None)
+    if not used:
+        return None
+    periods = settled_periods(used, as_of)
+    months = record.get('months')
+    if len(periods) == len(used) or not isinstance(months, dict):
+        return record['monthlyAverageCents'], used
+    total = Fraction(0)
+    for part in _PARTS:
+        values = [value for value in (((months.get(period) or {}).get('valuesCents') or {}).get(part) for period in periods)
+                  if _cents(value)]
+        if not values:
+            return None
+        total += Fraction(sum(values), len(values))
+    return math.floor(total), periods
+
+
+def _chamber(snapshot, as_of=None):
     out = {}
     for identifier, record in ((snapshot or {}).get('profiles') or {}).items():
-        if (isinstance(record, dict) and record.get('house') == 'camara' and record.get('id') == identifier
-                and isinstance(record.get('monthlyAverageCents'), int) and record.get('usedMonths')):
-            out[identifier] = {'house': 'camara', 'cents': record['monthlyAverageCents'], 'months': len(record['usedMonths'])}
+        if isinstance(record, dict) and record.get('house') == 'camara' and record.get('id') == identifier:
+            average = chamber_average(record, as_of)
+            if average:
+                out[identifier] = {'house': 'camara', 'cents': average[0], 'months': len(average[1])}
     return out
 
 
@@ -31,16 +84,17 @@ def _floor_average(values):
     return sum(values) // len(values)
 
 
-def _senate(snapshot, quota_by_month):
+def _senate(snapshot, quota_by_month, as_of=None):
     out = {}
     for identifier, record in ((snapshot or {}).get('profiles') or {}).items():
         if not isinstance(record, dict) or record.get('id') != identifier:
             continue
-        complete = []
+        complete = {}
         for period, month in (record.get('months') or {}).items():
             quota = quota_by_month.get((identifier, period))
             if isinstance(month.get('remunerationCents'), int) and isinstance(month.get('officeCents'), int) and quota is not None:
-                complete.append((month['remunerationCents'], month['officeCents'], quota))
+                complete[period] = (month['remunerationCents'], month['officeCents'], quota)
+        complete = [complete[period] for period in settled_periods(complete, as_of)]
         if complete:
             # Média de cada parte sobre os mesmos meses, arredondada para baixo, e a soma das três (como no cartão).
             cents = sum(_floor_average([values[i] for values in complete]) for i in range(3))
@@ -66,7 +120,8 @@ def monthly_costs(db, snapshots_path=None):
     with _lock:
         if _cache.get('key') == key:
             return _cache['value']
-    value = {**_chamber(chamber), **(_senate(senate, _senate_quota(db)) if senate else {})}
+    as_of = stamp[0] if stamp else None
+    value = {**_chamber(chamber, as_of), **(_senate(senate, _senate_quota(db), as_of) if senate else {})}
     with _lock:
         _cache.update(key=key, value=value)
     return value

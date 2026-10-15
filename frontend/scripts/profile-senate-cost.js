@@ -51,7 +51,7 @@ function senateCostMonthList(periods) {
   });
   return runs.map(([from, to]) => from === to ? profileCostLabel(from) : `${profileCostLabel(from)}–${profileCostLabel(to)}`).join(', ');
 }
-/* O mês mais recente com as três partes e a cota madura (mesma regra da Câmara, `profileCostPickMonth`). */
+/* O mês mais recente com as três partes e as notas da cota assentadas (mesma regra da Câmara, `profileCostPickMonth`). */
 function senateCostLatest(months, asOf) {
   const complete = months.filter(month => month.complete);
   const pick = profileCostPickMonth(complete.map(month => month.period), asOf);
@@ -59,10 +59,27 @@ function senateCostLatest(months, asOf) {
   if (!month) return null;
   return { ...pick, month, cents: SENATE_COST_PARTS.reduce((sum, [key]) => sum + month.parts[key], 0) };
 }
+/* Meses da média: os com as três partes e as notas da cota assentadas (mesma regra da Câmara). */
+function senateCostAverageMonths(months, asOf) {
+  const complete = months.filter(month => month.complete);
+  const periods = new Set(profileCostSettledPeriods(complete.map(month => month.period), asOf));
+  return complete.filter(month => periods.has(month.period));
+}
+/* O que falta no mês seguinte ao último com as três partes. Depois do fim do recorte, a folha do mês ainda não saiu. */
+function senateCostNextGap(cost, months, period) {
+  const next = profileCostNextPeriod(period), label = profileCostLabel(next);
+  const month = months.find(item => item.period === next);
+  if (!month) {
+    if (cost?.periodEnd && next > cost.periodEnd) return `O Senado ainda não publicou a folha de ${label}.`;
+    return cost?.months?.[next]?.exercise === 'fora' ? `Em ${label}, estava fora do exercício.` : '';
+  }
+  const missing = SENATE_COST_PARTS.filter(([key]) => month.parts[key] === null).map(([, partLabel]) => profileCostLowerFirst(partLabel));
+  return missing.length ? `Em ${label}, ${missing.length === 1 ? 'falta' : 'faltam'} ${profileCostJoin(missing)}.` : '';
+}
 const senateCostAverage = values => values.length ? Math.floor(values.reduce((sum, value) => sum + value, 0) / values.length) : null;
 
 function senateCostAnswer(cost, profileRecord) {
-  const months = senateCostMonths(cost, profileRecord), complete = months.filter(month => month.complete);
+  const months = senateCostMonths(cost, profileRecord), complete = senateCostAverageMonths(months, profileRecord?.snapshotAt);
   const range = cost?.periodStart && cost?.periodEnd ? `${profileCostLabel(cost.periodStart)}–${profileCostLabel(cost.periodEnd)}` : '';
   const ownOffice = Boolean(cost?.office);
   const sourceRows = (Array.isArray(cost?.sources) ? cost.sources : []).filter(source => profileSafeUrl(source?.url))
@@ -93,8 +110,8 @@ function senateCostAnswer(cost, profileRecord) {
     principal = `<div class="profile-cost-total"><span>Somou</span><b class="mono">${esc(profileCostShort(latest.cents))}</b><span>em ${esc(profileCostLabel(latest.period))}</span></div>
       <p class="citizen-cost-exact">Valor exato: <span class="mono">${esc(profileCostMoney(latest.cents))}</span>, a soma das três partes abaixo</p>
       ${profileCostStackedComposition(values, latest.cents, SENATE_COST_PARTS.map(([, label]) => label))}
-      ${profileCostSettleNote(latest)}
-      <p class="citizen-cost-period">Média: <span class="mono">${esc(profileCostMoney(average))}</span> por mês, ${complete.length} ${complete.length === 1 ? 'mês' : 'meses'} com as três partes identificadas, de ${months.length} no recorte (${esc(range)}): ${esc(senateCostMonthList(complete.map(month => month.period)))}</p>`;
+      ${profileCostWhyMonth(latest, latest.settled && !latest.later.length ? senateCostNextGap(cost, months, latest.period) : '')}
+      <p class="citizen-cost-period">Média: <span class="mono">${esc(profileCostMoney(average))}</span> por mês, ${complete.length} ${complete.length === 1 ? 'mês' : 'meses'} com as três partes identificadas${latest.settled ? ' e as notas da cota já assentadas' : ''}, de ${months.length} no recorte (${esc(range)}): ${esc(senateCostMonthList(complete.map(month => month.period)))}</p>`;
   } else {
     /* Sem mês completo: cada parte com os próprios meses, sem total. */
     const averages = SENATE_COST_PARTS.map(([key]) => {
@@ -152,6 +169,7 @@ function senateCostDetails(cost, profileRecord) {
   return `<section class="citizen-detail-part citizen-cost-details"><h3 class="k">Despesas identificadas mês a mês · Senado</h3>
     <p class="muted">Remuneração bruta do(a) senador(a) e da equipe comissionada do gabinete na folha do Senado, mais a cota parlamentar. Não compare com o custo de deputados(as): o Senado e a Câmara não publicam as mesmas partes. Folha suplementar (13º, férias), auxílios e servidores efetivos lotados no gabinete ficam fora. Valores da época, sem correção pela inflação.</p>
     <p class="muted">Remuneração: a linha de senador(a) da folha normal no gabinete com o nome da pessoa, no arquivo mensal de remuneração do Senado, que não traz nome nem identificador; a ligação é pelo nome do gabinete, conferida. Equipe: soma bruta dos comissionados desse gabinete. Cota: notas de reembolso do mês. Mês em exercício segundo o histórico de exercício do Senado${exerciseUrl ? ` (<a href="${esc(exerciseUrl)}" target="_blank" rel="noopener">conferir ↗</a>)` : ''}. Sem dado não é zero: cada lacuna diz o motivo.</p>
+    ${PROFILE_COST_MONTH_RULE}
     ${rows ? `<div class="citizen-cost-months">${rows}</div>` : '<p class="muted">Sem meses no recorte.</p>'}
   </section>`;
 }
@@ -177,10 +195,11 @@ function senateOfficeHTML(cost) {
     ${url ? `<span class="src">Folha de ${esc(profileCostLabel(latestPeriod))}. <a href="${esc(url)}" target="_blank" rel="noopener">Fonte do Senado ↗</a></span>` : ''}`;
 }
 
-/* Números do Senado para o comparativo, com as mesmas regras do cartão: total só dos meses com as três partes;
+/* Números do Senado para o comparativo, com as mesmas regras do cartão: total só dos meses com as três partes e
+   as notas da cota assentadas;
    remuneração e equipe pela média dos meses em que cada uma foi identificada. */
 function senateCostFigures(cost, profileRecord) {
-  const months = senateCostMonths(cost, profileRecord), complete = months.filter(month => month.complete);
+  const months = senateCostMonths(cost, profileRecord), complete = senateCostAverageMonths(months, profileRecord?.snapshotAt);
   const partAverage = key => {
     const values = months.filter(month => month.parts[key] !== null).map(month => month.parts[key]);
     return values.length ? { cents: senateCostAverage(values), months: values.length } : null;

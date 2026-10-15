@@ -51,7 +51,7 @@ function comparison(a, b) {
   context.profileHref = id => /^camara:\d+$/.test(String(id)) ? `/deputado/${String(id).slice(7)}` : /^senado:\d+$/.test(String(id)) ? `/senador/${String(id).slice(7)}` : null;
   context.profileLinkOpen = (id, className) => context.profileHref(id) ? `<a class="${className}" href="${context.profileHref(id)}" data-politician="${id}">` : `<button type="button" class="${className}" data-politician="${id}">`;
   context.profileLinkClose = id => context.profileHref(id) ? '</a>' : '</button>';
-  vm.runInContext(fs.readFileSync(path.join(__dirname, '../frontend/scripts/dates.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '../frontend/scripts/extras-view.js'), 'utf8') +
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../frontend/scripts/dates.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '../frontend/scripts/profile-cost.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '../frontend/scripts/extras-view.js'), 'utf8') +
     '\nthis.__api = { extrasState, comparisonTable, comparisonShareCard, searchComparisonPeople, comparisonPickerList, comparisonView, taxCard, taxWidget, taxTick, voteRowsForItem, votesForPerson, attendanceForPerson, attendanceRows, attendanceBar, attendanceView, comparisonPersonCard, profileExtras };', context);
   return { html: context.__api.comparisonTable([a, b]), api: context.__api, context, senate };
 }
@@ -181,10 +181,16 @@ test('profile comparison adds neutral availability and mandate details without r
   }
 });
 
+/* Meses do mandato a partir de fev/2023, no formato do snapshot. */
+const mandatePeriods = count => Array.from({ length: count }, (_, index) => {
+  const serial = 2023 * 12 + 1 + index;
+  return `${Math.floor(serial / 12)}-${String(serial % 12 + 1).padStart(2, '0')}`;
+});
+
 test('deputy and senator costs sit side by side with their composition and no highlight', () => {
   const { api, context } = comparison(profile('camara:1', 24000), profile('senado:70', 27000));
   context.profileData = value => value.id === 'camara:1'
-    ? { id: value.id, person: value, cost: { monthlyAverageCents: 18828630, usedMonths: Array(42).fill('x'),
+    ? { id: value.id, person: value, cost: { monthlyAverageCents: 18828630, usedMonths: mandatePeriods(42),
         parts: { remuneration: { averageCents: 4411268, months: Array(42).fill('2026-01') }, office: { averageCents: 12636486, months: 41 } } } }
     : { id: value.id, person: value, senateCost: { months: {} } };
   context.senateCostFigures = () => ({ total: { cents: 37586984, months: 43 }, remuneration: { cents: 4428269, months: 44 }, office: { cents: 30413582, months: 44 }, officePeople: 21 });
@@ -446,9 +452,20 @@ test('tax counter rejects malformed or non-current federal periods', () => {
   assert.equal(api.taxWidget(now), null);
 });
 
+test('deputy cost in the comparison leaves out months whose quota still receives notes', () => {
+  const { api, context } = comparison(profile('camara:1', 100), profile('camara:2', 100));
+  const values = quota => ({ remuneration: 4636619, allowances: 0, quota, office: 15000000 });
+  const months = { '2026-06': { valuesCents: values(3000000) }, '2026-07': { valuesCents: values(3000000) }, '2026-08': { valuesCents: values(600000) } };
+  context.profileData = value => ({ id: value.id, person: value, cost: { monthlyAverageCents: 21836619, usedMonths: Object.keys(months), months, parts: {} } });
+  const person = id => ({ ...profile(id, 100), pessoa: { id, name: id, role: 'deputado' }, snapshotAt: '2026-10-13T03:17:32+00:00' });
+  const row = api.comparisonTable([person('camara:1'), person('camara:2')]).split('\n').find(line => line.includes('Custa por mês · Câmara'));
+  // Só jun e jul: 46.366,19 + 150.000 + 30.000; ago ainda recebe notas.
+  assert.match(row, /R\$ 226366\.19<\/b><small> \/mês · média de 2 meses/);
+});
+
 test('share card for two deputies tags only who costs less and who attended more, never alerts', () => {
   const { api, context } = comparison(profile('camara:1', 100), profile('camara:2', 100));
-  context.profileData = value => ({ id: value.id, person: value, cost: { monthlyAverageCents: value.id === 'camara:1' ? 19315614 : 21836534, usedMonths: Array(40).fill('x'), parts: {} } });
+  context.profileData = value => ({ id: value.id, person: value, cost: { monthlyAverageCents: value.id === 'camara:1' ? 19315614 : 21836534, usedMonths: mandatePeriods(40), parts: {} } });
   context.DATA.presencaTodos = [{ id: 1, dias: 361, presente: 333, falta: 2, justificadas: 26 }, { id: 2, dias: 391, presente: 374, falta: 5, justificadas: 12 }];
   context.chamberPairAgreement = () => 0.74;
   const person = (id, name, extra) => ({ ...profile(id, 100), pessoa: { id, name, role: 'deputado', party: 'ABC', uf: 'SP' },

@@ -745,7 +745,11 @@ test('senate cost card shows the latest complete month, with the average of comp
   assert.match(html, /<span>Somou<\/span><b class="mono">R\$ 266 mil<\/b><span>em ago\/2026<\/span>/);
   assert.match(html, /Valor exato: <span class="mono">R\$\s?266\.366,19<\/span>, a soma das três partes abaixo/);
   // média de jul e ago: (386.366,19 + 266.366,19) / 2
-  assert.match(html, /Média: <span class="mono">R\$\s?326\.366,19<\/span> por mês, 2 meses com as três partes identificadas, de 3 no recorte/);
+  assert.match(html, /Média: <span class="mono">R\$\s?326\.366,19<\/span> por mês, 2 meses com as três partes identificadas e as notas da cota já assentadas, de 3 no recorte/);
+  // Set não tem a remuneração; o "Por que" diz o que falta no mês seguinte.
+  assert.match(html, /data-cost-why="latest-complete"><summary>Por que ago\/2026\?<\/summary>/);
+  assert.match(html, /Ago\/2026 é o mês mais recente com todas as partes publicadas\. Em set\/2026, falta remuneração do\(a\) senador\(a\)\./);
+  assert.match(api.senateCostDetails(senateFixture(), senateQuota), /Qual mês aparece no “Quanto custa\?”:<\/b> o mais recente com todas as partes publicadas e com 3 meses de folga/);
   assert.match(html, /data-cost-part="remuneration">[\s\S]*?R\$\s?46\.366,19<\/b>/);
   assert.match(html, /data-cost-part="office">[\s\S]*?R\$\s?200\.000,00<\/b>/);
   assert.doesNotMatch(html, /<small>\/mês|reajustes do subsídio/);
@@ -753,14 +757,27 @@ test('senate cost card shows the latest complete month, with the average of comp
   assert.doesNotMatch(html, /Custa em média|custo do mandato/);
 });
 
-test('senate cost card skips months whose quota may still receive notes', () => {
+test('senate cost card skips months whose quota may still receive notes, in the month and in the average', () => {
   const { api } = makeView();
   const settled = api.senateCostAnswer(senateFixture(), { ...senateQuota, snapshotAt: '2026-10-13T03:17:32+00:00' });
   assert.match(settled, /R\$ 386 mil<\/b><span>em jul\/2026/);
-  assert.match(settled, /Ago\/2026 fica fora do número principal: a cota desses meses ainda recebe notas/);
+  assert.match(settled, /data-cost-why="quota-settling"><summary>Por que jul\/2026\?<\/summary>/);
+  assert.match(settled, /Ago\/2026 já tem todas as partes publicadas, mas a cota desse mês ainda tem notas chegando\. Jul\/2026 é o mês mais recente com as notas já assentadas\./);
+  // A média fica só com jul: ago ainda recebe notas.
+  assert.match(settled, /Média: <span class="mono">R\$\s?386\.366,19<\/span> por mês, 1 mês com as três partes identificadas e as notas da cota já assentadas, de 3 no recorte \([^)]*\): jul\/2026/);
   assert.match(settled, /Folha de jul\/2026 ↗/);
   const early = api.senateCostAnswer(senateFixture(), { ...senateQuota, snapshotAt: '2026-09-01' });
-  assert.match(early, /em ago\/2026[\s\S]*A cota de ago\/2026 ainda pode receber notas; o valor pode subir/);
+  assert.match(early, /em ago\/2026[\s\S]*data-cost-why="none-settled"[\s\S]*Ago\/2026 é o mais recente com todas as partes, mas a cota dele ainda tem notas chegando: o valor pode subir\./);
+  assert.match(early, /2 meses com as três partes identificadas, de 3/);
+});
+
+test('senate "Por que <mês>?" says when the next payroll is not published yet', () => {
+  const { api } = makeView();
+  const cost = senateFixture();
+  cost.months['2026-09'] = { ...cost.months['2026-08'] };
+  cost.periodEnd = '2026-09';
+  const html = api.senateCostAnswer(cost, { ...senateQuota, snapshotAt: '2026-12-20' });
+  assert.match(html, /Set\/2026 é o mês mais recente com todas as partes publicadas\. O Senado ainda não publicou a folha de out\/2026\./);
 });
 
 test('senate monthly history shows partial totals and the reason for each gap', () => {

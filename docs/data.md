@@ -567,14 +567,27 @@ exercício em 15/09/2026; janeiro–julho fica fora do mandato. Afastamentos e r
 não são substituídos pela duração nominal da legislatura.
 
 `mandate-cost.json` serve apenas a ficha da Câmara, via `mandateCost` em
-`/api/c/perfil/<id>`. A ficha mostra como principal o mês mais recente de `usedMonths`
-com a cota madura, com as partes daquele mês, que somam o total; a média mensal do
-mandato vem logo abaixo, como contexto. A cota de um mês continua recebendo notas por
-semanas (em out/2026, a de setembro estava em cerca de 20% do normal e a de julho perto
-de 90%), então o mês só vira o principal com 3 meses de folga até a data das notas
-importadas (`snapshotAt`); os meses mais novos ficam fora do principal e a ficha diz
-quais. Sem nenhum mês com folga, vale o mais recente, com o aviso de que a cota ainda
-pode subir. A média continua com todos os meses de `usedMonths`. A média usa os meses em
+`/api/c/perfil/<id>`. A ficha mostra como principal um mês, com as partes daquele mês,
+que somam o total; a média mensal do mandato vem logo abaixo, como contexto.
+
+**Qual mês aparece no "Quanto custa?"** O mais recente de `usedMonths` (todas as partes
+publicadas no mês) com 3 meses de folga até `snapshotAt`, a data das notas importadas
+(`PROFILE_COST_SETTLE_MONTHS` em `frontend/scripts/profile-cost.js`). O motivo: as notas
+da cota entram semanas depois do gasto; na base de out/2026, a cota de setembro estava em
+cerca de 20% do normal e a de julho perto de 90%. Sem nenhum mês com a folga, vale o mais
+recente, com o aviso de que a cota ainda pode subir. O mês muda a cada atualização dos
+dados. Um `<details>` fechado ("Por que jul/2026?") logo abaixo do número diz o motivo do
+caso: (a) é o último mês com todas as partes, e o que falta no seguinte quando o snapshot
+permite saber (depois de `periodEnd` não há mês no snapshot: a Câmara ainda não publicou
+as quatro partes); (b) há meses completos mais novos com notas ainda chegando, citados; ou
+(c) nenhum mês tem a folga. O Senado usa a mesma regra e o mesmo texto.
+
+A média segue a mesma regra desde 15/10/2026 (decisão do dono): só entram meses com todas
+as partes e as notas já assentadas. O snapshot não muda (`monthlyAverageCents` continua
+sobre todo `usedMonths`); a ficha (`profileCostAverage`), a lista e a comparação
+(`backend/costs.py`, `chamber_average`) e a página para buscadores refazem a média sobre
+os meses assentados com a mesma conta de `principal`. Quando todos os meses têm a folga,
+o número é o do snapshot. A média usa os meses em
 exercício com as quatro partes no mesmo mês: remuneração bruta de todas as tabelas
 da página individual (sem o 13º), auxílios da folha, cota sem a categoria de
 complemento de moradia e gabinete. O 13º aparece à parte. Os valores permanecem
@@ -754,7 +767,8 @@ partir de fev/2023.
   "Mandato", o detalhe e as licenças por tipo.
 - **Lista de políticos:** o valor principal é o custo médio por mês da própria Casa, a média do mandato
   que o "Quanto custa?" da ficha mostra abaixo do mês mais recente (`backend/costs.py`): na Câmara, salário bruto, auxílios, cota e verba de gabinete nos
-  meses com as quatro partes; no Senado, remuneração, equipe do gabinete e cota nos meses com as três. A
+  meses com as quatro partes; no Senado, remuneração, equipe do gabinete e cota nos meses com as três; nas
+  duas, só meses com as notas da cota já assentadas (3 meses de folga até `snapshotAt`). A
   linha diz quantos meses entram na média e mostra a cota à parte. As Casas não publicam as mesmas partes:
   "Quem mais custa" com "Todos" mostra dois blocos (Câmara e Senado), cada um ordenado por dentro, e a
   barra e o "acima da média" comparam só com a mesma Casa. Sem mês com todas as partes, "Sem custo", sem

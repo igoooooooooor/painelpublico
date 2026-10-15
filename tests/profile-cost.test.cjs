@@ -56,7 +56,7 @@ test('principal shows the latest complete month, with the mandate average as con
   assert.match(html, /Média do mandato: <span class="mono">R\$\s?220\.619,19<\/span> por mês, jan\/2026–jul\/2026, 7 meses em exercício\./);
   assert.match(html, /Mês mais recente · Câmara · mandato 2023–2027/);
   assert.doesNotMatch(html, /Custa em média|\(média\)|<small>\/mês/);
-  assert.match(html, /Só entram meses com salário, auxílios, cota e verba de gabinete publicados\./);
+  assert.match(html, /Só entram meses com salário, auxílios, cota e verba de gabinete publicados e com as notas da cota já assentadas\./);
   assert.match(profileCostDetails(costFixture()), /13º salário em junho de 2026: <b class="mono">R\$\s?22\.709,97<\/b>/);
   assert.match(html, /data-profile-open="expenses">Como calculamos/);
   assert.doesNotMatch(html, /class="citizen-cost-note"|13º salário/);
@@ -102,14 +102,63 @@ test('a 13th salary paid in the latest month is shown apart from the sum', () =>
 test('the principal month needs three months of margin before the data snapshot', () => {
   const { profileCostAnswer, profileCostLatest } = load();
   assert.equal(profileCostLatest(latestFixture(), '2026-10-13T03:17:32+00:00').period, '2026-07');
-  assert.doesNotMatch(profileCostAnswer(latestFixture(), '2026-10-13'), /fica fora|ainda pode receber/);
   const earlier = profileCostAnswer(latestFixture(), '2026-09-20');
   assert.match(earlier, /<span>Custou<\/span><b class="mono">R\$ 221 mil<\/b><span>em jun\/2026/);
-  assert.match(earlier, /Jul\/2026 fica fora do número principal: a cota desses meses ainda recebe notas\./);
-  // A média do mandato continua com todos os meses com as quatro partes.
-  assert.match(earlier, /Média do mandato: <span class="mono">R\$\s?220\.619,19<\/span> por mês, jan\/2026–jul\/2026, 7 meses/);
+  // A média do mandato segue a mesma regra: jul ainda recebe notas e fica fora (jan–jun, todos iguais).
+  assert.match(earlier, /Média do mandato: <span class="mono">R\$\s?220\.619,19<\/span> por mês, jan\/2026–jun\/2026, 6 meses em exercício\. Só entram meses com salário, auxílios, cota e verba de gabinete publicados e com as notas da cota já assentadas\./);
+  assert.doesNotMatch(earlier, /fica fora do número principal|ainda pode receber notas/);
+});
+
+test('the mandate average leaves out months whose quota still receives notes', () => {
+  const { profileCostAverage } = load();
+  const cost = latestFixture();
+  // Sem mês fora, vale o número do snapshot.
+  assert.deepEqual(JSON.parse(JSON.stringify(profileCostAverage(cost, '2026-12-01'))), { cents: 22061919, months: PERIODS });
+  cost.months['2026-06'].valuesCents = { remuneration: 4636619, allowances: 425300, quota: 3000001, office: null };
+  cost.months['2026-06'].sourceGaps = ['office'];
+  // Até mai: cinco meses iguais, e o gabinete de jun (lacuna) não entraria de todo modo.
+  assert.equal(profileCostAverage(cost, '2026-08-31').cents, 22061919);
+  // Até jun: a cota tem 3000001 em um dos 6 meses (média 3000000,17) e o gabinete usa os 5 publicados.
+  assert.deepEqual(JSON.parse(JSON.stringify(profileCostAverage(cost, '2026-09-20'))), { cents: 22061919, months: PERIODS.slice(0, 6) });
+  assert.equal(profileCostAverage({ ...cost, monthlyAverageCents: null }, '2026-09-20'), null);
+});
+
+test('"Por que <mês>?" explains the month: last complete month, with what is missing next', () => {
+  const { profileCostAnswer } = load();
+  const html = profileCostAnswer(latestFixture(), '2026-10-13');
+  const why = html.match(/<details class="citizen-cost-notes profile-cost-why" data-cost-why="latest-complete">[\s\S]*?<\/details>/)[0];
+  assert.match(why, /<summary>Por que jul\/2026\?<\/summary>/);
+  assert.match(why, /Jul\/2026 é o mês mais recente com todas as partes publicadas\. A Câmara ainda não publicou todas as partes de ago\/2026\./);
+  assert.match(why, /As notas da cota chegam semanas depois do gasto, então um mês só aparece aqui com 3 meses de folga, quando as notas já estão assentadas\. O mês avança a cada atualização dos dados\./);
+  assert.doesNotMatch(why, /madur/i);
+  assert.doesNotMatch(why, / open/);
+  // Mês seguinte no snapshot, sem uma parte: diz qual falta.
+  const cost = latestFixture();
+  cost.usedMonths = PERIODS.slice(0, 6);
+  cost.months['2026-07'].valuesCents = { ...cost.months['2026-07'].valuesCents, office: null, remuneration: null };
+  cost.months['2026-07'].exclusionReasons = ['missing_parts'];
+  assert.match(profileCostAnswer(cost, '2026-10-13'), /Jun\/2026 é o mês mais recente com todas as partes publicadas\. Em jul\/2026, faltam verba do gabinete e salário bruto\./);
+  // Saiu do mandato no mês seguinte.
+  cost.months['2026-07'].exercise = 'outside_mandate';
+  assert.match(profileCostAnswer(cost, '2026-10-13'), /Em jul\/2026, não estava no mandato\./);
+});
+
+test('"Por que <mês>?" names newer complete months whose quota still receives notes', () => {
+  const { profileCostAnswer } = load();
+  const html = profileCostAnswer(latestFixture(), '2026-09-20');
+  assert.match(html, /data-cost-why="quota-settling"><summary>Por que jun\/2026\?<\/summary>/);
+  assert.match(html, /Jul\/2026 já tem todas as partes publicadas, mas a cota desse mês ainda tem notas chegando\. Jun\/2026 é o mês mais recente com as notas já assentadas\./);
+  const two = profileCostAnswer(latestFixture(), '2026-08-20');
+  assert.match(two, /Jun\/2026 e jul\/2026 já têm todas as partes publicadas, mas a cota desses meses ainda tem notas chegando\. Mai\/2026 é o mês mais recente/);
+});
+
+test('"Por que <mês>?" warns when no month has the margin yet', () => {
+  const { profileCostAnswer } = load();
   const recent = profileCostAnswer(costFixture({ used: ['2026-07'] }), '2026-08-05');
-  assert.match(recent, /em jul\/2026[\s\S]*A cota de jul\/2026 ainda pode receber notas; o valor pode subir\./);
+  assert.match(recent, /data-cost-why="none-settled"><summary>Por que jul\/2026\?<\/summary>/);
+  assert.match(recent, /Nenhum mês com todas as partes publicadas tem ainda as notas da cota assentadas\. Jul\/2026 é o mais recente com todas as partes, mas a cota dele ainda tem notas chegando: o valor pode subir\./);
+  // A média não promete notas assentadas quando nenhum mês tem a folga.
+  assert.match(recent, /verba de gabinete publicados\.<\/p>/);
 });
 
 test('non-consecutive months are listed instead of shown as a range', () => {

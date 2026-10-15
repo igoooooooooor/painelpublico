@@ -485,7 +485,8 @@ function comparisonCostFigures(f) {
     /* `months` vem como lista de períodos (snapshot expandido) ou como contagem. */
     const monthCount = value => Array.isArray(value) ? value.length : Number.isInteger(value) ? value : null;
     const withMonths = key => money(part(key)?.averageCents) && { cents: part(key).averageCents, months: monthCount(part(key).months) };
-    return { house, total: Number.isSafeInteger(profile.cost.monthlyAverageCents) ? { cents: profile.cost.monthlyAverageCents, months: (profile.cost.usedMonths || []).length } : null,
+    const average = typeof profileCostAverage === 'function' ? profileCostAverage(profile.cost, f.snapshotAt) : null;
+    return { house, total: average ? { cents: average.cents, months: average.months.length } : null,
       remuneration: withMonths('remuneration'), office: withMonths('office'), officePeople: null };
   }
   if (house === 'senado' && profile.senateCost && typeof senateCostFigures === 'function') return { house, ...senateCostFigures(profile.senateCost, f) };

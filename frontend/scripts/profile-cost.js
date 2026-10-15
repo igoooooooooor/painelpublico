@@ -126,16 +126,45 @@ function profileCostSettled(period, asOf) {
   const reference = /^\d{4}-\d{2}/.test(String(asOf || '')) ? String(asOf).slice(0, 7) : null;
   return !reference || profileCostSerial(reference) - profileCostSerial(period) >= PROFILE_COST_SETTLE_MONTHS;
 }
-/* O mês mais recente com a cota madura; se nenhum estiver, o mais recente, marcado como `settled: false`. */
+/* O mês mais recente com as notas da cota já assentadas; se nenhum tiver a folga, o mais recente, marcado como
+   `settled: false`. `later`: meses completos mais novos, cuja cota ainda recebe notas. */
 function profileCostPickMonth(periods, asOf) {
   const sorted = [...new Set(periods)].sort();
   const settled = sorted.filter(period => profileCostSettled(period, asOf)).at(-1);
   if (settled) return { period: settled, settled: true, later: sorted.filter(period => period > settled) };
   return sorted.length ? { period: sorted.at(-1), settled: false, later: [] } : null;
 }
+/* Meses que entram na média: os com as notas já assentadas; se nenhum tiver a folga, todos (o cartão avisa). */
+function profileCostSettledPeriods(periods, asOf) {
+  const sorted = [...new Set(periods)].sort();
+  const settled = sorted.filter(period => profileCostSettled(period, asOf));
+  return settled.length ? settled : sorted;
+}
 
-/* Mês mais recente com as quatro partes publicadas e a cota madura: o número principal da ficha. As partes
-   são as daquele mês, então o total é a soma das linhas. Parte vazia (lacuna confirmada na fonte) não vira zero. */
+/* Média do mandato sobre os meses com as quatro partes e as notas já assentadas. Mesma conta de `principal` em
+   ingest/mandate_cost_composition.py e de `chamber_average` em backend/costs.py: soma das médias de cada parte,
+   arredondada para baixo uma vez; numa lacuna confirmada, a parte é média só dos meses em que foi publicada.
+   Quando nenhum mês fica fora, vale o número do snapshot. */
+function profileCostAverage(cost, asOf) {
+  const used = profileCostPeriods(cost?.usedMonths);
+  if (!used.length || !profileCostInteger(cost?.monthlyAverageCents)) return null;
+  const months = profileCostSettledPeriods(used, asOf);
+  if (months.length === used.length || !cost.months || typeof cost.months !== 'object') return { cents: cost.monthlyAverageCents, months: used };
+  let numerator = 0n, denominator = 1n;
+  for (const [key] of PROFILE_COST_PARTS) {
+    const values = months.map(period => cost.months[period]?.valuesCents?.[key]).filter(profileCostInteger);
+    if (!values.length) return null;
+    const count = BigInt(values.length);
+    numerator = numerator * count + values.reduce((sum, value) => sum + BigInt(value), 0n) * denominator;
+    denominator *= count;
+  }
+  let cents = numerator / denominator;
+  if (numerator % denominator !== 0n && numerator < 0n) cents -= 1n;
+  return { cents: Number(cents), months };
+}
+
+/* Mês mais recente com as quatro partes publicadas e as notas da cota assentadas: o número principal da ficha. As
+   partes são as daquele mês, então o total é a soma das linhas. Parte vazia (lacuna confirmada na fonte) não vira zero. */
 function profileCostLatest(cost, asOf) {
   const pick = profileCostPickMonth(profileCostPeriods(cost?.usedMonths), asOf);
   const month = pick ? cost?.months?.[pick.period] : null;
@@ -147,13 +176,52 @@ function profileCostLatest(cost, asOf) {
   return { ...pick, month, parts, totalCents: known.reduce((sum, value) => sum + value, 0) };
 }
 
-/* Diz por que o número principal não é o último mês da série, ou que a cota dele ainda pode mudar. */
-function profileCostSettleNote(latest) {
+const profileCostNextPeriod = period => {
+  const serial = profileCostSerial(period) + 1;
+  return `${Math.floor(serial / 12)}-${String(serial % 12 + 1).padStart(2, '0')}`;
+};
+const profileCostJoin = items => items.length > 1 ? `${items.slice(0, -1).join(', ')} e ${items.at(-1)}` : items[0] || '';
+const profileCostCapitalize = text => text.charAt(0).toUpperCase() + text.slice(1);
+const profileCostLowerFirst = text => text.charAt(0).toLowerCase() + text.slice(1);
+
+/* O que falta no mês seguinte ao último com as quatro partes, quando o snapshot permite saber. Depois do fim
+   do período não há mês no snapshot: a Câmara ainda não publicou as quatro partes para nenhum deputado. */
+function profileCostNextGap(cost, period) {
+  const next = profileCostNextPeriod(period);
+  if (!PROFILE_COST_PERIODS.has(next)) return '';
+  const label = profileCostLabel(next);
+  const month = cost?.months?.[next];
+  if (!month || typeof month !== 'object') return `A Câmara ainda não publicou todas as partes de ${label}.`;
+  if (month.exercise === 'outside_mandate') return `Em ${label}, não estava no mandato.`;
+  const values = month.valuesCents && typeof month.valuesCents === 'object' ? month.valuesCents : {};
+  const gaps = new Set(Array.isArray(month.sourceGaps) ? month.sourceGaps : []);
+  const missing = PROFILE_COST_PARTS.filter(([key]) => !profileCostInteger(values[key]) && !gaps.has(key)).map(([, label]) => label.toLowerCase());
+  if (month.exercise === 'in_office' && missing.length) return `Em ${label}, ${missing.length === 1 ? 'falta' : 'faltam'} ${profileCostJoin(missing)}.`;
+  const reason = (Array.isArray(month.exclusionReasons) ? month.exclusionReasons : []).map(profileCostExclusionLabel).find(Boolean);
+  return reason ? `Em ${label}: ${profileCostLowerFirst(reason)}` : '';
+}
+
+/* "Por que <mês>?": diz por que o número principal é aquele mês. (a) é o último mês com todas as partes e `next`
+   diz o que falta no seguinte; (b) há meses completos mais novos, mas com notas da cota ainda chegando; (c) nenhum
+   mês tem a folga, e a cota do mês mostrado ainda pode subir. */
+function profileCostWhyMonth(latest, next = '') {
   if (!latest) return '';
-  if (!latest.settled) return `<p class="citizen-cost-period">A cota de ${esc(profileCostLabel(latest.period))} ainda pode receber notas; o valor pode subir.</p>`;
-  if (!latest.later.length) return '';
-  const list = profileCostMonthList(latest.later, { count: false });
-  return `<p class="citizen-cost-period">${esc(list.charAt(0).toUpperCase() + list.slice(1))} ${latest.later.length === 1 ? 'fica' : 'ficam'} fora do número principal: a cota desses meses ainda recebe notas.</p>`;
+  const label = profileCostLabel(latest.period);
+  let reason, kind;
+  if (!latest.settled) {
+    kind = 'none-settled';
+    reason = `Nenhum mês com todas as partes publicadas tem ainda as notas da cota assentadas. ${profileCostCapitalize(label)} é o mais recente com todas as partes, mas a cota dele ainda tem notas chegando: o valor pode subir.`;
+  } else if (latest.later.length) {
+    kind = 'quota-settling';
+    const one = latest.later.length === 1;
+    reason = `${profileCostCapitalize(profileCostJoin(latest.later.map(profileCostLabel)))} já ${one ? 'tem' : 'têm'} todas as partes publicadas, mas a cota ${one ? 'desse mês' : 'desses meses'} ainda tem notas chegando. ${profileCostCapitalize(label)} é o mês mais recente com as notas já assentadas.`;
+  } else {
+    kind = 'latest-complete';
+    reason = `${profileCostCapitalize(label)} é o mês mais recente com todas as partes publicadas.${next ? ` ${next}` : ''}`;
+  }
+  return `<details class="citizen-cost-notes profile-cost-why" data-cost-why="${kind}"><summary>Por que ${esc(label)}?</summary>
+    <p>${esc(reason)}</p>
+    <p>As notas da cota chegam semanas depois do gasto, então um mês só aparece aqui com ${PROFILE_COST_SETTLE_MONTHS} meses de folga, quando as notas já estão assentadas. O mês avança a cada atualização dos dados.</p></details>`;
 }
 
 /* Valor da parte: do mês mais recente (`perMonth` falso) ou a média das partes sem mês completo. */
@@ -199,7 +267,8 @@ function profileCostStackedComposition(parts, totalCents, labels) {
 }
 function profileCostAnswer(cost, asOf) {
   const used = profileCostPeriods(cost?.usedMonths);
-  const amount = profileCostMoney(cost?.monthlyAverageCents);
+  const average = profileCostAverage(cost, asOf);
+  const amount = average ? profileCostMoney(average.cents) : null;
   const hasPrincipal = used.length > 0 && amount !== null;
   const parts = cost?.parts && typeof cost.parts === 'object' ? cost.parts : {};
   const partOf = key => (parts[key] && typeof parts[key] === 'object' ? parts[key] : {});
@@ -220,9 +289,9 @@ function profileCostAnswer(cost, asOf) {
     principal = `<div class="profile-cost-total"><span>Custou</span><b class="mono">${esc(profileCostShort(totalCents))}</b><span>em ${esc(label)}</span></div>
       <p class="citizen-cost-exact">Valor exato: <span class="mono">${esc(profileCostMoney(totalCents))}</span>, a soma das quatro partes abaixo</p>
       ${profileCostStackedComposition(values, totalCents, PROFILE_COST_PARTS.map(([, partLabel]) => partLabel))}
-      ${profileCostSettleNote(latest)}
+      ${profileCostWhyMonth(latest, latest.settled && !latest.later.length ? profileCostNextGap(cost, period) : '')}
       ${christmas !== null ? `<p class="citizen-cost-extra">13º salário em ${esc(label)}: <b class="mono">${esc(christmas)}</b> <span>(fora da soma)</span></p>` : ''}
-      <p class="citizen-cost-period">Média do mandato: <span class="mono">${esc(amount)}</span> por mês, ${esc(profileCostMonthList(used))} em exercício. Só entram meses com salário, auxílios, cota e verba de gabinete publicados.</p>`;
+      <p class="citizen-cost-period">Média do mandato: <span class="mono">${esc(amount)}</span> por mês, ${esc(profileCostMonthList(average.months))} em exercício. Só entram meses com salário, auxílios, cota e verba de gabinete publicados${latest.settled ? ' e com as notas da cota já assentadas' : ''}.</p>`;
   } else if (profileCostAllOutside(cost)) {
     const end = profileCostEnd(cost);
     kicker = 'Custo do mandato';
@@ -246,6 +315,9 @@ function profileCostAnswer(cost, asOf) {
     <div class="profile-card-links"><button type="button" class="more" data-profile-open="expenses">Como calculamos e ver mês a mês →</button><button type="button" class="more" data-profile-open="sources">Fontes e datas →</button></div>
   </article>`;
 }
+
+/* "Qual mês aparece no Quanto custa?", no "Como calculamos" das duas Casas. */
+const PROFILE_COST_MONTH_RULE = `<p class="muted"><b>Qual mês aparece no “Quanto custa?”:</b> o mais recente com todas as partes publicadas e com ${PROFILE_COST_SETTLE_MONTHS} meses de folga até a data das notas importadas. As notas da cota entram semanas depois do gasto: na base de outubro de 2026, a cota de setembro estava em cerca de 20% do normal e a de julho, perto de 90%. Os meses mais novos ficam fora do número principal e da média até as notas assentarem. O mês muda a cada atualização dos dados.</p>`;
 
 const PROFILE_COST_GAP_LABELS = { office: 'a verba do gabinete' };
 
@@ -341,7 +413,8 @@ function profileCostDetails(cost) {
   return `<section class="citizen-detail-part citizen-cost-details"><h3 class="k">Custo do mandato mês a mês · ${esc(profileCostRange(cost))}</h3>
     ${profileCostChristmasLine(cost)}
     <p class="citizen-cost-note">Soma salário bruto, auxílios, cota parlamentar e verba do gabinete. Fichas de senadores(as) mostram as despesas do Senado à parte, com partes diferentes; os números não são comparáveis. Valores da época, sem correção pela inflação.${profileCostGapNote(cost)} Fora da conta: encargos do gabinete e apartamento funcional. Detalhes e fontes de cada mês em “Ver mais”.</p>
-    <p class="muted">Como calculamos: em cada mês em exercício, somamos a remuneração bruta de todas as tabelas da página individual (normal, complementares), os auxílios dessa mesma página, a cota parlamentar sem o complemento de moradia e a verba do gabinete. A média usa só os meses com as quatro partes publicadas; meses parciais não são estimados para o mês inteiro. Se a Câmara não publicou uma parte para ninguém naquele mês, o mês entra com essa parte vazia e a média dela usa os outros meses. O 13º fica à parte. Diárias e vantagens indenizatórias não entram. Valores da época, sem correção pela inflação, arredondados para baixo ao centavo.</p>
+    <p class="muted">Como calculamos: em cada mês em exercício, somamos a remuneração bruta de todas as tabelas da página individual (normal, complementares), os auxílios dessa mesma página, a cota parlamentar sem o complemento de moradia e a verba do gabinete. A média usa só os meses com as quatro partes publicadas e com as notas da cota já assentadas; meses parciais não são estimados para o mês inteiro. Se a Câmara não publicou uma parte para ninguém naquele mês, o mês entra com essa parte vazia e a média dela usa os outros meses. O 13º fica à parte. Diárias e vantagens indenizatórias não entram. Valores da época, sem correção pela inflação, arredondados para baixo ao centavo.</p>
+    ${PROFILE_COST_MONTH_RULE}
     ${complement}
     ${rows ? `<div class="citizen-cost-months">${rows}</div>` : '<p class="muted">Sem detalhes mensais disponíveis.</p>'}
     ${inventory}
