@@ -39,14 +39,23 @@ function costFixture({ used = PERIODS, exercise = 'in_office' } = {}) {
   };
 }
 
+/* Julho com valores diferentes da média, como o caso real que motivou o número principal do mês. */
+function latestFixture() {
+  const cost = costFixture();
+  cost.months['2026-07'].valuesCents = { remuneration: 4636619, allowances: 0, quota: 3370100, office: 16023700 };
+  return cost;
+}
+
 const JARGON = /competência|rubrica|folha complementar|livro original|composição/i;
 
-test('principal keeps the average and parts while linking to methodology in details', () => {
+test('principal shows the latest complete month, with the mandate average as context', () => {
   const { profileCostAnswer, profileCostDetails } = load();
-  const html = profileCostAnswer(costFixture());
-  assert.match(html, /Custa em média/);
-  assert.match(html, /R\$\s?220\.619,19/);
-  assert.match(html, /jan\/2026–jul\/2026, 7 meses/);
+  const html = profileCostAnswer(latestFixture());
+  assert.match(html, /<span>Custou<\/span><b class="mono">R\$ 240 mil<\/b><span>em jul\/2026<\/span>/);
+  assert.match(html, /Valor exato: <span class="mono">R\$\s?240\.304,19<\/span>, a soma das quatro partes abaixo/);
+  assert.match(html, /Média do mandato: <span class="mono">R\$\s?220\.619,19<\/span> por mês, jan\/2026–jul\/2026, 7 meses em exercício\./);
+  assert.match(html, /Mês mais recente · Câmara · mandato 2023–2027/);
+  assert.doesNotMatch(html, /Custa em média|\(média\)|<small>\/mês/);
   assert.match(html, /Só entram meses com salário, auxílios, cota e verba de gabinete publicados\./);
   assert.match(profileCostDetails(costFixture()), /13º salário em junho de 2026: <b class="mono">R\$\s?22\.709,97<\/b>/);
   assert.match(html, /data-profile-open="expenses">Como calculamos/);
@@ -57,6 +66,50 @@ test('principal keeps the average and parts while linking to methodology in deta
   assert.match(html, /remuneracao-deputado-detalhado\?mesAno=072026/);
   assert.doesNotMatch(html, /pelo menos/);
   assert.doesNotMatch(html, JARGON);
+});
+
+test('the rows are the parts of that same month and add up to the total', () => {
+  const { profileCostAnswer } = load();
+  const html = profileCostAnswer(latestFixture());
+  const row = key => html.match(new RegExp(`data-cost-part="${key}">[\\s\\S]*?<b class="mono">([^<]*)<`))[1];
+  assert.match(row('remuneration'), /R\$\s?46\.366,19/);
+  assert.match(row('office'), /R\$\s?160\.237,00/);
+  assert.match(row('quota'), /R\$\s?33\.701,00/);
+  assert.match(row('allowances'), /R\$\s?0,00/);
+  const cents = text => Number(text.replace(/[^\d]/g, ''));
+  assert.equal(['remuneration', 'office', 'quota', 'allowances'].reduce((sum, key) => sum + cents(row(key)), 0), 24030419);
+  assert.match(html, /Ver as notas de jul\/2026/);
+});
+
+test('a confirmed gap in the latest month stays out of the sum and is never shown as zero', () => {
+  const { profileCostAnswer } = load();
+  const cost = latestFixture();
+  cost.months['2026-07'].valuesCents.office = null;
+  cost.months['2026-07'].sourceGaps = ['office'];
+  const html = profileCostAnswer(cost);
+  assert.match(html, /data-cost-part="office">[\s\S]*?Não publicado pela Câmara/);
+  assert.match(html, /R\$\s?80\.067,19/);
+});
+
+test('a 13th salary paid in the latest month is shown apart from the sum', () => {
+  const { profileCostAnswer } = load();
+  const cost = costFixture({ used: PERIODS.slice(0, 6) });
+  const html = profileCostAnswer(cost);
+  assert.match(html, /em jun\/2026/);
+  assert.match(html, /13º salário em jun\/2026: <b class="mono">R\$\s?22\.709,97<\/b> <span>\(fora da soma\)/);
+});
+
+test('the principal month needs three months of margin before the data snapshot', () => {
+  const { profileCostAnswer, profileCostLatest } = load();
+  assert.equal(profileCostLatest(latestFixture(), '2026-10-13T03:17:32+00:00').period, '2026-07');
+  assert.doesNotMatch(profileCostAnswer(latestFixture(), '2026-10-13'), /fica fora|ainda pode receber/);
+  const earlier = profileCostAnswer(latestFixture(), '2026-09-20');
+  assert.match(earlier, /<span>Custou<\/span><b class="mono">R\$ 221 mil<\/b><span>em jun\/2026/);
+  assert.match(earlier, /Jul\/2026 fica fora do número principal: a cota desses meses ainda recebe notas\./);
+  // A média do mandato continua com todos os meses com as quatro partes.
+  assert.match(earlier, /Média do mandato: <span class="mono">R\$\s?220\.619,19<\/span> por mês, jan\/2026–jul\/2026, 7 meses/);
+  const recent = profileCostAnswer(costFixture({ used: ['2026-07'] }), '2026-08-05');
+  assert.match(recent, /em jul\/2026[\s\S]*A cota de jul\/2026 ainda pode receber notas; o valor pode subir\./);
 });
 
 test('non-consecutive months are listed instead of shown as a range', () => {

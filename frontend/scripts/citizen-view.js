@@ -503,22 +503,24 @@ function alertCoverageState(coverage) {
 }
 function profileSummaryCards(shared, profileRecord, alerts, hasExpenseData) {
   const person = shared.person, senate = person.role === 'senador';
-  let costLabel = 'Quanto custa?', costValue = 'Sem dados', costNote = 'Ausência de dado não significa gasto zero.';
+  let costLabel = 'Quanto custa?', costValue = 'Sem dados', costNote = 'Ausência de dado não significa gasto zero.', costUnit = '/mês';
   if (!senate && shared.cost) {
-    if (Array.isArray(shared.cost.usedMonths) && shared.cost.usedMonths.length > 0
-        && profileCostInteger(shared.cost.monthlyAverageCents)) {
-      costValue = profileCostShort(shared.cost.monthlyAverageCents);
-      costNote = `${profileCostMonthList(shared.cost.usedMonths)} · Câmara`;
+    const latest = Array.isArray(shared.cost.usedMonths) && shared.cost.usedMonths.length > 0
+      && profileCostInteger(shared.cost.monthlyAverageCents) ? profileCostLatest(shared.cost, profileRecord.snapshotAt) : null;
+    if (latest) {
+      costValue = profileCostShort(latest.totalCents);
+      costUnit = ` em ${PROFILE_COST_MONTHS[latest.period]}`;
+      costNote = `média ${profileCostShort(shared.cost.monthlyAverageCents)}/mês · ${profileCostMonthList(shared.cost.usedMonths)} · Câmara`;
     } else {
       costValue = 'Sem total';
       costNote = 'Não há mês com as quatro partes identificadas.';
     }
   } else if (senate && shared.senateCost) {
     const figures = senateCostFigures(shared.senateCost, profileRecord);
-    if (figures.total && profileCostInteger(figures.total.cents)) {
-      costValue = profileCostShort(figures.total.cents);
-      costLabel = 'Quanto custa?';
-      costNote = `${figures.total.months} ${figures.total.months === 1 ? 'mês' : 'meses'} com as três partes · Senado`;
+    if (figures.latest && figures.total && profileCostInteger(figures.total.cents)) {
+      costValue = profileCostShort(figures.latest.cents);
+      costUnit = ` em ${profileCostLabel(figures.latest.period)}`;
+      costNote = `média ${profileCostShort(figures.total.cents)}/mês · ${figures.total.months} ${figures.total.months === 1 ? 'mês' : 'meses'} com as três partes · Senado`;
     } else {
       costValue = 'Sem total';
       costLabel = 'Quanto custa?';
@@ -548,7 +550,7 @@ function profileSummaryCards(shared, profileRecord, alerts, hasExpenseData) {
     : coverage.evaluated ? 'Nenhum alerta nos períodos avaliados; não indicam irregularidade.' : 'Dados insuficientes para avaliar; alertas não indicam irregularidade.';
   const hasMonthlyCost = costValue !== 'Sem dados' && costValue !== 'Sem total';
   return `<nav class="profile-summary-grid" aria-label="Resumo da ficha">
-    <a class="card profile-summary-card" href="#profile-cost"><span class="k">${esc(costLabel)}</span><b class="mono">${esc(costValue)}${hasMonthlyCost ? '<small>/mês</small>' : ''}</b><small>${esc(costNote)}</small></a>
+    <a class="card profile-summary-card" href="#profile-cost"><span class="k">${esc(costLabel)}</span><b class="mono">${esc(costValue)}${hasMonthlyCost ? `<small>${esc(costUnit)}</small>` : ''}</b><small>${esc(costNote)}</small></a>
     <a class="card profile-summary-card" href="#profile-work"><span class="k">Aparece para trabalhar?</span><b class="mono">${esc(presenceValue)}${percentForSummary(shared) !== null ? '<small>presença</small>' : ''}</b><small>${esc(presenceNote)}</small></a>
     <a class="card profile-summary-card profile-summary-alert" href="#profile-alerts"><span class="k">Algum alerta na cota?</span><b class="mono">${esc(alertValue)}<small>${alerts.length || coverage.evaluated ? (alerts.length === 1 ? ' alerta' : ' alertas') : ''}</small></b><small>${esc(alertNote)}</small></a>
   </nav>`;
@@ -561,7 +563,7 @@ function profileCostPanel(shared, profileRecord, hasExpenseData) {
   const hasChamberTotal = person.role === 'deputado' && shared.cost
     && Array.isArray(shared.cost.usedMonths) && shared.cost.usedMonths.length > 0
     && profileCostInteger(shared.cost.monthlyAverageCents);
-  let composition = person.role === 'deputado' && shared.cost ? profileCostAnswer(shared.cost)
+  let composition = person.role === 'deputado' && shared.cost ? profileCostAnswer(shared.cost, profileRecord.snapshotAt)
     : person.role === 'senador' && shared.senateCost ? senateCostAnswer(shared.senateCost, profileRecord) : '';
   if (!composition) {
     const monthly = hasExpenseData && Number.isFinite(profileRecord.mediaMensal) ? profileRecord.mediaMensal : null;
@@ -577,7 +579,7 @@ function profileCostPanel(shared, profileRecord, hasExpenseData) {
   return `<section class="profile-area" id="profile-cost" aria-labelledby="profile-cost-title">
     <header class="profile-area-head"><h2 class="h" id="profile-cost-title">Quanto custa?</h2>
       <p>${person.role === 'senador' ? 'O Senado publica partes diferentes das da Câmara; os valores não são comparáveis.'
-        : hasChamberTotal ? 'A média soma as quatro partes nos meses em que todas foram publicadas. Valores da época, sem correção pela inflação.'
+        : hasChamberTotal ? 'O mês mais recente com as quatro partes publicadas e, abaixo, a média do mandato. Valores da época, sem correção pela inflação.'
           : shared.cost ? 'A média exige as quatro partes no mesmo mês. Sem um mês completo, não há total mensal.'
             : 'Só a cota parlamentar observada está disponível; não é o custo total mensal do mandato.'}</p>
     </header>
@@ -859,11 +861,12 @@ function profileExpenseDetails(f, hasExpenseData, cost = null, mandate = null) {
     ${f.maiores.map(m => `<${m.documentUrl ? `a href="${esc(m.documentUrl)}" target="_blank" rel="noopener"` : 'div'} class="item"><span class="mono muted" style="width:52px">${SHORT_MONTHS[m.month]}/${String(m.year).slice(2)}</span><span class="g"><span>${esc(citizenName(m.fornecedor || 'Fornecedor não informado'))}</span><span class="muted">${esc(m.categoria)}${m.documentUrl ? ' · ver nota ↗' : ''}</span></span><span class="mono" style="font-weight:700">${brl(m.valor)}</span></${m.documentUrl ? 'a' : 'div'}>`).join('')}
   </section>`;
 }
-/* A cota do custo do mandato usa só os meses com as quatro partes; esta média usa todos os meses com notas. */
+/* O custo do mandato mostra a cota do mês mais recente com as quatro partes; esta média usa todos os meses com notas. */
 function profileQuotaDifferenceNote(f, cost) {
-  const quota = cost?.parts?.quota?.usedMonthsAverageCents, used = Array.isArray(cost?.usedMonths) ? cost.usedMonths.length : 0;
-  if (!Number.isFinite(f.mediaMensal) || !Number.isSafeInteger(quota) || !used || Math.round(f.mediaMensal * 100) === quota) return '';
-  return `<p class="muted">No custo do mandato acima, a cota aparece como ${brl(quota / 100, 2)} por mês porque usa só os ${used} ${used === 1 ? 'mês' : 'meses'} com salário, auxílios, cota e gabinete publicados juntos. Aqui entram todos os ${f.periodo?.meses} meses com notas da cota; por isso os valores são diferentes.</p>`;
+  const latest = cost && typeof profileCostLatest === 'function' ? profileCostLatest(cost, f.snapshotAt) : null;
+  const quota = latest?.parts[PROFILE_COST_PARTS.findIndex(([key]) => key === 'quota')];
+  if (!Number.isFinite(f.mediaMensal) || !Number.isSafeInteger(quota) || Math.round(f.mediaMensal * 100) === quota) return '';
+  return `<p class="muted">No custo do mandato acima, a cota aparece com o valor de ${PROFILE_COST_MONTHS[latest.period]}, ${brl(quota / 100, 2)}. Aqui está a média dos ${f.periodo?.meses} meses com notas; por isso os valores são diferentes.</p>`;
 }
 /* Cartão para compartilhar: as mesmas três respostas da ficha, em números curtos. */
 /* Imagem de compartilhar da ficha (layout 'profile'): custo e partes, presença com a média da Casa, maior nota
@@ -871,20 +874,21 @@ function profileQuotaDifferenceNote(f, cost) {
 const PROFILE_SHARE_PART_NAMES = { office: 'Gabinete', remuneration: 'Salário', quota: 'Cota', allowances: 'Auxílios' };
 function profileShareCost(f, shared, hasExpenseData) {
   const senate = shared.person.role === 'senador', cost = shared.cost;
-  if (!senate && cost && profileCostPeriods(cost.usedMonths).length && profileCostInteger(cost.monthlyAverageCents)) {
-    const partOf = key => (cost.parts?.[key] && typeof cost.parts[key] === 'object' ? cost.parts[key] : {});
-    return { label: 'Custa em média por mês', value: profileCostShort(cost.monthlyAverageCents), exact: profileCostMoney(cost.monthlyAverageCents),
-      totalCents: cost.monthlyAverageCents,
-      parts: PROFILE_COST_PARTS.map(([key]) => ({ name: PROFILE_SHARE_PART_NAMES[key], cents: partOf(key).usedMonthsAverageCents })),
-      note: `Média de ${profileCostMonthList(cost.usedMonths)} em exercício. Salário, auxílios, cota e verba de gabinete.` };
+  const latest = !senate && cost && profileCostPeriods(cost.usedMonths).length && profileCostInteger(cost.monthlyAverageCents)
+    ? profileCostLatest(cost, f.snapshotAt) : null;
+  if (latest) {
+    return { label: `Custou em ${PROFILE_COST_MONTHS[latest.period]}`, value: profileCostShort(latest.totalCents), exact: profileCostMoney(latest.totalCents),
+      totalCents: latest.totalCents,
+      parts: PROFILE_COST_PARTS.map(([key], index) => ({ name: PROFILE_SHARE_PART_NAMES[key], cents: latest.parts[index] })),
+      note: `Média do mandato: ${profileCostShort(cost.monthlyAverageCents)} por mês (${profileCostMonthList(cost.usedMonths)}). Salário, auxílios, cota e verba de gabinete.` };
   }
   if (senate && shared.senateCost && typeof senateCostFigures === 'function') {
     const figures = senateCostFigures(shared.senateCost, f);
-    if (figures.total && profileCostInteger(figures.total.cents)) {
+    if (figures.latest && figures.total && profileCostInteger(figures.total.cents)) {
       const names = { remuneration: 'Remuneração', office: 'Gabinete', quota: 'Cota' };
-      return { label: 'Custa em média por mês', value: profileCostShort(figures.total.cents), exact: profileCostMoney(figures.total.cents),
-        totalCents: figures.total.cents, parts: figures.parts.map(part => ({ name: names[part.key], cents: part.cents })),
-        note: `${figures.total.months} ${figures.total.months === 1 ? 'mês' : 'meses'} com as três partes identificadas: remuneração, equipe do gabinete e cota.` };
+      return { label: `Despesas em ${profileCostLabel(figures.latest.period)}`, value: profileCostShort(figures.latest.cents), exact: profileCostMoney(figures.latest.cents),
+        totalCents: figures.latest.cents, parts: SENATE_COST_PARTS.map(([key]) => ({ name: names[key], cents: figures.latest.month.parts[key] })),
+        note: `Média: ${profileCostShort(figures.total.cents)} por mês em ${figures.total.months} ${figures.total.months === 1 ? 'mês' : 'meses'} com as três partes identificadas: remuneração, equipe do gabinete e cota.` };
     }
   }
   // Sem o custo completo: só a cota, que é o que há para a pessoa.

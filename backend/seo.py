@@ -131,6 +131,22 @@ def _chamber_presence(number):
     return row
 
 
+def _latest_cost_month(cost, as_of=None):
+    """(mês, centavos) do número principal da ficha: o mês mais recente com as quatro partes e 3 meses de
+    folga até a fotografia das notas (`profileCostPickMonth`); sem mês com folga, o mais recente."""
+    used = sorted(period for period in cost.get('usedMonths') or [] if isinstance(period, str))
+    if not used or not isinstance(cost.get('monthlyAverageCents'), int):
+        return None
+    serial = lambda period: int(period[:4]) * 12 + int(period[5:7])
+    reference = as_of[:7] if isinstance(as_of, str) and len(as_of) >= 7 and as_of[4] == '-' else None
+    settled = [period for period in used if reference is None or serial(reference) - serial(period) >= 3]
+    period = (settled or used)[-1]
+    values = ((cost.get('months') or {}).get(period) or {}).get('valuesCents') or {}
+    known = [values.get(key) for key in ('remuneration', 'allowances', 'quota', 'office')
+             if isinstance(values.get(key), int) and not isinstance(values.get(key), bool)]
+    return (period, sum(known)) if known else None
+
+
 def profile_facts(db, identifier):
     """Os números curtos das 3 respostas da ficha, ou None se a pessoa não estiver na base."""
     record = citizen.politician(db, identifier)
@@ -141,9 +157,14 @@ def profile_facts(db, identifier):
     # Na página, a data vai em dia/mês/ano, como no app.
     facts = {'person': person, 'snapshotAt': '/'.join(reversed(stamp.split('-'))) if stamp else '', 'lines': []}
     cost = (profiles.profile(identifier) or {}).get('mandateCost') or {}
-    if isinstance(cost.get('monthlyAverageCents'), int) and cost.get('usedMonths'):
-        facts['lines'].append(('Quanto custa', f'Custa em média {money_cents(cost["monthlyAverageCents"])} por mês '
-                               f'({month_range(cost["usedMonths"])}), somando salário bruto, auxílios, cota parlamentar e verba do gabinete, em valores da época.'))
+    latest = _latest_cost_month(cost, record.get('snapshotAt'))
+    if latest:
+        period, total = latest
+        # Os dois números antes da explicação: a descrição para buscadores corta em 160 caracteres.
+        facts['lines'].append(('Quanto custa', f'Custou {money_cents(total)} em {MONTHS[int(period[5:7])]}/{period[:4]}; '
+                               f'média do mandato de {money_cents(cost["monthlyAverageCents"])} por mês '
+                               f'({month_range(cost["usedMonths"])}). Soma salário bruto, auxílios, cota parlamentar '
+                               'e verba do gabinete, em valores da época.'))
     monthly = record.get('mediaMensal')
     if record.get('hasExpenseData') and monthly is not None:
         average = record.get('media')

@@ -2,7 +2,7 @@
 
 Site para entender, em linguagem simples, gastos, presença e votações de deputados(as) e senadores(as), sempre com link para a fonte oficial.
 
-- **Políticos**: ficha de cada parlamentar com custo médio do mandato (salário, auxílios, cota e verba de gabinete), notas da cota, presença e votos.
+- **Políticos**: ficha de cada parlamentar com o custo do mês mais recente e a média do mandato (salário, auxílios, cota e verba de gabinete), notas da cota, presença e votos.
 - **Placar**: votações nominais do texto principal no Plenário da Câmara e, dentro de cada uma, as decisões sobre trechos (destaques e emendas), com o que significava Sim e Não.
 - **Alertas**: registros da cota que merecem conferência, não conclusões de irregularidade.
 - **Comparar**: políticos ou partidos lado a lado, com imagem para compartilhar.

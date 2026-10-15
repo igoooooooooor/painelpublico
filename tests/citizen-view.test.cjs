@@ -643,15 +643,16 @@ test('a stale roster response cannot overwrite newer coverage counts', async () 
   assert.equal(elements['citizen-politician-summary'].innerHTML, summary);
 });
 
-test('deputy profile explains why the quota in the mandate cost differs from the quota average', () => {
+test('deputy profile explains why the latest-month quota in the mandate cost differs from the quota average', () => {
   const { api } = makeView();
   const profile = { pessoa: { id: 'camara:1', role: 'deputado' }, mediaMensal: 30243.22, periodo: { inicio: '2023-02', fim: '2026-09', meses: 41 } };
-  const cost = { usedMonths: Array.from({ length: 39 }, (_, i) => `p${i}`), parts: { quota: { usedMonthsAverageCents: 3114493 } } };
+  const cost = { usedMonths: ['2026-06', '2026-07'],
+    months: { '2026-07': { valuesCents: { remuneration: 4636619, allowances: 0, quota: 3370100, office: 16023700 } } } };
   const note = api.profileQuotaDifferenceNote(profile, cost);
-  assert.match(note, /31\.144,93 por mês porque usa só os 39 meses/);
-  assert.match(note, /todos os 41 meses com notas/);
+  assert.match(note, /a cota aparece com o valor de jul\/2026, R\$\s?33\.701,00/);
+  assert.match(note, /média dos 41 meses com notas/);
   assert.equal(api.profileQuotaDifferenceNote(profile, null), '');
-  assert.equal(api.profileQuotaDifferenceNote({ ...profile, mediaMensal: 31144.93 }, cost), '');
+  assert.equal(api.profileQuotaDifferenceNote({ ...profile, mediaMensal: 33701 }, cost), '');
 });
 
 test('senators whose mandate began before 2023 are told the quota counts from February 2023', () => {
@@ -736,19 +737,30 @@ function senateFixture() {
 }
 const senateQuota = { meses: [{ year: 2026, month: 7, valor: 40000 }, { year: 2026, month: 8, valor: 20000 }, { year: 2026, month: 9, valor: 30000 }] };
 
-test('senate cost card averages only months with all three parts and never compares with deputies', () => {
+test('senate cost card shows the latest complete month, with the average of complete months as context', () => {
   const { api } = makeView();
   const html = api.senateCostAnswer(senateFixture(), senateQuota);
-  assert.match(html, /Despesas identificadas · Senado/);
-  // jul e ago completos: (46.366,19 + 300.000 + 40.000 + 46.366,19 + 200.000 + 20.000) / 2
-  assert.match(html, /Em média<\/span><b class="mono">R\$ 326 mil<\/b>[\s\S]*Valor exato: <span class="mono">R\$\s?326\.366,19<\/span>/);
-  assert.match(html, /2 meses com as três partes identificadas, de 3 no recorte/);
-  assert.doesNotMatch(html, /reajustado/);  // mesmo subsídio nos meses da média
-  const raised = senateFixture();
-  raised.months['2026-07'].remunerationCents = 4400852;
-  assert.match(api.senateCostAnswer(raised, senateQuota), /Média do período, que inclui reajustes do subsídio\. Valor atual: R\$\s?46\.366,19, pago desde ago\/2026/);
+  assert.match(html, /Mês mais recente · Despesas identificadas · Senado/);
+  // ago é o último mês com as três partes: 46.366,19 + 200.000 + 20.000
+  assert.match(html, /<span>Somou<\/span><b class="mono">R\$ 266 mil<\/b><span>em ago\/2026<\/span>/);
+  assert.match(html, /Valor exato: <span class="mono">R\$\s?266\.366,19<\/span>, a soma das três partes abaixo/);
+  // média de jul e ago: (386.366,19 + 266.366,19) / 2
+  assert.match(html, /Média: <span class="mono">R\$\s?326\.366,19<\/span> por mês, 2 meses com as três partes identificadas, de 3 no recorte/);
+  assert.match(html, /data-cost-part="remuneration">[\s\S]*?R\$\s?46\.366,19<\/b>/);
+  assert.match(html, /data-cost-part="office">[\s\S]*?R\$\s?200\.000,00<\/b>/);
+  assert.doesNotMatch(html, /<small>\/mês|reajustes do subsídio/);
   assert.match(api.senateCostDetails(senateFixture(), senateQuota), /Não compare com o custo de deputados\(as\)/);
   assert.doesNotMatch(html, /Custa em média|custo do mandato/);
+});
+
+test('senate cost card skips months whose quota may still receive notes', () => {
+  const { api } = makeView();
+  const settled = api.senateCostAnswer(senateFixture(), { ...senateQuota, snapshotAt: '2026-10-13T03:17:32+00:00' });
+  assert.match(settled, /R\$ 386 mil<\/b><span>em jul\/2026/);
+  assert.match(settled, /Ago\/2026 fica fora do número principal: a cota desses meses ainda recebe notas/);
+  assert.match(settled, /Folha de jul\/2026 ↗/);
+  const early = api.senateCostAnswer(senateFixture(), { ...senateQuota, snapshotAt: '2026-09-01' });
+  assert.match(early, /em ago\/2026[\s\S]*A cota de ago\/2026 ainda pode receber notas; o valor pode subir/);
 });
 
 test('senate monthly history shows partial totals and the reason for each gap', () => {
@@ -771,7 +783,7 @@ test('senate absence says "not identified" unless the exercise history confirms 
   assert.doesNotMatch(september, /Fora do exercício/);
   const noOffice = api.senateCostAnswer({ ...cost, office: null, months: { '2026-09': { exercise: 'em_exercicio', remunerationCents: null, remunerationReason: 'sem_lotacao_propria', officeCents: null, officeReason: 'sem_lotacao_propria' } } }, senateQuota);
   assert.match(noOffice, /Sem gabinete com o próprio nome no arquivo de remuneração do Senado: remuneração e equipe não identificadas/);
-  assert.doesNotMatch(noOffice, /Em média/);
+  assert.doesNotMatch(noOffice, /Em média|Somou/);
 });
 
 test('profile shows how long the person has been in office without interruption', () => {

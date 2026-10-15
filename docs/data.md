@@ -567,7 +567,14 @@ exercício em 15/09/2026; janeiro–julho fica fora do mandato. Afastamentos e r
 não são substituídos pela duração nominal da legislatura.
 
 `mandate-cost.json` serve apenas a ficha da Câmara, via `mandateCost` em
-`/api/c/perfil/<id>`. O principal é a média mensal dos meses de janeiro–julho em
+`/api/c/perfil/<id>`. A ficha mostra como principal o mês mais recente de `usedMonths`
+com a cota madura, com as partes daquele mês, que somam o total; a média mensal do
+mandato vem logo abaixo, como contexto. A cota de um mês continua recebendo notas por
+semanas (em out/2026, a de setembro estava em cerca de 20% do normal e a de julho perto
+de 90%), então o mês só vira o principal com 3 meses de folga até a data das notas
+importadas (`snapshotAt`); os meses mais novos ficam fora do principal e a ficha diz
+quais. Sem nenhum mês com folga, vale o mais recente, com o aviso de que a cota ainda
+pode subir. A média continua com todos os meses de `usedMonths`. A média usa os meses em
 exercício com as quatro partes no mesmo mês: remuneração bruta de todas as tabelas
 da página individual (sem o 13º), auxílios da folha, cota sem a categoria de
 complemento de moradia e gabinete. O 13º aparece à parte. Os valores permanecem
@@ -745,8 +752,8 @@ partir de fev/2023.
   O Regimento (art. 13, § 2º) pede que quem está presente participe das votações nominais. As licenças vêm de
   `/senador/{codigo}/licencas`, desde fev/2023, com data e tipo. O cartão "Trabalha?" traz o resumo; a seção
   "Mandato", o detalhe e as licenças por tipo.
-- **Lista de políticos:** o valor principal é o custo médio por mês da própria Casa, o mesmo do "Quanto
-  custa?" da ficha (`backend/costs.py`): na Câmara, salário bruto, auxílios, cota e verba de gabinete nos
+- **Lista de políticos:** o valor principal é o custo médio por mês da própria Casa, a média do mandato
+  que o "Quanto custa?" da ficha mostra abaixo do mês mais recente (`backend/costs.py`): na Câmara, salário bruto, auxílios, cota e verba de gabinete nos
   meses com as quatro partes; no Senado, remuneração, equipe do gabinete e cota nos meses com as três. A
   linha diz quantos meses entram na média e mostra a cota à parte. As Casas não publicam as mesmas partes:
   "Quem mais custa" com "Todos" mostra dois blocos (Câmara e Senado), cada um ordenado por dentro, e a

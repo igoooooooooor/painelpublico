@@ -139,9 +139,11 @@ soma nem total novo que misture as composições.
   que junta o histórico de exercício de cada senador(a) na API do Senado (cache em
   `data/raw/senado-exercicios/`) e grava `data/snapshots/senate-cost.json`, publicado com `make deploy-data`.
 - **Cartão "Quanto custa?":** "Senado · despesas identificadas do mandato", com remuneração do(a)
-  senador(a), equipe do gabinete e cota parlamentar. A média só usa os meses com as três partes e diz
-  quantos foram; as três partes são calculadas sobre os mesmos meses. Sem mês completo, cada parte aparece
-  com os próprios meses e não há total.
+  senador(a), equipe do gabinete e cota parlamentar. O principal é o mês mais recente com as três partes
+  e a cota madura (a mesma regra da Câmara, em `docs/data.md`), com as partes daquele mês, que somam o
+  total. A média vem como contexto: só usa os meses com as três partes e diz quantos foram; as três partes
+  são calculadas sobre os mesmos meses. Sem mês completo, cada parte aparece com os próprios meses e não há
+  total. O comparativo de políticos continua com a média.
 - **Mês a mês (Ver mais):** cada parte com valor ou motivo; "Total parcial — remuneração não identificada"
   quando falta uma parte, sem trocar pelo subsídio tabelado.
 - **Motivos:** "Fora do exercício" só quando o histórico de exercício do Senado confirma; ausência no arquivo

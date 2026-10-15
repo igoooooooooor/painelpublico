@@ -172,6 +172,23 @@ class SeoPagesTests(unittest.TestCase):
         self.assertEqual(seo.shorten('um dois tres quatro', 12), 'um dois…')
         self.assertEqual(seo.shorten('curto'), 'curto')
 
+    def test_cost_summary_uses_the_latest_complete_month_and_keeps_the_average_aside(self):
+        values = {'remuneration': 4636619, 'allowances': 0, 'quota': 3370100, 'office': 16023700}
+        cost = {'monthlyAverageCents': 20939595, 'usedMonths': ['2026-06', '2026-07', '2026-05'],
+                'months': {'2026-07': {'valuesCents': values}, '2026-09': {'valuesCents': {'remuneration': 4636619}}}}
+        self.assertEqual(seo._latest_cost_month(cost), ('2026-07', 24030419))
+        # Lacuna confirmada na fonte: a parte fica fora da soma, nunca vira zero estimado.
+        cost['months']['2026-07']['valuesCents'] = {**values, 'office': None}
+        self.assertEqual(seo._latest_cost_month(cost), ('2026-07', 8006719))
+        cost['months']['2026-07']['valuesCents'] = values
+        # Com a data das notas, só vale o mês com 3 meses de folga: em set, jun; sem folga em nenhum, o mais recente.
+        cost['months']['2026-06'] = {'valuesCents': {**values, 'quota': 0}}
+        self.assertEqual(seo._latest_cost_month(cost, '2026-10-13T03:17:32+00:00'), ('2026-07', 24030419))
+        self.assertEqual(seo._latest_cost_month(cost, '2026-09-20'), ('2026-06', 20660319))
+        self.assertEqual(seo._latest_cost_month({**cost, 'usedMonths': ['2026-07']}, '2026-08-01'), ('2026-07', 24030419))
+        self.assertIsNone(seo._latest_cost_month({**cost, 'usedMonths': []}))
+        self.assertIsNone(seo._latest_cost_month({**cost, 'monthlyAverageCents': None}))
+
 
 class ServerContentTests(unittest.TestCase):
     """Conteúdo inicial das seções, páginas de votação, 404 em HTML, arquivos do build e invalidação por snapshot."""

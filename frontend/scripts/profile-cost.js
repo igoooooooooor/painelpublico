@@ -118,13 +118,51 @@ if (typeof document !== 'undefined' && document.addEventListener) {
   }, true);
 }
 
-function profileCostPartRow([key, label, sourceLabel], part, value, scale, detail, personId) {
+/* As notas da cota de um mês continuam chegando por semanas: em out/2026, a cota de set estava em cerca de
+   20% do normal e a de jul, perto de 90%. Um mês só é o número principal com 3 meses de folga até a
+   fotografia dos dados (`asOf`, a data das notas importadas). Sem essa data, não há como julgar e vale o mais recente. */
+const PROFILE_COST_SETTLE_MONTHS = 3;
+function profileCostSettled(period, asOf) {
+  const reference = /^\d{4}-\d{2}/.test(String(asOf || '')) ? String(asOf).slice(0, 7) : null;
+  return !reference || profileCostSerial(reference) - profileCostSerial(period) >= PROFILE_COST_SETTLE_MONTHS;
+}
+/* O mês mais recente com a cota madura; se nenhum estiver, o mais recente, marcado como `settled: false`. */
+function profileCostPickMonth(periods, asOf) {
+  const sorted = [...new Set(periods)].sort();
+  const settled = sorted.filter(period => profileCostSettled(period, asOf)).at(-1);
+  if (settled) return { period: settled, settled: true, later: sorted.filter(period => period > settled) };
+  return sorted.length ? { period: sorted.at(-1), settled: false, later: [] } : null;
+}
+
+/* Mês mais recente com as quatro partes publicadas e a cota madura: o número principal da ficha. As partes
+   são as daquele mês, então o total é a soma das linhas. Parte vazia (lacuna confirmada na fonte) não vira zero. */
+function profileCostLatest(cost, asOf) {
+  const pick = profileCostPickMonth(profileCostPeriods(cost?.usedMonths), asOf);
+  const month = pick ? cost?.months?.[pick.period] : null;
+  if (!month || typeof month !== 'object') return null;
+  const values = month.valuesCents && typeof month.valuesCents === 'object' ? month.valuesCents : {};
+  const parts = PROFILE_COST_PARTS.map(([key]) => (profileCostInteger(values[key]) ? values[key] : null));
+  const known = parts.filter(value => value !== null);
+  if (!known.length) return null;
+  return { ...pick, month, parts, totalCents: known.reduce((sum, value) => sum + value, 0) };
+}
+
+/* Diz por que o número principal não é o último mês da série, ou que a cota dele ainda pode mudar. */
+function profileCostSettleNote(latest) {
+  if (!latest) return '';
+  if (!latest.settled) return `<p class="citizen-cost-period">A cota de ${esc(profileCostLabel(latest.period))} ainda pode receber notas; o valor pode subir.</p>`;
+  if (!latest.later.length) return '';
+  const list = profileCostMonthList(latest.later, { count: false });
+  return `<p class="citizen-cost-period">${esc(list.charAt(0).toUpperCase() + list.slice(1))} ${latest.later.length === 1 ? 'fica' : 'ficam'} fora do número principal: a cota desses meses ainda recebe notas.</p>`;
+}
+
+/* Valor da parte: do mês mais recente (`perMonth` falso) ou a média das partes sem mês completo. */
+function profileCostPartRow([key, label, sourceLabel], value, scale, { source = null, detail = '', personId = null, gap = false, perMonth = false } = {}) {
   const money = profileCostMoney(value);
-  const source = profileCostLatestSource(part.sources);
   const notes = key === 'quota' && source ? profileCostNotesToggle(personId, source.period, `Ver as notas de ${PROFILE_COST_MONTHS[source.period]}`) : '';
   const width = money !== null && scale > 0 && value > 0 ? Math.max(1, value / scale * 100).toFixed(1) : 0;
   return `<div class="citizen-cost-part" data-cost-part="${key}">
-    <div class="citizen-cost-part-label"><span>${label}</span><b class="mono">${money === null ? 'Sem dado' : `${esc(money)}<small>/mês</small>`}</b></div>
+    <div class="citizen-cost-part-label"><span>${label}</span><b class="mono">${money === null ? (gap ? 'Não publicado pela Câmara' : 'Sem dado') : `${esc(money)}${perMonth ? '<small>/mês</small>' : ''}`}</b></div>
     ${money !== null ? `<span class="citizen-cost-bar" aria-hidden="true"><i style="width:${width}%"></i></span>` : ''}
     <small>${detail ? `${esc(detail)} · ` : ''}${notes || (source
       ? `<a href="${esc(source.url)}" target="_blank" rel="noopener" aria-label="${esc(sourceLabel)}, ${esc(PROFILE_COST_MONTHS[source.period])}">${esc(sourceLabel)} ↗</a>`
@@ -159,37 +197,50 @@ function profileCostStackedComposition(parts, totalCents, labels) {
   }).join('');
   return `<div class="profile-cost-stack" role="img" aria-label="${esc(descriptions.join('; '))}">${segments}</div>`;
 }
-function profileCostAnswer(cost) {
+function profileCostAnswer(cost, asOf) {
   const used = profileCostPeriods(cost?.usedMonths);
   const amount = profileCostMoney(cost?.monthlyAverageCents);
   const hasPrincipal = used.length > 0 && amount !== null;
   const parts = cost?.parts && typeof cost.parts === 'object' ? cost.parts : {};
   const partOf = key => (parts[key] && typeof parts[key] === 'object' ? parts[key] : {});
+  const latest = hasPrincipal ? profileCostLatest(cost, asOf) : null;
   let principal;
   let rows = '';
-  if (hasPrincipal) {
-    const values = PROFILE_COST_PARTS.map(([key]) => partOf(key).usedMonthsAverageCents);
+  let kicker = 'Média por mês';
+  if (latest) {
+    const { period, month, parts: values, totalCents } = latest;
+    const label = PROFILE_COST_MONTHS[period];
+    const gaps = new Set(Array.isArray(month.sourceGaps) ? month.sourceGaps : []);
+    const sources = month.sources && typeof month.sources === 'object' ? month.sources : {};
     const scale = Math.max(0, ...values.filter(profileCostInteger));
-    rows = PROFILE_COST_PARTS.map((entry, index) => profileCostPartRow(entry, partOf(entry[0]), values[index], scale, '', cost?.id)).join('');
-    principal = `<div class="profile-cost-total"><span>Custa em média</span><b class="mono">${esc(profileCostShort(cost.monthlyAverageCents))}</b><span>por mês</span></div>
-      <p class="citizen-cost-exact">Valor exato: <span class="mono">${esc(amount)}</span> por mês</p>
-      ${profileCostStackedComposition(values, cost.monthlyAverageCents, PROFILE_COST_PARTS.map(([, label]) => label))}
-      <p class="citizen-cost-period">${esc(profileCostMonthList(used))} em exercício. Só entram meses com salário, auxílios, cota e verba de gabinete publicados.</p>`;
+    const christmas = profileCostMoney(month.christmasBonusCents);
+    kicker = 'Mês mais recente';
+    rows = PROFILE_COST_PARTS.map((entry, index) => profileCostPartRow(entry, values[index], scale,
+      { source: profileCostSafeSource(sources[entry[0]]), personId: cost.id, gap: gaps.has(entry[0]) })).join('');
+    principal = `<div class="profile-cost-total"><span>Custou</span><b class="mono">${esc(profileCostShort(totalCents))}</b><span>em ${esc(label)}</span></div>
+      <p class="citizen-cost-exact">Valor exato: <span class="mono">${esc(profileCostMoney(totalCents))}</span>, a soma das quatro partes abaixo</p>
+      ${profileCostStackedComposition(values, totalCents, PROFILE_COST_PARTS.map(([, partLabel]) => partLabel))}
+      ${profileCostSettleNote(latest)}
+      ${christmas !== null ? `<p class="citizen-cost-extra">13º salário em ${esc(label)}: <b class="mono">${esc(christmas)}</b> <span>(fora da soma)</span></p>` : ''}
+      <p class="citizen-cost-period">Média do mandato: <span class="mono">${esc(amount)}</span> por mês, ${esc(profileCostMonthList(used))} em exercício. Só entram meses com salário, auxílios, cota e verba de gabinete publicados.</p>`;
   } else if (profileCostAllOutside(cost)) {
     const end = profileCostEnd(cost);
+    kicker = 'Custo do mandato';
     principal = `<p class="citizen-cost-unavailable">Não estava no mandato entre ${esc(profileCostLongLabel(PROFILE_COST_START))}${end ? ` e ${esc(profileCostLongLabel(end))}` : ''}.</p>`;
   } else {
     const values = PROFILE_COST_PARTS.map(([key]) => partOf(key).averageCents);
     const scale = Math.max(0, ...values.filter(profileCostInteger));
     rows = PROFILE_COST_PARTS.map((entry, index) => {
-      const months = profileCostPeriods(partOf(entry[0]).months);
-      return profileCostPartRow(entry, partOf(entry[0]), values[index], scale, months.length ? `média de ${profileCostMonthList(months)}` : '', cost?.id);
+      const part = partOf(entry[0]);
+      const months = profileCostPeriods(part.months);
+      return profileCostPartRow(entry, values[index], scale, { source: profileCostLatestSource(part.sources), personId: cost?.id,
+        detail: months.length ? `média de ${profileCostMonthList(months)}` : '', perMonth: true });
     }).join('');
     principal = `<p class="citizen-cost-unavailable">Sem média mensal para o mandato (${esc(profileCostRange(cost))}).</p>
       <p class="citizen-cost-period">Em nenhum mês do mandato as quatro partes abaixo foram publicadas juntas. Veja cada parte com seus próprios meses.</p>`;
   }
   return `<article class="card profile-cost-breakdown" data-profile-cost-house="camara">
-    <span class="k">Média por mês · Câmara · mandato 2023–2027</span>
+    <span class="k">${kicker} · Câmara · mandato 2023–2027</span>
     ${principal}
     ${rows ? `<div class="citizen-cost-parts">${rows}</div>` : ''}
     <div class="profile-card-links"><button type="button" class="more" data-profile-open="expenses">Como calculamos e ver mês a mês →</button><button type="button" class="more" data-profile-open="sources">Fontes e datas →</button></div>
