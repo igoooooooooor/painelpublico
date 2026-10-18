@@ -330,6 +330,7 @@ def sanitize_expense_suppliers(expenses: list[dict[str, Any]]) -> dict[str, int]
         "invalidCnpjValues": 0,
         "validCnpjValues": 0,
         "nameKeysRehashed": 0,
+        "suppliersWithoutName": 0,
     }
     for expense in expenses:
         supplier = expense.get("supplier")
@@ -345,6 +346,13 @@ def sanitize_expense_suppliers(expenses: list[dict[str, Any]]) -> dict[str, int]
             supplier["name"] = cleaned_name
         elif original_name is not None:
             supplier["name"] = cleaned_name
+        if not cleaned_name:
+            # A fonte publicou a nota sem nome de fornecedor. O banco público exige nome e
+            # identidade juntos; sem nome, a nota segue como "fornecedor não informado"
+            # em vez de derrubar a importação diária inteira.
+            stats["suppliersWithoutName"] += 1
+            expense["supplier"] = None
+            continue
 
         key = str(supplier.get("key") or "")
         cnpj_value = str(supplier.get("cnpj") or "").strip()

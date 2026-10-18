@@ -3,6 +3,7 @@ from xml.etree import ElementTree as ET
 
 from ingest.legislative import (
     add_senate_expense_authorities,
+    sanitize_expense_suppliers,
     senate_exercise_status,
     senate_roster_detail,
     senate_xml_authorities,
@@ -109,3 +110,17 @@ class SenateRosterTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ExpenseSupplierSanitizationTests(unittest.TestCase):
+    def test_supplier_without_name_becomes_not_informed_instead_of_failing_import(self):
+        expenses = [
+            {'id': 'a', 'sourceId': 'camara_ceap', 'supplier': {'key': 'camara:unknown', 'name': None, 'cnpj': None}},
+            {'id': 'b', 'sourceId': 'senado_ceaps', 'supplier': {'key': '12345678000195', 'name': '  ', 'cnpj': '12345678000195'}},
+            {'id': 'c', 'sourceId': 'senado_ceaps', 'supplier': {'key': '12345678000195', 'name': 'Empresa', 'cnpj': '12345678000195'}},
+        ]
+        stats = sanitize_expense_suppliers(expenses)
+        self.assertEqual(stats['suppliersWithoutName'], 2)
+        self.assertIsNone(expenses[0]['supplier'])
+        self.assertIsNone(expenses[1]['supplier'])
+        self.assertEqual(expenses[2]['supplier'], {'key': '12345678000195', 'name': 'Empresa', 'cnpj': '12345678000195'})
