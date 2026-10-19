@@ -1019,7 +1019,7 @@ function profileView() {
     <p class="src">Fonte: notas da cota publicadas ${isChamberPerson ? 'pela Câmara (o arquivo aberto não traz todas as passagens aéreas: o gráfico da página do(a) deputado(a) na Câmara inclui passagens que ficam fora dele)' : 'pelo Senado'}. Retrato de ${f.snapshotAt ? esc(dateBR(f.snapshotAt)) : 'data não informada'}.</p>
     ${isChamberPerson ? `<p class="muted">Presença em sessões deliberativas do mandato atual, desde fev/2023. Média da Câmara: média das proporções individuais entre registros válidos. O selo compara os percentuais arredondados. Os dias observados podem variar entre mandatos.</p>
     ${presenceLinks ? `<span class="src">${presenceLinks}</span>` : ''}
-    <p class="muted">Os votos cobrem apenas a seleção do Placar em 2026. Cada votação abre seu resumo e fontes oficiais.</p>` : ''}
+    <p class="muted">Os votos cobrem apenas as votações selecionadas no Placar: texto principal de PL, PLP e PEC desde fev/2023. Cada votação abre seu resumo e fontes oficiais.</p>` : ''}
     ${!isChamberPerson ? ['presenca', 'votacoes'].map(key => { const source = profileSenateSource(key); return source ? `<p><b>${key === 'presenca' ? 'Presença' : 'Votações'} do Senado</b></p>${profileSource(source)}<p class="muted">${esc(datesInTextBR(source.detail))}</p>` : ''; }).join('') : ''}
     ${!isChamberPerson ? profileAttendanceSources(shared.id) : ''}
     <p class="muted">Alertas indicam registros para conferir, não conclusões de irregularidade. “Parecido com a média” mantém a faixa de diferença inferior a 10% na cota.</p>

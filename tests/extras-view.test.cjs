@@ -58,6 +58,13 @@ function comparison(a, b) {
 const profile = (id, total) => ({ pessoa: { id, name: id, role: 'senador' }, total, mediaMensal: total, media: 100,
   categorias: [], fornecedores: [], alertas: [], meses: [] });
 
+test('an empty Placar list names the period covered since February 2023, not a single year', () => {
+  const { api } = comparison(profile('senado:a', 100), profile('senado:b', 100));
+  const html = api.profileExtras('camara:404');
+  assert.match(html, /Nenhuma votação do Placar com registro para esta pessoa desde fev\/2023\./);
+  assert.doesNotMatch(html, /Placar em 2026/);
+});
+
 test('comparison shows the period of the settled-months quota average, not of every note', () => {
   const a = { ...profile('senado:a', 100), periodo: { inicio: '2026-07', fim: '2026-10', meses: 4 }, mediaPeriodo: { inicio: '2026-07', fim: '2026-07', meses: 1 } };
   const b = { ...profile('senado:b', 100), periodo: { inicio: '2026-01', fim: '2026-03', meses: 3 } };

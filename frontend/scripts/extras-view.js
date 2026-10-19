@@ -303,7 +303,7 @@ function profileExtras(id) {
       const voteLabel = recordedVote == null ? 'Sem registro importado' : vote.secreta ? 'Presença registrada · voto secreto' : String(recordedVote).toLowerCase();
       const content = `<b>${esc(voteLabel)}</b><span>${esc(vote.titulo)}</span>`;
       return typeof profileVoteButton === 'function' ? profileVoteButton(vote, content, 'vt') : `<button type="button" class="vt" data-vote="${esc(vote.id)}">${content}</button>`;
-    }).join('')}</div>` : '<p class="muted">Nenhuma votação selecionada do Placar em 2026.</p>'}
+    }).join('')}</div>` : '<p class="muted">Nenhuma votação do Placar com registro para esta pessoa desde fev/2023.</p>'}
     <span class="muted">A lista cobre apenas as votações selecionadas no Placar; falta de registro não identifica motivo nem situação do mandato.</span>
   </section>
   <span class="src">Fonte: Câmara dos Deputados. ${presenceLinks ? `${presenceLinks} ` : ''}Os botões de votação abrem o resumo e as fontes oficiais de cada votação.</span>`;

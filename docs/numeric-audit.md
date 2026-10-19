@@ -27,6 +27,13 @@
   são as passagens que só aparecem no gráfico da página do deputado. Textos ajustados na ficha, nos
   alertas, em comparar, partidos, metodologia e páginas para buscadores.
 
+- **Minha cidade, população de outro ano:** o cabeçalho mostra a estimativa do IBGE para 2026 e o "por
+  morador" dividia pela população de 2025 (o ano das contas) sem dizer o ano; quem dividisse o total pelo
+  número do cabeçalho chegava a outro valor (ex.: Manaus, 2.327.101 × 2.303.732). O cartão e o detalhe das
+  contas agora nomeiam o ano da população usada.
+- **"Placar em 2026":** o vazio das votações no comparativo e a nota de fontes da ficha diziam que o Placar
+  cobre 2026; a seleção vai desde fev/2023, como o próprio título da seção diz. Textos corrigidos.
+
 ## Varredura de 18/10/2026
 
 Revisão adicional motivada pela troca da média pelo mês de referência no cartão de custo

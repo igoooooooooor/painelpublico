@@ -113,7 +113,8 @@ test('spending is compared per resident with the typical city of the same size, 
   } });
   const spend = html.match(/<section[^>]*data-city-answer="spend"[\s\S]*?<\/section>/)?.[0] || '';
   assert.match(spend, /<small>R\$<\/small>5\.164/);
-  assert.match(spend, /dividido pelos 1\.349\.100 moradores/);
+  assert.match(spend, /dividido pelos 1\.349\.100 moradores \(estimativa do IBGE para 2025\)/);
+  assert.match(html, /usam a população estimada pelo IBGE para 2025, o ano das contas; o cabeçalho da página mostra a estimativa mais recente/);
   assert.match(spend, /16% abaixo do típico/);
   assert.match(spend, /cidades com mais de 500 mil habitantes/);
   assert.match(spend, /Saúde<\/span><b class="mono">R\$ 1\.190[\s\S]*Típico: R\$ 1\.444/);

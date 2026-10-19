@@ -368,9 +368,11 @@ function citySpendAnswer(data, isDf, isFernando) {
       ${typical ? `<small class="muted">Típico: ${cityPerResident(typical)}</small>` : ''}</div>`;
   }).join('');
   const residents = accounts.population?.value;
+  // A população do divisor é a do ano das contas (IBGE), não a estimativa mais recente do cabeçalho.
+  const residentsYear = Number.isInteger(accounts.population?.year) ? accounts.population.year : null;
   return `${open}<span class="k">Contas de ${esc(year || '')} · por morador, no ano</span>
     <div class="huge"><small>R$</small>${cityNumber(Number(total.perCapitaCents) / 100)}</div>
-    <p class="city-answer-note">Tudo o que a prefeitura gastou${residents ? `, dividido pelos ${cityNumber(residents)} moradores` : ' por morador'}.</p>
+    <p class="city-answer-note">Tudo o que a prefeitura gastou${residents ? `, dividido pelos ${cityNumber(residents)} moradores${residentsYear ? ` (estimativa do IBGE para ${residentsYear})` : ''}` : ' por morador'}.</p>
     ${bars ? `<div class="city-bars">${bars}</div>` : ''}
     ${verdict ? `<div class="city-verdict"><span class="fchip citizen-verdict">${esc(verdict)}</span><small class="muted">Comparado com ${esc(cityBandText(accounts.comparison?.band))}. A marca na barra é o típico.</small></div>` : ''}
   </section>`;
@@ -479,6 +481,7 @@ function cityAccountsDetail(data, isDf, isFernando) {
     <div class="city-account-table">${rows}</div>
     ${comparison.available ? `<p class="muted"><b>Típico</b> é o valor do meio (mediana) por morador entre ${esc(cityBandText(comparison.band))} com dado válido para cada indicador, nas contas de ${esc(cityYear(accounts.year) || 'mesmo ano')}. A amostra usada aparece ao lado de cada valor. A própria cidade fica de fora. Não é meta nem ranking.</p>`
       : `<p class="muted">${esc(comparison.message || 'Comparação com cidades do mesmo porte indisponível.')}</p>`}
+    ${Number.isInteger(accounts.population?.year) ? `<p class="muted">Os valores por morador usam a população estimada pelo IBGE para ${esc(String(accounts.population.year))}, o ano das contas; o cabeçalho da página mostra a estimativa mais recente.</p>` : ''}
     <p class="muted">Gasto é o valor empenhado, isto é, os compromissos assumidos no ano, e não só o que já foi pago. Receita e gasto total incluem repasses entre órgãos da própria prefeitura; pessoal, saúde e educação não. Saúde e educação também incluem salários, então as linhas não devem ser somadas. Pessoal aqui não é o limite da Lei de Responsabilidade Fiscal.</p>
     ${citySource(accounts.source, 'Tesouro Nacional')}`;
 }

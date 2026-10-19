@@ -1006,6 +1006,14 @@ test('presence card lists the published justifications without inventing missing
   assert.doesNotMatch(without, /Justificativas/);
 });
 
+test('profile sources describe the Placar as the selected votes since February 2023', () => {
+  const { api, state } = makeView();
+  setProfileFixture(api, state, 'camara:55', {});
+  const html = api.profileView();
+  assert.match(html, /Os votos cobrem apenas as votações selecionadas no Placar: texto principal de PL, PLP e PEC desde fev\/2023\./);
+  assert.doesNotMatch(html, /Placar em 2026/);
+});
+
 test('chamber presence links one official page per year of the period, since the Câmara publishes a year per page', () => {
   const { api, context } = makeView();
   const person = { id: 'camara:1', role: 'deputado', name: 'Pessoa' };
