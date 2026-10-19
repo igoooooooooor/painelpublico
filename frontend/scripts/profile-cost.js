@@ -100,7 +100,7 @@ function profileCostNotesHTML(data, personId) {
   const fileUrl = typeof profileSafeUrl === 'function' ? profileSafeUrl(data.fonte?.url) : null;
   return `<ul class="citizen-cost-note-list">${rows}</ul>
     <p><b>Total: ${esc(money(data.total))}</b>, soma das ${notes.length} ${notes.length === 1 ? 'nota' : 'notas'} acima.</p>${complement}
-    <p class="muted">Todas as notas vêm do arquivo oficial da Câmara, com ou sem documento. O documento é uma cópia da nota que a Câmara nem sempre publica; em outubro de 2026, deixou de publicar os das notas de telefonia. Para conferir na planilha da Câmara${fileUrl ? ` (<a href="${esc(fileUrl)}" target="_blank" rel="noopener">arquivo anual</a>, com todos os deputados, cerca de 40 MB)` : ''}: filtre <code>ideCadastro</code> = ${esc(String(personId).split(':')[1])} e <code>numMes</code> = ${Number(month)} e some a coluna <code>vlrLiquido</code>.</p>`;
+    <p class="muted">Todas as notas vêm do arquivo oficial da Câmara, com ou sem documento. O documento é uma cópia da nota que a Câmara nem sempre publica; em outubro de 2026, deixou de publicar os das notas de telefonia. Para conferir na planilha da Câmara${fileUrl ? ` (<a href="${esc(fileUrl)}" target="_blank" rel="noopener">arquivo anual</a>, com todos os deputados, cerca de 40 MB)` : ''}: filtre <code>ideCadastro</code> = ${esc(String(personId).split(':')[1])} e <code>numMes</code> = ${Number(month)} e some a coluna <code>vlrLiquido</code>${data.complemento ? ', sem as linhas de <code>COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA</code>, que ficam fora desse total' : ''}.</p>`;
 }
 
 /* Carrega as notas só quando a pessoa abre a lista. */

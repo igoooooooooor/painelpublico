@@ -498,7 +498,8 @@ function comparisonCostFigures(f) {
   if (house === 'senado' && profile.senateCost && typeof senateCostFigures === 'function') return { house, ...senateCostFigures(profile.senateCost, f) };
   return { house, total: null, remuneration: null, office: null, officePeople: null };
 }
-const comparisonCostMoney = item => item ? `<b class="mono">${esc(formatCitizenAmount(item.cents / 100))}</b><small> /mês${Number.isInteger(item.months) ? ` · média de ${item.months} ${item.months === 1 ? 'mês' : 'meses'}` : ''}</small>` : 'Sem dados';
+/* `partOnly`: a parte é média de todos os meses em que foi publicada, não só dos meses assentados do total. */
+const comparisonCostMoney = (item, partOnly = false) => item ? `<b class="mono">${esc(formatCitizenAmount(item.cents / 100))}</b><small> /mês${Number.isInteger(item.months) ? ` · média de ${item.months} ${item.months === 1 ? 'mês' : 'meses'}${partOnly ? ' com a parte publicada' : ''}` : ''}</small>` : 'Sem dados';
 function comparisonCostRows(a, b, sideHtml) {
   const [costA, costB] = [a, b].map(comparisonCostFigures);
   if (costA.house === costB.house) {

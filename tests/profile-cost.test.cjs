@@ -268,6 +268,11 @@ test('quota source of a mandate month opens the month notes instead of the annua
   assert.match(html, /ideCadastro<\/code> = 220714 e <code>numMes<\/code> = 3/);
   assert.match(html, /1\.pdf/);
   assert.match(html, /Todas as notas vêm do arquivo oficial da Câmara, com ou sem documento/);
+  assert.match(html, /some a coluna <code>vlrLiquido<\/code>\.<\/p>/);
+  // Com complemento de moradia no mês, a soma da planilha precisa deixar essas linhas de fora para bater com o total.
+  const withComplement = profileCostNotesHTML({ periodo: '2026-03', total: 1000, complemento: { valor: -1747, notas: 1 },
+    notas: [{ data: '2026-03-01', fornecedor: 'X', categoria: 'Escritório', valor: 1000, documentUrl: null }] }, 'camara:1');
+  assert.match(withComplement, /some a coluna <code>vlrLiquido<\/code>, sem as linhas de <code>COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA<\/code>, que ficam fora desse total\./);
   const withoutDocument = profileCostNotesHTML({ periodo: '2026-01', total: 114.08, complemento: null,
     notas: [{ data: null, fornecedor: 'CELULAR FUNCIONAL', categoria: 'Telefone', valor: 114.08, documentUrl: null }] }, 'camara:1');
   assert.match(withoutDocument, /Documento não publicado pela Câmara/);

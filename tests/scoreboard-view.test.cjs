@@ -299,6 +299,15 @@ test('decisions on parts of the text list under the main vote and open as their 
   assert.doesNotMatch(app.innerHTML, /Decisões sobre trechos do projeto/);
 });
 
+test('an unpublished abstention count reads as zero when yes and no already close the total', () => {
+  const { context } = loadApp({ fetch: async () => jsonResponse(listPayload({ items: [] })) });
+  const abstention = tally => JSON.parse(vm.runInContext(`JSON.stringify(scoreboardAbstention(${JSON.stringify(tally)}))`, context));
+  assert.deepEqual(abstention({ yes: 244, no: 115, abstention: null, total: 359 }), { count: 0, note: 'nenhuma no relatório nominal' });
+  assert.deepEqual(abstention({ yes: 244, no: 115, abstention: null, total: 360 }), { count: null, note: 'não publicada' });
+  assert.deepEqual(abstention({ yes: 244, no: 115, abstention: 1, total: 360 }), { count: 1, note: '' });
+  assert.deepEqual(abstention({ yes: 244, no: 115, abstention: null }), { count: null, note: 'não publicada' });
+});
+
 test('urgency requests list under the main vote, explain the quorum and open as their own page', async () => {
   const urgency = { id: '9-8', date: '2026-10-01', request: { label: 'REQ 900/2026', url: 'https://www.camara.leg.br/ficha-req' },
     title: 'Urgência para o <PL> 123/2026', summary: 'O REQ 900/2026 pediu urgência.', decisionLabel: 'Urgência rejeitada',

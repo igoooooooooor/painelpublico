@@ -184,6 +184,12 @@ class SeoPagesTests(unittest.TestCase):
         self.assertEqual(seo.sections.short_amount(1.14), 'R$ 1,14')
         self.assertEqual(seo.sections.short_amount(-1.14), 'R$ -1,14')
         self.assertEqual(seo.sections.short_amount(0), 'R$ 0')
+        # Meio para cima, como Math.round no app: 2.500 vira "3 mil", não "2 mil" (round() do Python vai para o par).
+        self.assertEqual(seo.sections.short_amount(2500), 'R$ 3 mil')
+        self.assertEqual(seo.sections.thousands(2500), '3')
+        self.assertEqual(seo.sections.abstention({'yes': 244, 'no': 115, 'abstention': None, 'total': 359}), (0, 'nenhuma no relatório nominal'))
+        self.assertEqual(seo.sections.abstention({'yes': 244, 'no': 115, 'abstention': None, 'total': 360}), (None, 'não publicada'))
+        self.assertEqual(seo.sections.abstention({'yes': 244, 'no': 115, 'abstention': 1, 'total': 360}), (1, ''))
 
     def test_cost_summary_uses_the_latest_complete_month_and_keeps_the_average_aside(self):
         values = {'remuneration': 4636619, 'allowances': 0, 'quota': 3370100, 'office': 16023700}
@@ -201,6 +207,10 @@ class SeoPagesTests(unittest.TestCase):
         self.assertEqual(seo._latest_cost_month({**cost, 'usedMonths': ['2026-07']}, '2026-08-01'), ('2026-07', 24030419))
         self.assertIsNone(seo._latest_cost_month({**cost, 'usedMonths': []}))
         self.assertIsNone(seo._latest_cost_month({**cost, 'monthlyAverageCents': None}))
+        # Sem nenhum mês com a folga, o mês principal ainda recebe notas: o texto para buscadores avisa.
+        self.assertTrue(seo._cost_month_unsettled('2026-07', '2026-08-01'))
+        self.assertFalse(seo._cost_month_unsettled('2026-07', '2026-10-13T03:17:32+00:00'))
+        self.assertFalse(seo._cost_month_unsettled('2026-07', None))
 
 
 class ServerContentTests(unittest.TestCase):

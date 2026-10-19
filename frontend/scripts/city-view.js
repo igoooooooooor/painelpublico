@@ -280,7 +280,7 @@ const cityTypicalPerResident = (accounts, id) => {
   return accounts?.comparison?.available && Number(typical?.perCapitaSampleSize) >= 3 && cityHasCents(typical?.perCapitaMedianCents)
     ? Number(typical.perCapitaMedianCents) : null;
 };
-const CITY_ACCOUNT_LABELS = { revenue: 'Receita', 'total-expense': 'Gasto total', personnel: 'Pessoal', health: 'Saúde', education: 'Educação' };
+const CITY_ACCOUNT_LABELS = { revenue: 'Receita bruta', 'total-expense': 'Gasto total', personnel: 'Pessoal', health: 'Saúde', education: 'Educação' };
 
 function cityAccountsMessage(accounts, isDf, isFernando) {
   if (isDf) return 'O Distrito Federal não é município, então não presta contas como prefeitura.';
@@ -395,9 +395,12 @@ function cityAmendmentsAnswer(data, cityName) {
   const share = paid !== null && committed > 0 ? Math.min(100, paid / committed * 100) : null;
   const authors = (Array.isArray(amendments.authors) ? amendments.authors : []).filter(author => author && cityHasCents(author.committedCents))
     .sort((left, right) => Number(right.committedCents) - Number(left.committedCents));
+  const restos = cityHasCents(amendments.totals.restosPaidCents) ? Number(amendments.totals.restosPaidCents) : null;
+  const restosText = restos ? ` Além disso, ${esc(cityCompactMoney(restos, true))} ${restos >= 200 ? 'foram pagos' : 'foi pago'} depois, como restos a pagar.` : '';
+  const shareText = share === null ? '' : share < 1 ? 'menos de 1' : share >= 100 ? '100' : share > 99 ? 'mais de 99' : cityNumber(Math.floor(share));
   const paidText = paid === null ? 'O valor pago não foi informado pela fonte.'
-    : paid === 0 ? 'Nada foi pago até a data da consulta.'
-      : `<b>${esc(cityCompactMoney(paid, true))}</b> já ${paid >= 200 ? 'foram pagos' : 'foi pago'} (${share < 1 ? 'menos de 1' : cityNumber(share)}%).`;
+    : paid === 0 ? `Nada foi pago no ano até a data da consulta.${restosText}`
+      : `<b>${esc(cityCompactMoney(paid, true))}</b> já ${paid >= 200 ? 'foram pagos' : 'foi pago'} (${shareText}%).${restosText}`;
   return `${open}<div class="huge">${cityHugeMoney(committed)}</div>
     <p class="city-answer-note">reservados para a cidade em ${records} ${records === 1 ? 'emenda' : 'emendas'}.</p>
     ${share !== null ? `<div class="city-progress" role="img" aria-label="${cityNumber(share)}% pago"><i style="width:${share.toFixed(1)}%"></i></div>` : ''}
@@ -482,7 +485,7 @@ function cityAccountsDetail(data, isDf, isFernando) {
     ${comparison.available ? `<p class="muted"><b>Típico</b> é o valor do meio (mediana) por morador entre ${esc(cityBandText(comparison.band))} com dado válido para cada indicador, nas contas de ${esc(cityYear(accounts.year) || 'mesmo ano')}. A amostra usada aparece ao lado de cada valor. A própria cidade fica de fora. Não é meta nem ranking.</p>`
       : `<p class="muted">${esc(comparison.message || 'Comparação com cidades do mesmo porte indisponível.')}</p>`}
     ${Number.isInteger(accounts.population?.year) ? `<p class="muted">Os valores por morador usam a população estimada pelo IBGE para ${esc(String(accounts.population.year))}, o ano das contas; o cabeçalho da página mostra a estimativa mais recente.</p>` : ''}
-    <p class="muted">Gasto é o valor empenhado, isto é, os compromissos assumidos no ano, e não só o que já foi pago. Receita e gasto total incluem repasses entre órgãos da própria prefeitura; pessoal, saúde e educação não. Saúde e educação também incluem salários, então as linhas não devem ser somadas. Pessoal aqui não é o limite da Lei de Responsabilidade Fiscal.</p>
+    <p class="muted">Gasto é o valor empenhado, isto é, os compromissos assumidos no ano, e não só o que já foi pago. Receita é a bruta realizada, antes das deduções (como a do Fundeb); o Siconfi destaca a líquida, que é menor. Receita e gasto total incluem repasses entre órgãos da própria prefeitura; pessoal, saúde e educação não. Saúde e educação também incluem salários, então as linhas não devem ser somadas. Pessoal aqui não é o limite da Lei de Responsabilidade Fiscal.</p>
     ${citySource(accounts.source, 'Tesouro Nacional')}`;
 }
 

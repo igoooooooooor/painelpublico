@@ -17,6 +17,7 @@ import sqlite3
 import sys
 from urllib.parse import unquote
 
+from .settlement import settled_cutoff
 from . import citizen, costs, profiles, seo_sections as sections, votes
 from .config import ROOT, SNAPSHOTS_PATH
 from .database import fold
@@ -149,6 +150,12 @@ def _latest_cost_month(cost, as_of=None):
     return period, sum(values[key] for key in parts)
 
 
+def _cost_month_unsettled(period, as_of):
+    """True quando o mês principal ainda não tem os 3 meses de folga (nenhum mês assentado): a cota pode subir."""
+    cutoff = settled_cutoff(as_of)
+    return cutoff is not None and period > cutoff
+
+
 def profile_facts(db, identifier):
     """Os números curtos das 3 respostas da ficha, ou None se a pessoa não estiver na base."""
     record = citizen.politician(db, identifier)
@@ -164,7 +171,8 @@ def profile_facts(db, identifier):
     if latest and average:
         period, total = latest
         # Os dois números antes da explicação: a descrição para buscadores corta em 160 caracteres.
-        facts['lines'].append(('Quanto custa', f'Custou {money_cents(total)} em {MONTHS[int(period[5:7])]}/{period[:4]}; '
+        caveat = ' (a cota desse mês ainda recebe notas; o valor pode subir)' if _cost_month_unsettled(period, record.get('snapshotAt')) else ''
+        facts['lines'].append(('Quanto custa', f'Custou {money_cents(total)} em {MONTHS[int(period[5:7])]}/{period[:4]}{caveat}; '
                                f'média do mandato de {money_cents(average[0])} por mês '
                                f'({month_range(average[1])}). Soma salário bruto, auxílios, cota parlamentar '
                                'e verba do gabinete, em valores da época.'))

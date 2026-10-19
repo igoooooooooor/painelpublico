@@ -427,7 +427,10 @@ function shareDrawProfile(card, context, images = new Map()) {
       shareRoundRect(context, x, py - 14, 12, 12, 3, colors[index]);
       label(part.name, x + 20, py - 2, colWidth - 28, 18);
       context.fillStyle = SHARE_DARK.ink; context.font = shareFont(600, 26, SHARE_FONTS.data);
-      const value = Number.isFinite(part.cents) ? (part.cents >= 100000 ? `R$ ${Math.round(part.cents / 100000).toLocaleString('pt-BR')} mil` : `R$ ${Math.round(part.cents / 100).toLocaleString('pt-BR')}`) : 'Sem dado';
+      // Uma casa decimal abaixo de R$ 100 mil: as partes somam o destaque sem R$ 400 virar "R$ 0 mil".
+      const value = Number.isFinite(part.cents) ? (part.cents >= 10000000 ? `R$ ${Math.round(part.cents / 100000).toLocaleString('pt-BR')} mil`
+        : part.cents >= 100000 ? `R$ ${(part.cents / 100000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} mil`
+          : `R$ ${Math.round(part.cents / 100).toLocaleString('pt-BR')}`) : 'Sem dado';
       context.fillText(value, x, py + 34);
     });
     py += 88;

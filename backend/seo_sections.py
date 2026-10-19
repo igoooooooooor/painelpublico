@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import html
 import json
+import math
 
 from . import citizen, cities, votes
 from .config import SNAPSHOTS_PATH
@@ -44,17 +45,22 @@ def money(value):
     return 'R$ ' + f'{value:,.0f}'.replace(',', '.')
 
 
+def half_up(value):
+    """Arredonda como Math.round no app (meio para cima), não como round() do Python (meio para o par)."""
+    return int(math.floor(value + 0.5))
+
+
 def short_amount(value):
     """'R$ 1,2 mi' ou 'R$ 253 mil', como formatCitizenAmount no app."""
     if abs(value) >= 1e6:
         return 'R$ ' + f'{value / 1e6:.1f}'.replace('.', ',').removesuffix(',0') + ' mi'
     if abs(value) >= 1e3:
-        return f'R$ {pt_int(round(value / 1e3))} mil'
+        return f'R$ {pt_int(half_up(value / 1e3))} mil'
     return 'R$ ' + (f'{value:.2f}'.replace('.', ',') if value else '0')
 
 
 def thousands(value):
-    return pt_int(round(value / 1e3))
+    return pt_int(half_up(value / 1e3))
 
 
 def pct(part, whole):
@@ -408,6 +414,18 @@ def vote_outcome(item):
     return VOTE_OUTCOMES.get(item.get('outcome'), 'Resultado não informado')
 
 
+def abstention(tally):
+    """(contagem, nota) das abstenções, como scoreboardAbstention no app: publicada; zero pelo relatório nominal
+    quando Sim + Não fecham o total; senão desconhecida."""
+    value = tally.get('abstention')
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value, ''
+    parts = [tally.get(key) for key in ('yes', 'no', 'total')]
+    if all(isinstance(part, int) and not isinstance(part, bool) for part in parts) and parts[0] + parts[1] == parts[2]:
+        return 0, 'nenhuma no relatório nominal'
+    return None, 'não publicada'
+
+
 def count(value):
     return pt_int(value) if isinstance(value, int) and not isinstance(value, bool) else '—'
 
@@ -421,7 +439,7 @@ def vote_card(item):
             + (f'<p class="muted scoreboard-summary">{esc(item["summary"])}</p>' if item.get('summary') else '')
             + f'</div><div class="scoreboard-card-result"><p class="scoreboard-outcome" data-outcome="{esc(item.get("outcome") or "")}">{esc(vote_outcome(item))}</p>'
             f'<p class="scoreboard-meta"><span><b>{count(tally.get("yes"))}</b> sim</span><span><b>{count(tally.get("no"))}</b> não</span>'
-            f'<span>{count(tally.get("abstention")) + " abst." if isinstance(tally.get("abstention"), int) else "abst. não publicada"}</span></p>'
+            f'<span>{"abst. não publicada" if abstention(tally)[0] is None else count(abstention(tally)[0]) + " abst."}</span></p>'
             f'<a class="more" href="{href}">Ver decisão e votos →</a></div></article>')
 
 
@@ -559,7 +577,7 @@ def vote_body(payload):
             f'{parent_html}'
             f'<section class="card scoreboard-result"><span class="k">Resultado desta votação</span><dl class="scoreboard-tally">'
             f'<div><dt>Sim</dt><dd>{count(tally.get("yes"))}</dd></div><div><dt>Não</dt><dd>{count(tally.get("no"))}</dd></div>'
-            f'<div><dt>Abstenção</dt><dd>{count(tally.get("abstention"))}</dd>{"" if isinstance(tally.get("abstention"), int) else "<small>não publicada</small>"}</div>'
+            f'<div><dt>Abstenção</dt><dd>{count(abstention(tally)[0])}</dd>{f"<small>{abstention(tally)[1]}</small>" if abstention(tally)[1] else ""}</div>'
             f'<div><dt>Total</dt><dd>{count(tally.get("total"))}</dd></div></dl>'
             f'<p class="muted">{esc(vote_outcome(vote))}. O total soma Sim, Não e Abstenção.</p></section>'
             f'{vote_participants(payload.get("participants")) if payload.get("participantsAvailable", True) else vote_participants([])}'

@@ -124,7 +124,8 @@ test('spending is compared per resident with the typical city of the same size, 
   assert.match(accounts, /title="R\$ 6\.966\.575\.615,10">R\$ 7,0 bilhões/);
   assert.match(accounts, /Menos de 3 cidades para comparar/);
   assert.match(accounts, /title="R\$ 0,00"/);
-  assert.match(accounts, /Receita/);
+  assert.match(accounts, /<b>Receita bruta<\/b>/);
+  assert.match(accounts, /Receita é a bruta realizada, antes das deduções/);
   assert.doesNotMatch(accounts, /<img src=x/);
   assert.match(accounts, /mediana[\s\S]*cidades com mais de 500 mil habitantes[\s\S]*dado válido para cada indicador/);
   assert.match(accounts, /R\$ 6\.176<\/b><small>40 cidades<\/small>/);
@@ -171,8 +172,16 @@ test('amendments lead with reserved and paid values, top authors and a Pix subse
   const answer = html.match(/<section[^>]*data-city-answer="amendments"[\s\S]*?<\/section>/)?.[0] || '';
   assert.match(answer, /<small>R\$<\/small>12,0<small class="city-unit">mi<\/small>/);
   assert.match(answer, /em 3 emendas/);
-  assert.match(answer, /R\$ 504 mil<\/b> já foram pagos \(4%\)/);
+  assert.match(answer, /R\$ 504 mil<\/b> já foram pagos \(4%\)\./);
+  assert.doesNotMatch(answer, /restos a pagar/);
+
   assert.ok(answer.indexOf('Bancada Sp') < answer.indexOf('Autora'));
+  const almost = showCity(makeView().context, SP, { amendments: { year: 2026, status: 'available', recordCount: 1,
+    totals: { committedCents: 100000, paidCents: 99960, restosPaidCents: null }, authors: [] } });
+  assert.match(almost, /já foram pagos \(mais de 99%\)/);
+  const later = showCity(makeView().context, SP, { amendments: { year: 2025, status: 'available', recordCount: 1,
+    totals: { committedCents: 100000, paidCents: 0, restosPaidCents: 40000 }, authors: [] } });
+  assert.match(later, /Nada foi pago no ano até a data da consulta\. Além disso, R\$ 400 foram pagos depois, como restos a pagar\./);
   assert.equal((answer.match(/data-deputy=/g) || []).length, 1);
   assert.match(answer, /Ver as 4 autorias/);
   assert.doesNotMatch(answer, /Quarto Nome/);

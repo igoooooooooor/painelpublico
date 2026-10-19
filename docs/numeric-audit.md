@@ -34,6 +34,20 @@
 - **"Placar em 2026":** o vazio das votações no comparativo e a nota de fontes da ficha diziam que o Placar
   cobre 2026; a seleção vai desde fev/2023, como o próprio título da seção diz. Textos corrigidos.
 
+- **Ajustes menores da mesma varredura:** (1) Placar: em 83 de 187 votações o resumo da Câmara não publica
+  abstenções, mas Sim + Não fecham o total (conferido com o relatório nominal na coleta); o cartão dizia
+  "Abstenção — não publicada" ao lado de "O total soma Sim, Não e Abstenção". Passa a mostrar 0, "nenhuma no
+  relatório nominal"; "não publicada" fica só quando nem isso se sabe. (2) Imagem de compartilhar: partes
+  abaixo de R$ 100 mil com uma casa decimal, para somarem o destaque e R$ 400 não virar "R$ 0 mil". (3) Notas
+  do mês: a instrução de somar `vlrLiquido` no arquivo anual avisa para deixar de fora as linhas de
+  complemento de moradia quando o mês as tem. (4) Minha cidade: "Receita" vira "Receita bruta", com a nota de
+  que o Siconfi destaca a líquida, menor; o percentual pago nunca arredonda para 100% com parte em aberto
+  ("mais de 99%"), e "Nada foi pago" passa a citar restos a pagar pagos depois, quando houver. (5) Páginas
+  sem JavaScript: "R$ N mil" arredonda meio para cima como no app (Python `round()` ia para o par). (6)
+  Comparar: as linhas de remuneração e gabinete dizem "média de N meses com a parte publicada", já que não
+  usam o corte de meses assentados do total. (7) Texto para buscadores: quando nenhum mês tem a folga de 3
+  meses, a linha do custo avisa que a cota do mês ainda recebe notas.
+
 ## Varredura de 18/10/2026
 
 Revisão adicional motivada pela troca da média pelo mês de referência no cartão de custo

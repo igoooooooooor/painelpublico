@@ -67,14 +67,14 @@ test('profile cards draw the name, cost parts and site address without the brand
   const canvas = { getContext: () => fake };
   const card = { layout: 'profile', title: 'Ana Lima', initials: 'AL', kicker: 'Ficha · Câmara', subtitle: 'Deputado(a) federal · ABC · SP',
     cost: { label: 'Custa em média por mês', value: 'R$ 193 mil', exact: 'R$ 193.156,14', totalCents: 19315614,
-      parts: [{ name: 'Gabinete', cents: 11353006 }, { name: 'Salário', cents: 4275680 }, { name: 'Cota', cents: 3686927 }, { name: 'Auxílios', cents: 0 }], note: 'Média.' },
+      parts: [{ name: 'Gabinete', cents: 11353006 }, { name: 'Salário', cents: 4275680 }, { name: 'Cota', cents: 3686927 }, { name: 'Auxílios', cents: 40000 }], note: 'Média.' },
     presence: { label: 'Presença no Plenário', value: '92%', detail: '333 de 361 dias', share: 0.92, average: 0.92, averageLabel: 'média da Câmara: 92%' },
     categories: [{ name: 'Divulgação', share: 0.5897 }, { name: 'Aluguel de carro', share: 0.2224 }, { name: 'Combustível', share: 0.0856 }],
     categoryNote: 'Percentuais dos saldos positivos; estornos mantidos no total.', top: { value: 'R$ 99.992', who: 'Empresa', what: 'Divulgação · mai/2026' },
     footnote: 'Fontes.', disclaimer: 'Projeto pessoal.' };
   assert.equal(context.shareDrawCard(card, canvas).id, 'canvas');
   const texts = calls.filter(([name]) => name === 'fillText').map(([, text]) => text);
-  for (const text of ['Ana Lima', 'R$ 193 mil', 'R$ 193.156,14', 'Gabinete', 'R$ 114 mil', 'R$ 0', '92%', 'R$ 99.992', '59%', '22%', '9%', '10%', 'Outras', 'Percentuais dos saldos positivos; estornos mantidos no total.', 'painelpublico.com']) assert.ok(texts.includes(text), text);
+  for (const text of ['Ana Lima', 'R$ 193 mil', 'R$ 193.156,14', 'Gabinete', 'R$ 114 mil', 'R$ 42,8 mil', 'R$ 36,9 mil', 'R$ 400', '92%', 'R$ 99.992', '59%', '22%', '9%', '10%', 'Outras', 'Percentuais dos saldos positivos; estornos mantidos no total.', 'painelpublico.com']) assert.ok(texts.includes(text), text);
   assert.ok(!texts.includes('Painel Público'));
   // As porcentagens da cota fecham 100.
   assert.equal(['59%', '22%', '9%', '10%'].reduce((sum, text) => sum + parseInt(text, 10), 0), 100);

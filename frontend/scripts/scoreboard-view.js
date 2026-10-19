@@ -24,6 +24,13 @@ const scoreboardEscape = value => String(value == null ? '' : value).replace(/[&
 }[character]));
 const scoreboardText = value => typeof value === 'string' ? value.trim() : '';
 const scoreboardCount = value => Number.isFinite(value) ? Number(value).toLocaleString('pt-BR') : '—';
+/* Abstenções: o número publicado ou, quando o resumo da Câmara não o traz mas Sim + Não fecham o total (conferido
+   com o relatório nominal na coleta), zero; só fica "não publicada" quando nem isso se sabe. */
+function scoreboardAbstention(tally) {
+  if (Number.isFinite(tally?.abstention)) return { count: tally.abstention, note: '' };
+  const closed = [tally?.yes, tally?.no, tally?.total].every(Number.isFinite) && tally.yes + tally.no === tally.total;
+  return closed ? { count: 0, note: 'nenhuma no relatório nominal' } : { count: null, note: 'não publicada' };
+}
 function scoreboardDate(value) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}/.test(value)) return 'data não informada';
   return typeof formatShortDate === 'function' ? formatShortDate(value) : value.slice(0, 10).split('-').reverse().join('/');
@@ -271,7 +278,8 @@ function scoreboardItemCard(item) {
   const tally = item?.tally || {};
   const type = scoreboardVoteType(item);
   const date = typeof item?.date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(item.date) ? item.date : '';
-  const abstention = Number.isFinite(tally.abstention) ? `${scoreboardCount(tally.abstention)} abst.` : 'abst. não publicada';
+  const abstentionInfo = scoreboardAbstention(tally);
+  const abstention = abstentionInfo.count === null ? 'abst. não publicada' : `${scoreboardCount(abstentionInfo.count)} abst.`;
   const isUrgency = item?.kind === 'urgency';
   const isSegment = item?.kind === 'segment';
   const segmentKind = SCOREBOARD_SEGMENT_KINDS[item?.kind === 'segment' ? item?.segmentKind || '' : ''] || '';
@@ -498,7 +506,7 @@ function scoreboardDetailView() {
     ${scoreboardRelatedDecision(vote.related)}
     ${scoreboardParentDecision(vote.parent)}
     ${scoreboardTextStatusCard(vote)}
-    <section class="card scoreboard-result"><span class="k">Resultado desta votação</span><dl class="scoreboard-tally"><div><dt>Sim</dt><dd>${scoreboardCount(tally.yes)}</dd></div><div><dt>Não</dt><dd>${scoreboardCount(tally.no)}</dd></div><div><dt>Abstenção</dt><dd>${scoreboardCount(tally.abstention)}</dd>${Number.isFinite(tally.abstention) ? '' : '<small>não publicada</small>'}</div><div><dt>Total</dt><dd>${scoreboardCount(tally.total)}</dd></div></dl>
+    <section class="card scoreboard-result"><span class="k">Resultado desta votação</span><dl class="scoreboard-tally"><div><dt>Sim</dt><dd>${scoreboardCount(tally.yes)}</dd></div><div><dt>Não</dt><dd>${scoreboardCount(tally.no)}</dd></div><div><dt>Abstenção</dt><dd>${scoreboardCount(scoreboardAbstention(tally).count)}</dd>${scoreboardAbstention(tally).note ? `<small>${scoreboardAbstention(tally).note}</small>` : ''}</div><div><dt>Total</dt><dd>${scoreboardCount(tally.total)}</dd></div></dl>
       ${hasParticipants ? scoreboardSeatGrid(participants) : ''}
       <p class="muted">${scoreboardEscape(outcome)}. O resultado se refere a esta decisão registrada. O total soma Sim, Não e Abstenção.</p></section>
     ${hasParticipants ? scoreboardParticipants(payload.participants) : '<section class="card scoreboard-voters"><span class="k">Votos individuais</span><p class="muted">A lista individual não está disponível para esta votação.</p></section>'}
