@@ -116,7 +116,9 @@ def compose_month(parts, service, period):
         reasons.append('payroll_unavailable')
     if quota.get('completeSnapshot') is not True:
         reasons.append('quota_snapshot_unverified')
-    if office.get('sourceStatus') != 'imported' and 'office' not in gaps:
+    # O status da seção também depende da contagem de funcionários; a verba mensal
+    # publicada continua válida quando apenas essa contagem está ausente.
+    if office.get('sourceStatus') not in ('imported', 'partial') and 'office' not in gaps:
         reasons.append('office_incomplete')
     if any(value is None for part, value in values.items() if part not in gaps):
         reasons.append('missing_parts')

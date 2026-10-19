@@ -91,9 +91,15 @@ class MandateCompositionTests(unittest.TestCase):
         self.assertFalse(row['eligible'])
         self.assertIn('quota_snapshot_unverified', row['exclusionReasons'])
 
-    def test_partial_office_is_not_a_complete_part(self):
+    def test_partial_office_with_published_amount_does_not_require_staff_count(self):
         self.parts['office'][self.period]['sourceStatus'] = 'partial'
-        self.assertFalse(compose_month(self.parts, self.service, self.period)['eligible'])
+        row = compose_month(self.parts, self.service, self.period)
+        self.assertTrue(row['eligible'])
+        self.assertEqual(row['knownSumCents'], 36000)
+        self.parts['office'][self.period]['amountCents'] = None
+        row = compose_month(self.parts, self.service, self.period)
+        self.assertFalse(row['eligible'])
+        self.assertIsNone(row['valuesCents']['office'])
 
     def test_anonymous_inventory_is_only_a_footnote(self):
         payroll = self.parts['payroll'][self.period]

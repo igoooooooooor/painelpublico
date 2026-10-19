@@ -1,7 +1,8 @@
 # Varredura numérica — 18/10/2026
 
 Revisão adicional motivada pela troca da média pelo mês de referência no cartão de custo
-(commits `6fa52f65` e `a08028d5`). Código e dados locais; nenhuma publicação em produção foi feita.
+(commits `6fa52f65` e `a08028d5`). A revisão começou com código e dados locais; as correções
+foram autorizadas para publicação, com nova auditoria sobre os dados do servidor.
 
 ## Inconsistências confirmadas nesta revisão
 
@@ -41,6 +42,12 @@ Revisão adicional motivada pela troca da média pelo mês de referência no car
 - **Valor pequeno arredondado para zero:** a telefonia de Aline Gurgel, **R$ 1,14**, aparecia como
   “R$ 0 mil” no detalhamento. A formatação compacta agora conserva centavos abaixo de R$ 1.000,
   inclusive para estornos, e mantém a mesma regra no conteúdo entregue pelo servidor.
+
+Na preparação do deploy, a proteção de cobertura detectou outro caso no servidor: a seção de gabinete
+de Gustavo Gayer tinha todos os valores mensais publicados, mas status `partial` por não trazer a
+contagem de funcionários. Isso excluía meses válidos da recomposição. A elegibilidade agora aceita
+o valor mensal publicado nesse status; valor ausente ou desatualizado continua impedindo o uso.
+A ausência da contagem de funcionários não transforma a verba observada em dado ausente.
 
 ## Valores oficiais que ainda exigem conferência
 
