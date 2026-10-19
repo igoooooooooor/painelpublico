@@ -12,6 +12,13 @@ def chamber_record(values_by_month, average=None):
 class SettledAverageTests(unittest.TestCase):
     """A média do mandato só usa meses com as notas da cota assentadas, como a ficha (profileCostAverage)."""
 
+    def test_settled_cutoff_is_the_last_month_with_three_months_of_margin(self):
+        from backend.settlement import settled_cutoff
+        self.assertEqual(settled_cutoff('2026-10-13T03:17:32+00:00'), '2026-07')
+        self.assertEqual(settled_cutoff('2026-02-01'), '2025-11')
+        self.assertIsNone(settled_cutoff(None))
+        self.assertIsNone(settled_cutoff('ontem'))
+
     def test_settled_periods_need_three_months_of_margin(self):
         periods = ['2026-09', '2026-07', '2026-08']
         self.assertEqual(costs.settled_periods(periods, '2026-10-13T03:17:32+00:00'), ['2026-07'])

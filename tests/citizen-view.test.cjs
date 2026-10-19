@@ -655,6 +655,26 @@ test('deputy profile explains why the latest-month quota in the mandate cost dif
   assert.equal(api.profileQuotaDifferenceNote({ ...profile, mediaMensal: 33701 }, cost), '');
 });
 
+test('quota average texts use the settled months while the total and chart keep every month', () => {
+  const { api, state } = makeView();
+  setProfileFixture(api, state, 'camara:55', {
+    total: 2110, mediaMensal: 100, hasExpenseData: true,
+    periodo: { inicio: '2026-07', fim: '2026-10', meses: 4 }, mediaPeriodo: { inicio: '2026-07', fim: '2026-07', meses: 1 },
+    meses: [{ year: 2026, month: 7, valor: 100 }, { year: 2026, month: 8, valor: 1000 }, { year: 2026, month: 9, valor: 1000 }, { year: 2026, month: 10, valor: 10 }],
+  });
+  const html = api.profileView();
+  assert.match(html, /jul\/2026, 1 mês com notas já assentadas · total R\$ 2 mil no mandato/);
+  assert.match(html, /Total da cota de jul\/2026–out\/2026:<\/b> R\$\s?2\.110,00, somando todas as notas publicadas até agora\. Média de R\$\s?100,00 por mês no 1 mês com notas já assentadas \(jul\/2026\)\./);
+  assert.equal((html.match(/class="open"/g) || []).length, 3);
+  assert.match(html, /Os meses em barra clara ficam fora da média até as notas assentarem/);
+  // Ficha antiga, só com `periodo`: o texto cai no período completo em vez de quebrar.
+  setProfileFixture(api, state, 'camara:56', { total: 2110, mediaMensal: 527.5, hasExpenseData: true,
+    periodo: { inicio: '2026-07', fim: '2026-10', meses: 4 }, meses: [{ year: 2026, month: 10, valor: 10 }] });
+  const legacy = api.profileView();
+  assert.match(legacy, /jul\/2026–out\/2026, 4 meses com notas já assentadas/);
+  assert.doesNotMatch(legacy, /class="open"|barra clara/);
+});
+
 test('the rendered profile passes its snapshot date to monthly cost details', () => {
   const { api, context, state } = makeView();
   setProfileFixture(api, state, 'camara:55', { snapshotAt: '2026-09-20' });

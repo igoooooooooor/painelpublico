@@ -239,6 +239,51 @@ class CitizenPoliticiansTests(unittest.TestCase):
         self.assertEqual([item['gastoMensal'] for item in with_notes], [item['gastoMensal'] for item in result['topCamara']])
         self.assertFalse(any(item['hasExpenseData'] for item in listing[len(with_notes):]))  # sem notas, no fim
 
+    def test_quota_average_uses_only_months_whose_notes_have_settled(self):
+        """Jul a out/2026 com fotografia de 8/10: só julho tem os 3 meses de folga; o total segue com tudo."""
+        self.payload['authorities'].append(self.authority('camara:recent', 'Gil Recente', 'deputado', 'camara_deputies_current'))
+        self.payload['authorities'].append(self.authority('camara:newbie', 'Hugo Novato', 'deputado', 'camara_deputies_current'))
+        for month, amount in ((7, 100), (8, 1000), (9, 1000), (10, 10)):
+            expense = self.expense(f'expense:recent-{month}', 'camara:recent', 'camara_ceap', amount)
+            expense.update(month=month, date=f'2026-{month:02d}-12')
+            self.payload['expenses'].append(expense)
+        for month in (9, 10):
+            expense = self.expense(f'expense:newbie-{month}', 'camara:newbie', 'camara_ceap', 30)
+            expense.update(month=month, date=f'2026-{month:02d}-12')
+            self.payload['expenses'].append(expense)
+        self.import_data()
+        with closing(store.connect(self.db_path)) as db, db:
+            db.execute("INSERT OR REPLACE INTO meta VALUES('snapshotAt','2026-10-08T21:02:21+00:00')")
+            store.rebuild_aggregates(db)
+            recent = citizen.politician(db, 'camara:recent')
+            newbie = citizen.politician(db, 'camara:newbie')
+            listing = {item['id']: item for item in citizen.politicians(db, {'ordem': 'cota', 'cargo': 'deputado', 'pageSize': 100})['itens']}
+            top = [item['id'] for item in citizen.summary(db)['topCamara']]
+            party = {item['sigla']: item for item in citizen.parties(db)['itens']}['TESTE']
+            yearly = citizen._averages(db, 2026)['deputado']
+            context = citizen._context(db, recent['pessoa'], 'camara:recent', 'camara_ceap', 2026, {})
+
+        self.assertEqual(recent['total'], 2110)
+        self.assertEqual(recent['periodo'], {'inicio': '2026-07', 'fim': '2026-10', 'meses': 4})
+        self.assertEqual(recent['mediaMensal'], 100)
+        self.assertEqual(recent['mediaPeriodo'], {'inicio': '2026-07', 'fim': '2026-07', 'meses': 1})
+        self.assertEqual(listing['camara:recent']['gastoMensal'], 100)
+        self.assertEqual(listing['camara:recent']['gasto'], 2110)
+        # Sem nenhum mês assentado, a média usa os meses que há, em vez de sumir.
+        self.assertEqual(newbie['mediaMensal'], 30)
+        self.assertEqual(newbie['mediaPeriodo'], {'inicio': '2026-09', 'fim': '2026-10', 'meses': 2})
+        # Ranking da home e da lista: Caio (R$ 123,45 em jan) fica à frente de Gil (R$ 100 em jul), não de R$ 527 por mês.
+        self.assertEqual(top[:3], ['camara:paid', 'camara:recent', 'camara:newbie'])
+        self.assertAlmostEqual(party['deputado']['media'], (123.45 + 100 + 30 + 0) / 4)
+        # Média do cargo no ano e contexto do alerta sobre os mesmos meses assentados; quem só tem meses
+        # em aberto no ano fica fora dessa média (seus meses não são comparáveis), sem virar zero.
+        self.assertAlmostEqual(yearly['media'], (123.45 + 100 + 0) / 3)
+        self.assertEqual(yearly['n'], 3)
+        self.assertEqual(context['meses'], 1)
+        self.assertEqual(context['mediaMensal'], 100)
+        self.assertEqual(context['total'], 2110)
+        self.assertIn('R$ 100 por mês em média no 1 mês com notas assentadas', context['frase'])
+
     def test_home_summary_averages_monthly_cost_per_house_without_inventing_missing_costs(self):
         self.payload['authorities'].append(
             self.authority('camara:extra-cost', 'Pessoa Com Custo', 'deputado', 'camara_deputies_current'))

@@ -16,17 +16,19 @@ from statistics import median
 
 from . import public_store as store
 from . import costs
+from .settlement import settled_cutoff
 from .alert_rules import MANDATE_START, NOT_EVALUATED as NOT_EVALUATED_TEXT
 from .config import HOUSING_COMPLEMENT_KIND
 
 ROLES = ('deputado', 'senador')
 ROLE_LABELS = {'deputado': 'deputados(as)', 'senador': 'senadores(as)'}
 CURRENT = {'deputado': 'camara_deputies_current', 'senador': 'senado_senators_current'}
-# Meses com notas da cota (authority_totals, alias t). Mês sem nota é ausência de dado, não gasto zero;
-# assim licenças e trocas de suplente não diluem a média.
-MONTH_COUNT = 't.monthCount'
+# Meses com notas da cota já assentadas (authority_totals, alias t; backend/settlement.py). Mês sem nota é
+# ausência de dado, não gasto zero; assim licenças e trocas de suplente não diluem a média. Os meses mais
+# recentes, cuja cota ainda recebe notas, ficam fora da média (não do total) até assentarem.
+MONTH_COUNT = 't.settledMonthCount'
 # Média mensal da cota: compara deputados (mandato desde fev/2023) e senadores (2026) no mesmo critério.
-MONTHLY = f't.amountCents*1.0/{MONTH_COUNT}'
+MONTHLY = f't.settledAmountCents*1.0/{MONTH_COUNT}'
 # Reembolsos de quem está na lista atual de um cargo (:source, :role): notas detalhadas (ano corrente) mais as
 # notas enxutas dos anos anteriores do mandato (visão quota_history). Parte da lista e busca as notas de cada
 # parlamentar pelo índice; juntar depois da união varria as notas do mandato inteiro a cada ficha.
@@ -121,15 +123,17 @@ def _context(db, person, authority, source, year, cache, total=None):
     averages_key = f'__averages_{year}'
     if averages_key not in cache:
         cache[averages_key] = _averages(db, year)
-    # A média do cargo é mensal (meses com notas); compara com a média mensal da pessoa no mesmo ano.
+    # A média do cargo é mensal (meses com notas assentadas); compara com a média mensal da pessoa no mesmo
+    # ano, sobre os mesmos meses. O total do ano segue com todas as notas.
     average = (cache[averages_key].get(person.get('role')) or {}).get('media')
     series = _monthly_series(db, authority, source, year)
+    settled = _settled_series(series, year, settled_cutoff(_snapshot(db)))
     if total is None:
         total = sum(series.values())
-    months = len(series)
+    months = len(settled)
     if not average or not total or not months:
         return None
-    monthly = total / months
+    monthly = sum(settled.values()) / months
     difference = monthly / average - 1
     group_label = ROLE_LABELS.get(person.get('role'), 'parlamentares')
     if abs(difference) < 0.1:
@@ -138,7 +142,16 @@ def _context(db, person, authority, source, year, cache, total=None):
         comparison = (f'{round(abs(difference) * 100)}% {"mais" if difference > 0 else "menos"} que a média mensal '
                       f'dos(as) {group_label} em {year} ({store_money(average)})')
     return {'total': total, 'mediaMensal': monthly, 'meses': months, 'media': average, 'diferenca': difference,
-            'frase': f'Em {year}, gastou {store_money(total)} na cota, {store_money(monthly)} por mês em média, {comparison}.'}
+            'frase': f'Em {year}, gastou {store_money(total)} na cota, {store_money(monthly)} por mês em média '
+                     f'{"no" if months == 1 else "nos"} {months} {"mês" if months == 1 else "meses"} com notas assentadas, {comparison}.'}
+
+
+def _settled_series(series, year, cutoff):
+    """Meses da série (número do mês → valor) com as notas assentadas; sem nenhum, todos."""
+    if cutoff is None:
+        return dict(series)
+    settled = {month: value for month, value in series.items() if f'{int(year):04d}-{int(month):02d}' <= cutoff}
+    return settled or dict(series)
 
 
 # Tipos de despesa do CEAPS → número usado nas páginas de detalhamento do portal do Senado
@@ -427,12 +440,25 @@ def _compute_averages(db, year=None):
                 WHERE t.kind='reembolso' AND a.role=? AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?)''',
                 (role, CURRENT[role])).fetchone()
         else:
-            r = db.execute(f'''SELECT AVG(y.amountCents*1.0/y.monthCount)/100.0,COUNT(*) FROM (
-                    SELECT x.authorityId,SUM(x.amountCents) amountCents,COUNT(DISTINCT x.month) monthCount
-                    FROM {ROSTER_QUOTA} x WHERE x.year=:year
-                    GROUP BY x.authorityId) y''', {'year': int(year), 'role': role, 'source': CURRENT[role]}).fetchone()
+            r = _yearly_average(db, role, int(year), settled_cutoff(_snapshot(db)))
         out[role] = {'media': r[0] or 0, 'n': r[1]}
     return out
+
+
+def _yearly_average(db, role, year, cutoff):
+    """(média mensal em reais, pessoas) do cargo num ano, só nos meses com notas assentadas.
+
+    Sem nenhum mês assentado no ano (começo de ano), valem todos os meses, como em settled_periods.
+    """
+    query = f'''SELECT AVG(y.amountCents*1.0/y.monthCount)/100.0,COUNT(*) FROM (
+            SELECT x.authorityId,SUM(x.amountCents) amountCents,COUNT(DISTINCT x.month) monthCount
+            FROM {ROSTER_QUOTA} x WHERE x.year=:year AND (:cutoff IS NULL OR printf('%04d-%02d',x.year,x.month)<=:cutoff)
+            GROUP BY x.authorityId) y'''
+    args = {'year': year, 'role': role, 'source': CURRENT[role], 'cutoff': cutoff}
+    row = db.execute(query, args).fetchone()
+    if not row[1] and cutoff is not None:
+        row = db.execute(query, {**args, 'cutoff': None}).fetchone()
+    return row
 
 
 def _politician_coverage(db):
@@ -627,11 +653,13 @@ def politician(db, identifier):
         WHERE kind=:kind''', {'id': identifier, 'kind': HOUSING_COMPLEMENT_KIND}).fetchone()
     cache = {}
     averages = _averages(db)
-    span = db.execute(f"SELECT t.periodStart,t.periodEnd,{MONTH_COUNT} FROM authority_totals t WHERE t.authorityId=? AND t.kind='reembolso'",
-                      (identifier,)).fetchone()
+    span = db.execute("SELECT t.periodStart,t.periodEnd,t.monthCount,t.settledAmountCents,t.settledMonthCount,t.settledPeriodEnd "
+                      "FROM authority_totals t WHERE t.authorityId=? AND t.kind='reembolso'", (identifier,)).fetchone()
+    # `periodo` e `total` cobrem todas as notas; `mediaMensal` e `mediaPeriodo` só os meses assentados.
     return {'pessoa': person, 'total': total, 'hasExpenseData': has_expense_data,
-            'mediaMensal': total / span[2] if has_expense_data and span else None,
+            'mediaMensal': span[3] / 100 / span[4] if has_expense_data and span else None,
             'periodo': {'inicio': span[0], 'fim': span[1], 'meses': span[2]} if has_expense_data and span else None,
+            'mediaPeriodo': {'inicio': span[0], 'fim': span[5], 'meses': span[4]} if has_expense_data and span else None,
             'expenseCount': expense_count, 'meses': monthly_totals,
             'categorias': [{'nome': k, 'valor': v} for k, v in sorted(categories.items(), key=lambda kv: -kv[1])],
             'fornecedores': suppliers, 'maiores': largest_expenses, 'alertas': [_alert(db, signal, people, cache) for signal in signals],

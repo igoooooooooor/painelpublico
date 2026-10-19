@@ -18,8 +18,11 @@ CREATE INDEX IF NOT EXISTS authority_source ON authorities(sourceId);
 CREATE INDEX IF NOT EXISTS authority_name ON authorities(name,id);
 CREATE INDEX IF NOT EXISTS expense_kind_date ON expenses(kind,year DESC,month DESC,date DESC,id);
 CREATE INDEX IF NOT EXISTS expense_kind_amount ON expenses(kind,amountCents DESC,id);
+-- settled*: só os meses com as notas assentadas (backend/settlement.py), denominador da média mensal;
+-- sem nenhum mês assentado, repetem o total e a contagem de todos os meses.
 CREATE TABLE IF NOT EXISTS authority_totals(authorityId TEXT,kind TEXT,amountCents INTEGER,count INTEGER,
- periodStart TEXT,periodEnd TEXT,monthCount INTEGER,PRIMARY KEY(authorityId,kind));
+ periodStart TEXT,periodEnd TEXT,monthCount INTEGER,settledAmountCents INTEGER,settledMonthCount INTEGER,
+ settledPeriodEnd TEXT,PRIMARY KEY(authorityId,kind));
 CREATE TABLE IF NOT EXISTS supplier_totals(supplierKey TEXT PRIMARY KEY,amountCents INTEGER,count INTEGER,authorityCount INTEGER);
 CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY,value TEXT);
 CREATE TABLE IF NOT EXISTS signals(id TEXT PRIMARY KEY,authorityId TEXT,sourceId TEXT,type TEXT,title TEXT,

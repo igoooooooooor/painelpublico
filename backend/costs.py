@@ -16,29 +16,16 @@ Casa, nunca entre Câmara e Senado. Sem mês com todas as partes, não há custo
 from __future__ import annotations
 
 import math
-import re
 import threading
 from fractions import Fraction
 
 from . import config, profiles
+from .settlement import SETTLE_MONTHS, settled_periods  # noqa: F401 - regra compartilhada com a média da cota
 
-SETTLE_MONTHS = 3
 _PARTS = ('remuneration', 'allowances', 'quota', 'office')
 
 _lock = threading.Lock()
 _cache: dict = {}
-
-
-def _serial(period):
-    return int(period[:4]) * 12 + int(period[5:7]) - 1
-
-
-def settled_periods(periods, as_of):
-    """Meses com as notas da cota assentadas (3 meses de folga até ``as_of``); sem nenhum, todos, em ordem."""
-    ordered = sorted({period for period in periods if isinstance(period, str) and re.fullmatch(r'\d{4}-\d{2}', period)})
-    reference = as_of[:7] if isinstance(as_of, str) and re.match(r'\d{4}-\d{2}', as_of) else None
-    settled = [period for period in ordered if reference is None or _serial(reference) - _serial(period) >= SETTLE_MONTHS]
-    return settled or ordered
 
 
 def _cents(value):

@@ -1,4 +1,20 @@
-# Varredura numérica — 18/10/2026
+# Varredura numérica
+
+## Revisão de 19/10/2026
+
+- **Média da cota com meses ainda em aberto:** `authority_totals.monthCount` contava todo mês com
+  qualquer nota, inclusive os que ainda recebem notas. Na base de 8/10/2026, out/2026 já tinha notas
+  de 96 deputados (R$ 107 mil no total, vários com R$ 100) e contava como mês inteiro; set/2026 somava
+  R$ 4,3 mi contra cerca de R$ 20 mi de um mês cheio. Resultado: 457 de 511 deputados com média menor
+  que a dos meses assentados (mediana −2,7%; Marcelo Nilo, `camara:204558`, **R$ 33 mil** em vez de
+  **R$ 43 mil**), e o 1º lugar do "Quem mais usa a cota" trocava de pessoa. Enquanto isso, o cartão de
+  custo ao lado já deixava esses meses fora da média (regra dos 3 meses de `a08028d5`). A média da cota
+  (ficha, home, lista, partidos, comparar, imagem, buscadores, média do cargo por ano e contexto dos
+  alertas) passa a usar a mesma regra, em `backend/settlement.py` e nas colunas `settled*` de
+  `authority_totals` (esquema v8); total, mês a mês e alertas seguem com todas as notas, e a ficha
+  marca os meses em aberto. Sem nenhum mês assentado, valem todos, como no custo.
+
+## Varredura de 18/10/2026
 
 Revisão adicional motivada pela troca da média pelo mês de referência no cartão de custo
 (commits `6fa52f65` e `a08028d5`). A revisão começou com código e dados locais; as correções

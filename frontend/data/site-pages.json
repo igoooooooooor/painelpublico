@@ -206,7 +206,7 @@
           {
             "question": "Como é calculada a média mensal da cota?",
             "answer": [
-              "É o total dividido pelos meses com notas no período indicado. Mês sem nota é ausência de dado, não gasto zero, então licenças e trocas de suplente não diluem a média. Estornos são preservados nos totais. Valores altos não indicam irregularidade."
+              "É o total dividido pelos meses com notas já assentadas: as notas de um mês chegam por semanas, então um mês só entra na média com 3 meses de folga até a data das notas importadas (a mesma regra do custo do mandato); os meses mais recentes aparecem no mês a mês e no total, mas ficam fora da média. Mês sem nota é ausência de dado, não gasto zero, então licenças e trocas de suplente não diluem a média. Estornos são preservados nos totais. Valores altos não indicam irregularidade."
             ]
           },
           {

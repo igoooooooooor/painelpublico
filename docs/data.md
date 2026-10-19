@@ -728,10 +728,15 @@ partir de fev/2023.
   `data/imports-history/` fica fora de `data/imports/` de propósito: `make import`
   continua importando só o ano corrente.
 - **Média mensal:** lista, comparação, partidos, home e o cartão de cota usam o gasto
-  médio por mês, `total ÷ meses com notas` (`authority_totals.monthCount`). Mês sem
-  nota é ausência de dado, não gasto zero, então licenças e trocas de suplente não
-  diluem a média. Assim deputados e senadores ficam comparáveis, os dois desde fev/2023.
-  A ficha mostra também o total e o período.
+  médio por mês, `total ÷ meses com notas já assentadas` (`authority_totals.settledAmountCents`
+  e `settledMonthCount`). As notas de um mês chegam por semanas, então um mês só entra na
+  média com 3 meses de folga até `meta.snapshotAt`, a mesma regra do custo do mandato
+  (`backend/settlement.py`); sem nenhum mês com a folga, valem todos. Os meses mais recentes
+  continuam no total, no mês a mês e nos alertas, só não na média. Mês sem nota é ausência
+  de dado, não gasto zero, então licenças e trocas de suplente não diluem a média. Assim
+  deputados e senadores ficam comparáveis, os dois desde fev/2023. A ficha mostra também o
+  total e o período de todas as notas (`periodo`) e o período da média (`mediaPeriodo`);
+  a média do cargo por ano e o contexto dos alertas seguem o mesmo corte.
 - **Notas do mês:** na ficha da Câmara, a fonte da cota de cada mês do mandato abre a lista
   das notas daquele mês (`/api/c/notas?id=camara:<id>&mes=AAAA-MM`), com link para
   cada nota original, o total e como achar o mesmo total no arquivo anual (filtrar
@@ -786,7 +791,7 @@ partir de fev/2023.
   (que reconsulta o ano corrente a cada `--collect`). Conferência em 8/10: a parte de
   2026 bate dia a dia com o snapshot anterior nos 512 deputados com dados.
 
-A média mensal da cota na lista (meses com notas) e a parte "cota" do custo do
+A média mensal da cota na lista (meses com notas assentadas) e a parte "cota" do custo do
 mandato (meses em exercício com as quatro partes) usam recortes diferentes e podem
 diferir um pouco; cada uma diz o seu período.
 

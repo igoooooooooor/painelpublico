@@ -241,7 +241,7 @@ def _home_top_card(summary):
         f'<span class="home-rank-value">R$ {thousands(person.get("gastoMensal") or 0)} mil</span>'
         f'<i style="width:{max(0, person.get("gastoMensal") or 0) / biggest * 100:.2f}%"></i></a></li>'
         for index, person in enumerate(top, start=1))
-    return (f'<section class="card home-panel"><div class="home-panel-head"><h2 class="h">Quem mais usa a cota</h2><span class="muted">Média mensal nos meses com notas</span></div>'
+    return (f'<section class="card home-panel"><div class="home-panel-head"><h2 class="h">Quem mais usa a cota</h2><span class="muted">Média mensal nos meses com notas já assentadas</span></div>'
             + (f'<ol class="home-ranking">{rows}</ol>' if rows else '<p>Sem reembolsos importados para ordenar.</p>')
             + f'<span class="muted">Os cinco maiores valores entre {len(ranking)} deputados(as) com dados. {esc(period_text(quota.get("periodo")))}. Valores altos não indicam irregularidade.</span>'
             f'<a class="more" href="/politicos">Ver a lista completa →</a></section>')
@@ -580,7 +580,7 @@ def parties_body(db):
         rows.append(f'<tr><th scope="row">{esc(party.get("sigla"))}</th><td>{pt_int(party.get("membros") or 0)}</td>'
                     f'<td>{pt_int(chamber.get("membros") or 0)}</td><td>{pt_int(senate.get("membros") or 0)}</td>'
                     f'<td>{money(average) if isinstance(average, (int, float)) else "sem notas"}</td><td>{pt_int(alerts)}</td></tr>')
-    table = ('<div class="seo-table-wrap"><table class="seo-table"><caption class="muted">Lista oficial atual; cota média mensal por deputado(a), nos meses com notas, desde fev/2023. '
+    table = ('<div class="seo-table-wrap"><table class="seo-table"><caption class="muted">Lista oficial atual; cota média mensal por deputado(a), nos meses com notas já assentadas, desde fev/2023. '
              'Sem notas importadas, a média fica em branco (ausência não é zero).</caption>'
              '<thead><tr><th scope="col">Partido</th><th scope="col">Registros</th><th scope="col">Câmara</th><th scope="col">Senado</th>'
              '<th scope="col">Cota média/mês (Câmara)</th><th scope="col">Alertas</th></tr></thead>'

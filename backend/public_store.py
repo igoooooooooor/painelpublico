@@ -10,6 +10,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from .config import DB_PATH, HOUSING_COMPLEMENT_KIND, ROOT, ROSTER_SOURCES
 from .database import fold, migrate
+from .settlement import settled_cutoff
 
 
 def connect(path=DB_PATH):
@@ -166,8 +167,9 @@ def import_documents(paths, db_path=DB_PATH):
                  WHERE s.name IS NOT o.name OR s.cnpj IS NOT o.cnpj)''', (stamp,))
             db.execute('''DELETE FROM suppliers WHERE key NOT IN (SELECT supplierKey FROM expenses WHERE supplierKey IS NOT NULL)
                 AND key NOT IN (SELECT supplierKey FROM quota_history_notes WHERE supplierKey IS NOT NULL)''')
-            rebuild_aggregates(db)
+            # A fotografia entra antes dos agregados: a média da cota lê snapshotAt para assentar os meses.
             db.execute("INSERT OR REPLACE INTO meta VALUES('snapshotAt',?)", (stamp,))
+            rebuild_aggregates(db)
         return counts
     finally:
         db.close()
@@ -187,15 +189,29 @@ def rebuild_aggregates(db):
         db.row_factory = previous_factory
 
 
+def snapshot_at(db):
+    row = db.execute("SELECT value FROM meta WHERE key='snapshotAt'").fetchone()
+    return row[0] if row else None
+
+
 def _rebuild_aggregates(db):
     db.execute('DELETE FROM authority_totals')
-    # Notas detalhadas do ano corrente mais as notas enxutas dos anos anteriores do mandato.
-    db.execute("""INSERT INTO authority_totals(authorityId,kind,amountCents,count,periodStart,periodEnd,monthCount)
-        SELECT authorityId,kind,SUM(cents),SUM(n),MIN(period),MAX(period),COUNT(DISTINCT period) FROM (
+    # Notas detalhadas do ano corrente mais as notas enxutas dos anos anteriores do mandato. As colunas
+    # settled* param no último mês com as notas assentadas na fotografia (backend/settlement.py); sem data,
+    # todos os meses contam.
+    cutoff = settled_cutoff(snapshot_at(db)) or '9999-12'
+    db.execute("""INSERT INTO authority_totals(authorityId,kind,amountCents,count,periodStart,periodEnd,monthCount,
+            settledAmountCents,settledMonthCount,settledPeriodEnd)
+        SELECT authorityId,kind,SUM(cents),SUM(n),MIN(period),MAX(period),COUNT(DISTINCT period),
+            COALESCE(SUM(CASE WHEN period<=:cutoff THEN cents END),0),COUNT(DISTINCT CASE WHEN period<=:cutoff THEN period END),
+            MAX(CASE WHEN period<=:cutoff THEN period END) FROM (
         SELECT authorityId,kind,amountCents cents,1 n,printf('%04d-%02d',year,month) period FROM expenses
         UNION ALL
         SELECT authorityId,kind,amountCents,1,printf('%04d-%02d',year,month) FROM quota_history
-        ) GROUP BY authorityId,kind""")
+        ) GROUP BY authorityId,kind""", {'cutoff': cutoff})
+    # Sem nenhum mês assentado (pessoa só com meses recentes), valem todos, como em settled_periods.
+    db.execute("""UPDATE authority_totals SET settledAmountCents=amountCents,settledMonthCount=monthCount,settledPeriodEnd=periodEnd
+        WHERE settledMonthCount=0""")
     db.execute('DELETE FROM supplier_totals')
     db.execute('''INSERT INTO supplier_totals SELECT supplierKey,SUM(amountCents),COUNT(*),COUNT(DISTINCT authorityId)
         FROM expenses WHERE supplierKey IS NOT NULL AND kind='reembolso' GROUP BY supplierKey''')

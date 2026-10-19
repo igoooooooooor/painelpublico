@@ -106,6 +106,12 @@ def migrate(db):
         if 'monthCount' not in {row[1] for row in db.execute('PRAGMA table_info(authority_totals)')}:
             db.execute('ALTER TABLE authority_totals ADD COLUMN monthCount INTEGER')
             dropped = True
+        # v8: a média mensal da cota só usa meses com as notas assentadas (backend/settlement.py).
+        if 'settledMonthCount' not in {row[1] for row in db.execute('PRAGMA table_info(authority_totals)')}:
+            for column, definition in (('settledAmountCents', 'INTEGER'), ('settledMonthCount', 'INTEGER'),
+                                       ('settledPeriodEnd', 'TEXT')):
+                db.execute(f'ALTER TABLE authority_totals ADD COLUMN {column} {definition}')
+            dropped = True
         if dropped:
             from .public_store import rebuild_aggregates
             rebuild_aggregates(db)

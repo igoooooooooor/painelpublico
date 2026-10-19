@@ -58,6 +58,17 @@ function comparison(a, b) {
 const profile = (id, total) => ({ pessoa: { id, name: id, role: 'senador' }, total, mediaMensal: total, media: 100,
   categorias: [], fornecedores: [], alertas: [], meses: [] });
 
+test('comparison shows the period of the settled-months quota average, not of every note', () => {
+  const a = { ...profile('senado:a', 100), periodo: { inicio: '2026-07', fim: '2026-10', meses: 4 }, mediaPeriodo: { inicio: '2026-07', fim: '2026-07', meses: 1 } };
+  const b = { ...profile('senado:b', 100), periodo: { inicio: '2026-01', fim: '2026-03', meses: 3 } };
+  const { api, context } = comparison(a, b);
+  const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+  const label = value => `${months[Number(value.slice(5)) - 1]}/${value.slice(0, 4)}`;
+  context.citizenQuotaPeriod = (start, end) => (start === end ? label(start) : `${label(start)}–${label(end)}`);
+  const html = api.comparisonTable([a, b]);
+  assert.match(html, /<div class="cmp-v muted cmp-source">jul\/2026<\/div><div class="cmp-v muted cmp-source">jan\/2026–mar\/2026<\/div>/);
+});
+
 test('comparison keeps missing spending unavailable instead of awarding it a zero or -100% result', () => {
   const { html } = comparison(profile('senado:a', null), profile('senado:b', 100));
   assert.match(html, /Sem dados/);

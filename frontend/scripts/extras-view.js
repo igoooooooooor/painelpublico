@@ -602,7 +602,8 @@ function comparisonTable([a, b]) {
     return `<div class="cmp-v ${winner === 'a' ? 'best' : ''}">${valueA == null ? 'Sem dados' : format(valueA, 'a')}</div><div class="cmp-v ${winner === 'b' ? 'best' : ''}">${valueB == null ? 'Sem dados' : format(valueB, 'b')}</div>`;
   };
   const vsAverage = profile => profile.mediaMensal != null && profile.media ? Math.round((profile.mediaMensal / profile.media - 1) * 100) : null;
-  const quotaPeriod = profile => typeof citizenQuotaPeriod === 'function' ? citizenQuotaPeriod(profile.periodo?.inicio, profile.periodo?.fim) : '';
+  // Período da média: só os meses com notas assentadas (`mediaPeriodo`); fichas antigas trazem só `periodo`.
+  const quotaPeriod = profile => { const period = profile.mediaPeriodo || profile.periodo; return typeof citizenQuotaPeriod === 'function' && period ? citizenQuotaPeriod(period.inicio, period.fim) : ''; };
   if ([a, b].some(f => String(f.pessoa.id).startsWith('senado:')) && typeof profileSenateEnsure === 'function') profileSenateEnsure();
   const pA = attendanceForPerson(a.pessoa.id), pB = attendanceForPerson(b.pessoa.id);
   const topCategory = f => {

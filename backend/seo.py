@@ -171,14 +171,14 @@ def profile_facts(db, identifier):
     monthly = record.get('mediaMensal')
     if record.get('hasExpenseData') and monthly is not None:
         average = record.get('media')
-        period = record.get('periodo') or {}
+        period = record.get('mediaPeriodo') or record.get('periodo') or {}
         comparison = ''
         if average:
             difference = monthly / average - 1
             comparison = (' Parecido com a média do cargo.' if abs(difference) < 0.1
                           else f' {round(abs(difference) * 100)}% {"acima" if difference > 0 else "abaixo"} da média do cargo ({money(average)}).')
         facts['lines'].append(('Cota parlamentar', f'{money(monthly)} por mês em reembolsos da cota '
-                               f'({period_label(period.get("inicio"), period.get("fim"))}, nos meses com notas).{comparison}'))
+                               f'({period_label(period.get("inicio"), period.get("fim"))}, nos meses com notas já assentadas).{comparison}'))
     else:
         facts['lines'].append(('Cota parlamentar', 'Sem notas da cota importadas (ausência de dado não é zero).'))
     house, number = identifier.split(':', 1)

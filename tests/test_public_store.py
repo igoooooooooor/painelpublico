@@ -42,6 +42,31 @@ class PublicStoreTests(unittest.TestCase):
         path.write_text(json.dumps(self.payload))
         store.import_documents([path], self.db_path)
 
+    def test_monthly_average_columns_leave_out_months_whose_notes_still_arrive(self):
+        # p:1 ganha notas de ago a out/2026; p:7 só tem meses recentes. Fotografia de 8/10/2026: assentado até jul.
+        for month in (8, 9, 10):
+            self.payload['expenses'].append({**self.payload['expenses'][0], 'id': f'late:{month}', 'authorityId': 'p:1',
+                                             'month': month, 'date': f'2026-{month:02d}-15', 'amount': 50000})
+        self.payload['authorities'].append({**self.payload['authorities'][0], 'id': 'p:7', 'name': 'José 7'})
+        for month in (9, 10):
+            self.payload['expenses'].append({**self.payload['expenses'][0], 'id': f'new:{month}', 'authorityId': 'p:7',
+                                             'month': month, 'date': f'2026-{month:02d}-15', 'amount': 700})
+        self.import_data()
+        columns = 'amountCents,monthCount,periodEnd,settledAmountCents,settledMonthCount,settledPeriodEnd'
+        with closing(store.connect(self.db_path)) as db, db:
+            db.execute("INSERT OR REPLACE INTO meta VALUES('snapshotAt','2026-10-08T21:02:21+00:00')")
+            store.rebuild_aggregates(db)
+            late = db.execute(f"SELECT {columns} FROM authority_totals WHERE authorityId='p:1' AND kind='reembolso'").fetchone()
+            new = db.execute(f"SELECT {columns} FROM authority_totals WHERE authorityId='p:7' AND kind='reembolso'").fetchone()
+            self.assertEqual(tuple(late), (5 * 1000100 + 3 * 5000000, 8, '2026-10', 5 * 1000100, 5, '2026-05'))
+            # Sem nenhum mês assentado, valem todos: a média não some nem vira zero.
+            self.assertEqual(tuple(new), (140000, 2, '2026-10', 140000, 2, '2026-10'))
+            # Sem a data da fotografia não há como julgar: todos os meses contam.
+            db.execute("DELETE FROM meta WHERE key='snapshotAt'")
+            store.rebuild_aggregates(db)
+            late = db.execute(f"SELECT {columns} FROM authority_totals WHERE authorityId='p:1' AND kind='reembolso'").fetchone()
+            self.assertEqual(tuple(late), (5 * 1000100 + 3 * 5000000, 8, '2026-10', 5 * 1000100 + 3 * 5000000, 8, '2026-10'))
+
     def test_search_text_is_accent_insensitive_and_literal(self):
         with closing(store.connect(self.db_path)) as db, db:
             count = lambda q: db.execute("SELECT COUNT(*) FROM authorities WHERE searchText LIKE ? ESCAPE '\\'",
@@ -229,6 +254,19 @@ class PublicStoreTests(unittest.TestCase):
             self.assertEqual(profile['complementoMoradia'], {'valor': -1747.0, 'notas': 1, 'meses': ['2026-03']})
             self.assertNotIn('COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA', [c['nome'] for c in profile['categorias']])
             self.assertIsNone(citizen.politician(db, 'p:1')['complementoMoradia'])
+
+    def test_version_seven_database_gains_the_settled_quota_columns(self):
+        with closing(sqlite3.connect(self.db_path)) as db:
+            for column in ('settledAmountCents', 'settledMonthCount', 'settledPeriodEnd'):
+                db.execute(f'ALTER TABLE authority_totals DROP COLUMN {column}')
+            db.execute('PRAGMA user_version = 7')
+            db.commit()
+        self.assertEqual(ensure_schema(self.db_path), SCHEMA_VERSION)
+        with closing(store.connect(self.db_path)) as db, db:
+            row = db.execute("SELECT amountCents,monthCount,settledAmountCents,settledMonthCount,settledPeriodEnd "
+                             "FROM authority_totals WHERE authorityId='p:0' AND kind='reembolso'").fetchone()
+            self.assertEqual(tuple(row), (8000000, 5, 8000000, 5, '2026-05'))
+            self.assertEqual(citizen.politician(db, 'p:0')['mediaMensal'], 16000.0)
 
     def test_importer_kind_for_housing_complement_is_accepted(self):
         self.payload['expenses'][0]['kind'] = 'complemento_moradia'

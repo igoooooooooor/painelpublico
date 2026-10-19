@@ -100,7 +100,7 @@ class SeoPagesTests(unittest.TestCase):
         self.assertIn('"@type": "BreadcrumbList"', page)
         self.assertIn(f'<meta property="og:image" content="{self.base}/og-image.png">', page)
         self.assertIn('<meta name="twitter:card" content="summary_large_image">', page)
-        self.assertIn('R$ 1.234 por mês em reembolsos da cota (mar/2026, nos meses com notas)', page)
+        self.assertIn('R$ 1.234 por mês em reembolsos da cota (mar/2026, nos meses com notas já assentadas)', page)
         self.assertIn('<script>app()</script>', page)
 
     def test_profile_without_name_redirects_and_unknown_or_wrong_house_is_not_found(self):
