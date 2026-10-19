@@ -73,6 +73,7 @@ aleatório). O timer chama
 | `import` | Importação transacional na cópia (`backend.public_store`) | Transação desfeita; interrompe |
 | `verify` | `quick_check`, chaves estrangeiras, versão do esquema e **guarda de regressão**: lista oficial caindo mais de 5% ou notas caindo mais de 10% não são publicadas | Interrompe; a cópia é descartada |
 | `publish` | Troca atômica do arquivo do banco (`os.replace`); o cache do site invalida sozinho pela data do arquivo | Recusa se houver `-journal`/`-wal` pendente ao lado do banco |
+| `mandate-cost` | Recompõe offline o custo do mandato com o banco publicado e os snapshots locais; exige snapshot-base válido | Execução **parcial** se a fotografia existente estiver inválida, o banco configurado for incompatível ou a recomposição falhar |
 | `profiles` | `ingest/profiles.py --collect`: contatos e gabinete que faltam no cache e projetos pelos arquivos anuais da Câmara (só o ano corrente é baixado de novo) | Execução **parcial**; o coletor preserva as observações anteriores das fichas |
 | `project-status` | `ingest/project_status.py --collect` com validade dos arquivos anuais (20 h o ano corrente, uma semana os fechados) e detalhes só para andamentos novos | Execução **parcial**; o snapshot anterior fica |
 | `notify` | E-mail em falha e parcial (sucesso só com `PAINEL_MAIL_ON_SUCCESS=1`) e ping opcional no monitor | Falha de envio fica registrada no status |
@@ -80,7 +81,9 @@ aleatório). O timer chama
 | `senate-projects`, `senate-activity` | Autoria e votações nominais do Senado desde fev/2023 (`--mandate`); só o ano corrente é consultado de novo | Execução **parcial**; snapshot anterior fica |
 
 As etapas de snapshot rodam depois do banco publicado e não o desfazem. `--db-only` (ou
-`make update-daily DB_ONLY=1`) pula todas. Na primeira execução no servidor, que não tem os caches de
+`make update-daily DB_ONLY=1`) recompõe o custo do mandato se já houver um snapshot-base válido e pula
+os demais snapshots. `--dry-run` não recompõe o custo, pois o banco publicado não foi alterado. Na
+primeira execução no servidor, que não tem os caches de
 `data/raw/`, a etapa `profiles` consulta o detalhe e a página de gabinete dos 513 deputados e baixa os
 arquivos anuais de 2023 até o ano corrente (dezenas de MB cada, lidos um por vez); as seguintes usam os
 caches. Confira na primeira execução a linha `conciliacao:` do log dessa etapa (ou `projectsArchive` em

@@ -89,6 +89,21 @@ function shareQuotaLegend(categories) {
   return legend;
 }
 
+/* Shares use positive category balances; negative balances remain outside the distribution. */
+function shareQuotaCategories(categories, limit = 3) {
+  const rows = Array.isArray(categories) ? categories : [];
+  const positive = rows.filter(category => Number.isFinite(category?.valor) && category.valor > 0);
+  const total = positive.reduce((sum, category) => sum + category.valor, 0);
+  return {
+    total,
+    items: total > 0 ? positive.slice(0, limit).map(category => ({
+      name: category.nome || category.name || 'Categoria não informada',
+      share: category.valor / total,
+    })) : [],
+    hasRefunds: rows.some(category => Number.isFinite(category?.valor) && category.valor < 0),
+  };
+}
+
 /* Fotos oficiais pelo próprio domínio (/api/c/foto/...), para não contaminar o canvas. Cada uma tem 9 s para
    carregar (o servidor desiste da fonte em 8 s); sem foto, o card usa as iniciais. */
 const SHARE_PHOTO_PATH = /^\/api\/c\/foto\/(camara|senado)%3A\d+$/;
@@ -201,20 +216,27 @@ function shareDrawFaceoff(card, context, images = new Map()) {
     context.fillStyle = SHARE_DARK.muted;
     context.font = shareFont(400, 18);
     context.fillText('Onde vai a cota', x, y);
-    y += 14;
+    if (person.categoryNote) {
+      y += 18;
+      context.fillStyle = SHARE_DARK.behind;
+      context.font = shareFont(400, 14);
+      for (const line of shareWrap(context, person.categoryNote, inner, 2)) { y += 16; context.fillText(line, x, y); }
+    }
+    y += person.categoryNote ? 8 : 14;
     const categories = shareQuotaLegend(person.categories);
     if (categories.length) {
       const colors = [color, ...SHARE_DARK.others];
       const colorOf = (category, position) => category.rest ? SHARE_DARK.track : colors[position];
       let barX = x;
       categories.forEach((category, position) => {
+        const barHeight = person.categoryNote ? 14 : 18;
         const segment = position === categories.length - 1 ? x + inner - barX : Math.max(4, inner * category.share - 3);
-        if (segment > 0) shareRoundRect(context, barX, y, segment, 18, 4, colorOf(category, position));
+        if (segment > 0) shareRoundRect(context, barX, y, segment, barHeight, 4, colorOf(category, position));
         barX += segment + 3;
       });
-      y += 18;
+      y += person.categoryNote ? 14 : 18;
       categories.forEach((category, position) => {
-        y += 34;
+        y += person.categoryNote ? 26 : 34;
         shareRoundRect(context, x, y - 13, 12, 12, 3, colorOf(category, position));
         const share = `${category.pct}%`;
         context.font = shareFont(600, 19, SHARE_FONTS.data);
@@ -230,7 +252,7 @@ function shareDrawFaceoff(card, context, images = new Map()) {
       y += 30;
       context.fillStyle = SHARE_DARK.muted;
       context.font = shareFont(400, 19);
-      context.fillText('Sem notas da cota no período', x, y);
+      context.fillText(person.categoryEmptyLabel || 'Sem notas da cota no período', x, y);
     }
     // Rodapé do card: medidor (partidos) ou maior nota única, com categoria, mês e fornecedor.
     y = cardTop + cardHeight - 160;
@@ -464,11 +486,16 @@ function shareDrawProfile(card, context, images = new Map()) {
   // Para onde vai a cota: as 3 maiores categorias e "Outras", que fecham 100% (o resto da barra também tem nome).
   y += tileHeight + 22;
   const legend = shareQuotaLegend(card.categories);
-  const catHeight = 224;
+  const catHeight = card.categoryNote ? 260 : 224;
   box(padding, y, inner, catHeight);
   const kx = padding + 30, kw = inner - 60;
   let ky = y + 56;
   label('Para onde vai a cota', kx, ky, kw);
+  if (card.categoryNote) {
+    ky += 24;
+    context.fillStyle = SHARE_DARK.behind; context.font = shareFont(400, 16);
+    for (const line of shareWrap(context, card.categoryNote, kw, 2)) { ky += 19; context.fillText(line, kx, ky); }
+  }
   ky += 22;
   if (legend.length) {
     const colors = [accent, SHARE_DARK.faint, SHARE_DARK.others[1]];
@@ -491,7 +518,7 @@ function shareDrawProfile(card, context, images = new Map()) {
     });
   } else {
     context.fillStyle = SHARE_DARK.muted; context.font = shareFont(400, 19);
-    context.fillText('Sem notas da cota no período', kx, ky + 30);
+    context.fillText(card.categoryEmptyLabel || 'Sem notas da cota no período', kx, ky + 30);
   }
 
   // Rodapé: fontes, aviso de independência e o endereço do site.

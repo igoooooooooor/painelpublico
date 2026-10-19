@@ -61,7 +61,7 @@ function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'
     state,
   };
   vm.createContext(context);
-  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + senateCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { profileTenureLabel, senateCostAnswer, senateCostDetails, senateCostMonths, citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileAttendanceCard, profileVoteCountHTML, profileView, profileQuotaDifferenceNote, profileMandateStartNote, alertCard, skel };', context);
+  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + senateCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { profileTenureLabel, senateCostAnswer, senateCostDetails, senateCostMonths, citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileAttendanceCard, profileVoteCountHTML, profileView, profileQuotaDifferenceNote, profileMandateStartNote, profileExpenseDetails, profileShareCard, alertCard, skel };', context);
   context.votesForPerson = id => context.profileVotes(id).filter(record => record?.vote);
   context.attendanceBar = presence => presence
     ? `<span class="pbar" data-presence-days="${presence.dias}"></span>` : '';
@@ -655,6 +655,69 @@ test('deputy profile explains why the latest-month quota in the mandate cost dif
   assert.equal(api.profileQuotaDifferenceNote({ ...profile, mediaMensal: 33701 }, cost), '');
 });
 
+test('the rendered profile passes its snapshot date to monthly cost details', () => {
+  const { api, context, state } = makeView();
+  setProfileFixture(api, state, 'camara:55', { snapshotAt: '2026-09-20' });
+  const months = Object.fromEntries(['2026-06', '2026-07'].map(period => [period, {
+    period, exercise: 'in_office', valuesCents: { remuneration: 100, allowances: 0, quota: 200, office: 300 },
+  }]));
+  context.DATA.perfis.profiles['camara:55'] = { mandateCost: {
+    id: 'camara:55', house: 'camara', months, usedMonths: Object.keys(months), monthlyAverageCents: 600,
+  } };
+  const html = api.profileView();
+  assert.equal((html.match(/entra na média/g) || []).length, 1);
+  assert.match(html, /data-cost-month="2026-07"[\s\S]*?fora da média: notas da cota ainda podem chegar/);
+});
+
+test('quota category shares use positive amounts while keeping refunds visible in the net total', () => {
+  const { api } = makeView();
+  const profile = {
+    pessoa: { id: 'camara:204353', name: 'Aline Gurgel', role: 'deputado', party: 'UNIÃO', uf: 'AP' },
+    total: 86055.2, hasExpenseData: true, mediaMensal: 2400, snapshotAt: '2026-10-13',
+    periodo: { inicio: '2023-02', fim: '2026-09', meses: 42 }, meses: [], fornecedores: [
+      { name: 'Fornecedor principal', valor: 52000, notas: 4 },
+      { name: 'GOL', valor: -4045.94, notas: 4 },
+    ], maiores: [], alertas: [],
+    categorias: [
+      { nome: 'Divulgação', valor: 52000 },
+      { nome: 'Locação de veículos', valor: 38100 },
+      { nome: 'Telefonia', valor: 1.14 },
+      { nome: 'Passagem aérea', valor: -4045.94 },
+    ],
+  };
+  const details = api.profileExpenseDetails(profile, true);
+  assert.match(details, /Percentuais consideram categorias com saldo positivo; estornos aparecem com sinal negativo e reduzem o total líquido/);
+  assert.match(details, /58% dos saldos positivos/);
+  assert.match(details, /42% dos saldos positivos/);
+  assert.match(details, /R\$ -4 mil/);
+  assert.match(details, /Telefonia<\/span><b class="mono">R\$ 1,14/);
+  assert.doesNotMatch(details, /R\$ 0 mil/);
+  assert.doesNotMatch(details, /105% do total/);
+  const supplierDetails = details.match(/<h3 class="k">Para quem foi o dinheiro<\/h3>([\s\S]*?)<\/section>/)?.[1] || '';
+  assert.match(supplierDetails, /Barras proporcionais ao maior valor listado; estornos aparecem com sinal negativo/);
+  assert.match(supplierDetails, /Fornecedor principal[\s\S]*?R\$ 52 mil[\s\S]*?4 notas/);
+  assert.match(supplierDetails, /Gol[\s\S]*?R\$ -4 mil[\s\S]*?4 notas/);
+  assert.doesNotMatch(supplierDetails, /% do total/);
+  assert.match(api.profileExpenseDetails({ ...profile, fornecedores: [] }, true), /Nenhum fornecedor identificado nas notas publicadas/);
+  const emptySuppliers = api.profileExpenseDetails({ ...profile, categorias: undefined, fornecedores: [
+    { name: 'Fornecedor zerado', valor: 0, notas: 0 }, { name: 'Fornecedor sem valor', notas: 2 },
+  ] }, true);
+  assert.match(emptySuppliers, /Sem valores positivos entre os fornecedores listados/);
+  assert.match(emptySuppliers, /Fornecedor zerado[\s\S]*?R\$ 0[\s\S]*?0 notas/);
+  assert.match(emptySuppliers, /Fornecedor sem valor[\s\S]*?Sem dados[\s\S]*?2 notas/);
+  assert.doesNotMatch(emptySuppliers, /NaN|Infinity/);
+
+  const card = api.profileShareCard(profile, { person: profile.pessoa }, [], true);
+  assert.equal(card.categories.length, 3);
+  assert.ok(Math.abs(card.categories.reduce((sum, category) => sum + category.share, 0) - 1) < 1e-9);
+  assert.match(card.categoryNote, /Percentuais dos saldos positivos; estornos mantidos no total/);
+  assert.equal(card.categoryEmptyLabel, '');
+  const noPositiveValues = api.profileShareCard({ ...profile, categorias: [{ nome: 'Estorno', valor: -10 }] }, { person: profile.pessoa }, [], true);
+  assert.equal(noPositiveValues.categoryEmptyLabel, 'Sem categorias com saldo positivo');
+  const noObservedExpenses = api.profileShareCard({ ...profile, categorias: [] }, { person: profile.pessoa }, [], false);
+  assert.equal(noObservedExpenses.categoryEmptyLabel, 'Sem notas da cota no período');
+});
+
 test('senators whose mandate began before 2023 are told the quota counts from February 2023', () => {
   const { api } = makeView();
   assert.match(api.profileMandateStartNote({ exercicio: 'Exercício sem término informado desde 01/02/2019' }),
@@ -748,7 +811,7 @@ test('senate cost card shows the latest complete month, with the average of comp
   assert.match(html, /Média: <span class="mono">R\$\s?326\.366,19<\/span> por mês, 2 meses com as três partes identificadas e as notas da cota já assentadas, de 3 no recorte/);
   // Set não tem a remuneração; o "Por que" diz o que falta no mês seguinte.
   assert.match(html, /data-cost-why="latest-complete"><summary>Por que ago\/2026\?<\/summary>/);
-  assert.match(html, /Ago\/2026 é o mês mais recente com todas as partes publicadas\. Em set\/2026, falta remuneração do\(a\) senador\(a\)\./);
+  assert.match(html, /Ago\/2026 é o mês mais recente com todas as partes disponíveis na base do painel\. Em set\/2026, falta remuneração do\(a\) senador\(a\)\./);
   assert.match(api.senateCostDetails(senateFixture(), senateQuota), /Qual mês aparece no “Quanto custa\?”:<\/b> o mais recente com todas as partes publicadas e com 3 meses de folga/);
   assert.match(html, /data-cost-part="remuneration">[\s\S]*?R\$\s?46\.366,19<\/b>/);
   assert.match(html, /data-cost-part="office">[\s\S]*?R\$\s?200\.000,00<\/b>/);
@@ -771,13 +834,13 @@ test('senate cost card skips months whose quota may still receive notes, in the 
   assert.match(early, /2 meses com as três partes identificadas, de 3/);
 });
 
-test('senate "Por que <mês>?" says when the next payroll is not published yet', () => {
+test('senate "Por que <mês>?" describes a missing payroll as unavailable in the local base', () => {
   const { api } = makeView();
   const cost = senateFixture();
   cost.months['2026-09'] = { ...cost.months['2026-08'] };
   cost.periodEnd = '2026-09';
   const html = api.senateCostAnswer(cost, { ...senateQuota, snapshotAt: '2026-12-20' });
-  assert.match(html, /Set\/2026 é o mês mais recente com todas as partes publicadas\. O Senado ainda não publicou a folha de out\/2026\./);
+  assert.match(html, /Set\/2026 é o mês mais recente com todas as partes disponíveis na base do painel\. A base do painel ainda não inclui a folha de out\/2026\./);
 });
 
 test('senate monthly history shows partial totals and the reason for each gap', () => {

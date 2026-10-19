@@ -40,7 +40,7 @@ avisa por e-mail quando precisa.
 
 | Job | Quando (Brasília) | O que faz | E-mail |
 |---|---|---|---|
-| `daily` | todo dia, 5h40 | Cota da Câmara e do Senado do ano corrente no banco; perfis (projetos pelos arquivos anuais), situação dos projetos, autoria e votações do Senado | Só em falha ou resultado parcial |
+| `daily` | todo dia, 5h40 | Cota da Câmara e do Senado do ano corrente no banco; recomposição offline do custo do mandato; perfis (projetos pelos arquivos anuais), situação dos projetos, autoria e votações do Senado | Só em falha ou resultado parcial |
 | `weekly` | segunda, 3h | Inventário das votações do Plenário, fila editorial do Placar, avisos sobre arquivos mantidos à mão, eventos com data (eleições) | Quando há trabalho novo para uma pessoa, ou falha |
 | `monthly` | dia 10, 1h30 | Custo do mandato (folha, moradia, exercício, gabinete, presença), histórico da cota no banco, Senado (folha, exercício, presença, participação, tempo de mandato), impostos estaduais e remontagem da página | Só em falha ou resultado parcial |
 
@@ -59,7 +59,13 @@ Como o job diário atualiza o banco, passo a passo:
    notas caindo mais de 10% não são publicadas. Nos 45 dias após uma posse, o limite da lista sobe
    para 50%, porque ela cresce a cada dia.
 7. `publish`: troca atômica do arquivo; o site percebe pela data do arquivo e invalida o cache.
-8. Snapshots das fichas, que não dependem do banco e preservam a versão anterior se falharem.
+8. `mandate-cost`: recompõe offline o custo usando o banco publicado e os snapshots locais de folha,
+   exercício, cota histórica e gabinete. Só roda se já houver um snapshot-base válido; na primeira
+   instalação diária, o job não cria um custo sem esses complementos. Falha preserva o arquivo anterior
+   e deixa o resultado diário parcial. A opção `--preserve-coverage` impede que arquivos de origem
+   ausentes apaguem meses ou partes já conhecidos nos perfis que continuam na lista. `--db-only` também roda esta etapa, pois a cota que alimenta o
+   custo acabou de mudar; `--dry-run` a registra como ignorada e mantém o snapshot de custos intacto.
+9. Os demais snapshots das fichas, situação dos projetos e Senado preservam a versão anterior se falharem.
 
 ## O que cada e-mail significa
 

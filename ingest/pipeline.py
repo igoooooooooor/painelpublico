@@ -2,9 +2,10 @@
 
 O comando ``daily`` executa a atualização diária da cota (Câmara e Senado) do ano corrente:
 coleta, importa em uma cópia de trabalho do banco, verifica integridade e regressão, publica a
-cópia por troca atômica e avisa por e-mail. Depois do banco, atualiza os snapshots das fichas
-(projetos pelos arquivos anuais da Câmara), a situação dos projetos e a autoria e as votações do
-Senado. O comando ``monthly`` roda a cadeia mensal do custo do mandato e do Senado (folha, moradia,
+cópia por troca atômica e avisa por e-mail. Depois do banco, recompõe offline o snapshot do custo
+do mandato quando já existe uma fotografia-base; também atualiza os snapshots das fichas (projetos
+pelos arquivos anuais da Câmara), a situação dos projetos e a autoria e as votações do Senado.
+O comando ``monthly`` roda a cadeia mensal do custo do mandato e do Senado (folha, moradia,
 exercício, gabinete e presença da Câmara, histórico da cota no banco, composição do custo, folha,
 exercício, presença, participação e tempo de mandato do Senado, impostos estaduais) e remonta a
 página. O comando ``weekly`` refaz o inventário de votações do Plenário, monta a fila editorial do
@@ -568,8 +569,48 @@ def run_tool(run: Run, name: str, arguments: tuple[str, ...], *, partial_marker:
         return True
 
 
+def _mandate_cost_skip_reason(config: PipelineConfig) -> tuple[str | None, bool]:
+    """Retorna motivo e se uma fotografia existente pode ficar desatualizada."""
+    if config.dry_run:
+        return "dry-run: banco publicado não foi alterado", False
+    path = ROOT / "data" / "snapshots" / "mandate-cost.json"
+    if not path.exists():
+        return "snapshot-base de custo ausente; atualização diária não o cria", False
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return "snapshot-base de custo existente está ilegível; custo publicado pode ficar desatualizado", True
+    if (not isinstance(payload, dict)
+            or payload.get("schemaVersion") not in (3, 4)
+            or not isinstance(payload.get("profiles"), dict)
+            or not payload["profiles"]):
+        return "snapshot-base de custo existente é inválido; custo publicado pode ficar desatualizado", True
+    expected_db = ROOT / "data" / "na-lupa.sqlite3"
+    if Path(config.db_path).resolve() != expected_db.resolve():
+        return "banco configurado difere da base lida pelo coletor; custo publicado pode ficar desatualizado", True
+    return None, False
+
+
+def update_mandate_cost_snapshot(run: Run) -> None:
+    """Recalcula o custo a partir do banco publicado e dos complementos locais, sem rede."""
+    config = run.config
+    if not config.wants("mandate-cost"):
+        return
+    skip_reason, stale_risk = _mandate_cost_skip_reason(config)
+    if skip_reason:
+        with run.step("mandate-cost") as step:
+            if stale_risk:
+                step.partial(skip_reason)
+            else:
+                step.detail(skipped=skip_reason)
+        return
+    run_tool(run, "mandate-cost", ("-m", "ingest.mandate_cost_composition", "--preserve-coverage"),
+             timeout=SNAPSHOT_TIMEOUT_SECONDS)
+
+
 def update_snapshots(run: Run) -> None:
-    """Snapshots diários depois do banco publicado: perfis, situação dos projetos, Senado."""
+    """Atualiza o custo offline e, salvo ``db_only``, os demais snapshots diários."""
+    update_mandate_cost_snapshot(run)
     if run.config.db_only:
         return
     for name, arguments, partial_marker in SNAPSHOT_STEPS:

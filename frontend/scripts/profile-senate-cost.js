@@ -65,12 +65,12 @@ function senateCostAverageMonths(months, asOf) {
   const periods = new Set(profileCostSettledPeriods(complete.map(month => month.period), asOf));
   return complete.filter(month => periods.has(month.period));
 }
-/* O que falta no mês seguinte ao último com as três partes. Depois do fim do recorte, a folha do mês ainda não saiu. */
+/* O que falta na base no mês seguinte; o fim do recorte não prova que a fonte ainda não publicou a folha. */
 function senateCostNextGap(cost, months, period) {
   const next = profileCostNextPeriod(period), label = profileCostLabel(next);
   const month = months.find(item => item.period === next);
   if (!month) {
-    if (cost?.periodEnd && next > cost.periodEnd) return `O Senado ainda não publicou a folha de ${label}.`;
+    if (cost?.periodEnd && next > cost.periodEnd) return `A base do painel ainda não inclui a folha de ${label}.`;
     return cost?.months?.[next]?.exercise === 'fora' ? `Em ${label}, estava fora do exercício.` : '';
   }
   const missing = SENATE_COST_PARTS.filter(([key]) => month.parts[key] === null).map(([, partLabel]) => profileCostLowerFirst(partLabel));

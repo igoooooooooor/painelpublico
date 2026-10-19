@@ -48,7 +48,7 @@ class PipelineTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
         self.mail_environ = {'PAINEL_MAIL_TO': 'a@x.br', 'PAINEL_SMTP_HOST': 'smtp.x.br'}
-        self.config = pipeline.PipelineConfig(data_dir=self.root / 'data', db_path=self.root / 'data' / 'live.sqlite3',
+        self.config = pipeline.PipelineConfig(data_dir=self.root / 'data', db_path=self.root / 'data' / 'na-lupa.sqlite3',
                                               year=YEAR, environ=dict(self.mail_environ))
         self.sent = []
         self.collector_exit = 0
@@ -68,6 +68,14 @@ class PipelineTests(unittest.TestCase):
     def fake_mail(self, mail, subject, body):
         self.sent.append((mail, subject, body))
 
+    def seed_mandate_cost_snapshot(self):
+        path = self.root / 'data' / 'snapshots' / 'mandate-cost.json'
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({'schemaVersion': 4, 'profiles': {
+            'camara:1': {'id': 'camara:1', 'house': 'camara', 'monthlyAverageCents': 100}
+        }}), encoding='utf-8')
+        return path
+
     # Os coletores de snapshot (perfis e situação) também são subprocessos; aqui respondem conforme combinado.
     def fake_snapshot_collector(self, config, arguments, timeout=None):
         self.snapshot_calls.append(arguments)
@@ -76,7 +84,8 @@ class PipelineTests(unittest.TestCase):
         return subprocess.CompletedProcess(list(arguments), code, stdout=stdout, stderr='')
 
     def run_daily(self, config=None):
-        with mock.patch.object(pipeline, 'run_collector', self.fake_collector), \
+        with mock.patch.object(pipeline, 'ROOT', self.root), \
+                mock.patch.object(pipeline, 'run_collector', self.fake_collector), \
                 mock.patch.object(pipeline, 'run_snapshot_collector', self.fake_snapshot_collector), \
                 redirect_stdout(StringIO()):
             return pipeline.run_daily(config or self.config, mail_sender=self.fake_mail)
@@ -93,7 +102,9 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(self.counts(), (8, 32))
         self.assertEqual([s['name'] for s in status['steps']],
                          ['collect', 'validate', 'backup', 'stage', 'import', 'verify', 'publish',
-                          'profiles', 'project-status', 'senate-projects', 'senate-activity', 'notify'])
+                          'mandate-cost', 'profiles', 'project-status', 'senate-projects', 'senate-activity', 'notify'])
+        self.assertIn('snapshot-base de custo ausente', next(s for s in status['steps'] if s['name'] == 'mandate-cost')['skipped'])
+        self.assertFalse((self.root / 'data' / 'snapshots' / 'mandate-cost.json').exists())
         self.assertEqual([call[0] for call in self.snapshot_calls],
                          ['ingest/profiles.py', 'ingest/project_status.py', 'ingest/senate_projects.py', 'ingest/senate_activity.py'])
         self.assertIn('--max-age-hours', self.snapshot_calls[1])
@@ -103,6 +114,16 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(self.sent, [])
         self.assertFalse(self.config.work_db.exists())
         self.assertEqual(list(self.config.backups_dir.glob('*.sqlite3')) if self.config.backups_dir.exists() else [], [])
+
+    def test_daily_recomposes_existing_cost_snapshot_after_publish(self):
+        self.seed_mandate_cost_snapshot()
+        status = self.run_daily()
+        self.assertEqual(status['result'], 'ok', status)
+        names = [step['name'] for step in status['steps']]
+        self.assertLess(names.index('publish'), names.index('mandate-cost'))
+        self.assertLess(names.index('mandate-cost'), names.index('profiles'))
+        self.assertEqual(self.snapshot_calls[0], ('-m', 'ingest.mandate_cost_composition', '--preserve-coverage'))
+        self.assertEqual(next(s for s in status['steps'] if s['name'] == 'mandate-cost')['status'], 'ok')
 
     def test_second_run_backs_up_prunes_and_updates_in_place(self):
         self.run_daily()
@@ -164,11 +185,18 @@ class PipelineTests(unittest.TestCase):
 
     def test_dry_run_leaves_published_database_untouched(self):
         self.run_daily()
+        cost_path = self.seed_mandate_cost_snapshot()
+        cost_before = cost_path.read_bytes()
+        self.snapshot_calls.clear()
         self.next_document = document(expenses_per_person=5)
         status = self.run_daily(pipeline.PipelineConfig(**{**self.config.__dict__, 'dry_run': True}))
         self.assertEqual(status['result'], 'ok')
         self.assertEqual(self.counts(), (8, 32))
         self.assertIn('dry-run', next(s for s in status['steps'] if s['name'] == 'publish')['skipped'])
+        cost_step = next(s for s in status['steps'] if s['name'] == 'mandate-cost')
+        self.assertIn('dry-run', cost_step['skipped'])
+        self.assertNotIn(('-m', 'ingest.mandate_cost_composition', '--preserve-coverage'), self.snapshot_calls)
+        self.assertEqual(cost_path.read_bytes(), cost_before)
 
     def test_pending_journal_blocks_publication(self):
         self.run_daily()
@@ -199,14 +227,48 @@ class PipelineTests(unittest.TestCase):
         status = self.run_daily()
         self.assertEqual(status['result'], 'partial')
         self.assertIn('Arquivos anuais incompletos', self.sent[0][2])
-        # Falha do banco pula os snapshots; --db-only também.
+        # Falha do banco pula os snapshots; --db-only atualiza o custo offline e pula os demais.
         self.snapshot_calls.clear()
         self.next_document = document(period='2025')
         self.run_daily()
         self.assertEqual(self.snapshot_calls, [])
         self.next_document = document()
+        self.seed_mandate_cost_snapshot()
         self.run_daily(pipeline.PipelineConfig(**{**self.config.__dict__, 'db_only': True}))
-        self.assertEqual(self.snapshot_calls, [])
+        self.assertEqual(self.snapshot_calls, [('-m', 'ingest.mandate_cost_composition', '--preserve-coverage')])
+
+    def test_mandate_cost_refresh_failure_is_reported_and_other_snapshots_continue(self):
+        self.seed_mandate_cost_snapshot()
+        self.snapshot_results['ingest.mandate_cost_composition'] = (1, 'erro local')
+        status = self.run_daily()
+        self.assertEqual(status['result'], 'partial')
+        costs = next(s for s in status['steps'] if s['name'] == 'mandate-cost')
+        self.assertEqual(costs['status'], 'partial')
+        self.assertIn('código 1', costs['message'])
+        self.assertEqual(next(s for s in status['steps'] if s['name'] == 'profiles')['status'], 'ok')
+
+    def test_invalid_existing_cost_snapshot_reports_partial(self):
+        path = self.seed_mandate_cost_snapshot()
+        path.write_text('{invalid json', encoding='utf-8')
+        status = self.run_daily()
+        self.assertEqual(status['result'], 'partial')
+        costs = next(s for s in status['steps'] if s['name'] == 'mandate-cost')
+        self.assertEqual(costs['status'], 'partial')
+        self.assertIn('existente está ilegível', costs['message'])
+        self.assertNotIn(('-m', 'ingest.mandate_cost_composition', '--preserve-coverage'), self.snapshot_calls)
+
+    def test_custom_database_with_existing_cost_snapshot_reports_partial(self):
+        self.seed_mandate_cost_snapshot()
+        config = pipeline.PipelineConfig(**{
+            **self.config.__dict__,
+            'db_path': self.root / 'data' / 'custom.sqlite3',
+        })
+        status = self.run_daily(config)
+        self.assertEqual(status['result'], 'partial')
+        costs = next(s for s in status['steps'] if s['name'] == 'mandate-cost')
+        self.assertEqual(costs['status'], 'partial')
+        self.assertIn('banco configurado difere', costs['message'])
+        self.assertNotIn(('-m', 'ingest.mandate_cost_composition', '--preserve-coverage'), self.snapshot_calls)
 
     def test_lock_waits_for_the_other_job(self):
         import threading

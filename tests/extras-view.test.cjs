@@ -51,7 +51,7 @@ function comparison(a, b) {
   context.profileHref = id => /^camara:\d+$/.test(String(id)) ? `/deputado/${String(id).slice(7)}` : /^senado:\d+$/.test(String(id)) ? `/senador/${String(id).slice(7)}` : null;
   context.profileLinkOpen = (id, className) => context.profileHref(id) ? `<a class="${className}" href="${context.profileHref(id)}" data-politician="${id}">` : `<button type="button" class="${className}" data-politician="${id}">`;
   context.profileLinkClose = id => context.profileHref(id) ? '</a>' : '</button>';
-  vm.runInContext(fs.readFileSync(path.join(__dirname, '../frontend/scripts/dates.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '../frontend/scripts/profile-cost.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '../frontend/scripts/extras-view.js'), 'utf8') +
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../frontend/scripts/dates.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '../frontend/scripts/profile-cost.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '../frontend/scripts/share-card.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '../frontend/scripts/extras-view.js'), 'utf8') +
     '\nthis.__api = { extrasState, comparisonTable, comparisonShareCard, searchComparisonPeople, comparisonPickerList, comparisonView, taxCard, taxWidget, taxTick, voteRowsForItem, votesForPerson, attendanceForPerson, attendanceRows, attendanceBar, attendanceView, comparisonPersonCard, profileExtras };', context);
   return { html: context.__api.comparisonTable([a, b]), api: context.__api, context, senate };
 }
@@ -203,10 +203,11 @@ test('deputy and senator costs sit side by side with their composition and no hi
   assert.doesNotMatch(html, /Não se aplica<\/div><div class="cmp-v">[^<]*R\$/);
   const card = api.comparisonShareCard([{ ...profile('camara:1', 24000), pessoa: { id: 'camara:1', name: 'AJ', role: 'deputado' } }, profile('senado:70', 27000)]);
   assert.equal(card.layout, 'faceoff');
-  assert.equal(card.people[0].stats[0].label, 'Quanto custa por mês*');
+  assert.equal(card.people[0].stats[0].label, 'Média por mês*');
   assert.deepEqual([...card.people.map(person => person.stats[0].value)], ['R$ 188286.3', 'R$ 375869.84']);
   // Casas diferentes: sem etiqueta de quem custa menos nem número apagado, e o rodapé explica.
   assert.ok(card.people.every(person => person.stats.every(stat => !stat.tag && !stat.behind)));
+  assert.match(card.footnote, /Médias mensais do mandato/);
   assert.match(card.footnote, /Câmara e Senado publicam partes diferentes do custo/);
   assert.equal(card.agreement, null);
   assert.match(row('Equipe e verba de gabinete'), /R\$ 126364\.86<\/b>[\s\S]*verba de gabinete \(Câmara\)[\s\S]*R\$ 304135\.82<\/b>[\s\S]*equipe comissionada do gabinete \(Senado\) · 21 pessoas/);
@@ -477,11 +478,47 @@ test('share card for two deputies tags only who costs less and who attended more
   assert.equal(bia.stats[0].behind, true);
   assert.equal(bia.stats[1].tag, 'mais presente');
   assert.equal(ana.stats[1].behind, true);
-  assert.deepEqual(ana.categories.map(category => [category.name, Math.round(category.share * 100)]), [['Divulgação', 59], ['Combustível', 9]]);
+  assert.deepEqual(ana.categories.map(category => [category.name, Math.round(category.share * 100)]), [['Divulgação', 87], ['Combustível', 13]]);
   assert.equal(ana.top.what, 'Divulgação · mai/2026');
   assert.equal(ana.meta, 'ABC · SP');
   assert.deepEqual([...card.alerts], ['2', '4']);
   assert.equal(JSON.stringify(card).includes('menos alertas'), false);
+});
+
+test('comparison quota categories use positive amounts and explain refunds', () => {
+  const { api } = comparison(profile('camara:204353', 86055.2), profile('camara:1', 100));
+  const person = (id, name, categories, suppliers = []) => ({ ...profile(id, 86055.2), pessoa: { id, name, role: 'deputado', party: 'UNIÃO', uf: 'AP' },
+    categorias: categories, fornecedores: suppliers, maiores: [], alertas: [] });
+  const categories = [
+    { nome: 'Divulgação', valor: 52000 },
+    { nome: 'Locação de veículos', valor: 38100 },
+    { nome: 'Telefonia', valor: 1.14 },
+    { nome: 'Passagem aérea', valor: -4045.94 },
+  ];
+  const suppliers = [
+    { name: 'Fornecedor principal', valor: 52000, notas: 4 },
+    { name: 'GOL', valor: -4045.94, notas: 4 },
+  ];
+  const card = api.comparisonShareCard([person('camara:204353', 'Aline Gurgel', categories, suppliers), person('camara:1', 'Outra pessoa', [])]);
+  const [aline] = card.people;
+  assert.equal(aline.stats[0].label, 'Custo médio por mês');
+  assert.ok(Math.abs(aline.categories.reduce((sum, category) => sum + category.share, 0) - 1) < 1e-9);
+  assert.match(aline.categoryNote, /Percentuais dos saldos positivos; estornos mantidos no total/);
+  assert.equal(aline.categoryEmptyLabel, '');
+
+  const table = api.comparisonTable([person('camara:204353', 'Aline Gurgel', categories, suppliers), person('camara:1', 'Outra pessoa', [])]);
+  assert.match(table, /58% dos saldos positivos/);
+  assert.match(table, /Percentuais consideram categorias com saldo positivo; estornos permanecem no total líquido/);
+  const supplierRow = table.match(/<span class="cmp-l">Empresa que mais recebeu<\/span>([\s\S]*?)<\/div>/)?.[1] || '';
+  assert.match(supplierRow, /Fornecedor principal <small>R\$ 52000 · 4 notas/);
+  assert.doesNotMatch(supplierRow, /%/);
+  const negativeOnly = api.comparisonTable([
+    person('camara:204353', 'Aline Gurgel', categories, [{ name: 'GOL', valor: -4045.94, notas: 4 }]),
+    person('camara:1', 'Outra pessoa', []),
+  ]);
+  assert.match(negativeOnly, /Empresa que mais recebeu<\/span><div class="cmp-v">Sem valor positivo listado/);
+  const senateCard = api.comparisonShareCard([profile('senado:55', 100), profile('senado:56', 200)]);
+  assert.equal(senateCard.people[0].stats[0].label, 'Despesas médias por mês');
 });
 
 test('presiding stays visible but does not count as agreement or disagreement', () => {

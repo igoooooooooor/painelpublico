@@ -56,6 +56,9 @@ test('home categories list every category with refunds kept and the ranking uses
   assert.match(html, /Serviços/);
   assert.match(html, /Estorno<\/span><b>R\$ -5/);
   assert.match(html, /preservando estornos/);
+  assert.match(html, /Percentuais consideram categorias com saldo positivo; estornos permanecem no total líquido/);
+  assert.match(html, /66,7%/);
+  assert.match(html, /33,3%/);
   assert.doesNotMatch(html, /NaN/);
   const ranking = ctx.homeTopCard(data);
   assert.match(ranking, /data-politician="camara:100"/);

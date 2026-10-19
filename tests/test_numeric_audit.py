@@ -133,6 +133,68 @@ class NumericAuditTests(unittest.TestCase):
         self.assertIn('attendance_totals_mismatch', codes)
         self.assertIn('invalid_attendance_days', codes)
 
+    def test_mandate_cost_quota_matches_observed_reimbursement_rows(self):
+        with sqlite3.connect(':memory:') as db:
+            db.row_factory = sqlite3.Row
+            schema_path = Path(audit_numbers.citizen.__file__).with_name('schema.sql')
+            db.executescript(schema_path.read_text(encoding='utf-8'))
+            db.execute('INSERT INTO sources(id,label) VALUES(?,?)', ('camara_ceap_2026', 'Cota da Câmara'))
+            db.execute('INSERT INTO authorities(id,name,role) VALUES(?,?,?)',
+                       ('camara:1', 'Parlamentar Teste', 'deputado'))
+            db.execute('INSERT INTO quota_categories(id,name) VALUES(?,?)', (1, 'COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA'))
+
+            def expense(identifier, month, cents, kind='reembolso'):
+                db.execute('''INSERT INTO expenses(id,authorityId,sourceId,year,month,amountCents,kind,firstSeen,lastChanged)
+                              VALUES(?,?,?,?,?,?,?,?,?)''',
+                           (identifier, 'camara:1', 'camara_ceap_2026', 2026, month, cents, kind, 'test', 'test'))
+
+            def history(month, seq, cents, complement=False):
+                db.execute('''INSERT INTO quota_history_notes(authorityId,year,month,seq,categoryId,amountCents,complement)
+                              VALUES(?,?,?,?,?,?,?)''',
+                           ('camara:1', 2026, month, seq, 1, cents, int(complement)))
+
+            # January is stale by R$ 1; the separate housing complement must not enter its sum.
+            expense('jan-reembolso', 1, 700)
+            expense('jan-housing', 1, 2000, 'complemento_moradia')
+            # February spans expenses and history; the signed refund remains in the result.
+            expense('feb-reembolso', 2, 250)
+            history(2, 1, -500)
+            history(2, 2, 9000, complement=True)
+            # A complement-only observed month has zero non-complement quota, not missing data.
+            history(3, 1, -276313, complement=True)
+            # May and June have database rows but no published numeric quota to compare.
+            expense('may-reembolso', 5, 1000)
+            expense('jun-reembolso', 6, 3000)
+
+            snapshot = {'profiles': {
+                'camara:1': {'id': 'camara:1', 'house': 'camara', 'months': {
+                    '2026-01': {'valuesCents': {'quota': 900}},
+                    '2026-02': {'valuesCents': {'quota': -250}},
+                    '2026-03': {'valuesCents': {'quota': 0}},
+                    '2026-04': {'valuesCents': {'quota': 0}},
+                    '2026-05': {'valuesCents': {'quota': None}},
+                    '2026-06': {'exercise': 'outside_mandate'},
+                }},
+                'senado:2': {'id': 'senado:2', 'house': 'senado', 'months': {
+                    '2026-01': {'valuesCents': {'quota': 1}},
+                }},
+            }}
+            published = audit_numbers.published_chamber_quota_rows(snapshot, self.report)
+            audit_numbers.audit_chamber_quota_rows(published, db, self.report)
+
+        result = self.report['quotaRecomposition']
+        self.assertEqual(result['publishedMonths'], 4)
+        self.assertEqual(result['comparedMonths'], 3)
+        self.assertEqual(result['mismatchMonths'], 1)
+        self.assertEqual(result['unobservedMonths'], 1)
+        self.assertEqual(result['mismatchExamples'], [{
+            'authorityId': 'camara:1', 'period': '2026-01', 'storedCents': 900,
+            'databaseCents': 700, 'databaseReimbursementRows': 1, 'databaseObservedRows': 2,
+        }])
+        self.assertIn('mandate_cost_quota_mismatch', {issue['code'] for issue in self.report['issues']})
+        self.assertEqual(len(self.report['skipped']), 1)
+        self.assertIn('rather than treating the missing database sum as zero', self.report['skipped'][0]['message'])
+
     def test_scoreboard_accepts_partially_known_tally(self):
         audit_numbers.audit_tally(
             {'yes': 4, 'no': None, 'abstention': 1, 'total': 5}, self.report, 'vote.tally')

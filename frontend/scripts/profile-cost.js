@@ -166,14 +166,15 @@ function profileCostAverage(cost, asOf) {
 /* Mês mais recente com as quatro partes publicadas e as notas da cota assentadas: o número principal da ficha. As
    partes são as daquele mês, então o total é a soma das linhas. Parte vazia (lacuna confirmada na fonte) não vira zero. */
 function profileCostLatest(cost, asOf) {
-  const pick = profileCostPickMonth(profileCostPeriods(cost?.usedMonths), asOf);
+  // Uma lacuna confirmada pode entrar na média de cada parte, mas nunca formar um total mensal completo.
+  const complete = profileCostPeriods(cost?.usedMonths).filter(period =>
+    PROFILE_COST_PARTS.every(([key]) => profileCostInteger(cost?.months?.[period]?.valuesCents?.[key])));
+  const pick = profileCostPickMonth(complete, asOf);
   const month = pick ? cost?.months?.[pick.period] : null;
   if (!month || typeof month !== 'object') return null;
   const values = month.valuesCents && typeof month.valuesCents === 'object' ? month.valuesCents : {};
-  const parts = PROFILE_COST_PARTS.map(([key]) => (profileCostInteger(values[key]) ? values[key] : null));
-  const known = parts.filter(value => value !== null);
-  if (!known.length) return null;
-  return { ...pick, month, parts, totalCents: known.reduce((sum, value) => sum + value, 0) };
+  const parts = PROFILE_COST_PARTS.map(([key]) => values[key]);
+  return { ...pick, month, parts, totalCents: parts.reduce((sum, value) => sum + value, 0) };
 }
 
 const profileCostNextPeriod = period => {
@@ -184,18 +185,16 @@ const profileCostJoin = items => items.length > 1 ? `${items.slice(0, -1).join('
 const profileCostCapitalize = text => text.charAt(0).toUpperCase() + text.slice(1);
 const profileCostLowerFirst = text => text.charAt(0).toLowerCase() + text.slice(1);
 
-/* O que falta no mês seguinte ao último com as quatro partes, quando o snapshot permite saber. Depois do fim
-   do período não há mês no snapshot: a Câmara ainda não publicou as quatro partes para nenhum deputado. */
+/* O que falta na base no mês seguinte. Ausência no snapshot não prova ausência na fonte oficial. */
 function profileCostNextGap(cost, period) {
   const next = profileCostNextPeriod(period);
   if (!PROFILE_COST_PERIODS.has(next)) return '';
   const label = profileCostLabel(next);
   const month = cost?.months?.[next];
-  if (!month || typeof month !== 'object') return `A Câmara ainda não publicou todas as partes de ${label}.`;
+  if (!month || typeof month !== 'object') return `A base do painel ainda não reúne todas as partes de ${label}.`;
   if (month.exercise === 'outside_mandate') return `Em ${label}, não estava no mandato.`;
   const values = month.valuesCents && typeof month.valuesCents === 'object' ? month.valuesCents : {};
-  const gaps = new Set(Array.isArray(month.sourceGaps) ? month.sourceGaps : []);
-  const missing = PROFILE_COST_PARTS.filter(([key]) => !profileCostInteger(values[key]) && !gaps.has(key)).map(([, label]) => label.toLowerCase());
+  const missing = PROFILE_COST_PARTS.filter(([key]) => !profileCostInteger(values[key])).map(([, label]) => label.toLowerCase());
   if (month.exercise === 'in_office' && missing.length) return `Em ${label}, ${missing.length === 1 ? 'falta' : 'faltam'} ${profileCostJoin(missing)}.`;
   const reason = (Array.isArray(month.exclusionReasons) ? month.exclusionReasons : []).map(profileCostExclusionLabel).find(Boolean);
   return reason ? `Em ${label}: ${profileCostLowerFirst(reason)}` : '';
@@ -217,7 +216,7 @@ function profileCostWhyMonth(latest, next = '') {
     reason = `${profileCostCapitalize(profileCostJoin(latest.later.map(profileCostLabel)))} já ${one ? 'tem' : 'têm'} todas as partes publicadas, mas a cota ${one ? 'desse mês' : 'desses meses'} ainda tem notas chegando. ${profileCostCapitalize(label)} é o mês mais recente com as notas já assentadas.`;
   } else {
     kind = 'latest-complete';
-    reason = `${profileCostCapitalize(label)} é o mês mais recente com todas as partes publicadas.${next ? ` ${next}` : ''}`;
+    reason = `${profileCostCapitalize(label)} é o mês mais recente com todas as partes disponíveis na base do painel.${next ? ` ${next}` : ''}`;
   }
   return `<details class="citizen-cost-notes profile-cost-why" data-cost-why="${kind}"><summary>Por que ${esc(label)}?</summary>
     <p>${esc(reason)}</p>
@@ -367,10 +366,11 @@ function profileCostMonthlyParts(month, personId) {
   return `<ul class="citizen-cost-month-parts">${rows}</ul>${notes}`;
 }
 
-function profileCostDetails(cost) {
+function profileCostDetails(cost, asOf) {
   if (!cost || typeof cost !== 'object') return '';
   const months = cost.months && typeof cost.months === 'object' ? cost.months : {};
-  const used = new Set(profileCostPeriods(cost.usedMonths));
+  const eligible = new Set(profileCostPeriods(cost.usedMonths));
+  const used = new Set(profileCostAverage(cost, asOf)?.months || []);
   const monthCard = period => {
     const month = months[period];
     if (!month || typeof month !== 'object') return '';
@@ -390,7 +390,7 @@ function profileCostDetails(cost) {
       ? `<p class="muted">Apartamento funcional: ${month.functionalPropertyDays} ${month.functionalPropertyDays === 1 ? 'dia' : 'dias'} (sem valor estimado).</p>` : '';
     return `<div class="citizen-cost-month" data-cost-month="${period}">
       <b>${esc(PROFILE_COST_MONTHS[period])}</b>
-      <span>${esc(status)}${used.has(period) ? ' · <span class="citizen-cost-used">entra na média</span>' : ''}${exerciseSource ? ` · <a href="${esc(exerciseSource)}" target="_blank" rel="noopener">Conferir ↗</a>` : ''}</span>
+      <span>${esc(status)}${used.has(period) ? ' · <span class="citizen-cost-used">entra na média</span>' : eligible.has(period) && !profileCostSettled(period, asOf) ? ' · fora da média: notas da cota ainda podem chegar' : ''}${exerciseSource ? ` · <a href="${esc(exerciseSource)}" target="_blank" rel="noopener">Conferir ↗</a>` : ''}</span>
       ${inOffice ? profileCostMonthlyParts(month, cost.id) : ''}
       ${christmas !== null ? `<p class="muted">13º salário${period.endsWith('-06') ? ' (adiantamento)' : ''}: ${esc(christmas)} (fora da média).</p>` : ''}
       ${reasons.map(label => `<p class="muted">${esc(label)}</p>`).join('')}

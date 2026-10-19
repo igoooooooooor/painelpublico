@@ -337,12 +337,55 @@ def build(root=ROOT):
             'coverage': coverage}
 
 
+def validate_preserved_coverage(previous, current):
+    """Fail closed if local inputs erase known monthly coverage from common profiles."""
+    if not isinstance(previous, dict) or not isinstance(previous.get('profiles'), dict):
+        raise ValueError('daily coverage guard cannot read existing mandate-cost profiles')
+    if not isinstance(current, dict) or not isinstance(current.get('profiles'), dict):
+        raise ValueError('daily coverage guard cannot read rebuilt mandate-cost profiles')
+    old_profiles = previous['profiles']
+    new_profiles = current['profiles']
+    for identifier in old_profiles.keys() & new_profiles.keys():
+        old_person, new_person = old_profiles[identifier], new_profiles[identifier]
+        if not isinstance(old_person, dict) or not isinstance(new_person, dict):
+            raise ValueError(f'daily coverage guard cannot read profile {identifier}')
+        old_used, new_used = old_person.get('usedMonths'), new_person.get('usedMonths')
+        old_months, new_months = old_person.get('months'), new_person.get('months')
+        if not isinstance(old_used, list) or not isinstance(new_used, list):
+            raise ValueError(f'daily coverage guard cannot read used months for {identifier}')
+        if not isinstance(old_months, dict) or not isinstance(new_months, dict):
+            raise ValueError(f'daily coverage guard cannot read monthly values for {identifier}')
+        missing_used = [period for period in old_used if period not in new_used]
+        if missing_used:
+            raise ValueError(f'daily coverage guard rejected replacement: {identifier} lost previously used month {missing_used[0]}')
+        for period, old_month in old_months.items():
+            if not isinstance(old_month, dict):
+                continue
+            old_values = old_month.get('valuesCents')
+            if not isinstance(old_values, dict):
+                continue
+            new_month = new_months.get(period)
+            new_values = new_month.get('valuesCents') if isinstance(new_month, dict) else None
+            for part, old_value in old_values.items():
+                if integer(old_value) and (not isinstance(new_values, dict)
+                                           or not integer(new_values.get(part))):
+                    raise ValueError(f'daily coverage guard rejected replacement: {identifier} {period} lost numeric {part}')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, default=ROOT)
+    parser.add_argument('--preserve-coverage', action='store_true',
+                        help='reject daily rebuilds that lose existing monthly coverage')
     args = parser.parse_args()
     result = build(args.root)
     output = args.root / 'data/snapshots/mandate-cost.json'
+    if args.preserve_coverage and output.exists():
+        try:
+            previous = json.loads(output.read_text(encoding='utf-8'))
+        except (OSError, ValueError) as exc:
+            raise ValueError(f'daily coverage guard cannot read existing mandate-cost snapshot: {exc}') from exc
+        validate_preserved_coverage(previous, result)
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = output.with_suffix('.json.tmp')
     temporary.write_text(json.dumps(result, ensure_ascii=False, separators=(',', ':')))

@@ -91,7 +91,13 @@ function senateProfileSnapshot(p) {
     ${p.sourceUrl ? `<a class="fchip" href="${esc(p.sourceUrl)}" target="_blank" rel="noopener">Fonte do Senado ↗</a>` : ''}
   </section>`;
 }
-const formatCitizenAmount = v => v >= 1e6 ? 'R$ ' + (v / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mi' : 'R$ ' + Math.round(v / 1e3).toLocaleString('pt-BR') + ' mil';
+const formatCitizenAmount = value => {
+  if (!Number.isFinite(value)) return 'Sem dados';
+  const magnitude = Math.abs(value);
+  if (magnitude >= 1e6) return 'R$ ' + (value / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mi';
+  if (magnitude >= 1e3) return 'R$ ' + Math.round(value / 1e3).toLocaleString('pt-BR') + ' mil';
+  return 'R$ ' + value.toLocaleString('pt-BR', { minimumFractionDigits: value === 0 ? 0 : 2, maximumFractionDigits: 2 });
+};
 /* Valor curto para as linhas do gráfico: uma casa decimal em milhares, para não arredondar R$ 3.460 em "R$ 3 mil". */
 const formatMonthAmount = v => v >= 1e6 ? formatCitizenAmount(v) : v >= 1e3 ? 'R$ ' + (v / 1e3).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mil' : brl(v);
 const citizenSourceUrl = person => {
@@ -355,7 +361,7 @@ function citizenQuotaPeriod(start, end) {
   const from = label(start), to = label(end);
   return from && to ? (from === to ? from : `${from}–${to}`) : '';
 }
-/* Linha da lista: o custo médio por mês da própria Casa (como no "Quanto custa?" da ficha), com a cota
+/* Linha da lista: o custo médio por mês da própria Casa (a média de contexto da ficha), com a cota
    à parte. A barra e o "acima da média" comparam só com a mesma Casa. */
 function politicianRow(person, max) {
   const hasExpenseData = person.hasExpenseData === undefined ? person.gastoMensal != null : Boolean(person.hasExpenseData);
@@ -401,7 +407,7 @@ function politicianCoverageNotesHTML(coverage) {
     ? '<p class="muted">O Senado tem 81 cadeiras; registros extras no retrato da fonte podem refletir suplentes em transição.</p>'
     : '';
   return `<details class="card"><summary><b>Sobre estes dados</b></summary>
-    <p class="muted">Custo por mês: o mesmo do “Quanto custa?” de cada ficha. Na Câmara, salário bruto, auxílios, cota e verba de gabinete, nos meses com as quatro partes. No Senado, remuneração do(a) senador(a), equipe comissionada do gabinete e cota, nos meses com as três. As Casas não publicam as mesmas partes: compare só dentro da mesma Casa. Sem mês com todas as partes, a linha diz “Sem custo”, sem estimativa.</p>
+    <p class="muted">Custo por mês: a média do mandato, apresentada como contexto no “Quanto custa?” da ficha. O número principal da ficha mostra um mês específico. Na Câmara, salário bruto, auxílios, cota e verba de gabinete, nos meses com as quatro partes. No Senado, remuneração do(a) senador(a), equipe comissionada do gabinete e cota, nos meses com as três. As Casas não publicam as mesmas partes: compare só dentro da mesma Casa. Sem mês com todas as partes, a linha diz “Sem custo”, sem estimativa.</p>
     ${Number.isFinite(coverage.custo?.deputado) && Number.isFinite(coverage.custo?.senador) ? `<p class="muted">Custo identificado para ${coverage.custo.deputado} de ${deputies.count} deputados(as) e ${coverage.custo.senador} de ${senators.count} senadores(as).</p>` : ''}
     <p class="muted">Despesas de cota observadas para ${deputies.withExpenses} de ${deputies.count} deputados(as) e ${senators.withExpenses} de ${senators.count} senadores(as).</p>${senateSeatNote}
   </details>`;
@@ -451,7 +457,7 @@ function politiciansView() {
     <div id="citizen-politician-notes">${politicianCoverageNotesHTML(p.coverage)}</div>
     <span class="src">${p.order === 'cota'
       ? 'Valor: média mensal da cota parlamentar (reembolsos de despesas do mandato), nos meses com notas, desde fev/2023, a mesma conta do “Quem mais usa a cota” da página inicial. Embaixo, o custo total por mês (salário, auxílios, cota e gabinete). As cotas da Câmara e do Senado têm regras e tetos diferentes: compare só dentro da mesma Casa. Valores da época, sem correção pela inflação.'
-      : 'Valor: custo médio por mês, o mesmo do “Quanto custa?” da ficha, desde fev/2023, início da legislatura atual; a linha diz quantos meses entram na média. Embaixo, a média da cota parlamentar (reembolsos). Câmara e Senado não publicam as mesmas partes: a barra e o “acima da média” comparam só com a mesma Casa. Valores da época, sem correção pela inflação.'}</span>`;
+      : 'Valor: custo médio por mês desde fev/2023, início da legislatura atual, também mostrado como contexto na ficha; a linha diz quantos meses entram na média. Embaixo, a média da cota parlamentar (reembolsos). Câmara e Senado não publicam as mesmas partes: a barra e o “acima da média” comparam só com a mesma Casa. Valores da época, sem correção pela inflação.'}</span>`;
 }
 
 /* ---------- Ficha leve (qualquer deputado ou senador) ---------- */
@@ -834,7 +840,14 @@ function profileMandateStartNote(mandate) {
 function profileExpenseDetails(f, hasExpenseData, cost = null, mandate = null) {
   if (!hasExpenseData) return '<p class="muted">Não há lançamentos observados para calcular total, média, série mensal ou alertas.</p>';
   const maxMonth = Math.max(1, ...f.meses.map(month => month.valor));
-  const categoryTotal = f.categorias.reduce((sum, category) => sum + category.valor, 0) || 1;
+  const categories = Array.isArray(f.categorias) ? f.categorias : [];
+  const categoryTotal = categories.reduce((sum, category) => sum + (Number.isFinite(category?.valor) ? Math.max(0, category.valor) : 0), 0);
+  const maxPositiveCategory = Math.max(0, ...categories.map(category => Number.isFinite(category?.valor) ? category.valor : 0));
+  const hasCategoryRefunds = categories.some(category => Number.isFinite(category?.valor) && category.valor < 0);
+  const suppliers = Array.isArray(f.fornecedores) ? f.fornecedores : [];
+  const maxPositiveSupplier = Math.max(0, ...suppliers.map(supplier => Number.isFinite(supplier?.valor) ? supplier.valor : 0));
+  const hasPositiveSupplier = maxPositiveSupplier > 0;
+  const hasSupplierRefunds = suppliers.some(supplier => Number.isFinite(supplier?.valor) && supplier.valor < 0);
   const period = f.periodo || {}, periodLabel = citizenQuotaPeriod(period.inicio, period.fim);
   const complement = f.complementoMoradia;
   /* Um gráfico por ano (o mais recente primeiro), para caber no celular. */
@@ -853,10 +866,24 @@ function profileExpenseDetails(f, hasExpenseData, cost = null, mandate = null) {
     <p class="muted">Os últimos meses ainda podem crescer: as notas são publicadas com atraso.</p>
   </section>
   <section class="citizen-detail-part"><h3 class="k">Com o que gastou</h3>
-    ${f.categorias.slice(0, 6).map(category => `<div class="citizen-bar"><div><span>${esc(category.nome)}</span><b class="mono">${category.valor === 0 ? 'R$ 0' : formatCitizenAmount(category.valor)}</b></div><div class="bar"><i style="width:${f.categorias[0].valor ? category.valor / f.categorias[0].valor * 100 : 0}%"></i></div><small class="muted">${Math.round(category.valor / categoryTotal * 100)}% do total</small></div>`).join('')}
+    ${hasCategoryRefunds ? '<p class="muted">Percentuais consideram categorias com saldo positivo; estornos aparecem com sinal negativo e reduzem o total líquido.</p>' : ''}
+    ${categories.slice(0, 6).map(category => {
+      const value = Number.isFinite(category?.valor) ? category.valor : null;
+      const share = value > 0 && categoryTotal > 0 ? `${Math.round(value / categoryTotal * 100)}% dos saldos positivos` : '';
+      const barWidth = value > 0 && maxPositiveCategory > 0 ? value / maxPositiveCategory * 100 : 0;
+      return `<div class="citizen-bar"><div><span>${esc(category?.nome || 'Categoria não informada')}</span><b class="mono">${value === null ? 'Sem dados' : value === 0 ? 'R$ 0' : formatCitizenAmount(value)}</b></div><div class="bar"><i style="width:${barWidth}%"></i></div>${share ? `<small class="muted">${share}</small>` : ''}</div>`;
+    }).join('')}
   </section>
   <section class="citizen-detail-part"><h3 class="k">Para quem foi o dinheiro</h3>
-    ${f.fornecedores.map(x => `<div class="citizen-bar"><div><span>${esc(citizenName(x.name))}</span><b class="mono">${formatCitizenAmount(x.valor)}</b></div><div class="bar"><i style="width:${f.total ? x.valor / f.total * 100 : 0}%;background:var(--accent)"></i></div><small class="muted">${f.total ? Math.round(x.valor / f.total * 100) : 0}% do total · ${x.notas} ${x.notas === 1 ? 'nota' : 'notas'}</small></div>`).join('')}
+    ${suppliers.length ? `<p class="muted">${hasPositiveSupplier ? 'Barras proporcionais ao maior valor listado; estornos aparecem com sinal negativo.' : hasSupplierRefunds ? 'Sem valores positivos entre os fornecedores listados; estornos aparecem com sinal negativo.' : 'Sem valores positivos entre os fornecedores listados.'}</p>
+      ${suppliers.map(x => {
+        const value = Number.isFinite(x?.valor) ? x.valor : null;
+        const noteCount = Number.isSafeInteger(x?.notas) && x.notas >= 0 ? x.notas : null;
+        const barWidth = hasPositiveSupplier && value > 0 ? value / maxPositiveSupplier * 100 : 0;
+        const notes = noteCount === null ? 'Notas não informadas' : `${noteCount} ${noteCount === 1 ? 'nota' : 'notas'}`;
+        const amount = value === null ? 'Sem dados' : value === 0 ? 'R$ 0' : formatCitizenAmount(value);
+        return `<div class="citizen-bar"><div><span>${esc(citizenName(x?.name || 'Fornecedor não informado'))}</span><b class="mono">${amount}</b></div><div class="bar"><i style="width:${barWidth}%;background:var(--accent)"></i></div><small class="muted">${notes}</small></div>`;
+      }).join('')}` : '<p class="muted">Nenhum fornecedor identificado nas notas publicadas.</p>'}
   </section>
   <section class="citizen-detail-part"><h3 class="k">Maiores notas${periodLabel ? ` · ${esc(periodLabel)}` : ''}</h3>
     ${f.maiores.map(m => `<${m.documentUrl ? `a href="${esc(m.documentUrl)}" target="_blank" rel="noopener"` : 'div'} class="item"><span class="mono muted" style="width:52px">${SHORT_MONTHS[m.month]}/${String(m.year).slice(2)}</span><span class="g"><span>${esc(citizenName(m.fornecedor || 'Fornecedor não informado'))}</span><span class="muted">${esc(m.categoria)}${m.documentUrl ? ' · ver nota ↗' : ''}</span></span><span class="mono" style="font-weight:700">${brl(m.valor)}</span></${m.documentUrl ? 'a' : 'div'}>`).join('')}
@@ -915,12 +942,16 @@ function profileSharePresence(shared) {
 function profileShareCard(f, shared, alerts, hasExpenseData) {
   const person = shared.person, senate = person.role === 'senador', name = citizenName(person.name);
   const top = f.maiores?.[0];
+  const categories = shareQuotaCategories(f.categorias);
   return {
     layout: 'profile', title: name, initials: citizenInitials(name), kicker: `Ficha · ${senate ? 'Senado' : 'Câmara'}`,
     photo: typeof sharePhotoUrl === 'function' ? sharePhotoUrl(person.id) : null, photoCredit: senate ? 'Senado Federal' : 'Câmara dos Deputados',
     subtitle: [ROLE_LABELS[person.role], person.party, person.uf].filter(Boolean).join(' · '),
     cost: profileShareCost(f, shared, hasExpenseData), presence: profileSharePresence(shared),
-    categories: hasExpenseData && f.total > 0 ? (f.categorias || []).slice(0, 3).map(category => ({ name: category.nome, share: category.valor / f.total })) : [],
+    categories: hasExpenseData ? categories.items : [],
+    categoryNote: hasExpenseData && categories.hasRefunds ? 'Percentuais dos saldos positivos; estornos mantidos no total.' : '',
+    categoryEmptyLabel: !hasExpenseData ? 'Sem notas da cota no período'
+      : categories.items.length ? '' : 'Sem categorias com saldo positivo',
     top: top && Number.isFinite(top.valor) ? { value: `R$ ${Math.round(top.valor).toLocaleString('pt-BR')}`, who: top.fornecedor ? citizenName(top.fornecedor) : '',
       what: [top.categoria, top.month && top.year ? `${SHORT_MONTHS[top.month]}/${top.year}` : ''].filter(Boolean).join(' · ') } : null,
     fileName: name,
@@ -973,7 +1004,7 @@ function profileView() {
     ${profileAlertsSection(alerts, f.coberturaAlertas)}
     <section class="profile-detail-area" aria-labelledby="profile-more-title"><h2 class="h" id="profile-more-title">Mais detalhes</h2>
     ${profileSectionsHTML(person, {
-      expenses: (!shared.cost && !shared.senateCost ? profileExpenseAnswerDetails(f, person, hasExpenseData) : '') + (person.role === 'deputado' ? profileCostDetails(shared.cost) : person.role === 'senador' ? senateCostDetails(shared.senateCost, f) : '') + profileExpenseDetails(f, hasExpenseData, person.role === 'deputado' ? shared.cost : null, shared.mandate),
+      expenses: (!shared.cost && !shared.senateCost ? profileExpenseAnswerDetails(f, person, hasExpenseData) : '') + (person.role === 'deputado' ? profileCostDetails(shared.cost, f.snapshotAt) : person.role === 'senador' ? senateCostDetails(shared.senateCost, f) : '') + profileExpenseDetails(f, hasExpenseData, person.role === 'deputado' ? shared.cost : null, shared.mandate),
       votes: `${profileVoteCountHTML(shared)}${profileVoteDetails(shared)}`, sources: sourcesHtml,
     })}</section>
   </div>`;

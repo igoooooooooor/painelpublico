@@ -21,6 +21,16 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 class PresenceSummaryTests(unittest.TestCase):
+    def test_latest_cost_requires_every_part_even_for_confirmed_source_gaps(self):
+        cost = {'monthlyAverageCents': 10000, 'usedMonths': ['2026-06', '2026-07'], 'months': {
+            '2026-06': {'valuesCents': {'remuneration': 100, 'allowances': 0, 'quota': 200, 'office': 300}},
+            '2026-07': {'valuesCents': {'remuneration': 100, 'allowances': 0, 'quota': 200, 'office': None},
+                        'sourceGaps': ['office']},
+        }}
+        self.assertEqual(seo._latest_cost_month(cost, '2026-10-13'), ('2026-06', 600))
+        cost['usedMonths'] = ['2026-07']
+        self.assertIsNone(seo._latest_cost_month(cost, '2026-10-13'))
+
     def test_search_summary_rejects_impossible_or_missing_attendance(self):
         valid = {'id': 1, 'presente': 9, 'falta': 1, 'justificadas': 0, 'dias': 10}
         invalid = [
@@ -171,15 +181,18 @@ class SeoPagesTests(unittest.TestCase):
         self.assertEqual(seo.month_range(['2026-01', '2026-03']), 'jan/2026, mar/2026, 2 meses')
         self.assertEqual(seo.shorten('um dois tres quatro', 12), 'um dois…')
         self.assertEqual(seo.shorten('curto'), 'curto')
+        self.assertEqual(seo.sections.short_amount(1.14), 'R$ 1,14')
+        self.assertEqual(seo.sections.short_amount(-1.14), 'R$ -1,14')
+        self.assertEqual(seo.sections.short_amount(0), 'R$ 0')
 
     def test_cost_summary_uses_the_latest_complete_month_and_keeps_the_average_aside(self):
         values = {'remuneration': 4636619, 'allowances': 0, 'quota': 3370100, 'office': 16023700}
         cost = {'monthlyAverageCents': 20939595, 'usedMonths': ['2026-06', '2026-07', '2026-05'],
                 'months': {'2026-07': {'valuesCents': values}, '2026-09': {'valuesCents': {'remuneration': 4636619}}}}
         self.assertEqual(seo._latest_cost_month(cost), ('2026-07', 24030419))
-        # Lacuna confirmada na fonte: a parte fica fora da soma, nunca vira zero estimado.
+        # Lacuna confirmada na fonte: sem todas as partes, não há total mensal completo.
         cost['months']['2026-07']['valuesCents'] = {**values, 'office': None}
-        self.assertEqual(seo._latest_cost_month(cost), ('2026-07', 8006719))
+        self.assertIsNone(seo._latest_cost_month(cost))
         cost['months']['2026-07']['valuesCents'] = values
         # Com a data das notas, só vale o mês com 3 meses de folga: em set, jun; sem folga em nenhum, o mais recente.
         cost['months']['2026-06'] = {'valuesCents': {**values, 'quota': 0}}

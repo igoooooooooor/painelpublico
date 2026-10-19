@@ -1,4 +1,73 @@
-# Varredura numérica — 11/10/2026
+# Varredura numérica — 18/10/2026
+
+Revisão adicional motivada pela troca da média pelo mês de referência no cartão de custo
+(commits `6fa52f65` e `a08028d5`). Código e dados locais; nenhuma publicação em produção foi feita.
+
+## Inconsistências confirmadas nesta revisão
+
+- **Cota desatualizada no custo do mandato:** o banco e as notas históricas haviam sido atualizados
+  em 13/10, mas `mandate-cost.json` ainda usava notas anteriores. A atualização diária não recompunha
+  esse arquivo. Exemplo: Sargento Fahur (`camara:204387`), jul/2026, aparecia com **R$ 9.514,36** de
+  cota no custo, enquanto as notas do mesmo mês somavam **R$ 18.730,16**. Recompusemos o snapshot
+  offline a partir dos arquivos oficiais já coletados e do banco. **482 médias** mudaram; salário,
+  auxílios e gabinete não mudaram nos perfis presentes nas duas versões. A lista de perfis também
+  acompanha a lista atual do banco. O arquivo anterior foi preservado em
+  `data/backups/numeric-audit-2026-10-18/mandate-cost.json`; o banco não foi alterado.
+  A atualização diária passa a recompor o custo existente, inclusive com `--db-only`, e a auditoria
+  confere a cota mensal do custo contra as notas. A recomposição diária recusa perda de cobertura
+  quando faltam arquivos locais; falhas ficam registradas no status e preservam o custo anterior.
+- **Percentuais superiores a 100% com estornos:** Aline Gurgel (`camara:204353`) tem **R$ 90.101,14**
+  nas categorias com saldo positivo, **−R$ 4.045,94** em passagens e total líquido de **R$ 86.055,20**.
+  A imagem de compartilhamento dividia as categorias positivas pelo total líquido, produzindo
+  aproximadamente **105%**. A distribuição passa a usar a soma dos saldos positivos e explica os
+  estornos; os totais líquidos e valores negativos são preservados. Percentuais de fornecedores,
+  calculados sobre o mesmo denominador inadequado, deixam de aparecer.
+- **Meses que a tela dizia incluir na média:** o detalhamento mensal usava `usedMonths` diretamente,
+  sem o filtro dos três meses de folga aplicado ao número principal. A marcação agora acompanha os
+  meses efetivamente usados na média. Reproduzido com dados de teste: em uma fotografia de setembro,
+  julho ficava fora da média mas recebia a etiqueta “entra na média”. Na base local de outubro, com
+  custos até julho, esse filtro ainda não exclui meses; a falha reapareceria ao importar agosto.
+- **Ausência na base atribuída à fonte:** “Por que este mês?” afirmava que Câmara/Senado ainda não
+  haviam publicado o mês seguinte apenas porque ele não estava no snapshot. O texto agora descreve
+  a disponibilidade na base do painel, sem afirmar algo que a coleta não comprovou. As explicações
+  da lista e a imagem de comparação também identificam a média explicitamente, evitando confundi-la
+  com o número principal do mês na ficha.
+- **Soma parcial apresentada como custo completo:** um mês com lacuna confirmada na verba de gabinete
+  podia ser escolhido como número principal, somando apenas as outras três partes. O cartão e o
+  resumo para buscadores agora exigem as quatro partes para um total mensal. A regra da média de
+  cada parte permanece. Dez/2024 contém essa lacuna real; ela não afetava o mês principal de julho
+  na fotografia atual, mas foi reproduzida e coberta por regressão.
+
+- **Valor pequeno arredondado para zero:** a telefonia de Aline Gurgel, **R$ 1,14**, aparecia como
+  “R$ 0 mil” no detalhamento. A formatação compacta agora conserva centavos abaixo de R$ 1.000,
+  inclusive para estornos, e mantém a mesma regra no conteúdo entregue pelo servidor.
+
+## Valores oficiais que ainda exigem conferência
+
+Além de Epitaciolândia, descrita na revisão abaixo, **Confins (MG), IBGE 3117876**, tem receita total
+realizada de **R$ 776.110,40** e despesa total empenhada de **R$ 87.680.742,29** em 2025. O arquivo
+`data/raw/finbra.csv` (linha 674632, `DCA-Anexo I-C`, “Receitas Brutas Realizadas”,
+`siconfi-cor_TotalReceitas`) contém `776110,4`; snapshot e API local reproduzem o valor corretamente.
+Essa diferença exige conferir a declaração; não prova erro de conversão nem permite substituir o
+valor por uma estimativa. A consulta à API oficial de Confins não pôde ser concluída nesta revisão.
+Os dois indicadores continuam pendentes de reconciliação com os balanços municipais; não foram
+alterados nem sinalizados automaticamente na interface.
+
+## Verificação desta revisão
+
+Foram revisados custo, fontes por mês, médias, comparações, compartilhamento, categorias, fornecedores,
+presença, partidos e contas municipais. A verificação usa a fotografia local e não certifica que
+produção tenha os mesmos arquivos. As receitas municipais pendentes mostram por que uma auditoria
+aritmética não garante a exatidão de toda declaração oficial.
+
+A auditoria ampliada comparou **19.661 valores mensais de cota**, sem divergências na base recomposta
+(**401.887 verificações**, nenhuma ocorrência). Aplicada ao backup anterior, identifica **12.217
+divergências**, demonstrando que agora detecta o problema. Casos sem notas observadas permanecem
+sem verificação, nunca convertidos automaticamente em zero. `make check` cobre as regressões de
+cálculo, exibição e atualização diária; a revisão de espaço dos cartões usa o desenho em canvas
+instrumentado nos testes, sem automação de navegador.
+
+## Revisão anterior — 11/10/2026
 
 Auditoria do código e da base local. Não certifica a base que está no servidor nem a exatidão das
 declarações oficiais. Nenhum banco ou snapshot foi alterado.

@@ -1,5 +1,55 @@
+import copy
+import json
+from pathlib import Path
+import tempfile
 import unittest
+from unittest.mock import patch
+from ingest import mandate_cost_composition as composition
 from ingest.mandate_cost_composition import GROSS_COMPONENTS, compose_month, compose_person
+
+
+class CoveragePreservationTests(unittest.TestCase):
+    def setUp(self):
+        self.previous = {'profiles': {'camara:1': {
+            'usedMonths': ['2023-02'], 'months': {
+                '2023-02': {'valuesCents': {'quota': 100, 'office': 200}},
+                '2023-03': {'valuesCents': {'quota': 0, 'office': None}},
+            },
+        }}}
+
+    def test_daily_guard_allows_amount_corrections_and_roster_turnover(self):
+        current = copy.deepcopy(self.previous)
+        current['profiles']['camara:1']['months']['2023-02']['valuesCents']['quota'] = -50
+        self.previous['profiles']['camara:2'] = copy.deepcopy(self.previous['profiles']['camara:1'])
+        current['profiles']['camara:3'] = copy.deepcopy(current['profiles']['camara:1'])
+        composition.validate_preserved_coverage(self.previous, current)
+
+    def test_daily_guard_rejects_lost_months_and_parts_even_outside_the_average(self):
+        for period, part in [('2023-02', 'office'), ('2023-03', 'quota')]:
+            with self.subTest(period=period, part=part):
+                current = copy.deepcopy(self.previous)
+                current['profiles']['camara:1']['months'][period]['valuesCents'][part] = None
+                with self.assertRaisesRegex(ValueError, 'lost numeric'):
+                    composition.validate_preserved_coverage(self.previous, current)
+        current = copy.deepcopy(self.previous)
+        current['profiles']['camara:1']['usedMonths'] = []
+        with self.assertRaisesRegex(ValueError, 'lost previously used month'):
+            composition.validate_preserved_coverage(self.previous, current)
+
+    def test_daily_cli_preserves_published_file_when_local_inputs_lose_history(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root / 'data/snapshots/mandate-cost.json'
+            output.parent.mkdir(parents=True)
+            output.write_text(json.dumps(self.previous), encoding='utf-8')
+            before = output.read_bytes()
+            incomplete = {'profiles': {'camara:1': {'usedMonths': [], 'months': {}}}}
+            with patch.object(composition, 'build', return_value=incomplete), patch('sys.argv', [
+                'mandate_cost_composition', '--root', str(root), '--preserve-coverage',
+            ]), self.assertRaisesRegex(ValueError, 'lost previously used month'):
+                composition.main()
+            self.assertEqual(output.read_bytes(), before)
+            self.assertFalse(output.with_suffix('.json.tmp').exists())
 
 
 class MandateCompositionTests(unittest.TestCase):

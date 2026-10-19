@@ -64,7 +64,7 @@ function homeCategoriesCard(data) {
   return `<section class="card home-panel">
     <div class="home-panel-head"><h2 class="h">Para onde vai a cota</h2><span class="muted">${categories.length} categorias · ${formatCitizenAmount(quota.total)} no mandato</span></div>
     <ul class="home-category-list">${categories.map(category => `<li><span>${esc(category.nome)}</span><b>${Math.abs(category.valor) >= 1e3 ? formatCitizenAmount(category.valor) : brl(category.valor)}${category.valor > 0 && positiveTotal ? ` <small>${(category.valor / positiveTotal * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%</small>` : ''}</b><i style="width:${Math.max(0.5, Math.max(0, category.valor) / max * 100).toFixed(2)}%"></i></li>`).join('')}</ul>
-    <span class="muted">${esc(homePeriod(quota.periodo))}. Todos os reembolsos importados dos(as) deputados(as) da lista, preservando estornos.</span>
+    <span class="muted">${esc(homePeriod(quota.periodo))}. Todos os reembolsos importados dos(as) deputados(as) da lista, preservando estornos. Percentuais consideram categorias com saldo positivo; estornos permanecem no total líquido.</span>
   </section>`;
 }
 function homeTopCard(data) {

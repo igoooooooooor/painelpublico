@@ -81,14 +81,19 @@ test('the rows are the parts of that same month and add up to the total', () => 
   assert.match(html, /Ver as notas de jul\/2026/);
 });
 
-test('a confirmed gap in the latest month stays out of the sum and is never shown as zero', () => {
-  const { profileCostAnswer } = load();
+test('a confirmed gap cannot be presented as a complete monthly cost', () => {
+  const { profileCostAnswer, profileCostLatest, profileCostDetails } = load();
   const cost = latestFixture();
   cost.months['2026-07'].valuesCents.office = null;
   cost.months['2026-07'].sourceGaps = ['office'];
   const html = profileCostAnswer(cost);
-  assert.match(html, /data-cost-part="office">[\s\S]*?Não publicado pela Câmara/);
-  assert.match(html, /R\$\s?80\.067,19/);
+  assert.equal(profileCostLatest(cost).period, '2026-06');
+  assert.match(html, /Valor exato: <span class="mono">R\$\s?220\.619,19<\/span>/);
+  assert.doesNotMatch(html, /80\.067,19/);
+  assert.match(html, /Em jul\/2026, falta verba do gabinete/);
+  assert.match(profileCostDetails(cost), /data-cost-month="2026-07"[\s\S]*?Não publicado pela Câmara/);
+  cost.usedMonths = ['2026-07'];
+  assert.equal(profileCostLatest(cost), null);
 });
 
 test('a 13th salary paid in the latest month is shown apart from the sum', () => {
@@ -123,12 +128,27 @@ test('the mandate average leaves out months whose quota still receives notes', (
   assert.equal(profileCostAverage({ ...cost, monthlyAverageCents: null }, '2026-09-20'), null);
 });
 
+test('monthly details identify exactly the months used by the displayed average', () => {
+  const { profileCostAverage, profileCostDetails } = load();
+  const cost = latestFixture();
+  const asOf = '2026-09-20';
+  const html = profileCostDetails(cost, asOf);
+  const marked = [...html.matchAll(/data-cost-month="([\d-]+)"[\s\S]*?<\/span>\s*\n/g)]
+    .filter(match => match[0].includes('entra na média')).map(match => match[1]);
+  assert.deepEqual(marked, Array.from(profileCostAverage(cost, asOf).months));
+  assert.match(html, /data-cost-month="2026-07"[\s\S]*?fora da média: notas da cota ainda podem chegar/);
+  // A mesma exceção do cartão: sem nenhum mês assentado, a média provisória usa os meses disponíveis.
+  const provisional = profileCostDetails(costFixture({ used: ['2026-07'] }), asOf);
+  assert.equal((provisional.match(/entra na média/g) || []).length, 1);
+  assert.doesNotMatch(provisional, /fora da média: notas da cota ainda podem chegar/);
+});
+
 test('"Por que <mês>?" explains the month: last complete month, with what is missing next', () => {
   const { profileCostAnswer } = load();
   const html = profileCostAnswer(latestFixture(), '2026-10-13');
   const why = html.match(/<details class="citizen-cost-notes profile-cost-why" data-cost-why="latest-complete">[\s\S]*?<\/details>/)[0];
   assert.match(why, /<summary>Por que jul\/2026\?<\/summary>/);
-  assert.match(why, /Jul\/2026 é o mês mais recente com todas as partes publicadas\. A Câmara ainda não publicou todas as partes de ago\/2026\./);
+  assert.match(why, /Jul\/2026 é o mês mais recente com todas as partes disponíveis na base do painel\. A base do painel ainda não reúne todas as partes de ago\/2026\./);
   assert.match(why, /As notas da cota chegam semanas depois do gasto, então um mês só aparece aqui com 3 meses de folga, quando as notas já estão assentadas\. O mês avança a cada atualização dos dados\./);
   assert.doesNotMatch(why, /madur/i);
   assert.doesNotMatch(why, / open/);
@@ -137,7 +157,7 @@ test('"Por que <mês>?" explains the month: last complete month, with what is mi
   cost.usedMonths = PERIODS.slice(0, 6);
   cost.months['2026-07'].valuesCents = { ...cost.months['2026-07'].valuesCents, office: null, remuneration: null };
   cost.months['2026-07'].exclusionReasons = ['missing_parts'];
-  assert.match(profileCostAnswer(cost, '2026-10-13'), /Jun\/2026 é o mês mais recente com todas as partes publicadas\. Em jul\/2026, faltam verba do gabinete e salário bruto\./);
+  assert.match(profileCostAnswer(cost, '2026-10-13'), /Jun\/2026 é o mês mais recente com todas as partes disponíveis na base do painel\. Em jul\/2026, faltam verba do gabinete e salário bruto\./);
   // Saiu do mandato no mês seguinte.
   cost.months['2026-07'].exercise = 'outside_mandate';
   assert.match(profileCostAnswer(cost, '2026-10-13'), /Em jul\/2026, não estava no mandato\./);

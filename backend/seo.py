@@ -137,11 +137,16 @@ def _latest_cost_month(cost, as_of=None):
     used = costs.settled_periods(cost.get('usedMonths') or [], None)
     if not used or not isinstance(cost.get('monthlyAverageCents'), int):
         return None
-    period = costs.settled_periods(used, as_of)[-1]
+    parts = ('remuneration', 'allowances', 'quota', 'office')
+    # Lacunas confirmadas participam da média de cada parte, mas não são um total mensal completo.
+    complete = [period for period in used if all(
+        costs._cents((((cost.get('months') or {}).get(period) or {}).get('valuesCents') or {}).get(key))
+        for key in parts)]
+    if not complete:
+        return None
+    period = costs.settled_periods(complete, as_of)[-1]
     values = ((cost.get('months') or {}).get(period) or {}).get('valuesCents') or {}
-    known = [values.get(key) for key in ('remuneration', 'allowances', 'quota', 'office')
-             if isinstance(values.get(key), int) and not isinstance(values.get(key), bool)]
-    return (period, sum(known)) if known else None
+    return period, sum(values[key] for key in parts)
 
 
 def profile_facts(db, identifier):

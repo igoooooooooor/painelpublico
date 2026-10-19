@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import sqlite3
 import sys
 from pathlib import Path
@@ -13,6 +14,7 @@ from backend import citizen, config, votes
 
 OPTIONAL_SNAPSHOTS = ('presenca.json', 'mandate-cost.json', 'senate-cost.json', votes.INDEX_NAME)
 MONTHLY_COST_ROUNDING_TOLERANCE = 0.005
+QUOTA_AUDIT_EXAMPLES = 20
 
 
 def _new_report(db_path, snapshots_path):
@@ -264,6 +266,125 @@ def audit_attendance_rows(rows, report, location='snapshot.presenca.json'):
                    {'presente': present, 'falta': absent, 'justificadas': justified, 'dias': days})
 
 
+def published_chamber_quota_rows(snapshot, report):
+    """Extract only numeric monthly quota values published for Câmara profiles."""
+    if not isinstance(snapshot, dict):
+        _check(report, False, 'invalid_mandate_cost_snapshot', 'snapshot.mandate-cost.json',
+               'Mandate-cost snapshot must be an object.')
+        return []
+    profiles = snapshot.get('profiles')
+    _check(report, isinstance(profiles, dict), 'invalid_mandate_cost_profiles',
+           'snapshot.mandate-cost.json.profiles', 'Mandate-cost profiles must be an object.')
+    if not isinstance(profiles, dict):
+        return []
+
+    published = []
+    for identifier, profile in profiles.items():
+        if not isinstance(profile, dict) or profile.get('house') != 'camara':
+            continue
+        months = profile.get('months')
+        if not isinstance(months, dict):
+            continue
+        for period, month in months.items():
+            if not isinstance(month, dict):
+                continue
+            values = month.get('valuesCents')
+            if not isinstance(values, dict):
+                continue
+            cents = values.get('quota')
+            if not isinstance(cents, int) or isinstance(cents, bool):
+                continue
+            match = re.fullmatch(r'(\d{4})-(\d{2})', str(period))
+            if not match or not 1 <= int(match.group(2)) <= 12:
+                _check(report, False, 'invalid_mandate_cost_period',
+                       f'snapshot.mandate-cost.json.profiles.{identifier}.months.{period}',
+                       'A published monthly quota must use a YYYY-MM period.', period)
+                continue
+            published.append({'authorityId': str(identifier), 'period': str(period),
+                              'year': int(match.group(1)), 'month': int(match.group(2)),
+                              'storedCents': cents})
+    return published
+
+
+def audit_chamber_quota_rows(published, db, report):
+    """Compare stored quota cents with the citizen API's observed reimbursement rowset.
+
+    A month containing only housing-complement rows is observed and has a non-complement
+    quota of zero. A month with no reimbursement or complement row is left unverified, not
+    filled with a zero. Signed reimbursements are summed as stored.
+    """
+    result = {'publishedMonths': len(published), 'comparedMonths': 0, 'mismatchMonths': 0,
+              'unobservedMonths': 0, 'mismatchExamples': [], 'unobservedExamples': []}
+    if not published:
+        report['quotaRecomposition'] = result
+        return
+
+    identifiers = sorted({row['authorityId'] for row in published})
+    years = [min(row['year'] for row in published), max(row['year'] for row in published)]
+    target_values = ','.join('( ? )' for _ in identifiers)
+    query = f'''WITH target_authorities(id) AS (VALUES {target_values}), observed AS (
+            SELECT e.authorityId,e.year,e.month,e.amountCents,e.kind
+            FROM expenses e JOIN target_authorities t ON t.id=e.authorityId
+            WHERE e.year BETWEEN ? AND ? AND e.kind IN ('reembolso','complemento_moradia')
+        UNION ALL
+            SELECT h.authorityId,h.year,h.month,h.amountCents,h.kind
+            FROM quota_history h JOIN target_authorities t ON t.id=h.authorityId
+            WHERE h.year BETWEEN ? AND ? AND h.kind IN ('reembolso','complemento_moradia'))
+        SELECT authorityId,year,month,COUNT(*) observedRows,
+            SUM(CASE WHEN kind='reembolso' THEN 1 ELSE 0 END) reimbursementRows,
+            SUM(CASE WHEN kind='reembolso' THEN amountCents ELSE 0 END) reimbursementCents
+        FROM observed GROUP BY authorityId,year,month'''
+    params = [*identifiers, *years, *years]
+    try:
+        database_rows = db.execute(query, params).fetchall()
+    except sqlite3.Error as error:
+        _check(report, False, 'quota_recomposition_failed', 'database.expenses+quota_history',
+               'Could not recompute published monthly quota from reimbursement rows.', str(error))
+        report['quotaRecomposition'] = result
+        return
+
+    observed = {(row['authorityId'], int(row['year']), int(row['month'])): row
+                for row in database_rows}
+    for published_row in published:
+        key = (published_row['authorityId'], published_row['year'], published_row['month'])
+        database_row = observed.get(key)
+        if database_row is None:
+            result['unobservedMonths'] += 1
+            if len(result['unobservedExamples']) < QUOTA_AUDIT_EXAMPLES:
+                result['unobservedExamples'].append({
+                    'authorityId': published_row['authorityId'], 'period': published_row['period'],
+                    'storedCents': published_row['storedCents'], 'databaseCents': None,
+                })
+            continue
+
+        result['comparedMonths'] += 1
+        report['counts']['checks'] += 1
+        database_cents = int(database_row['reimbursementCents'])
+        if database_cents != published_row['storedCents']:
+            result['mismatchMonths'] += 1
+            if len(result['mismatchExamples']) < QUOTA_AUDIT_EXAMPLES:
+                result['mismatchExamples'].append({
+                    'authorityId': published_row['authorityId'], 'period': published_row['period'],
+                    'storedCents': published_row['storedCents'], 'databaseCents': database_cents,
+                    'databaseReimbursementRows': int(database_row['reimbursementRows']),
+                    'databaseObservedRows': int(database_row['observedRows']),
+                })
+
+    _check(report, result['mismatchMonths'] == 0, 'mandate_cost_quota_mismatch',
+           'snapshot.mandate-cost.json.profiles.*.months.*.valuesCents.quota',
+           'Published Câmara quota cents must match the observed database reimbursement sum.',
+           {'mismatchMonths': result['mismatchMonths'], 'examples': result['mismatchExamples'],
+            'examplesOmitted': max(0, result['mismatchMonths'] - len(result['mismatchExamples']))})
+    if result['unobservedMonths']:
+        examples = ', '.join(f"{row['authorityId']} {row['period']}" for row in result['unobservedExamples'])
+        omitted = max(0, result['unobservedMonths'] - len(result['unobservedExamples']))
+        suffix = f'; {omitted} more omitted' if omitted else ''
+        _skip(report, 'snapshot.mandate-cost.json.profiles.*.months.*.valuesCents.quota',
+              f"{result['unobservedMonths']} published quota month(s) had no reimbursement or housing-complement rows; "
+              f"left unverified rather than treating the missing database sum as zero. Examples: {examples}{suffix}.")
+    report['quotaRecomposition'] = result
+
+
 def audit_tally(tally, report, location):
     """Check a scoreboard tally while preserving unknown (null) published counts."""
     _check(report, isinstance(tally, dict), 'invalid_scoreboard_tally', location,
@@ -367,13 +488,32 @@ def audit_numbers(db_path=None, snapshots_path=None):
     snapshots_path = Path(snapshots_path).expanduser() if snapshots_path is not None else config.SNAPSHOTS_PATH
     report = _new_report(db_path, snapshots_path)
 
+    optional_snapshots = {}
+    for filename in OPTIONAL_SNAPSHOTS:
+        if filename in ('presenca.json', votes.INDEX_NAME):
+            continue
+        snapshot = _read_snapshot(snapshots_path / filename, report)
+        optional_snapshots[filename] = snapshot
+        if snapshot is not None:
+            _check_finite_values(snapshot, report, f'snapshot.{filename}')
+    quota_snapshot = optional_snapshots.get('mandate-cost.json')
+    published_quota = (published_chamber_quota_rows(quota_snapshot, report)
+                       if quota_snapshot is not None else [])
+
     if not db_path.is_file():
         _check(report, False, 'database_missing', str(db_path), 'Database file is missing; numeric audit cannot run.')
+        if published_quota:
+            _skip(report, 'snapshot.mandate-cost.json.profiles.*.months.*.valuesCents.quota',
+                  'Quota recomposition was skipped because the missing database was already reported.')
     else:
+        quota_audit_attempted = False
         try:
             db = _connect_read_only(db_path)
             original_snapshots_path = config.SNAPSHOTS_PATH
             try:
+                if quota_snapshot is not None:
+                    quota_audit_attempted = True
+                    audit_chamber_quota_rows(published_quota, db, report)
                 # citizen.summary calls costs.monthly_costs, which reads this configured snapshot directory.
                 config.SNAPSHOTS_PATH = snapshots_path
                 summary = citizen.summary(db)
@@ -386,14 +526,9 @@ def audit_numbers(db_path=None, snapshots_path=None):
         except Exception as error:  # A bad or outdated local DB must still produce an actionable report.
             _check(report, False, 'database_audit_failed', str(db_path),
                    'Could not read the public summary and parties APIs from this database.', str(error))
-
-    for filename in OPTIONAL_SNAPSHOTS:
-        if filename in ('presenca.json', votes.INDEX_NAME):
-            continue
-        path = snapshots_path / filename
-        snapshot = _read_snapshot(path, report)
-        if snapshot is not None:
-            _check_finite_values(snapshot, report, f'snapshot.{filename}')
+            if published_quota and not quota_audit_attempted:
+                _skip(report, 'snapshot.mandate-cost.json.profiles.*.months.*.valuesCents.quota',
+                      'Quota recomposition was skipped because the database could not be read; the database error was reported above.')
 
     attendance_path = snapshots_path / 'presenca.json'
     attendance = _read_snapshot(attendance_path, report)

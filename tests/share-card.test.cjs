@@ -69,11 +69,12 @@ test('profile cards draw the name, cost parts and site address without the brand
     cost: { label: 'Custa em média por mês', value: 'R$ 193 mil', exact: 'R$ 193.156,14', totalCents: 19315614,
       parts: [{ name: 'Gabinete', cents: 11353006 }, { name: 'Salário', cents: 4275680 }, { name: 'Cota', cents: 3686927 }, { name: 'Auxílios', cents: 0 }], note: 'Média.' },
     presence: { label: 'Presença no Plenário', value: '92%', detail: '333 de 361 dias', share: 0.92, average: 0.92, averageLabel: 'média da Câmara: 92%' },
-    categories: [{ name: 'Divulgação', share: 0.5897 }, { name: 'Aluguel de carro', share: 0.2224 }, { name: 'Combustível', share: 0.0856 }], top: { value: 'R$ 99.992', who: 'Empresa', what: 'Divulgação · mai/2026' },
+    categories: [{ name: 'Divulgação', share: 0.5897 }, { name: 'Aluguel de carro', share: 0.2224 }, { name: 'Combustível', share: 0.0856 }],
+    categoryNote: 'Percentuais dos saldos positivos; estornos mantidos no total.', top: { value: 'R$ 99.992', who: 'Empresa', what: 'Divulgação · mai/2026' },
     footnote: 'Fontes.', disclaimer: 'Projeto pessoal.' };
   assert.equal(context.shareDrawCard(card, canvas).id, 'canvas');
   const texts = calls.filter(([name]) => name === 'fillText').map(([, text]) => text);
-  for (const text of ['Ana Lima', 'R$ 193 mil', 'R$ 193.156,14', 'Gabinete', 'R$ 114 mil', 'R$ 0', '92%', 'R$ 99.992', '59%', '22%', '9%', '10%', 'Outras', 'painelpublico.com']) assert.ok(texts.includes(text), text);
+  for (const text of ['Ana Lima', 'R$ 193 mil', 'R$ 193.156,14', 'Gabinete', 'R$ 114 mil', 'R$ 0', '92%', 'R$ 99.992', '59%', '22%', '9%', '10%', 'Outras', 'Percentuais dos saldos positivos; estornos mantidos no total.', 'painelpublico.com']) assert.ok(texts.includes(text), text);
   assert.ok(!texts.includes('Painel Público'));
   // As porcentagens da cota fecham 100.
   assert.equal(['59%', '22%', '9%', '10%'].reduce((sum, text) => sum + parseInt(text, 10), 0), 100);
@@ -102,6 +103,46 @@ test('quota legends close 100% with "Outras" in profile and face-off cards', () 
   const texts = calls.filter(([name]) => name === 'fillText').map(([, text]) => text);
   assert.ok(texts.includes('Outras'));
   assert.ok(texts.includes('10%'));
+});
+
+test('face-off refund note and four category rows fit above the card footer', () => {
+  const context = load();
+  const calls = [];
+  const fake = new Proxy({ measureText: text => ({ width: String(text).length * 10 }), canvas: { id: 'canvas' } }, {
+    get: (target, key) => key in target ? target[key] : (...args) => calls.push([key, ...args]),
+    set: (target, key, value) => { target[key] = value; return true; },
+  });
+  const categories = [
+    { name: 'Divulgação', share: 0.5 }, { name: 'Veículos', share: 0.25 },
+    { name: 'Telefonia', share: 0.15 }, { name: 'Hospedagem', share: 0.1 },
+  ];
+  const person = { name: 'Ana', meta: 'ABC · AP', stats: [
+    { label: 'Custo médio por mês', value: 'R$ 100 mil' }, { label: 'Presença no Plenário', value: '90%' },
+  ], categories, categoryNote: 'Percentuais dos saldos positivos; estornos mantidos no total.', top: null };
+  context.shareDrawCard({ layout: 'faceoff', people: [person, { ...person, name: 'Bia' }], agreement: null, alerts: ['0', '0'], footnote: '' }, { getContext: () => fake });
+  const footerY = Math.max(...calls.filter(([name, , , width, height]) => name === 'fillRect' && width === 419 && height === 1).map(([, , y]) => y));
+  const categoryLabels = new Set(['Divulgação', 'Veículos', 'Telefonia', 'Outras']);
+  const categoryCalls = calls.filter(([name, text]) => name === 'fillText' && categoryLabels.has(text));
+  assert.equal(footerY, 796);
+  assert.equal(categoryCalls.length, 8);
+  assert.ok(categoryCalls.every(([, , , y]) => y <= footerY - 18));
+  assert.ok(calls.some(([name, text]) => name === 'fillText' && text.includes('estornos mantidos no total.')));
+});
+
+test('quota category distribution excludes refunds from percentage shares without hiding them from callers', () => {
+  const context = load();
+  const distribution = context.shareQuotaCategories([
+    { nome: 'Divulgação', valor: 52000 },
+    { nome: 'Locação de veículos', valor: 38100 },
+    { nome: 'Telefonia', valor: 1.14 },
+    { nome: 'Passagem aérea', valor: -4045.94 },
+  ]);
+  assert.deepEqual(Array.from(distribution.items, item => item.name), ['Divulgação', 'Locação de veículos', 'Telefonia']);
+  assert.ok(Math.abs(distribution.items.reduce((sum, item) => sum + item.share, 0) - 1) < 1e-9);
+  assert.equal(distribution.hasRefunds, true);
+  assert.deepEqual(Array.from(context.shareQuotaCategories([{ nome: 'Estorno', valor: -5 }]).items), []);
+  assert.equal(context.shareQuotaCategories([{ nome: 'Estorno', valor: -5 }]).hasRefunds, true);
+  assert.equal(context.shareQuotaCategories(null).hasRefunds, false);
 });
 
 test('official photos are drawn in a circle with a source credit, and only same-domain photo URLs are loaded', async () => {

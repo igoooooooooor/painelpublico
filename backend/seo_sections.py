@@ -46,9 +46,11 @@ def money(value):
 
 def short_amount(value):
     """'R$ 1,2 mi' ou 'R$ 253 mil', como formatCitizenAmount no app."""
-    if value >= 1e6:
+    if abs(value) >= 1e6:
         return 'R$ ' + f'{value / 1e6:.1f}'.replace('.', ',').removesuffix(',0') + ' mi'
-    return f'R$ {pt_int(round(value / 1e3))} mil'
+    if abs(value) >= 1e3:
+        return f'R$ {pt_int(round(value / 1e3))} mil'
+    return 'R$ ' + (f'{value:.2f}'.replace('.', ',') if value else '0')
 
 
 def thousands(value):
@@ -320,10 +322,10 @@ def politicians_body(db):
             '<div class="citizen-actions"><a class="fchip" href="/comparar">Comparar políticos(as) →</a><a class="fchip" href="/partidos">Comparar partidos →</a>'
             '<a class="fchip" href="/presenca">Presença dos deputados →</a></div>'
             f'<section class="card wide"><h2 class="h">Câmara dos Deputados</h2><p class="muted">{len(deputies)} deputados(as) federais na lista oficial atual, em ordem alfabética. '
-            f'Cada ficha mostra custo médio por mês, notas da cota, presença, votos e alertas.</p>{directory_list(deputies)}</section>'
+            f'Cada ficha mostra o custo de um mês de referência, a média do mandato, notas da cota, presença, votos e alertas.</p>{directory_list(deputies)}</section>'
             f'<section class="card wide"><h2 class="h">Senado Federal</h2><p class="muted">{len(senators)} registros na lista oficial atual.{senate_note}</p>{directory_list(senators)}</section>'
             '<span class="src">Fonte: listas oficiais da Câmara dos Deputados e do Senado Federal. A busca mostra só deputados(as) federais e senadores(as) com mandato em curso; '
-            'eleitos(as) em 2026 aparecem a partir da posse, em 1º de fevereiro de 2027. Custo por mês: o mesmo do “Quanto custa?” de cada ficha, nos meses com todas as partes publicadas; '
+            'eleitos(as) em 2026 aparecem a partir da posse, em 1º de fevereiro de 2027. Custo por mês na lista: média do mandato nos meses disponíveis com as partes exigidas e as notas assentadas. Na ficha, essa média é contexto para o custo de um mês específico; '
             'Câmara e Senado não publicam as mesmas partes, então compare só dentro da mesma Casa.</span>')
 
 

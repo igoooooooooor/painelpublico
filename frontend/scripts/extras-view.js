@@ -391,7 +391,7 @@ function comparisonShareCard([a, b]) {
   const sameHouse = chamber(a) === chamber(b);
   const figures = [a, b].map(comparisonCostFigures);
   const costs = figures.map(item => item.total ? item.total.cents / 100 : null);
-  const costLabel = !sameHouse ? 'Quanto custa por mês*' : chamber(a) === 'senado' ? 'Despesas identificadas por mês' : 'Custa por mês';
+  const costLabel = !sameHouse ? 'Média por mês*' : chamber(a) === 'senado' ? 'Despesas médias por mês' : 'Custo médio por mês';
   const presence = [a, b].map(f => {
     if (chamber(f) === 'senado') { const record = senateRegisteredPresence(f.pessoa.id); return record ? { text: `${record.presente} sessões`, share: null } : null; }
     const p = attendanceForPerson(f.pessoa.id);
@@ -402,6 +402,7 @@ function comparisonShareCard([a, b]) {
   const presenceWinner = sameHouse && shares.every(v => v != null) && Math.round(shares[0] * 100) !== Math.round(shares[1] * 100) ? (shares[0] > shares[1] ? 0 : 1) : null;
   const costGap = costWinner === null ? '' : `${formatCitizenAmount(Math.abs(figures[0].total.cents - figures[1].total.cents) / 100)} a menos por mês`;
   const monthLabel = item => item?.month && item?.year ? `${SHORT_MONTHS[item.month]}/${item.year}` : '';
+  const quotaCategories = [a, b].map(f => shareQuotaCategories(f.categorias));
   const people = [a, b].map((f, index) => ({
     name: name(f), photo: typeof sharePhotoUrl === 'function' ? sharePhotoUrl(f.pessoa.id) : null, photoCredit: chamber(f) === 'senado' ? 'Senado Federal' : 'Câmara dos Deputados',
     meta: [f.pessoa.party, f.pessoa.uf].filter(Boolean).join(' · '),
@@ -411,7 +412,10 @@ function comparisonShareCard([a, b]) {
       { label: chamber(f) === 'senado' ? 'Presença registrada · Senado' : 'Presença no Plenário', value: presence[index]?.text || 'Sem dados',
         tag: presenceWinner === index ? 'mais presente' : '', behind: presenceWinner !== null && presenceWinner !== index },
     ],
-    categories: f.total > 0 ? (f.categorias || []).slice(0, 3).map(category => ({ name: category.nome, share: category.valor / f.total })) : [],
+    categories: quotaCategories[index].items,
+    categoryNote: quotaCategories[index].hasRefunds ? 'Percentuais dos saldos positivos; estornos mantidos no total.' : '',
+    categoryEmptyLabel: quotaCategories[index].items.length ? '' : Array.isArray(f.categorias) && f.categorias.length
+      ? 'Sem categorias com saldo positivo' : 'Sem notas da cota no período',
     top: f.maiores?.[0] ? { value: brl(f.maiores[0].valor), what: [f.maiores[0].categoria, monthLabel(f.maiores[0])].filter(Boolean).join(' · '),
       who: f.maiores[0].fornecedor ? citizenName(f.maiores[0].fornecedor) : '' } : null,
   }));
@@ -425,8 +429,8 @@ function comparisonShareCard([a, b]) {
     alerts: [a, b].map(f => alertCountOrNull(f) == null ? 'Sem avaliação' : String(f.alertas.length)),
     fileName: `${name(a)}-x-${name(b)}`,
     footnote: sameHouse
-      ? `Dados ${chamber(a) === 'senado' ? 'do Senado' : 'da Câmara'}. Custo: ${COST_COMPOSITION[chamber(a)] || 'partes publicadas'}.`
-      : '*Câmara e Senado publicam partes diferentes do custo e medem presença de jeitos diferentes: sem destaque entre as Casas.',
+      ? `Médias mensais do mandato. Dados ${chamber(a) === 'senado' ? 'do Senado' : 'da Câmara'}. Custo: ${COST_COMPOSITION[chamber(a)] || 'partes publicadas'}.`
+      : '*Médias mensais do mandato. Câmara e Senado publicam partes diferentes do custo e medem presença de jeitos diferentes: sem destaque entre as Casas.',
   };
 }
 function comparisonProfile(f) {
@@ -601,8 +605,19 @@ function comparisonTable([a, b]) {
   const quotaPeriod = profile => typeof citizenQuotaPeriod === 'function' ? citizenQuotaPeriod(profile.periodo?.inicio, profile.periodo?.fim) : '';
   if ([a, b].some(f => String(f.pessoa.id).startsWith('senado:')) && typeof profileSenateEnsure === 'function') profileSenateEnsure();
   const pA = attendanceForPerson(a.pessoa.id), pB = attendanceForPerson(b.pessoa.id);
-  const topCategory = f => f.categorias[0] ? `${esc(f.categorias[0].nome)} <small>${percent(f.categorias[0].valor, f.total)}%</small>` : '—';
-  const topSupplier = f => f.fornecedores[0] ? `${esc(citizenName(f.fornecedores[0].name))} <small>${percent(f.fornecedores[0].valor, f.total)}%</small>` : '—';
+  const topCategory = f => {
+    const categories = shareQuotaCategories(f.categorias);
+    return categories.items[0] ? `${esc(categories.items[0].name)} <small>${Math.round(categories.items[0].share * 100)}% dos saldos positivos</small>` : '—';
+  };
+  const hasCategoryRefunds = f => Array.isArray(f.categorias) && f.categorias.some(category => Number.isFinite(category?.valor) && category.valor < 0);
+  const topSupplier = f => {
+    const suppliers = Array.isArray(f.fornecedores) ? f.fornecedores : [];
+    const supplier = suppliers.find(item => Number.isFinite(item?.valor) && item.valor > 0);
+    if (!supplier) return suppliers.length ? 'Sem valor positivo listado' : '—';
+    const noteCount = Number.isSafeInteger(supplier.notas) && supplier.notas >= 0
+      ? `${supplier.notas} ${supplier.notas === 1 ? 'nota' : 'notas'}` : 'notas não informadas';
+    return `${esc(citizenName(supplier.name || 'Fornecedor não informado'))} <small>${formatCitizenAmount(supplier.valor)} · ${noteCount}</small>`;
+  };
   const { chamber: voteChamber, votes, loading: chamberVotesLoading } = comparisonVotes(a, b);
   const comparableVotes = votes.filter(comparableVotePair);
   const matchingVoteCount = comparableVotes.filter(record => record.voteA === record.voteB).length;
@@ -637,6 +652,7 @@ function comparisonTable([a, b]) {
     ${comparisonInfoRow('Equipe e verba de gabinete', comparisonOfficeCell(a), comparisonOfficeCell(b))}
     ${comparisonInfoRow('Remuneração', comparisonCompensationCell(a), comparisonCompensationCell(b))}
     <div class="cmp-row"><span class="cmp-l">Onde mais gastou</span><div class="cmp-v">${topCategory(a)}</div><div class="cmp-v">${topCategory(b)}</div></div>
+    ${[a, b].some(hasCategoryRefunds) ? '<div class="cmp-row"><span class="cmp-l"></span><div class="cmp-v muted cmp-source" style="grid-column:2 / -1">Percentuais consideram categorias com saldo positivo; estornos permanecem no total líquido.</div></div>' : ''}
     <div class="cmp-row"><span class="cmp-l">Empresa que mais recebeu</span><div class="cmp-v">${topSupplier(a)}</div><div class="cmp-v">${topSupplier(b)}</div></div>
   </section>
   ${voteChamber === 'senado' || comparableVotes.length || chamberVotesLoading ? `<section class="card wide"><span class="k">${voteLabel}</span>
