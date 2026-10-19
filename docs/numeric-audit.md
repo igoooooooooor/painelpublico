@@ -51,6 +51,13 @@ ano a ano, Placar (ex.: PLP 74/2026, 346–46–3; PL 45–23; PT 52–0 na API 
   meses de 2026). É o valor publicado e fica; o cartão avisa que o total pode estar sem o custo da equipe. É o que
   produz o "menor" da home (Paulo Soares, 2 meses: R$ 52 mil antes das passagens SIGEPA, R$ 56 mil depois).
 
+- **Trava diária do custo barrando nota removida pela Câmara:** desde a atualização das 8h49 de 19/10/2026, a
+  recomposição do custo era recusada ("camara:220643 2026-03 lost numeric quota"): a Câmara tirou do arquivo o único
+  lançamento de mar/2026 de Sônia Guajajara, um complemento de auxílio-moradia (cota 0), num mês fora da média. O
+  custo publicado ficava parado. A trava agora aceita uma cota que some só quando a recomposição conferiu a fonte
+  inteira contra o banco (sem `quota_snapshot_unverified`); meses usados, outras partes e arquivo local faltando
+  continuam barrados.
+
 Ficam como estão, documentados: presença soma até set/2026 e a página de 2026 da Câmara já inclui outubro; notas de
 um mês podem ter data de emissão no mês seguinte (competência da Câmara).
 

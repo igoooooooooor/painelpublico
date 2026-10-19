@@ -368,7 +368,14 @@ def validate_preserved_coverage(previous, current):
                 continue
             new_month = new_months.get(period)
             new_values = new_month.get('valuesCents') if isinstance(new_month, dict) else None
+            # A Câmara também remove notas do arquivo (ex.: o único complemento de moradia de um mês, em
+            # 19/10/2026). Uma cota que some fica aceita só quando a recomposição conferiu a fonte inteira
+            # contra o banco (sem quota_snapshot_unverified); arquivo local faltando continua barrado.
+            reasons = new_month.get('exclusionReasons') if isinstance(new_month, dict) else None
+            quota_confirmed_empty = isinstance(reasons, list) and 'quota_snapshot_unverified' not in reasons
             for part, old_value in old_values.items():
+                if part == 'quota' and quota_confirmed_empty:
+                    continue
                 if integer(old_value) and (not isinstance(new_values, dict)
                                            or not integer(new_values.get(part))):
                     raise ValueError(f'daily coverage guard rejected replacement: {identifier} {period} lost numeric {part}')

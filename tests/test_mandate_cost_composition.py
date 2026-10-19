@@ -36,6 +36,23 @@ class CoveragePreservationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'lost previously used month'):
             composition.validate_preserved_coverage(self.previous, current)
 
+    def test_daily_guard_accepts_a_quota_removed_from_a_verified_source_but_not_an_unverified_one(self):
+        current = copy.deepcopy(self.previous)
+        month = current['profiles']['camara:1']['months']['2023-03']
+        month['valuesCents']['quota'] = None
+        month['exclusionReasons'] = ['payroll_unavailable', 'missing_parts']
+        composition.validate_preserved_coverage(self.previous, current)
+        month['exclusionReasons'].append('quota_snapshot_unverified')
+        with self.assertRaisesRegex(ValueError, 'lost numeric quota'):
+            composition.validate_preserved_coverage(self.previous, current)
+        # A regra vale só para a cota: gabinete sumido continua barrado mesmo com a fonte da cota conferida.
+        current = copy.deepcopy(self.previous)
+        month = current['profiles']['camara:1']['months']['2023-02']
+        month['valuesCents']['office'] = None
+        month['exclusionReasons'] = ['missing_parts']
+        with self.assertRaisesRegex(ValueError, 'lost numeric office'):
+            composition.validate_preserved_coverage(self.previous, current)
+
     def test_daily_cli_preserves_published_file_when_local_inputs_lose_history(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
