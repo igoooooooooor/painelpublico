@@ -14,6 +14,19 @@
   `authority_totals` (esquema v8); total, mês a mês e alertas seguem com todas as notas, e a ficha
   marca os meses em aberto. Sem nenhum mês assentado, valem todos, como no custo.
 
+- **Link da presença só de 2026:** o cartão "Presença no Plenário" soma fev/2023–set/2026 (ex.: 334 de
+  391 dias), mas "Fonte da presença na Câmara" abria só a página de 2026, com cerca de 90 dias. A Câmara
+  publica um ano por página; a ficha, as fontes e o comparativo passam a trazer um link por ano do período
+  observado e dizem que o número soma os anos.
+- **"Conferir na fonte" dos alertas abria a página do deputado:** o gráfico de gastos dessa página inclui
+  passagens aéreas que ficam fora do arquivo aberto das notas (`docs/data.md`, "Notas do mês"), então o
+  valor do mês lá não bate com o do alerta. Na Câmara, cada mês marcado abre aqui a lista de notas (a mesma
+  do cartão de custo), a concentração em fornecedor oferece o CSV com todas as notas, e o link passa a se
+  chamar "Página na Câmara", com a ressalva. O texto "sem as passagens aéreas da Câmara" era impreciso: o
+  arquivo aberto traz 343 notas de "PASSAGEM AÉREA - REEMBOLSO/RPA" em 2026 (R$ 791 mil); o que fica fora
+  são as passagens que só aparecem no gráfico da página do deputado. Textos ajustados na ficha, nos
+  alertas, em comparar, partidos, metodologia e páginas para buscadores.
+
 ## Varredura de 18/10/2026
 
 Revisão adicional motivada pela troca da média pelo mês de referência no cartão de custo

@@ -287,7 +287,9 @@ function profileExtras(id) {
   const presenceRecord = attendanceForPerson(personNumber), votes = votesForPerson(id), attendanceRecords = attendanceRows();
   const averagePresence = attendanceRecords.length ? attendanceRecords.reduce((sum, record) => sum + record.presente / record.dias, 0) / attendanceRecords.length : null;
   const voteCount = votes.length;
-  const presenceUrl = /^\d+$/.test(personNumber || '') ? `https://www.camara.leg.br/deputados/${encodeURIComponent(personNumber)}/presenca-plenario/2026` : null;
+  // Um link por ano publicado pela Câmara (helper da ficha); sem ele, o ano do fim do período observado.
+  const presenceLinks = typeof chamberPresenceSourceLinks === 'function' ? chamberPresenceSourceLinks(personNumber, presenceRecord, 'Presença no Plenário')
+    : /^\d+$/.test(personNumber || '') ? `<a href="https://www.camara.leg.br/deputados/${encodeURIComponent(personNumber)}/presenca-plenario/${esc(String(presenceRecord?.fim || '2026').slice(0, 4))}" target="_blank" rel="noopener">Presença no Plenário ↗</a>` : '';
   return `${presenceRecord ? `<section class="card ${presenceRecord.presente / presenceRecord.dias < 0.5 ? 'alarm' : ''}">
     <span class="k">Presença nas sessões de votação · ${esc(typeof citizenQuotaPeriod === 'function' ? citizenQuotaPeriod(presenceRecord.inicio, presenceRecord.fim) || 'mandato' : 'mandato')}</span>
     <div><span class="big">${presenceRecord.presente}/${presenceRecord.dias}</span> <span class="muted">dias${averagePresence === null ? '' : ` · média dos registros válidos ${Math.round(averagePresence * 100)}%`}</span></div>
@@ -304,7 +306,7 @@ function profileExtras(id) {
     }).join('')}</div>` : '<p class="muted">Nenhuma votação selecionada do Placar em 2026.</p>'}
     <span class="muted">A lista cobre apenas as votações selecionadas no Placar; falta de registro não identifica motivo nem situação do mandato.</span>
   </section>
-  <span class="src">Fonte: Câmara dos Deputados. ${presenceUrl ? `<a href="${esc(presenceUrl)}" target="_blank" rel="noopener">Presença no Plenário ↗</a>` : ''} Os botões de votação abrem o resumo e as fontes oficiais de cada votação.</span>`;
+  <span class="src">Fonte: Câmara dos Deputados. ${presenceLinks ? `${presenceLinks} ` : ''}Os botões de votação abrem o resumo e as fontes oficiais de cada votação.</span>`;
 }
 
 /* ---------- Comparar perfis ---------- */
@@ -662,7 +664,7 @@ function comparisonTable([a, b]) {
     ${votes.length > (extrasState.comparisonVoteLimit || COMPARISON_VOTE_PAGE) ? `<button type="button" class="opt citizen-more" data-cmp-votes-more>Mostrar mais (${votes.length - (extrasState.comparisonVoteLimit || COMPARISON_VOTE_PAGE)})</button>` : ''}`}
     ${voteChamber === 'senado' ? `${senateVoteSource?.detail ? `<p class="muted">${esc(datesInTextBR(senateVoteSource.detail))}</p>` : ''}${activitySource(senateVoteSource, 'Fonte e período')}` : '<span class="muted">Votações do Placar: texto principal de PL, PLP e PEC no Plenário desde fev/2023. A comparação considera apenas votos registrados por ambos; ausência de registro não significa que a pessoa não votou.</span>'}
   </section>` : String(personA.id).split(':')[0] !== String(personB.id).split(':')[0] ? '<section class="card wide"><span class="k">Votações</span><p class="muted">Votações de casas diferentes não são comparadas.</p></section>' : ''}
-  <span class="src">Destaque em roxo: quem gastou menos, teve menos alertas ou teve maior presença na Câmara. O Senado aparece como contagem de presenças registradas, sem ranking; votações entre casas não são comparadas. Gastos pelas notas da cota publicadas pela Câmara e pelo Senado (sem as passagens aéreas da Câmara).</span>`;
+  <span class="src">Destaque em roxo: quem gastou menos, teve menos alertas ou teve maior presença na Câmara. O Senado aparece como contagem de presenças registradas, sem ranking; votações entre casas não são comparadas. Gastos pelas notas da cota publicadas pela Câmara e pelo Senado (na Câmara, sem as passagens aéreas que ficam fora do arquivo aberto das notas).</span>`;
 }
 
 /* ---------- Eventos ---------- */

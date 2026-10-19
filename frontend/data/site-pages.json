@@ -212,7 +212,7 @@
           {
             "question": "De onde vêm as notas?",
             "answer": [
-              "Dos dados abertos da Câmara e do portal de transparência do Senado. Na Câmara, as passagens aéreas não estão no arquivo aberto das notas e ficam fora da conta. No Senado, a análise usa os registros publicados; a imagem do documento não está disponível nesta base."
+              "Dos dados abertos da Câmara e do portal de transparência do Senado. Na Câmara, o arquivo aberto das notas traz as passagens aéreas lançadas como nota (reembolso e requisição), mas não todas as que aparecem no gráfico de gastos da página do(a) deputado(a) na Câmara; essas ficam fora da conta, e por isso o valor de lá pode ser maior. No Senado, a análise usa os registros publicados; a imagem do documento não está disponível nesta base."
             ]
           }
         ]

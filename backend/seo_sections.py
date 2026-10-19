@@ -181,8 +181,9 @@ def alerts_body(db):
             f'<p><b>Mês acima da referência:</b> o gasto do mês passou de 1,75 vez a mediana dos 12 meses anteriores da própria pessoa. '
             f'A avaliação começa em fevereiro de 2024, quando há 12 meses de mandato para comparar.</p>'
             f'<p><b>Concentração em fornecedor:</b> metade ou mais do dinheiro do ano foi para a mesma empresa, ano a ano desde 2023.</p>'
-            f'<p class="muted">Pode ter explicação, como um evento no estado ou um contrato fixo. Os dados vêm das notas que a Câmara e o Senado publicam; '
-            f'as passagens aéreas da Câmara não entram nessa conta.{snapshot_note(radar.get("snapshotAt"))}</p></section></div>')
+            f'<p class="muted">Pode ter explicação, como um evento no estado ou um contrato fixo. Os dados vêm das notas que a Câmara e o Senado publicam. '
+            f'Na Câmara, o arquivo aberto das notas não traz todas as passagens aéreas: o gráfico da página do(a) deputado(a) inclui passagens que ficam fora dele.'
+            f'{snapshot_note(radar.get("snapshotAt"))}</p></section></div>')
 
 
 # ---------------------------------------------------------------- home
@@ -589,7 +590,7 @@ def parties_body(db):
             '<p class="ph-lead">Registros da lista, gastos com a cota, presença e votos de dois partidos. Compare a média, não o total: partidos maiores têm mais gente.</p></div>'
             f'<section class="card wide"><h2 class="h">Partidos na lista atual</h2>{table}'
             '<p class="muted">Com JavaScript, escolha dois partidos para ver cota média, presença, alertas e como as bancadas votaram, lado a lado, e compartilhe a comparação.</p></section>'
-            f'<span class="src">Gastos pelas notas da cota (sem passagens aéreas da Câmara). Alertas não indicam irregularidade. Partidos maiores tendem a ter mais variação interna; '
+            f'<span class="src">Gastos pelas notas da cota (na Câmara, sem as passagens aéreas que ficam fora do arquivo aberto das notas). Alertas não indicam irregularidade. Partidos maiores tendem a ter mais variação interna; '
             f'compare a média, não o total.{snapshot_note(data.get("snapshotAt"))}</span>')
 
 

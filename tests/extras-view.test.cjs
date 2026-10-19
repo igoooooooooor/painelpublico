@@ -157,7 +157,7 @@ test('voter lists contain source rows only and never infer non-voters from the c
   assert.match(api.profileExtras('camara:3'), /Sem registro importado para este perfil/);
   const secretProfileHtml = api.profileExtras('camara:1');
   assert.match(secretProfileHtml, /Presença registrada · voto secreto/);
-  assert.match(secretProfileHtml, /Presença no Plenário ↗/);
+  assert.match(secretProfileHtml, /presenca-plenario\/\d{4}" target="_blank" rel="noopener">Presença no Plenário ↗/);
   assert.doesNotMatch(profileHtml, /Sim|Não votou/);
   assert.match(api.profileExtras('senado:55'), /Sem dados de presença do Senado importados/);
   assert.match(api.profileExtras('senado:55'), /Votações nominais do Senado ainda não importadas/);

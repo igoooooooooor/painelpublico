@@ -100,6 +100,21 @@ const formatCitizenAmount = value => {
 };
 /* Valor curto para as linhas do gráfico: uma casa decimal em milhares, para não arredondar R$ 3.460 em "R$ 3 mil". */
 const formatMonthAmount = v => v >= 1e6 ? formatCitizenAmount(v) : v >= 1e3 ? 'R$ ' + (v / 1e3).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mil' : brl(v);
+/* A Câmara publica a presença um ano por página; o número do mandato soma os anos. Um link por ano do período
+   observado (`inicio`/`fim` de presenca.json); sem período, o ano da fotografia. */
+function chamberPresenceYears(presence) {
+  const year = value => /^\d{4}-\d{2}$/.test(String(value || '')) ? Number(String(value).slice(0, 4)) : null;
+  const start = year(presence?.inicio), end = year(presence?.fim);
+  if (start !== null && end !== null && end >= start && end - start < 10) return Array.from({ length: end - start + 1 }, (_, index) => start + index);
+  const stamp = typeof DATA !== 'undefined' ? year(String(DATA?.geradoEm || '').slice(0, 7)) : null;
+  return [stamp || new Date().getFullYear()];
+}
+function chamberPresenceSourceLinks(personNumber, presence, label = 'Fonte da presença na Câmara') {
+  if (!/^\d+$/.test(String(personNumber || ''))) return '';
+  const years = chamberPresenceYears(presence);
+  const links = years.map(year => `<a href="https://www.camara.leg.br/deputados/${personNumber}/presenca-plenario/${year}" target="_blank" rel="noopener">${year} ↗</a>`).join(' · ');
+  return `${esc(label)}: ${links}.${years.length > 1 ? ' A Câmara publica um ano por página; o número acima soma os anos.' : ''}`;
+}
 const citizenSourceUrl = person => {
   const [chamber, personNumber] = String(person.id || '').split(':');
   return chamber === 'camara' ? `https://www.camara.leg.br/deputados/${personNumber}?ano=2026` : chamber === 'senado' ? `https://www25.senado.leg.br/web/senadores/senador/-/perfil/${personNumber}` : null;
@@ -178,7 +193,8 @@ function alertVisualization(a) {
           ${history}
         </div>
         ${provisional ? '<p class="citizen-peak-foot"><i class="citizen-peak-swatch provisional"></i>Listrado: provisório, o prazo de apresentação das notas ainda está aberto.</p>' : ''}
-        ${citizenSourceUrl(a.pessoa || {}) ? `<a class="citizen-peak-notes" href="${esc(citizenSourceUrl(a.pessoa || {}))}" target="_blank" rel="noopener">Ver as notas na fonte oficial ↗</a>` : ''}
+        ${alertMonthNotes(a, months)}
+        ${citizenSourceUrl(a.pessoa || {}) ? `<a class="citizen-peak-notes" href="${esc(citizenSourceUrl(a.pessoa || {}))}" target="_blank" rel="noopener">${alertIsChamber(a) ? 'Página do(a) deputado(a) na Câmara ↗' : 'Ver as notas na fonte oficial ↗'}</a>` : ''}
       </details>
     </figure>`;
   }
@@ -191,6 +207,15 @@ function alertVisualization(a) {
   }
   return '';
 }
+const alertIsChamber = a => String(a?.pessoa?.id || '').startsWith('camara:');
+/* Na Câmara, as notas de cada mês marcado abrem aqui mesmo (a mesma lista do cartão de custo): é a fonte
+   do valor. A página do(a) deputado(a) na Câmara inclui passagens aéreas que ficam fora do arquivo aberto. */
+function alertMonthNotes(a, months) {
+  if (!alertIsChamber(a) || typeof profileCostNotesToggle !== 'function') return '';
+  return months.slice(0, 6).map(m => profileCostNotesToggle(a.pessoa.id, `${m.ano}-${String(m.mes).padStart(2, '0')}`,
+    `Ver as notas de ${SHORT_MONTHS[m.mes]}/${m.ano}`)).join('');
+}
+const CHAMBER_PAGE_NOTE = 'O gráfico de gastos da página na Câmara inclui passagens aéreas que não estão no arquivo aberto das notas; os valores de lá podem ser maiores que os daqui.';
 /* No pico com gráfico, as barras já dizem valor, referência e diferença: a frase só repetiria. */
 function alertStatement(a) {
   return a.tipo === 'pico' && alertVisualization(a) ? '' : `<p class="citizen-statement">${esc(a.frase)}</p>`;
@@ -214,7 +239,7 @@ function alertCard(a, opts = {}) {
   const profileSupplierHistory = opts.profile && a.tipo === 'fornecedor'
     ? `<details class="citizen-peak-history profile-supplier-history"><summary>Ver histórico e notas →</summary>
       <p>${esc(citizenName(a.fornecedor || 'Fornecedor não informado'))} recebeu ${Number.isFinite(a.valor) ? formatCitizenAmount(a.valor) : 'valor não informado'} de ${Number.isFinite(a.total) ? formatCitizenAmount(a.total) : 'total não informado'} nas notas observadas de ${esc(a.periodoObservado || String(a.periodo || year))}${Number.isInteger(a.mesesComNotas) ? `, em ${a.mesesComNotas} ${a.mesesComNotas === 1 ? 'mês' : 'meses'} com notas` : ''}.${a.parcial ? ' O período é parcial; o ano ainda pode receber notas.' : ''}</p>
-      ${Array.isArray(a.fontesOficiais) && a.fontesOficiais.length ? `<p>Detalhamento oficial: ${a.fontesOficiais.map(source => `<a href="${esc(source.url)}" target="_blank" rel="noopener">${esc(source.label)} ↗</a>`).join(', ')}.${a.notaDocumento ? ` ${esc(a.notaDocumento)}` : ''}</p>` : profileSourceUrl ? `<a href="${esc(profileSourceUrl)}" target="_blank" rel="noopener">Ver as notas na fonte oficial ↗</a>` : ''}
+      ${Array.isArray(a.fontesOficiais) && a.fontesOficiais.length ? `<p>Detalhamento oficial: ${a.fontesOficiais.map(source => `<a href="${esc(source.url)}" target="_blank" rel="noopener">${esc(source.label)} ↗</a>`).join(', ')}.${a.notaDocumento ? ` ${esc(a.notaDocumento)}` : ''}</p>` : alertIsChamber(a) ? `<p><a href="${esc('/api/c/gastos.csv?id=' + encodeURIComponent(p.id))}" download>Baixar todas as notas da cota (CSV)</a>, para filtrar o ano e o fornecedor.${profileSourceUrl ? ` <a href="${esc(profileSourceUrl)}" target="_blank" rel="noopener">Página na Câmara ↗</a>` : ''}</p>` : profileSourceUrl ? `<a href="${esc(profileSourceUrl)}" target="_blank" rel="noopener">Ver as notas na fonte oficial ↗</a>` : ''}
     </details>` : '';
   return `<article class="card citizen-alert" data-kind="${cls}">
     <div class="citizen-top"><span class="citizen-chip ${cls}"><i></i>${label}</span><span class="muted">${a.tipo === 'pico' ? SHORT_MONTHS[a.mes] + '/' + String(a.periodo).slice(0, 4) : 'em ' + String(a.periodo).slice(0, 4)}</span></div>
@@ -227,7 +252,8 @@ function alertCard(a, opts = {}) {
     ${profileSupplierHistory}
     <details class="citizen-why"><summary>Por que apareceu aqui?</summary><p>${alertExplanation(a)}</p><p class="muted">A regra mostra variação de gasto ou concentração em fornecedor; não mede irregularidade. Confira as notas na fonte oficial.</p></details>
     ${Array.isArray(a.fontesOficiais) && a.fontesOficiais.length ? `<p class="muted">Detalhamento oficial: ${a.fontesOficiais.map(f => `<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.label)} ↗</a>`).join(', ')}.${a.notaDocumento ? ` ${esc(a.notaDocumento)}` : ''}</p>` : ''}
-    <div class="citizen-actions">${opts.semPessoa ? '' : `${profileLinkOpen(p.id, 'fchip')}Ver a ficha${profileLinkClose(p.id)}`}${profileSourceUrl ? `<a class="fchip" href="${esc(profileSourceUrl)}" target="_blank" rel="noopener">Conferir na fonte ↗</a>` : ''}</div>
+    <div class="citizen-actions">${opts.semPessoa ? '' : `${profileLinkOpen(p.id, 'fchip')}Ver a ficha${profileLinkClose(p.id)}`}${profileSourceUrl ? `<a class="fchip" href="${esc(profileSourceUrl)}" target="_blank" rel="noopener">${alertIsChamber(a) ? 'Página na Câmara' : 'Página no Senado'} ↗</a>` : ''}</div>
+    ${alertIsChamber(a) && profileSourceUrl ? `<p class="muted citizen-alert-source-note">${CHAMBER_PAGE_NOTE}</p>` : ''}
   </article>`;
 }
 
@@ -323,7 +349,7 @@ function alertsView() {
     <section class="card citizen-how" id="alerts-how"><span class="k">Como funciona</span>
       <p><b>Mês acima da referência:</b> o gasto do mês passou de 1,75 vez a mediana dos 12 meses anteriores da própria pessoa. A avaliação começa em fevereiro de 2024, quando há 12 meses de mandato para comparar.</p>
       <p><b>Concentração em fornecedor:</b> metade ou mais do dinheiro do ano foi para a mesma empresa, ano a ano desde 2023.</p>
-      <p class="muted">Pode ter explicação, como um evento no estado ou um contrato fixo. Os dados vêm das notas que a Câmara e o Senado publicam; as passagens aéreas da Câmara não entram nessa conta.</p>
+      <p class="muted">Pode ter explicação, como um evento no estado ou um contrato fixo. Os dados vêm das notas que a Câmara e o Senado publicam. Na Câmara, o arquivo aberto das notas não traz todas as passagens aéreas: o gráfico da página do(a) deputado(a) inclui passagens que ficam fora dele.</p>
     </section>
   </div>`;
 }
@@ -645,9 +671,8 @@ function profileAttendanceCard(shared) {
   let source = '';
   if (senate) source = profileSource(profileSenateSource('presenca'), 'Fonte do Diário do Senado');
   else {
-    const personNumber = String(person.id).split(':')[1];
-    source = /^\d+$/.test(personNumber || '')
-      ? `<span class="src"><a href="https://www.camara.leg.br/deputados/${personNumber}/presenca-plenario/2026" target="_blank" rel="noopener">Fonte da presença na Câmara ↗</a></span>` : '';
+    const links = chamberPresenceSourceLinks(String(person.id).split(':')[1], presence);
+    source = links ? `<span class="src">${links}</span>` : '';
   }
   return `<article class="card profile-work-card profile-presence-card">
     <span class="k">Presença no Plenário · ${esc(period || 'mandato')}</span>${attendance}${source}
@@ -989,11 +1014,11 @@ function profileView() {
   const hasExpenseData = f.hasExpenseData === undefined ? f.total != null : Boolean(f.hasExpenseData);
   const alerts = f.alertas || [], isChamberPerson = person.role === 'deputado';
   const personNumber = String(person.id).split(':')[1];
-  const presenceUrl = isChamberPerson && /^\d+$/.test(personNumber || '') ? `https://www.camara.leg.br/deputados/${personNumber}/presenca-plenario/2026` : null;
+  const presenceLinks = isChamberPerson ? chamberPresenceSourceLinks(personNumber, shared.presence, 'Fonte da presença no Plenário') : '';
   const sourcesHtml = `<p>Cota é reembolso de gastos com o trabalho: escritório, divulgação, carro e viagens.</p>
-    <p class="src">Fonte: notas da cota publicadas ${isChamberPerson ? 'pela Câmara (sem as passagens aéreas, que ficam fora do arquivo aberto)' : 'pelo Senado'}. Retrato de ${f.snapshotAt ? esc(dateBR(f.snapshotAt)) : 'data não informada'}.</p>
+    <p class="src">Fonte: notas da cota publicadas ${isChamberPerson ? 'pela Câmara (o arquivo aberto não traz todas as passagens aéreas: o gráfico da página do(a) deputado(a) na Câmara inclui passagens que ficam fora dele)' : 'pelo Senado'}. Retrato de ${f.snapshotAt ? esc(dateBR(f.snapshotAt)) : 'data não informada'}.</p>
     ${isChamberPerson ? `<p class="muted">Presença em sessões deliberativas do mandato atual, desde fev/2023. Média da Câmara: média das proporções individuais entre registros válidos. O selo compara os percentuais arredondados. Os dias observados podem variar entre mandatos.</p>
-    ${presenceUrl ? `<a class="src" href="${esc(presenceUrl)}" target="_blank" rel="noopener">Fonte da presença no Plenário ↗</a>` : ''}
+    ${presenceLinks ? `<span class="src">${presenceLinks}</span>` : ''}
     <p class="muted">Os votos cobrem apenas a seleção do Placar em 2026. Cada votação abre seu resumo e fontes oficiais.</p>` : ''}
     ${!isChamberPerson ? ['presenca', 'votacoes'].map(key => { const source = profileSenateSource(key); return source ? `<p><b>${key === 'presenca' ? 'Presença' : 'Votações'} do Senado</b></p>${profileSource(source)}<p class="muted">${esc(datesInTextBR(source.detail))}</p>` : ''; }).join('') : ''}
     ${!isChamberPerson ? profileAttendanceSources(shared.id) : ''}

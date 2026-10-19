@@ -270,7 +270,7 @@ function partiesView() {
     <span class="muted">O número ao lado conta registros incluídos na lista (deputados(as) + senadores(as)); o Senado tem 81 cadeiras e a lista pode incluir suplentes em transição. Toque para trocar; o mais antigo da comparação sai.</span>
   </section>
   ${a && b ? partyComparisonTable(a, b) : '<p class="note">Escolha dois partidos para comparar.</p>'}
-  <span class="src">Destaque em roxo: menor gasto médio ou mais presença na Câmara; alertas e unidade nas votações só informam, sem destaque. Registros de presença do Senado são contagens informativas, sem ranking, e não contam sessões sem linha publicada. Partidos maiores tendem a ter mais variação interna; compare a média, não o total. Gastos pelas notas da cota (sem passagens aéreas da Câmara); presença e votos são mostrados separadamente por casa e pelos recortes das respectivas fontes.</span>
+  <span class="src">Destaque em roxo: menor gasto médio ou mais presença na Câmara; alertas e unidade nas votações só informam, sem destaque. Registros de presença do Senado são contagens informativas, sem ranking, e não contam sessões sem linha publicada. Partidos maiores tendem a ter mais variação interna; compare a média, não o total. Gastos pelas notas da cota (na Câmara, sem as passagens aéreas que ficam fora do arquivo aberto das notas); presença e votos são mostrados separadamente por casa e pelos recortes das respectivas fontes.</span>
   ${a && b ? `<div class="compare-actions">${shareActionsHTML(partyShareCard(a, b), 'Compartilhar imagem')}<button type="button" class="fchip" data-cmp-start="">Comparar políticos →</button></div>` : ''}`);
 }
 

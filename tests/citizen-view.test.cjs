@@ -989,7 +989,9 @@ test('visible profile alerts are chronological and keep their source and explana
   const html = context.profileAlertsSection(alerts, []);
   assert.ok(html.indexOf('Alerta recente') < html.indexOf('Alerta antigo'));
   assert.match(html, /href="https:\/\/www.camara.leg.br\/deputados\/55\?ano=2026"/);
-  assert.match(html, /Conferir na fonte/);
+  assert.match(html, /Página na Câmara ↗/);
+  assert.doesNotMatch(html, /Conferir na fonte/);
+  assert.match(html, /inclui passagens aéreas que não estão no arquivo aberto/);
   assert.match(html, /Por que apareceu aqui/);
   assert.match(html, /não indicam irregularidade/);
 });
@@ -1002,6 +1004,42 @@ test('presence card lists the published justifications without inventing missing
   assert.match(card, /<b>Justificativas:<\/b> missão autorizada \(120\), licença para tratamento de saúde \(62\)\./);
   const without = api.profileAttendanceCard({ id: 'camara:1', person, presence: { presente: 10, dias: 10, justificadas: 0, falta: 0 } });
   assert.doesNotMatch(without, /Justificativas/);
+});
+
+test('chamber presence links one official page per year of the period, since the Câmara publishes a year per page', () => {
+  const { api, context } = makeView();
+  const person = { id: 'camara:1', role: 'deputado', name: 'Pessoa' };
+  const card = api.profileAttendanceCard({ id: 'camara:1', person, presence: { presente: 142, dias: 324, justificadas: 182, falta: 0, inicio: '2023-02', fim: '2026-09' } });
+  assert.doesNotMatch(card, /presenca-plenario\/2026" target="_blank" rel="noopener">Fonte da presença na Câmara/);
+  assert.match(card, /Fonte da presença na Câmara: <a href="https:\/\/www.camara.leg.br\/deputados\/1\/presenca-plenario\/2023"[^>]*>2023 ↗<\/a> · <a[^>]*2024[^>]*>2024 ↗<\/a> · <a[^>]*>2025 ↗<\/a> · <a href="https:\/\/www.camara.leg.br\/deputados\/1\/presenca-plenario\/2026"[^>]*>2026 ↗<\/a>\. A Câmara publica um ano por página; o número acima soma os anos\./);
+  // Sem período observado: só o ano da fotografia, sem a frase sobre a soma.
+  const single = api.profileAttendanceCard({ id: 'camara:1', person, presence: null });
+  assert.match(single, /Fonte da presença na Câmara: <a href="https:\/\/www.camara.leg.br\/deputados\/1\/presenca-plenario\/2026"[^>]*>2026 ↗<\/a>\.<\/span>/);
+  assert.doesNotMatch(single, /soma os anos/);
+  assert.equal(context.chamberPresenceSourceLinks('x', null), '');
+});
+
+test('chamber alerts open the month notes here and name the official page as the deputy page, with its air-ticket caveat', () => {
+  const { api } = makeView();
+  const serie = [...[6, 7, 8, 9, 10, 11, 12].map(mes => ({ ano: 2025, mes, valor: 36000, estado: 'evaluated' })),
+    ...[1, 2, 3, 4, 5].map(mes => ({ ano: 2026, mes, valor: 37000, estado: 'evaluated' })), { ano: 2026, mes: 6, valor: 69765, estado: 'flagged' }];
+  const alert = { tipo: 'pico', mes: 6, ano: 2026, periodo: '2026-06', base: 'rolling12', referencia: 36719, titulo: 'T', frase: '...',
+    meses: [{ ano: 2026, mes: 6, valor: 69765, referencia: 36719, vezes: 1.9 }], serie, pessoa: { id: 'camara:1', name: 'Pessoa', role: 'deputado' } };
+  const html = api.alertCard(alert);
+  assert.match(html, /<details class="citizen-cost-notes" data-cost-notes="2026-06" data-cost-person="camara:1">\s*<summary>Ver as notas de jun\/2026<\/summary>/);
+  assert.match(html, /class="citizen-peak-notes" href="https:\/\/www.camara.leg.br\/deputados\/1\?ano=2026"[^>]*>Página do\(a\) deputado\(a\) na Câmara ↗/);
+  assert.match(html, /Página na Câmara ↗/);
+  assert.match(html, /citizen-alert-source-note">O gráfico de gastos da página na Câmara inclui passagens aéreas que não estão no arquivo aberto das notas/);
+  assert.doesNotMatch(html, /Ver as notas na fonte oficial|Conferir na fonte/);
+  // Senado: a página do(a) senador(a) continua como fonte, sem a lista de notas da Câmara nem a ressalva.
+  const senate = api.alertCard({ ...alert, pessoa: { id: 'senado:5', name: 'Senadora', role: 'senador' } });
+  assert.match(senate, /Ver as notas na fonte oficial ↗/);
+  assert.match(senate, /Página no Senado ↗/);
+  assert.doesNotMatch(senate, /data-cost-notes|citizen-alert-source-note/);
+  // Concentração em fornecedor na ficha: o CSV com todas as notas, que permite filtrar ano e fornecedor.
+  const supplier = api.alertCard({ tipo: 'fornecedor', periodo: '2025', ano: 2025, valor: 50000, total: 80000, parte: 0.62, fornecedor: 'Empresa X', titulo: 'C', frase: 'f',
+    pessoa: { id: 'camara:1', name: 'Pessoa', role: 'deputado' } }, { semPessoa: true, profile: true });
+  assert.match(supplier, /<a href="\/api\/c\/gastos\.csv\?id=camara%3A1" download>Baixar todas as notas da cota \(CSV\)<\/a>, para filtrar o ano e o fornecedor\. <a href="https:\/\/www.camara.leg.br\/deputados\/1\?ano=2025"[^>]*>Página na Câmara ↗<\/a>/);
 });
 
 test('a vote with an urgency request shows both choices with dates, without calling them contradictory', () => {
