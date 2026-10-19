@@ -80,9 +80,12 @@
 - **Presença dos deputados:** "391 sessões de votação" vira "391 dias com sessão deliberativa"; "não faltaram
   nenhum dia" conta só quem tem o mandato inteiro (antes, 12 dos 22 tinham de 14 a 125 dias); quem chegou
   depois aparece com "desde jun/2026" na lista; "falta justificada" descrita como qualquer motivo publicado
-  (inclusive "decisão da Mesa", 726 dias na base). Pendente de conferência na Câmara: o status "Presença (~)"
-  (172 dias, 117 deputados) é classificado como falta justificada pelo coletor; se for uma variante de
-  presença, as contagens mudam na próxima coleta mensal.
+  (inclusive "decisão da Mesa", 726 dias na base). O status "Presença (~)" (172 dias, 117 deputados) era
+  classificado como falta justificada pelo coletor; conferido na página da Câmara em 19/10 (Altineu Côrtes,
+  20/03 e 17/06/2025): é o dia com mais de uma sessão em que a pessoa esteve em uma e teve justificativa na
+  outra, e a Câmara o conta como presença no quadro anual. O coletor passa a contar como presença; os
+  números mudam quando `presenca.json` for recomposto (`python3 ingest/chamber_mandate_history.py`, sem
+  rede, a partir do cache, ou na coleta mensal).
 - **Metodologia:** lacuna confirmada (dez/2024, gabinete) explicada; "3 meses de folga" com exemplo e aviso de
   que é mais curta que os 90 dias dos alertas; regra do Senado com a mesma folga; "sem base" inclui saldo
   negativo; "custo refeito todo mês" vira "recomposto todo dia".

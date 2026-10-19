@@ -19,13 +19,15 @@ class MandateHistoryTests(unittest.TestCase):
             presence_row("07/02/2023", "Presença"),
             presence_row("08/02/2023", "Ausência"),
             presence_row("09/02/2023", "Ausência justificada"),
+            presence_row("10/02/2023", "Presença (~)"),  # presente em uma sessão do dia, justificado na outra: a Câmara conta como presença
             presence_row("03/01/2024", "Presença"),
         ])
         days = history.parse_presence(page, 2023)
-        self.assertEqual(len(days), 4)  # o dia de 2024 não pertence à página de 2023
+        self.assertEqual(len(days), 5)  # o dia de 2024 não pertence à página de 2023
         months = history.presence_months(days)
         self.assertNotIn("2023-01", months)
-        self.assertEqual(months["2023-02"], {"days": 3, "present": 1, "absent": 1, "justified": 1})
+        self.assertEqual(months["2023-02"], {"days": 4, "present": 2, "absent": 1, "justified": 1})
+        self.assertEqual(history.presence_reasons(days), {"Ausência justificada": 1})
 
     def test_office_months_skip_pre_mandate_and_missing_pages(self):
         office = {"status": "partial", "months": {"1": 10.0, "2": 20.5, "11": 0.0}}

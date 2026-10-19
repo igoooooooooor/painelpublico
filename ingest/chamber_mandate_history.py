@@ -100,6 +100,12 @@ def load_presence(deputy_id: str, year: int, cache_dir: Path, collect: bool, ref
     return result
 
 
+def is_presence(status: str) -> bool:
+    """'Presença' e 'Presença (~)': a Câmara marca com '~' o dia com mais de uma sessão em que a pessoa esteve em
+    uma e teve justificativa na outra, e conta o dia como presença no quadro anual (conferido em 19/10/2026)."""
+    return str(status or "").strip().startswith("Presença")
+
+
 def presence_months(days: list[list[str]]) -> dict[str, dict[str, int]]:
     months: dict[str, dict[str, int]] = {}
     for date, status in days:
@@ -108,7 +114,7 @@ def presence_months(days: list[list[str]]) -> dict[str, dict[str, int]]:
             continue
         bucket = months.setdefault(period, {"days": 0, "present": 0, "absent": 0, "justified": 0})
         bucket["days"] += 1
-        if status == "Presença":
+        if is_presence(status):
             bucket["present"] += 1
         elif status == "Ausência":
             bucket["absent"] += 1
@@ -121,7 +127,7 @@ def presence_reasons(days: list[list[str]]) -> dict[str, int]:
     """Contagem dos motivos de dias sem presença nem ausência simples (ex.: justificativas)."""
     reasons: dict[str, int] = {}
     for date, status in days:
-        if date[:7] >= MANDATE_START and status not in ("Presença", "Ausência"):
+        if date[:7] >= MANDATE_START and status != "Ausência" and not is_presence(status):
             reasons[status] = reasons.get(status, 0) + 1
     return reasons
 
