@@ -53,8 +53,8 @@
 - **"Salário bruto" diferente do subsídio da página oficial:** a linha soma todas as tabelas da página de
   remuneração do mês (normal e complementares, inclusive férias e retroativos), então em alguns meses mostra
   mais do que os R$ 46.366,19 que a página destaca. A linha agora diz "acima do subsídio de R$ 46.366,19:
-  inclui férias, retroativos ou outras parcelas pagas no mês" (ou "abaixo…: exercício por parte do mês ou
-  descontos publicados"), só a partir de fev/2025, quando esse subsídio vale.
+  inclui férias, retroativos ou outras parcelas pagas no mês" (ou "abaixo…: redução ao teto constitucional, exercício por parte do mês ou outro
+  desconto publicado"), só a partir de fev/2025, quando esse subsídio vale.
 
 ## Varredura de 18/10/2026
 
