@@ -223,6 +223,20 @@ function profileCostWhyMonth(latest, next = '') {
     <p>As notas da cota chegam semanas depois do gasto, então um mês só aparece aqui com ${PROFILE_COST_SETTLE_MONTHS} meses de folga, quando as notas já estão assentadas. O mês avança a cada atualização dos dados.</p></details>`;
 }
 
+/* "Salário bruto" soma todas as tabelas da página de remuneração do mês (normal e complementares). Quando difere
+   do subsídio de referência (PROFILE_SALARY), a linha diz por quê: a página oficial mostra o subsídio em destaque,
+   e o leitor compararia os dois números. Só a partir da data em que o subsídio de referência vale. */
+function profileCostSalaryNote(cents, period) {
+  const reference = typeof PROFILE_SALARY !== 'undefined' ? PROFILE_SALARY?.deputado : null;
+  if (!profileCostInteger(cents) || !reference || !Number.isFinite(reference.amount) || !/^\d{4}-\d{2}$/.test(String(period || ''))
+      || String(reference.since || '').slice(0, 7) > period) return '';
+  const subsidy = Math.round(reference.amount * 100);
+  if (Math.abs(cents - subsidy) <= 100) return '';
+  const money = profileCostMoney(subsidy);
+  return cents > subsidy
+    ? `acima do subsídio de ${money}: inclui férias, retroativos ou outras parcelas pagas no mês`
+    : `abaixo do subsídio de ${money}: redução ao teto constitucional, exercício por parte do mês ou outro desconto publicado`;
+}
 /* Valor da parte: do mês mais recente (`perMonth` falso) ou a média das partes sem mês completo. */
 function profileCostPartRow([key, label, sourceLabel], value, scale, { source = null, detail = '', personId = null, gap = false, perMonth = false } = {}) {
   const money = profileCostMoney(value);
@@ -284,7 +298,8 @@ function profileCostAnswer(cost, asOf) {
     const christmas = profileCostMoney(month.christmasBonusCents);
     kicker = 'Mês mais recente';
     rows = PROFILE_COST_PARTS.map((entry, index) => profileCostPartRow(entry, values[index], scale,
-      { source: profileCostSafeSource(sources[entry[0]]), personId: cost.id, gap: gaps.has(entry[0]) })).join('');
+      { source: profileCostSafeSource(sources[entry[0]]), personId: cost.id, gap: gaps.has(entry[0]),
+        detail: entry[0] === 'remuneration' ? profileCostSalaryNote(values[index], period) : '' })).join('');
     principal = `<div class="profile-cost-total"><span>Custou</span><b class="mono">${esc(profileCostShort(totalCents))}</b><span>em ${esc(label)}</span></div>
       <p class="citizen-cost-exact">Valor exato: <span class="mono">${esc(profileCostMoney(totalCents))}</span>, a soma das quatro partes abaixo</p>
       ${profileCostStackedComposition(values, totalCents, PROFILE_COST_PARTS.map(([, partLabel]) => partLabel))}

@@ -216,7 +216,7 @@ def _home_cost_card(summary):
             f'<div class="home-cost-value">R$ {thousands(average)}<small> mil</small></div>'
             f'<p class="home-cost-parts">Salário, auxílios, cota parlamentar e verba do gabinete, somados.</p>{range_html}{senate_html}'
             f'<p class="home-cost-note">Média de {chamber.get("comCusto", 0)} deputados(as) com custo identificado, dos {chamber.get("total", 0)} da lista atual, '
-            f'nos meses com todas as partes publicadas; valores da época. Na Câmara, ficam fora 13º, encargos do gabinete e apartamento funcional. '
+            f'nos meses com todas as partes publicadas e as notas da cota já assentadas (3 meses de folga); valores da época. Na Câmara, ficam fora 13º, encargos do gabinete e apartamento funcional. '
             f'Câmara e Senado publicam partes diferentes do custo: compare só dentro da mesma Casa.</p>'
             f'<a class="more" href="/politicos">Ver quanto custa cada um(a) →</a></section>')
 

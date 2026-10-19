@@ -64,6 +64,13 @@ test('principal shows the latest complete month, with the mandate average as con
   assert.match(profileCostDetails(costFixture()), /Fora da conta: encargos do gabinete e apartamento funcional/);
   assert.equal((html.match(/data-cost-part=/g) || []).length, 4);
   assert.match(html, /remuneracao-deputado-detalhado\?mesAno=072026/);
+  // O salário do mês difere do subsídio de referência: a linha diz por quê, para bater com a página de remuneração.
+  const { profileCostSalaryNote } = load();
+  assert.equal(profileCostSalaryNote(4636619, '2026-07'), '');
+  assert.equal(profileCostSalaryNote(4636700, '2026-07'), '');
+  assert.match(profileCostSalaryNote(6182159, '2026-07'), /^acima do subsídio de R\$\s?46\.366,19: inclui férias, retroativos ou outras parcelas pagas no mês$/);
+  assert.match(profileCostSalaryNote(2000000, '2026-07'), /^abaixo do subsídio de R\$\s?46\.366,19: redução ao teto constitucional, exercício por parte do mês ou outro desconto publicado$/);
+  assert.equal(profileCostSalaryNote(6182159, '2024-12'), '');  // antes da data do subsídio de referência
   assert.doesNotMatch(html, /pelo menos/);
   assert.doesNotMatch(html, JARGON);
 });

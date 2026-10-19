@@ -176,7 +176,7 @@
           {
             "question": "O que entra no custo de um deputado(a)?",
             "answer": [
-              "Salário bruto, auxílios, cota parlamentar e verba do gabinete. A média usa só os meses com as quatro partes publicadas; meses parciais não são estimados para o mês inteiro.",
+              "Salário bruto, auxílios, cota parlamentar e verba do gabinete. O número principal da ficha é o mês mais recente com as quatro partes publicadas e com 3 meses de folga até a data das notas importadas, porque as notas da cota chegam por semanas; a média do mandato usa só os meses com as quatro partes e essa mesma folga. Meses parciais não são estimados para o mês inteiro.",
               "Ficam de fora: 13º salário (mostrado à parte), diárias, vantagens indenizatórias, encargos do gabinete e apartamento funcional."
             ]
           },

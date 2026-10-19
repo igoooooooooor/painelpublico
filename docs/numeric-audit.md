@@ -48,6 +48,14 @@
   usam o corte de meses assentados do total. (7) Texto para buscadores: quando nenhum mês tem a folga de 3
   meses, a linha do custo avisa que a cota do mês ainda recebe notas.
 
+- **Metodologia e home sem a regra dos 3 meses do custo:** diziam só "nos meses com todas as partes
+  publicadas", enquanto a ficha deixa fora os meses com notas chegando. Textos alinhados.
+- **"Salário bruto" diferente do subsídio da página oficial:** a linha soma todas as tabelas da página de
+  remuneração do mês (normal e complementares, inclusive férias e retroativos), então em alguns meses mostra
+  mais do que os R$ 46.366,19 que a página destaca. A linha agora diz "acima do subsídio de R$ 46.366,19:
+  inclui férias, retroativos ou outras parcelas pagas no mês" (ou "abaixo…: exercício por parte do mês ou
+  descontos publicados"), só a partir de fev/2025, quando esse subsídio vale.
+
 ## Varredura de 18/10/2026
 
 Revisão adicional motivada pela troca da média pelo mês de referência no cartão de custo

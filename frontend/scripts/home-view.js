@@ -36,7 +36,7 @@ function homeCostCard(data) {
     <p class="home-cost-parts">Salário, auxílios, cota parlamentar e verba do gabinete, somados.</p>
     ${hasRange ? `<div class="home-range" role="img" aria-label="Média de R$ ${mil(chamber.media)} mil, entre R$ ${mil(chamber.minimo)} mil e R$ ${mil(chamber.maximo)} mil"><span class="home-range-track"><i style="left:${position.toFixed(1)}%"></i></span><span class="home-range-ends"><span>menor R$ ${mil(chamber.minimo)} mil</span><span>maior R$ ${mil(chamber.maximo)} mil</span></span></div>` : ''}
     ${senate && Number.isFinite(senate.media) ? `<div class="home-cost-senate"><span>Senador(a), em média</span><b>R$ ${mil(senate.media)} mil/mês</b></div>` : ''}
-    <p class="home-cost-note">Média de ${chamber.comCusto} deputados(as) com custo identificado, dos ${chamber.total} da lista atual, nos meses com todas as partes publicadas; valores da época. Na Câmara, ficam fora 13º, encargos do gabinete e apartamento funcional. Câmara e Senado publicam partes diferentes do custo: compare só dentro da mesma Casa.</p>
+    <p class="home-cost-note">Média de ${chamber.comCusto} deputados(as) com custo identificado, dos ${chamber.total} da lista atual, nos meses com todas as partes publicadas e as notas da cota já assentadas (3 meses de folga); valores da época. Na Câmara, ficam fora 13º, encargos do gabinete e apartamento funcional. Câmara e Senado publicam partes diferentes do custo: compare só dentro da mesma Casa.</p>
     <a class="more" href="/politicos" data-go="politicians">Ver quanto custa cada um(a) →</a>
   </section>`;
 }
