@@ -31,6 +31,30 @@ class PresenceSummaryTests(unittest.TestCase):
         cost['usedMonths'] = ['2026-07']
         self.assertIsNone(seo._latest_cost_month(cost, '2026-10-13'))
 
+    def test_senator_summary_uses_the_senate_cost_and_registered_presence(self):
+        record = {'snapshotAt': '2026-10-08T21:02:21+00:00', 'meses': [
+            {'year': 2026, 'month': 6, 'valor': 20000.0}, {'year': 2026, 'month': 7, 'valor': 40000.0}, {'year': 2026, 'month': 8, 'valor': 30000.0}]}
+        senate_cost = {'months': {
+            '2026-06': {'remunerationCents': 4636619, 'officeCents': 10000000},
+            '2026-07': {'remunerationCents': 4636619, 'officeCents': 30000000},
+            '2026-08': {'remunerationCents': 4636619, 'officeCents': 20000000},   # sem folga em out: fora da média e do mês principal
+            '2026-09': {'remunerationCents': -144744, 'officeCents': 25000000},   # bruto negativo não é remuneração
+        }}
+        line = seo._senate_cost_line(senate_cost, record)
+        self.assertTrue(line.startswith('Somou R$ 386.366,19 em jul/2026; média de R$ 276.366,19 por mês (2 meses com as três partes identificadas).'), line)
+        self.assertIn('não compare com o custo de deputados(as)', line)
+        self.assertIsNone(seo._senate_cost_line({'months': {'2026-09': {'remunerationCents': -1, 'officeCents': 1}}}, record))
+        self.assertIsNone(seo._senate_cost_line(None, record))
+        with tempfile.TemporaryDirectory() as directory, patch.object(seo, 'SNAPSHOTS_PATH', Path(directory)):
+            (Path(directory) / 'senado-presenca.json').write_text(json.dumps({'presenca': {'period': '2023-02-01 a 2026-10-09', 'items': [
+                {'id': 'senado:5', 'presente': 277, 'sessoesEmExercicio': 296}, {'id': 'senado:6', 'presente': 24, 'sessoesEmExercicio': 23},
+                {'id': 'senado:7', 'presente': 0, 'sessoesEmExercicio': 10}]}}), encoding='utf-8')
+            self.assertEqual(seo._senate_presence('senado:5'), '277 sessões deliberativas com presença registrada no Diário do Senado, de 296 com lista validada '
+                             'em que estava em exercício (2023-02-01 a 2026-10-09). Faltas e justificativas não apuradas; sem percentual.')
+            self.assertIn('de 24 com lista validada', seo._senate_presence('senado:6'))  # nunca menos sessões do que presenças
+            self.assertIsNone(seo._senate_presence('senado:7'))
+            self.assertIsNone(seo._senate_presence('senado:8'))
+
     def test_search_summary_rejects_impossible_or_missing_attendance(self):
         valid = {'id': 1, 'presente': 9, 'falta': 1, 'justificadas': 0, 'dias': 10}
         invalid = [

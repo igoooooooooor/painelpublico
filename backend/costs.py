@@ -79,7 +79,9 @@ def _senate(snapshot, quota_by_month, as_of=None):
         complete = {}
         for period, month in (record.get('months') or {}).items():
             quota = quota_by_month.get((identifier, period))
-            if isinstance(month.get('remunerationCents'), int) and isinstance(month.get('officeCents'), int) and quota is not None:
+            # Bruto zero ou negativo (acerto ou abate-teto) não é a remuneração do mês, como no cartão.
+            if (_cents(month.get('remunerationCents')) and month['remunerationCents'] > 0 and _cents(month.get('officeCents'))
+                    and quota is not None):
                 complete[period] = (month['remunerationCents'], month['officeCents'], quota)
         complete = [complete[period] for period in settled_periods(complete, as_of)]
         if complete:

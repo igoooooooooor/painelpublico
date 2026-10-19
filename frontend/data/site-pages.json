@@ -109,7 +109,7 @@
                 "Câmara: 90 dias após o fim do mês.",
                 "Senado: até o fim de abril do ano seguinte. Por isso, em 2026, nenhum mês do Senado é avaliado para pico."
               ],
-              "Também ficam de fora meses com histórico insuficiente (menos de 12 meses anteriores com notas), sem base (algum mês sem notas na janela) ou sem piso dos colegas. A ficha de cada pessoa lista esses meses e o motivo."
+              "Também ficam de fora meses com histórico insuficiente (menos de 12 meses anteriores com notas), sem base (algum mês sem notas ou com saldo negativo na janela) ou sem piso dos colegas. A ficha de cada pessoa lista esses meses e o motivo."
             ],
             "links": [
               [
@@ -176,14 +176,14 @@
           {
             "question": "O que entra no custo de um deputado(a)?",
             "answer": [
-              "Salário bruto, auxílios, cota parlamentar e verba do gabinete. O número principal da ficha é o mês mais recente com as quatro partes publicadas e com 3 meses de folga até a data das notas importadas, porque as notas da cota chegam por semanas; a média do mandato usa só os meses com as quatro partes e essa mesma folga. Meses parciais não são estimados para o mês inteiro.",
+              "Salário bruto, auxílios, cota parlamentar e verba do gabinete. O número principal da ficha é o mês mais recente com as quatro partes publicadas e com 3 meses de folga até a data das notas importadas, porque as notas da cota chegam por semanas (na base de outubro, até julho: a folga conta em meses, não em 90 dias, e é mais curta que o prazo dos alertas); a média do mandato usa só os meses com as quatro partes e essa mesma folga. Quando a Câmara não publicou uma parte para ninguém em um mês (dez/2024, verba do gabinete), o mês entra com essa parte vazia e a média dela usa os outros meses. Meses parciais não são estimados para o mês inteiro.",
               "Ficam de fora: 13º salário (mostrado à parte), diárias, vantagens indenizatórias, encargos do gabinete e apartamento funcional."
             ]
           },
           {
             "question": "E de um senador(a)?",
             "answer": [
-              "Remuneração do(a) senador(a), equipe do gabinete e cota, com a média de cada parte nos meses em que as três foram publicadas, somadas. São partes diferentes das da Câmara, por isso os números não são comparáveis."
+              "Remuneração do(a) senador(a), equipe do gabinete e cota, com a média de cada parte nos meses em que as três foram publicadas e as notas da cota já assentadas (a mesma folga de 3 meses da Câmara), somadas; o número principal é o mês mais recente nessas condições. São partes diferentes das da Câmara, por isso os números não são comparáveis."
             ]
           },
           {
@@ -206,7 +206,7 @@
           {
             "question": "Como é calculada a média mensal da cota?",
             "answer": [
-              "É o total dividido pelos meses com notas já assentadas: as notas de um mês chegam por semanas, então um mês só entra na média com 3 meses de folga até a data das notas importadas (a mesma regra do custo do mandato); os meses mais recentes aparecem no mês a mês e no total, mas ficam fora da média. Mês sem nota é ausência de dado, não gasto zero, então licenças e trocas de suplente não diluem a média. Estornos são preservados nos totais. Valores altos não indicam irregularidade."
+              "É o total dividido pelos meses com notas já assentadas: as notas de um mês chegam por semanas, então um mês só entra na média a partir do terceiro mês seguinte ao das notas importadas (na base de outubro, até julho: a mesma regra do custo do mandato); os meses mais recentes aparecem no mês a mês e no total, mas ficam fora da média. Mês sem nota é ausência de dado, não gasto zero, então licenças e trocas de suplente não diluem a média. Estornos são preservados nos totais. Valores altos não indicam irregularidade."
             ]
           },
           {
@@ -229,7 +229,7 @@
           {
             "question": "O que conta como falta justificada?",
             "answer": [
-              "O motivo informado pela Câmara, como missão autorizada, licença e atestado. Quem assumiu no meio do mandato tem menos dias na conta."
+              "Qualquer motivo publicado pela Câmara para a ausência, como missão autorizada, licença, atestado ou decisão da Mesa. Quem assumiu no meio do mandato tem menos dias na conta."
             ]
           },
           {
@@ -371,7 +371,7 @@
           {
             "question": "Com que frequência os dados são atualizados?",
             "answer": [
-              "As notas da cota do ano corrente são coletadas todos os dias. O custo do mandato, o histórico da cota e os dados do Senado são refeitos todo mês, e a base é publicada como release de dados. Cada tela mostra a data da fotografia dos dados, que é diferente da data em que o site foi publicado: uma mudança no código não atualiza os dados."
+              "As notas da cota do ano corrente são coletadas todos os dias, e o custo do mandato é recomposto a cada dia com as notas novas. Folha, verba de gabinete, histórico da cota e os dados do Senado são coletados todo mês, e a base é publicada como release de dados. Cada tela mostra a data da fotografia dos dados, que é diferente da data em que o site foi publicado: uma mudança no código não atualiza os dados."
             ]
           },
           {
@@ -479,7 +479,7 @@
         "title": "De onde vêm os dados e quando são atualizados",
         "paragraphs": [
           "Todas as informações vêm de fontes públicas: dados abertos e páginas oficiais da Câmara dos Deputados, do Senado Federal, do Portal da Transparência, do IBGE, do TSE, do Tesouro Nacional e da Receita Federal. O projeto não produz dados novos sobre ninguém e não usa informações sigilosas.",
-          "As notas da cota do ano corrente são coletadas todos os dias. O custo do mandato, o histórico da cota e os dados do Senado são refeitos todo mês. Cada tela mostra a data da fotografia dos dados, que é diferente da data de publicação do site.",
+          "As notas da cota do ano corrente são coletadas todos os dias, e o custo do mandato é recomposto a cada dia com elas. Folha, verba de gabinete, histórico da cota e os dados do Senado são coletados todo mês. Cada tela mostra a data da fotografia dos dados, que é diferente da data de publicação do site.",
           "Os dados podem estar incompletos, atrasados ou conter erros das fontes ou do processamento. Ausência de registro não significa valor zero. Para qualquer decisão ou uso formal, consulte a fonte oficial."
         ],
         "links": [

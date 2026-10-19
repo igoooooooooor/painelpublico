@@ -118,6 +118,13 @@ test('attendance page keeps the three absence categories, the reported reason an
   assert.match(html, /Nenhuma ausência/);
   assert.match(html, /Falta justificada<\/span><span><i class="absent"><\/i>Falta/);
   assert.match(html, /entre os\(as\) 2 deputados\(as\) com dados de presença disponíveis/);
+  // Quem chegou depois ganha o mês de início e não entra em "não faltaram nenhum dia, com o mandato inteiro".
+  context.DATA.presencaTodos.push({ id: 3, nome: 'Caio', partido: 'CCC', uf: 'MG', dias: 14, presente: 14, falta: 0, justificadas: 0, inicio: '2026-06', fim: '2026-09' });
+  const withNewcomer = api.attendanceView();
+  assert.match(withNewcomer, /<b>Caio<\/b><small>CCC · MG · desde jun\/2026<\/small>/);
+  assert.doesNotMatch(withNewcomer, /<b>Ana<\/b><small>BBB · RJ · desde/);
+  assert.match(withNewcomer, /<b class="mono">1<\/b><span>não faltaram nenhum dia, com o mandato inteiro<\/span>/);
+  assert.match(withNewcomer, /Quantos dos 14 dias com sessão deliberativa do Plenário cada deputado\(a\) foi/);
   assert.match(html, /Fonte: página de presença em Plenário/);
 });
 

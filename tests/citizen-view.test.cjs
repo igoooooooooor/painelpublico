@@ -200,7 +200,7 @@ test('senate participation in nominal votes is summarized without calling missin
     leaves: [{ start: '2026-07-15', end: '2026-07-15', type: 'Missão política ou cultural de interesse parlamentar' },
       { start: '2025-03-01', end: '2025-03-10', type: 'Licença Saúde (até a 120 dias)' }] };
   const summary = vm.runInContext('senateParticipationSummary', context)(participation);
-  assert.match(summary, /votou em 57 de 92 sessões em exercício · 22 ausências com motivo · 12 presente sem votar · 1 sem comparecer/);
+  assert.match(summary, /votou ou presidiu em 57 de 92 sessões em exercício · 22 ausências com motivo · 12 presente sem votar · 1 sem comparecer/);
   const detail = vm.runInContext('senateParticipationHTML', context)(participation);
   assert.match(detail, /Em 92 sessões com votação nominal pública em que estava em exercício \(01\/02\/2023 a 09\/10\/2026\)/);
   assert.match(detail, /Licença Saúde \(até a 120 dias\)<\/span><b class="mono">1× · 10 dias/);
@@ -744,6 +744,44 @@ test('senators whose mandate began before 2023 are told the quota counts from Fe
     /O mandato começou em fevereiro de 2019; antes de fev\/2023 a cota não entra aqui/);
   assert.equal(api.profileMandateStartNote({ exercicio: 'Exercício sem término informado desde 01/02/2023' }), '');
   assert.equal(api.profileMandateStartNote(null), '');
+  // A sequência no cargo manda: um trecho de exercício recente (volta de licença) não apaga o início de 2019,
+  // e um início de exercício em 2024 não esconde o mandato de 2019.
+  assert.match(api.profileMandateStartNote({ exercicio: 'Exercício sem término informado desde 01/02/2021' }, { house: 'senado', since: '2019-02-01' }), /fevereiro de 2019/);
+  assert.match(api.profileMandateStartNote({ exercicio: 'Exercício sem término informado desde 07/08/2024' }, { house: 'senado', since: '2019-02-01' }), /fevereiro de 2019/);
+  assert.equal(api.profileMandateStartNote({ exercicio: 'Exercício sem término informado desde 01/02/2019' }, { house: 'senado', since: '2023-02-01' }), '');
+});
+
+test('senate cost card links the quota to the CEAPS portal and treats a non-positive gross as not identified', () => {
+  const { api } = makeView();
+  const html = api.senateCostAnswer(senateFixture(), senateQuota);
+  assert.match(html, /href="https:\/\/www6g\.senado\.leg\.br\/transparencia\/sen\/1\/ceaps\/\?ano=2026"[^>]*>Cota de 2026 no portal do Senado ↗/);
+  assert.doesNotMatch(html, /Página do Senado ↗|dadosabertos/);
+  const negative = senateFixture();
+  negative.months['2026-08'].remunerationCents = -144744;
+  const withNegative = api.senateCostAnswer(negative, senateQuota);
+  // Ago deixa de ser completo: o mês principal volta para jul, e o detalhe explica o bruto não positivo.
+  assert.match(withNegative, /<span>Somou<\/span><b class="mono">R\$ 386 mil<\/b><span>em jul\/2026<\/span>/);
+  assert.doesNotMatch(withNegative, /-R\$\s?1\.447,44/);
+  assert.match(api.senateCostDetails(negative, senateQuota), /Bruto da folha zero ou negativo \(acerto ou abate-teto maior que o pagamento\); não identificado/);
+});
+
+test('senate office average uses the settled months of the cost card and names what stays out', () => {
+  const { context } = makeView();
+  const cost = senateFixture();
+  cost.months['2026-09'] = { exercise: 'em_exercicio', remunerationCents: null, remunerationReason: 'outra_lotacao', officeCents: 25000000, officePeople: 20 };
+  const html = vm.runInContext('senateOfficeHTML', context)(cost, '2026-10-08');
+  assert.match(html, /R\$\s?250\.000,00<\/span><span class="muted"> · equipe do gabinete em set\/2026/);
+  // jul é o único mês assentado em out/2026 (ago e set ainda recebem notas): a média é só de jul.
+  assert.match(html, /Média de <b class="mono">R\$\s?300\.000,00<\/b> por mês em 1 mês com equipe identificada e as notas da cota já assentadas, o mesmo corte do cartão de custo \(jul\/2026\)\. Ficam fora da média 2 meses: os mais recentes, com notas ainda chegando, ou fora do exercício\./);
+});
+
+test('senate vote window ends at the collection date, never after it', () => {
+  const { context } = makeView();
+  const window = vm.runInContext('senateVoteSourceWindow', context);
+  assert.deepEqual(JSON.parse(JSON.stringify(window({ startDate: '2023-02-01', endDate: '2026-10-19', fetchedAt: '2026-10-11T19:57:38+00:00' }))),
+    { startDate: '2023-02-01', endDate: '2026-10-11', fetchedAt: '2026-10-11T19:57:38+00:00' });
+  assert.equal(window({ startDate: '2023-02-01', endDate: '2026-10-09', fetchedAt: '2026-10-11T00:00:00Z' }).endDate, '2026-10-09');
+  assert.equal(window(null), null);
 });
 
 test('profile with notes but nothing evaluable says data are insufficient instead of "no alert"', () => {
@@ -828,11 +866,11 @@ test('senate cost card shows the latest complete month, with the average of comp
   assert.match(html, /<span>Somou<\/span><b class="mono">R\$ 266 mil<\/b><span>em ago\/2026<\/span>/);
   assert.match(html, /Valor exato: <span class="mono">R\$\s?266\.366,19<\/span>, a soma das três partes abaixo/);
   // média de jul e ago: (386.366,19 + 266.366,19) / 2
-  assert.match(html, /Média: <span class="mono">R\$\s?326\.366,19<\/span> por mês, 2 meses com as três partes identificadas e as notas da cota já assentadas, de 3 no recorte/);
+  assert.match(html, /Média: <span class="mono">R\$\s?326\.366,19<\/span> por mês, 2 meses com as três partes identificadas e as notas da cota já assentadas, dos 3 meses em exercício ou com dado no recorte/);
   // Set não tem a remuneração; o "Por que" diz o que falta no mês seguinte.
   assert.match(html, /data-cost-why="latest-complete"><summary>Por que ago\/2026\?<\/summary>/);
   assert.match(html, /Ago\/2026 é o mês mais recente com todas as partes disponíveis na base do painel\. Em set\/2026, falta remuneração do\(a\) senador\(a\)\./);
-  assert.match(api.senateCostDetails(senateFixture(), senateQuota), /Qual mês aparece no “Quanto custa\?”:<\/b> o mais recente com todas as partes publicadas e com 3 meses de folga/);
+  assert.match(api.senateCostDetails(senateFixture(), senateQuota), /Qual mês aparece no “Quanto custa\?”:<\/b> o mais recente com as três partes identificadas e com 3 meses de folga até a data das notas importadas, a mesma regra da Câmara\. No Senado, as notas da cota podem ser apresentadas até o fim de abril do ano seguinte/);
   assert.match(html, /data-cost-part="remuneration">[\s\S]*?R\$\s?46\.366,19<\/b>/);
   assert.match(html, /data-cost-part="office">[\s\S]*?R\$\s?200\.000,00<\/b>/);
   assert.doesNotMatch(html, /<small>\/mês|reajustes do subsídio/);
@@ -847,11 +885,11 @@ test('senate cost card skips months whose quota may still receive notes, in the 
   assert.match(settled, /data-cost-why="quota-settling"><summary>Por que jul\/2026\?<\/summary>/);
   assert.match(settled, /Ago\/2026 já tem todas as partes publicadas, mas a cota desse mês ainda tem notas chegando\. Jul\/2026 é o mês mais recente com as notas já assentadas\./);
   // A média fica só com jul: ago ainda recebe notas.
-  assert.match(settled, /Média: <span class="mono">R\$\s?386\.366,19<\/span> por mês, 1 mês com as três partes identificadas e as notas da cota já assentadas, de 3 no recorte \([^)]*\): jul\/2026/);
+  assert.match(settled, /Média: <span class="mono">R\$\s?386\.366,19<\/span> por mês, 1 mês com as três partes identificadas e as notas da cota já assentadas, dos 3 meses em exercício ou com dado no recorte \([^)]*\): jul\/2026/);
   assert.match(settled, /Folha de jul\/2026 ↗/);
   const early = api.senateCostAnswer(senateFixture(), { ...senateQuota, snapshotAt: '2026-09-01' });
   assert.match(early, /em ago\/2026[\s\S]*data-cost-why="none-settled"[\s\S]*Ago\/2026 é o mais recente com todas as partes, mas a cota dele ainda tem notas chegando: o valor pode subir\./);
-  assert.match(early, /2 meses com as três partes identificadas, de 3/);
+  assert.match(early, /2 meses com as três partes identificadas, dos 3 meses em exercício ou com dado no recorte/);
 });
 
 test('senate "Por que <mês>?" describes a missing payroll as unavailable in the local base', () => {

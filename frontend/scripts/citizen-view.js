@@ -548,7 +548,7 @@ function profileSummaryCards(shared, profileRecord, alerts, hasExpenseData) {
       costValue = profileCostShort(latest.totalCents);
       costUnit = ` em ${PROFILE_COST_MONTHS[latest.period]}`;
       const average = profileCostAverage(shared.cost, profileRecord.snapshotAt);
-      costNote = average ? `média ${profileCostShort(average.cents)}/mês · ${profileCostMonthList(average.months)} · Câmara` : 'Câmara';
+      costNote = `${average ? `média ${profileCostShort(average.cents)}/mês · ${profileCostMonthList(average.months)} · ` : ''}Câmara${latest.settled ? '' : ' · a cota do mês ainda recebe notas; pode subir'}`;
     } else {
       costValue = 'Sem total';
       costNote = 'Não há mês com as quatro partes identificadas.';
@@ -558,7 +558,7 @@ function profileSummaryCards(shared, profileRecord, alerts, hasExpenseData) {
     if (figures.latest && figures.total && profileCostInteger(figures.total.cents)) {
       costValue = profileCostShort(figures.latest.cents);
       costUnit = ` em ${profileCostLabel(figures.latest.period)}`;
-      costNote = `média ${profileCostShort(figures.total.cents)}/mês · ${figures.total.months} ${figures.total.months === 1 ? 'mês' : 'meses'} com as três partes · Senado`;
+      costNote = `média ${profileCostShort(figures.total.cents)}/mês · ${figures.total.months} ${figures.total.months === 1 ? 'mês' : 'meses'} com as três partes · Senado${figures.latest.settled ? '' : ' · a cota do mês ainda recebe notas; pode subir'}`;
     } else {
       costValue = 'Sem total';
       costLabel = 'Quanto custa?';
@@ -666,7 +666,7 @@ function profileAttendanceCard(shared) {
   const attendance = presence && presence.dias > 0 ? `<div class="profile-attendance-count"><b class="mono">${presence.presente}</b><span>de ${presence.dias} ${unit}</span></div><strong class="profile-attendance-percent">${percent}%</strong>
       ${attendanceBar(presence)}<div class="legend"><span><i></i>Presente ${presence.presente}</span><span><i class="justified"></i>Justificada ${presence.justificadas}</span><span><i class="absent"></i>Falta ${presence.falta}</span></div>
       ${averagePresenceLabel(shared, senate)}${presenceReasonsHTML(presence)}` : registered ? `<div class="profile-attendance-count"><b class="mono">${registered.presente}</b><span>sessões com presença registrada</span></div>
-      <p class="muted">${Number.isInteger(registered.sessoesEmExercicio) ? `De ${registered.sessoesEmExercicio} sessões deliberativas com lista validada em que estava em exercício.` : `${profileSenateSource('presenca')?.sessionCount || ''} listas consultadas.`} Faltas e justificativas não apuradas; sem percentual de assiduidade.</p>`
+      <p class="muted">${Number.isInteger(registered.sessoesEmExercicio) ? `De ${Math.max(registered.sessoesEmExercicio, registered.presente)} sessões deliberativas com lista validada em que estava em exercício${registered.presente > registered.sessoesEmExercicio ? ', contadas as sessões com presença registrada' : ''}.` : `${profileSenateSource('presenca')?.sessionCount || ''} listas consultadas.`} Faltas e justificativas não apuradas; sem percentual de assiduidade.</p>`
       : '<p class="citizen-empty">Sem registro de presença</p><p class="muted">Ausência de dado não significa zero presença.</p>';
   let source = '';
   if (senate) source = profileSource(profileSenateSource('presenca'), 'Fonte do Diário do Senado');
@@ -805,15 +805,26 @@ function profileVoteCountHTML(shared) {
   const presenceOnlyCount = knownVotes.filter(record => ['Presente', 'Presidiu'].includes(record.recordedVote)).length;
   const identifiedVotes = knownVotes.filter(record => senate ? ['Sim', 'Não', 'Abstenção', 'Obstrução', 'Não votou'].includes(record.recordedVote) : !['Presente', 'Presidiu'].includes(record.recordedVote));
   const recordedVoteCount = identifiedVotes.filter(record => record.recordedVote !== 'Não votou').length;
-  const voteSource = senate ? profileSenateSource('votacoes') : null;
+  const voteSource = senate ? senateVoteSourceWindow(profileSenateSource('votacoes')) : null;
   const votePeriod = senate && typeof profileSectionPeriod === 'function' ? profileSectionPeriod(voteSource) : '';
+  const otherLabelCount = senate ? knownVotes.length - identifiedVotes.length - presenceOnlyCount : 0;
+  const missingCount = votes.length - knownVotes.length;
   return `<p class="citizen-vote-count">${senate && voteSource?.status === 'unavailable' ? 'Dados de votações nominais do Senado indisponíveis neste recorte.'
       : identifiedVotes.length ? `${senate ? 'Voto identificado em' : 'Votou em'} <b>${recordedVoteCount} de ${senate ? knownVotes.length : votes.length}</b> ${senate ? `votações do Senado com registro individual${votePeriod ? ` · ${esc(votePeriod)}` : ''}` : 'votações do Placar'}`
         : presenceOnlyCount || (senate && knownVotes.length) ? `Sem voto nominal identificado neste recorte${votePeriod ? ` · ${esc(votePeriod)}` : ''}.`
           : `Sem registros individuais ${senate ? 'nas votações nominais do Senado' : 'nas votações do Placar'}${votePeriod ? ` · ${esc(votePeriod)}` : ''}.`}</p>
     ${presenceOnlyCount ? `<p class="muted">${presenceOnlyCount} ${presenceOnlyCount === 1 ? 'registro só de presença ou presidência' : 'registros só de presença ou presidência'}.</p>` : ''}
-    ${!senate && votes.length > knownVotes.length ? `<p class="muted">Em ${votes.length - knownVotes.length} ${votes.length - knownVotes.length === 1 ? 'votação não há registro' : 'votações não há registro'} individual na lista oficial: pode ser ausência, licença ou período fora do mandato. A fonte não diz qual.</p>` : ''}
+    ${otherLabelCount > 0 ? `<p class="muted">${otherLabelCount} ${otherLabelCount === 1 ? 'registro de licença, missão ou atividade parlamentar, que não conta como voto' : 'registros de licença, missão ou atividade parlamentar, que não contam como voto'}.</p>` : ''}
+    ${missingCount > 0 ? `<p class="muted">Em ${missingCount} ${missingCount === 1 ? 'votação não há registro' : 'votações não há registro'} individual na lista oficial: pode ser ausência, licença ou período fora do mandato. A fonte não diz qual.</p>` : ''}
     ${senate ? `${senateParticipationSummary(shared.participation)}<p class="muted">Sem linha individual não significa falta. Atividade parlamentar e registro de presença não contam como voto.</p>` : ''}`;
+}
+/* O coletor grava como fim do período a data em que rodou; a cobertura real vai até a data da consulta à fonte
+   (`fetchedAt`). O rótulo usa a menor das duas, para bater com a "Fotografia" mostrada ao lado. */
+function senateVoteSourceWindow(source) {
+  if (!source || typeof source !== 'object') return source;
+  const fetched = typeof source.fetchedAt === 'string' ? source.fetchedAt.slice(0, 10) : '';
+  const end = typeof source.endDate === 'string' ? source.endDate.slice(0, 10) : '';
+  return /^\d{4}-\d{2}-\d{2}$/.test(fetched) && /^\d{4}-\d{2}-\d{2}$/.test(end) && fetched < end ? { ...source, endDate: fetched } : source;
 }
 /* Voto no pedido de urgência do mesmo projeto, com data e objeto: acelerar a tramitação não é apoiar o conteúdo. */
 function profileUrgencyVotes(vote) {
@@ -840,7 +851,7 @@ function profileVoteDetails(shared) {
   const mainVotes = votesForPerson(shared.id), limit = PROFILE_VOTE_LIMIT.get(shared.id) || PROFILE_VOTE_PAGE;
   const standalone = senate || typeof profileStandaloneUrgencies !== 'function' ? [] : profileStandaloneUrgencies(shared.id);
   const votes = standalone.length ? [...mainVotes, ...standalone].sort((first, second) => String(second.vote?.data || '').localeCompare(String(first.vote?.data || ''))) : mainVotes;
-  const source = senate ? profileSenateSource('votacoes') : null;
+  const source = senate ? senateVoteSourceWindow(profileSenateSource('votacoes')) : null;
   const votePeriod = senate ? profileSectionPeriod(source) || (source ? 'período não informado' : 'recorte indisponível') : '';
   return `<span class="k">${senate ? `Votações nominais do Senado · ${esc(votePeriod)}` : 'Votações do Placar · texto principal de PL, PLP e PEC desde fev/2023'} · ${mainVotes.length || 'sem registros'}${standalone.length ? ` · e ${standalone.length} pedidos de urgência` : ''}</span>
     ${votes.length ? `<div class="votes">${votes.slice(0, limit).map(({ vote, recordedVote }) => {
@@ -860,14 +871,17 @@ function profileExpenseAnswerDetails(profileRecord, person, hasExpenseData) {
     .replace('class="card hero citizen-answer"', 'class="profile-expense-fallback-details"');
   return `<div data-profile-expense-details>${html}</div>`;
 }
-/* Senadores eleitos em 2018 começaram o mandato antes do recorte comum de fev/2023. */
-function profileMandateStartNote(mandate) {
-  const match = /desde (\d{2})\/(\d{2})\/(\d{4})/.exec(mandate?.exercicio || '');
-  if (!match || `${match[3]}-${match[2]}` >= '2023-02') return '';
-  const month = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'][Number(match[2]) - 1];
-  return ` O mandato começou em ${month} de ${match[3]}; antes de fev/2023 a cota não entra aqui, para seguir a mesma regra da Câmara.`;
+/* Senadores eleitos em 2018 começaram o mandato antes do recorte comum de fev/2023. O início vem da sequência
+   ininterrupta no cargo (tenure.json); o texto de exercício do perfil é só o trecho mais recente, e fica como reserva. */
+function profileMandateStartNote(mandate, tenure = null) {
+  const since = tenure?.house === 'senado' && /^\d{4}-\d{2}-\d{2}$/.test(String(tenure?.since || '')) ? tenure.since : null;
+  const exercise = /desde (\d{2})\/(\d{2})\/(\d{4})/.exec(mandate?.exercicio || '');
+  const [year, month] = since ? [since.slice(0, 4), since.slice(5, 7)] : exercise ? [exercise[3], exercise[2]] : [null, null];
+  if (!year || `${year}-${month}` >= '2023-02') return '';
+  const name = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'][Number(month) - 1];
+  return ` O mandato começou em ${name} de ${year}; antes de fev/2023 a cota não entra aqui, para seguir a mesma regra da Câmara.`;
 }
-function profileExpenseDetails(f, hasExpenseData, cost = null, mandate = null) {
+function profileExpenseDetails(f, hasExpenseData, cost = null, mandate = null, tenure = null) {
   if (!hasExpenseData) return '<p class="muted">Não há lançamentos observados para calcular total, média, série mensal ou alertas.</p>';
   const maxMonth = Math.max(1, ...f.meses.map(month => month.valor));
   const categories = Array.isArray(f.categorias) ? f.categorias : [];
@@ -891,7 +905,7 @@ function profileExpenseDetails(f, hasExpenseData, cost = null, mandate = null) {
   const yearChart = year => `<p class="k">${year}</p><div class="citizen-months">${f.meses.filter(month => month.year === year).map(month => `<div><small>${Math.round(month.valor / 1e3)}k</small><b class="mt"><i style="height:${month.valor > 0 ? Math.max(2, month.valor / maxMonth * 100) : 0}%" class="${isPeak(month) ? 'hot' : isOpen(month) ? 'open' : ''}"></i></b><span>${SHORT_MONTHS[month.month]}</span></div>`).join('')}</div>`;
   return `<section class="citizen-detail-part citizen-expense-original"><h3 class="k">Cota parlamentar · ${esc(periodLabel || 'total')}</h3>
     <p><b>Total da cota${periodLabel ? ` de ${esc(periodLabel)}` : ''}:</b> ${brl(f.total, 2)}, somando todas as notas publicadas até agora.${Number.isFinite(f.mediaMensal) ? ` Média de ${brl(f.mediaMensal, 2)} por mês ${average.meses === 1 ? 'no 1 mês' : `nos ${average.meses} meses`} com notas já assentadas${averageLabel && averageLabel !== periodLabel ? ` (${esc(averageLabel)})` : ''}.` : ''}</p>
-    <p class="muted">${f.pessoa?.role === 'deputado' ? 'Mandato atual, desde fev/2023.' : `Desde fev/2023, início da legislatura atual.${profileMandateStartNote(mandate)}`} Valores da época, sem correção pela inflação.</p>
+    <p class="muted">${f.pessoa?.role === 'deputado' ? 'Mandato atual, desde fev/2023.' : `Desde fev/2023, início da legislatura atual.${profileMandateStartNote(mandate, tenure)}`} Valores da época, sem correção pela inflação.</p>
     ${profileQuotaDifferenceNote(f, cost)}
     ${complement && Number.isFinite(complement.valor) ? `<p class="muted">À parte: complemento do auxílio-moradia lançado na cota, ${brl(complement.valor, 2)} em ${complement.notas} ${complement.notas === 1 ? 'nota' : 'notas'}. A Câmara publica esse valor como negativo; ele não reduz o total acima.</p>` : ''}
   </section>
@@ -1038,8 +1052,8 @@ function profileView() {
     ${profileAlertsSection(alerts, f.coberturaAlertas)}
     <section class="profile-detail-area" aria-labelledby="profile-more-title"><h2 class="h" id="profile-more-title">Mais detalhes</h2>
     ${profileSectionsHTML(person, {
-      expenses: (!shared.cost && !shared.senateCost ? profileExpenseAnswerDetails(f, person, hasExpenseData) : '') + (person.role === 'deputado' ? profileCostDetails(shared.cost, f.snapshotAt) : person.role === 'senador' ? senateCostDetails(shared.senateCost, f) : '') + profileExpenseDetails(f, hasExpenseData, person.role === 'deputado' ? shared.cost : null, shared.mandate),
-      votes: `${profileVoteCountHTML(shared)}${profileVoteDetails(shared)}`, sources: sourcesHtml,
+      expenses: (!shared.cost && !shared.senateCost ? profileExpenseAnswerDetails(f, person, hasExpenseData) : '') + (person.role === 'deputado' ? profileCostDetails(shared.cost, f.snapshotAt) : person.role === 'senador' ? senateCostDetails(shared.senateCost, f) : '') + profileExpenseDetails(f, hasExpenseData, person.role === 'deputado' ? shared.cost : null, shared.mandate, shared.tenure),
+      votes: `${profileVoteCountHTML(shared)}${profileVoteDetails(shared)}`, sources: sourcesHtml, snapshotAt: f.snapshotAt,
     })}</section>
   </div>`;
 }

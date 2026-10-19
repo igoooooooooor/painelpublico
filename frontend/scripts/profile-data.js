@@ -363,6 +363,19 @@ function profileAnnualSources(section) {
     return url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(label)} ↗</a>` : `<span>${esc(label)}</span>`;
   });
 }
+/* Fontes do cartão de despesas do Senado: a folha mensal do mês mais recente (e as demais por competência) e o
+   histórico de exercício. A linha genérica de gabinete do perfil é da Câmara e não vale para senadores. */
+function senateCostSourcesHTML(senateCost) {
+  const sources = (Array.isArray(senateCost?.sources) ? senateCost.sources : []).filter(source => profileSafeUrl(source?.url) && /^\d{4}-\d{2}$/.test(String(source?.competence || '')))
+    .sort((first, second) => String(first.competence).localeCompare(String(second.competence)));
+  const latest = sources.at(-1);
+  const label = period => `${['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][Number(period.slice(5)) - 1]}/${period.slice(0, 4)}`;
+  const exercise = senateCost?.exerciseSource ? profileSafeUrl(String(senateCost.exerciseSource).replace('{codigo}', String(senateCost.id || '').split(':')[1] || '')) : null;
+  return `<article class="citizen-source"><b>Remuneração e equipe do gabinete (Senado)</b>
+    <p class="muted">Arquivo mensal de remuneração do Senado, uma folha por competência${sources.length ? `, de ${esc(label(sources[0].competence))} a ${esc(label(latest.competence))}` : ''}${senateCost?.generatedAt ? `. Fotografia: ${esc(dateBR(senateCost.generatedAt))}` : ''}.</p>
+    ${latest ? `<span class="src"><a href="${esc(profileSafeUrl(latest.url))}" target="_blank" rel="noopener">Folha de ${esc(label(latest.competence))} ↗</a>${exercise ? ` · <a href="${esc(exercise)}" target="_blank" rel="noopener">Histórico de exercício ↗</a>` : ''}</span>` : exercise ? `<span class="src"><a href="${esc(exercise)}" target="_blank" rel="noopener">Histórico de exercício ↗</a></span>` : ''}
+    <p class="muted">As folhas dos outros meses estão em “Como calculamos e ver mês a mês”.</p></article>`;
+}
 function profileSource(section, label = 'Conferir na fonte', dateLabel = 'Fotografia') {
   const url = profileSafeUrl(section?.sourceUrl);
   const date = typeof section?.fetchedAt === 'string' ? dateBR(section.fetchedAt) : null;
@@ -425,7 +438,7 @@ function senateParticipationSummary(participation) {
   const parts = [counts.ausencia_com_motivo ? `${counts.ausencia_com_motivo} ${counts.ausencia_com_motivo === 1 ? 'ausência' : 'ausências'} com motivo` : '',
     counts.presente_sem_voto ? `${counts.presente_sem_voto} presente sem votar` : '',
     counts.nao_compareceu ? `${counts.nao_compareceu} sem comparecer` : ''].filter(Boolean).join(' · ');
-  return `<p class="citizen-participation"><b>Votações nominais do mandato:</b> votou em ${counts.participou} de ${sessions} sessões em exercício${parts ? ` · ${esc(parts)}` : ''}.</p>`;
+  return `<p class="citizen-participation"><b>Votações nominais do mandato:</b> votou ou presidiu em ${counts.participou} de ${sessions} sessões em exercício${parts ? ` · ${esc(parts)}` : ''}.</p>`;
 }
 const profileLeaveDays = leave => {
   const start = Date.parse(leave.start), end = Date.parse(leave.end || leave.start);
@@ -452,6 +465,7 @@ function senateParticipationHTML(participation) {
   </div>`;
 }
 function profileSectionsHTML(value, slots = {}) {
+  const snapshotAt = typeof slots?.snapshotAt === 'string' ? slots.snapshotAt : null;
   const profile = profileData(value);
   if (!['deputado', 'senador'].includes(profile.person.role)) return '';
   const money = v => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -546,7 +560,7 @@ function profileSectionsHTML(value, slots = {}) {
       <p class="muted citizen-project-empty" data-project-empty role="status" aria-live="polite"${visibleProjects ? ' hidden' : ''}>Nenhum projeto nesta situação neste recorte.</p>
     </div>` : ''}
     ${profileSource(projects)}`;
-  const officeContent = profile.loading ? loading() : profile.senateCost && typeof senateOfficeHTML === 'function' ? senateOfficeHTML(profile.senateCost) : `${hasOffice ? `<div><span class="big">${money(office.amount)}</span><span class="muted"> · gasto publicado no recorte</span></div>`
+  const officeContent = profile.loading ? loading() : profile.senateCost && typeof senateOfficeHTML === 'function' ? senateOfficeHTML(profile.senateCost, snapshotAt) : `${hasOffice ? `<div><span class="big">${money(office.amount)}</span><span class="muted"> · gasto publicado no recorte</span></div>`
       : '<p class="muted">Gastos com a equipe ainda não importados para este perfil. Ausência de dado não significa gasto zero.</p>'}
     ${Number.isFinite(office?.staffActive) ? `<p>${esc(office.staffActive)} pessoas ativas na fotografia da fonte.</p>` : '<p class="muted">Quantidade de assessores não importada.</p>'}
     ${months.length ? `<p class="muted">Meses informados: ${months.map(m => monthNames[m]).join(', ')}.</p>` : ''}
@@ -585,7 +599,8 @@ function profileSectionsHTML(value, slots = {}) {
     ${profile.loading ? loading() : `<div class="citizen-source-list">
       <article class="citizen-source"><b>Contato e gabinete</b>${contactInfo?.detail ? `<p class="muted">${esc(datesInTextBR(contactInfo.detail))}</p>` : ''}${profileSource(contactInfo, 'Fonte do contato')}</article>
       <article class="citizen-source"><b>Projetos apresentados</b>${projects?.detail ? `<p class="muted">${esc(datesInTextBR(projects.detail))}</p>` : ''}${profileSource(projects, 'Fonte dos projetos')}</article>
-      <article class="citizen-source"><b>Equipe e verba de gabinete</b>${office?.detail ? `<p class="muted">${esc(datesInTextBR(office.detail))}</p>` : ''}${profileSource(office, 'Fonte do gabinete')}</article>
+      ${profile.senateCost ? senateCostSourcesHTML(profile.senateCost)
+        : `<article class="citizen-source"><b>Equipe e verba de gabinete</b>${office?.detail ? `<p class="muted">${esc(datesInTextBR(office.detail))}</p>` : ''}${profileSource(office, 'Fonte do gabinete')}</article>`}
     </div>`}
     ${typeof slots?.sources === 'string' ? slots.sources : ''}`;
   const sections = [

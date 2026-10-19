@@ -126,7 +126,9 @@ function attendanceSorted(all = attendanceRows()) {
 function attendanceView() {
   const all = attendanceRows(), people = attendanceSorted(all);
   const average = all.length ? all.reduce((sum, person) => sum + person.presente / person.dias, 0) / all.length : null;
-  const fullAttendanceCount = all.filter(person => person.presente === person.dias).length;
+  // "Não faltaram nenhum dia" só entre quem tem o período inteiro: 14 de 14 dias de quem chegou agora não é o mesmo feito.
+  const firstStart = all.map(person => person.inicio).filter(Boolean).sort()[0] || null;
+  const fullAttendanceCount = all.filter(person => person.presente === person.dias && (!firstStart || person.inicio === firstStart)).length;
   const belowHalfCount = all.filter(person => person.presente / person.dias < 0.5).length;
   const sessionCount = all.length ? Math.max(...all.map(person => person.dias)) : null;
   const starts = all.map(person => person.inicio).filter(Boolean).sort(), ends = all.map(person => person.fim).filter(Boolean).sort();
@@ -138,12 +140,12 @@ function attendanceView() {
         <button type="button" class="back" data-back>‹ Voltar</button>
         <span class="k">Câmara · ${period || 'mandato'}</span>
         <h1 class="h ph-t">Presença no Plenário</h1>
-        <p class="ph-lead">${sessionCount === null ? 'Dados de presença indisponíveis neste recorte.' : `Quantos dias cada deputado(a) foi às ${sessionCount} sessões de votação do Plenário no mandato atual${period ? ` (${period})` : ''}.`}</p>
+        <p class="ph-lead">${sessionCount === null ? 'Dados de presença indisponíveis neste recorte.' : `Quantos dos ${sessionCount} dias com sessão deliberativa do Plenário cada deputado(a) foi, no mandato atual${period ? ` (${period})` : ''}.`}</p>
       </div>
       <div class="attendance-summary">
         <div class="attendance-stats">
           ${stat(average === null ? 'Sem dados' : `${Math.round(average * 100)}%`, 'presença média')}
-          ${stat(average === null ? '—' : fullAttendanceCount, 'não faltaram nenhum dia')}
+          ${stat(average === null ? '—' : fullAttendanceCount, 'não faltaram nenhum dia, com o mandato inteiro')}
           ${stat(average === null ? '—' : belowHalfCount, 'foram a menos da metade')}
         </div>
         <p class="muted">${average === null ? 'Não há registros de presença para calcular a média.' : `Média dos dados disponíveis: dos dias com sessão, em média, entre os(as) ${all.length} deputados(as) com dados de presença disponíveis.`}</p>
@@ -155,8 +157,15 @@ function attendanceView() {
       <div class="legend attendance-legend"><span><i></i>Presente</span><span><i class="justified"></i>Falta justificada</span><span><i class="absent"></i>Falta</span></div>
     </section>
     <div id="attendance-list" class="attendance-results">${attendanceList(people)}</div>
-    <p class="src attendance-source">${sessionCount === null ? 'Fonte: página de presença em Plenário de cada deputado(a) na Câmara; nenhum registro está disponível neste recorte.' : `Fonte: página de presença em Plenário de cada deputado(a) na Câmara, ${sessionCount} dias com sessão deliberativa no mandato atual${period ? ` (${period})` : ''}. Falta justificada inclui missão autorizada, licença e atestado. Quem assumiu no meio do mandato tem menos dias na conta.`}</p>
+    <p class="src attendance-source">${sessionCount === null ? 'Fonte: página de presença em Plenário de cada deputado(a) na Câmara; nenhum registro está disponível neste recorte.' : `Fonte: página de presença em Plenário de cada deputado(a) na Câmara, ${sessionCount} dias com sessão deliberativa no mandato atual${period ? ` (${period})` : ''}. Falta justificada é qualquer motivo publicado pela Câmara (missão autorizada, licença, atestado, decisão da Mesa). Quem assumiu no meio do mandato tem menos dias na conta e aparece com o mês de início.`}</p>
   </div>`;
+}
+/* "· desde jun/2026" para quem não tem o período inteiro: a contagem de dias não é comparável à dos demais. */
+function attendanceStartTag(person, all = attendanceRows()) {
+  const firstStart = all.map(row => row.inicio).filter(Boolean).sort()[0];
+  if (!firstStart || !/^\d{4}-\d{2}$/.test(String(person.inicio || '')) || person.inicio <= firstStart) return '';
+  const label = `${['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][Number(person.inicio.slice(5)) - 1]}/${person.inicio.slice(0, 4)}`;
+  return ` · desde ${esc(label)}`;
 }
 /* Linha de apoio: ausências justificadas (com o motivo mais comum informado pela Câmara) e faltas. */
 function attendanceAbsences(person) {
@@ -169,7 +178,7 @@ function attendanceAbsences(person) {
 function attendanceList(people) {
   if (!people.length) return '<section class="card"><p>Ninguém encontrado.</p></section>';
   return `<span class="muted" role="status">${people.length} deputados(as)</span><ol class="attendance-list">${people.slice(0, extrasState.attendanceLimit).map(person => `<li>${profileLinkOpen(chamberPersonId(person.id), 'attendance-row')}${citizenAvatar({ id: chamberPersonId(person.id), name: person.nome }, 44)}
-    <span class="attendance-who"><b>${esc(person.nome)}</b><small>${esc(person.partido)} · ${esc(person.uf)}</small></span>
+    <span class="attendance-who"><b>${esc(person.nome)}</b><small>${esc(person.partido)} · ${esc(person.uf)}${attendanceStartTag(person)}</small></span>
     <span class="attendance-bar">${attendanceBar(person)}<small>${attendanceAbsences(person)}</small></span>
     <span class="attendance-value"><b class="mono ${person.presente / person.dias < 0.5 ? 'warn' : ''}">${percent(person.presente, person.dias)}%</b><small class="mono">${person.presente} de ${person.dias}</small></span>${profileLinkClose(chamberPersonId(person.id))}</li>`).join('')}</ol>
   ${people.length > extrasState.attendanceLimit ? `<button type="button" class="opt alerts-more" data-attendance-more>Mostrar mais (${people.length - extrasState.attendanceLimit})</button>` : ''}`;
@@ -514,12 +523,12 @@ function comparisonOfficeCell(f) {
   const figures = comparisonCostFigures(f);
   if (!figures.office) return comparisonOffice(comparisonProfile(f));
   const what = figures.house === 'senado' ? 'equipe comissionada do gabinete (Senado)' : 'verba de gabinete (Câmara)';
-  return `${comparisonCostMoney(figures.office)}<br><small>${what}${figures.officePeople ? ` · ${figures.officePeople} pessoas no mês mais recente` : ''}</small>`;
+  return `${comparisonCostMoney(figures.office, true)}<br><small>${what}${figures.officePeople ? ` · ${figures.officePeople} pessoas no mês mais recente` : ''}</small>`;
 }
 function comparisonCompensationCell(f) {
   const figures = comparisonCostFigures(f);
   if (!figures.remuneration) return esc(comparisonCompensation(comparisonProfile(f)));
-  return `${comparisonCostMoney(figures.remuneration)}<br><small>bruto pago, pela folha ${figures.house === 'senado' ? 'do Senado' : 'da Câmara'}</small>`;
+  return `${comparisonCostMoney(figures.remuneration, true)}<br><small>bruto pago, pela folha ${figures.house === 'senado' ? 'do Senado' : 'da Câmara'}</small>`;
 }
 function comparisonInfoRow(label, a, b) {
   return `<div class="cmp-row"><span class="cmp-l">${esc(label)}</span><div class="cmp-v">${a}</div><div class="cmp-v">${b}</div></div>`;

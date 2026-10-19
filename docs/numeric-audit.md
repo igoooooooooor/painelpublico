@@ -56,6 +56,37 @@
   inclui férias, retroativos ou outras parcelas pagas no mês" (ou "abaixo…: redução ao teto constitucional, exercício por parte do mês ou outro
   desconto publicado"), só a partir de fev/2025, quando esse subsídio vale.
 
+- **Fichas de senadores (segunda varredura):** (1) a linha da cota linkava "Página do Senado" para um JSON de
+  dados abertos; agora abre a cota do ano no portal de transparência (CEAPS). (2) Bruto da folha zero ou
+  negativo (acerto ou abate-teto; 4 meses na base, um deles o mês principal de Pedro Chaves) era somado como
+  remuneração; passa a "não identificado", com motivo, no cartão e em `backend/costs.py`. (3) "Equipe e verba
+  de gabinete" fazia a média de todos os meses, inclusive os em aberto, enquanto o cartão usava só os
+  assentados (97 de 104 senadores com contagens diferentes); agora usa o mesmo corte e diz o que fica fora.
+  (4) "de N no recorte" misturava os meses da pessoa com o período do snapshot. (5) "24 sessões com presença
+  / de 23 em exercício" (Hermes Klann): o total nunca fica abaixo das presenças. (6) O período das votações
+  nominais ia até a data em que o coletor rodou (19/10), depois da "Fotografia" (11/10): passa a terminar na
+  data da consulta. (7) O resumo de votos dos senadores ganha a linha dos registros de licença, missão ou
+  atividade parlamentar e a nota das votações sem linha individual, como na Câmara; "votou em" vira "votou ou
+  presidiu em". (8) "O mandato começou em…" usava o trecho de exercício mais recente (errado para 15
+  senadores, como Chico Rodrigues e Renan Calheiros); agora usa a sequência no cargo (`tenure.json`). (9)
+  "Fontes e datas" mostrava a fonte de gabinete da Câmara para senadores; passa a listar a folha do Senado e
+  o histórico de exercício. (10) O "Qual mês aparece" do Senado diz que as notas podem entrar até abril do
+  ano seguinte. (11) Resumo e imagem avisam "a cota do mês ainda recebe notas" quando nenhum mês tem a folga.
+- **Páginas para buscadores:** a ficha de senador(a) só tinha a cota (R$ 34 mil para Esperidião Amin,
+  contra R$ 332 mil do app); ganha a linha "Quanto custa" das despesas do Senado e a presença registrada.
+  "da Senado Federal" corrigido. Trechos do Placar: o tipo (emenda, destaque, bloco) e a frase "faz parte da
+  votação do texto" com o resultado, como no app. Percentuais e "% acima da média" arredondam meio para cima
+  como o app. Rodapé da home diz o denominador dos percentuais. `llms.txt` descreve o mês de referência.
+- **Presença dos deputados:** "391 sessões de votação" vira "391 dias com sessão deliberativa"; "não faltaram
+  nenhum dia" conta só quem tem o mandato inteiro (antes, 12 dos 22 tinham de 14 a 125 dias); quem chegou
+  depois aparece com "desde jun/2026" na lista; "falta justificada" descrita como qualquer motivo publicado
+  (inclusive "decisão da Mesa", 726 dias na base). Pendente de conferência na Câmara: o status "Presença (~)"
+  (172 dias, 117 deputados) é classificado como falta justificada pelo coletor; se for uma variante de
+  presença, as contagens mudam na próxima coleta mensal.
+- **Metodologia:** lacuna confirmada (dez/2024, gabinete) explicada; "3 meses de folga" com exemplo e aviso de
+  que é mais curta que os 90 dias dos alertas; regra do Senado com a mesma folga; "sem base" inclui saldo
+  negativo; "custo refeito todo mês" vira "recomposto todo dia".
+
 ## Varredura de 18/10/2026
 
 Revisão adicional motivada pela troca da média pelo mês de referência no cartão de custo

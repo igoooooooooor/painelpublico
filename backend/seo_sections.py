@@ -64,7 +64,7 @@ def thousands(value):
 
 
 def pct(part, whole):
-    return round(part / whole * 100) if whole else 0
+    return half_up(part / whole * 100) if whole else 0
 
 
 def date_br(value):
@@ -231,7 +231,7 @@ def _home_stats(summary, alerts_total):
     if isinstance(alerts_total, int):
         stats.append((pt_int(alerts_total), 'alertas na cota pelas regras do painel; não indicam irregularidade'))
     if categories and positive_total > 0:
-        stats.append((f'{round(categories[0]["valor"] / positive_total * 100)}%', f'da cota foi para {esc(categories[0]["nome"].lower())}'))
+        stats.append((f'{half_up(categories[0]["valor"] / positive_total * 100)}%', f'da cota foi para {esc(categories[0]["nome"].lower())}'))
     if not stats:
         return ''
     return '<dl class="home-stats">' + ''.join(f'<div><dt>{label}</dt><dd>{value}</dd></div>' for value, label in stats) + '</dl>'
@@ -268,7 +268,7 @@ def _home_categories_card(summary):
     total = f' · {short_amount(quota["total"])} no mandato' if isinstance(quota.get('total'), (int, float)) else ''
     return (f'<section class="card home-panel"><div class="home-panel-head"><h2 class="h">Para onde vai a cota</h2><span class="muted">{len(categories)} categorias{total}</span></div>'
             f'<ul class="home-category-list">{rows}</ul>'
-            f'<span class="muted">{esc(period_text(quota.get("periodo")))}. Todos os reembolsos importados dos(as) deputados(as) da lista, preservando estornos.</span></section>')
+            f'<span class="muted">{esc(period_text(quota.get("periodo")))}. Todos os reembolsos importados dos(as) deputados(as) da lista, preservando estornos. Percentuais consideram categorias com saldo positivo; estornos permanecem no total líquido.</span></section>')
 
 
 def home_body(db):
@@ -362,13 +362,14 @@ def attendance_body():
         return (page_head('Câmara · mandato', 'Presença no Plenário', 'Dados de presença indisponíveis neste recorte.')
                 + '<p class="src">Fonte: página de presença em Plenário de cada deputado(a) na Câmara; nenhum registro está disponível neste recorte.</p>')
     average = sum(row['presente'] / row['dias'] for row in rows) / len(rows)
-    full = sum(1 for row in rows if row['presente'] == row['dias'])
+    first_start = min((row['inicio'] for row in rows if row.get('inicio')), default=None)
+    full = sum(1 for row in rows if row['presente'] == row['dias'] and (not first_start or row.get('inicio') == first_start))
     below_half = sum(1 for row in rows if row['presente'] / row['dias'] < 0.5)
     sessions = max(row['dias'] for row in rows)
     starts = sorted(row['inicio'] for row in rows if row.get('inicio'))
     ends = sorted(row['fim'] for row in rows if row.get('fim'))
     period = span_text(starts[0], ends[-1]) if starts and ends else ''
-    ordered = sorted(rows, key=lambda row: (row['presente'] / row['dias'], row['presente'], str(row.get('nome', ''))))
+    ordered = sorted(rows, key=lambda row: (row['presente'] / row['dias'], str(row.get('nome', ''))))
 
     def absences(row):
         parts = []
@@ -380,20 +381,20 @@ def attendance_body():
 
     items = ''.join(
         f'<li><a class="attendance-row" href="/deputado/{row["id"]}"><span class="attendance-who"><b>{esc(row.get("nome"))}</b>'
-        f'<small>{esc(row.get("partido") or "")} · {esc(row.get("uf") or "")}</small></span>'
+        f'<small>{esc(row.get("partido") or "")} · {esc(row.get("uf") or "")}{f" · desde {esc(span_text(row["inicio"], row["inicio"]))}" if first_start and row.get("inicio") and row["inicio"] > first_start else ""}</small></span>'
         f'<span class="attendance-value"><b class="mono{" warn" if row["presente"] / row["dias"] < 0.5 else ""}">{pct(row["presente"], row["dias"])}%</b>'
         f'<small class="mono">{row["presente"]} de {row["dias"]}</small></span>'
         f'<span class="attendance-bar"><small>{esc(absences(row))}</small></span></a></li>' for row in ordered)
     stat = lambda value, label: f'<div class="card attendance-stat"><b class="mono">{value}</b><span>{label}</span></div>'
     return (f'<div class="attendance-page"><section class="attendance-hero"><div class="attendance-intro">'
             f'<span class="k">Câmara · {esc(period or "mandato")}</span><h1 class="h ph-t">Presença no Plenário</h1>'
-            f'<p class="ph-lead">Quantos dias cada deputado(a) foi às {sessions} sessões de votação do Plenário no mandato atual{f" ({esc(period)})" if period else ""}.</p></div>'
-            f'<div class="attendance-summary"><div class="attendance-stats">{stat(f"{round(average * 100)}%", "presença média")}'
-            f'{stat(full, "não faltaram nenhum dia")}{stat(below_half, "foram a menos da metade")}</div>'
+            f'<p class="ph-lead">Quantos dos {sessions} dias com sessão deliberativa do Plenário cada deputado(a) foi, no mandato atual{f" ({esc(period)})" if period else ""}.</p></div>'
+            f'<div class="attendance-summary"><div class="attendance-stats">{stat(f"{half_up(average * 100)}%", "presença média")}'
+            f'{stat(full, "não faltaram nenhum dia, com o mandato inteiro")}{stat(below_half, "foram a menos da metade")}</div>'
             f'<p class="muted">Média dos dados disponíveis: dos dias com sessão, em média, entre os(as) {len(rows)} deputados(as) com dados de presença disponíveis.</p></div></section>'
             f'<div class="attendance-results"><span class="muted" role="status">{len(rows)} deputados(as), dos(as) menos aos(às) mais presentes</span><ol class="attendance-list">{items}</ol></div>'
             f'<p class="src attendance-source">Fonte: página de presença em Plenário de cada deputado(a) na Câmara, {sessions} dias com sessão deliberativa no mandato atual'
-            f'{f" ({esc(period)})" if period else ""}. Falta justificada inclui missão autorizada, licença e atestado. Quem assumiu no meio do mandato tem menos dias na conta.</p></div>')
+            f'{f" ({esc(period)})" if period else ""}. Falta justificada é qualquer motivo publicado pela Câmara (missão autorizada, licença, atestado, decisão da Mesa). Quem assumiu no meio do mandato tem menos dias na conta e aparece com o mês de início.</p></div>')
 
 
 # ---------------------------------------------------------------- Placar
@@ -412,6 +413,11 @@ def vote_outcome(item):
     if related.get('relation') == 'approvedAfter' and item.get('outcome') != 'approved':
         return 'Versão rejeitada · projeto aprovado em seguida'
     return VOTE_OUTCOMES.get(item.get('outcome'), 'Resultado não informado')
+
+
+# Mesmos nomes de SCOREBOARD_SEGMENT_KINDS em frontend/scripts/scoreboard-view.js.
+SEGMENT_KINDS = {'destaque': 'Votação em separado de um trecho', 'emenda': 'Emenda', 'emendas': 'Emendas votadas em bloco',
+                 'emenda_redacao': 'Emenda de redação', 'dispositivos': 'Dispositivos votados em bloco'}
 
 
 def abstention(tally):
@@ -546,13 +552,15 @@ def vote_body(payload):
     parent = vote.get('parent') or {}
     is_urgency = parent.get('relation') == 'urgency' or bool(vote.get('request') and vote.get('textStatus'))
     is_segment = bool(parent) or is_urgency
-    kind_name = 'Pedido de urgência' if is_urgency else 'Decisão sobre um trecho' if is_segment else VOTE_TYPE_NAMES.get(vote.get('type'), '')
+    kind_name = ('Pedido de urgência' if is_urgency else SEGMENT_KINDS.get(vote.get('kind'), 'Decisão sobre um trecho') if is_segment
+                 else VOTE_TYPE_NAMES.get(vote.get('type'), ''))
     label = f'{vote["request"]["label"]} · ' if is_urgency and isinstance(vote.get('request'), dict) and vote['request'].get('label') else ''
     themes = ''.join(f'<span class="pill">{esc(theme.get("label"))}</span>' for theme in vote.get('themes') or [] if isinstance(theme, dict) and theme.get('label'))
     parent_html = ''
     if parent.get('id') and parent.get('title'):
         parent_html = (f'<section class="card scoreboard-related" role="note"><span class="k">Votação do texto principal</span>'
-                       f'<p>{"Este pedido de urgência precede" if is_urgency else "Este trecho faz parte"} a votação do texto “{esc(parent["title"])}”, em {date_br(parent.get("date"))}.</p>'
+                       f'<p>{"Este pedido de urgência precede a votação" if is_urgency else "Este trecho faz parte da votação"} do texto “{esc(parent["title"])}”'
+                       f'{f" ({esc(vote_outcome(parent).lower())} nessa votação)" if parent.get("outcome") else ""}, em {date_br(parent.get("date"))}.</p>'
                        f'<a class="more" href="/placar/{esc(parent["id"])}">Ver a votação do texto →</a></section>')
     pec_note = '<p class="muted scoreboard-pec-note">PEC precisa de 308 votos favoráveis (3/5 da Câmara) em cada um dos dois turnos.</p>' if vote.get('type') == 'PEC' and not is_segment else ''
     children = ''

@@ -150,6 +150,53 @@ def _latest_cost_month(cost, as_of=None):
     return period, sum(values[key] for key in parts)
 
 
+def _senate_cost_line(senate_cost, record):
+    """Linha do custo de um(a) senador(a), com as regras do cartão (`senateCostLatest`/`senateCostFigures`): mês mais
+    recente com as três partes (remuneração > 0, equipe, cota do banco) e notas assentadas; média das partes
+    sobre esses meses, cada uma arredondada para baixo."""
+    if not isinstance(senate_cost, dict) or not isinstance(senate_cost.get('months'), dict):
+        return None
+    quota = {f'{m["year"]:04d}-{int(m["month"]):02d}': int(round(m['valor'] * 100)) for m in record.get('meses') or []
+             if isinstance(m, dict) and isinstance(m.get('year'), int) and isinstance(m.get('month'), int) and isinstance(m.get('valor'), (int, float))}
+    complete = {}
+    for period, month in senate_cost['months'].items():
+        remuneration, office = month.get('remunerationCents'), month.get('officeCents')
+        if (costs._cents(remuneration) and remuneration > 0 and costs._cents(office) and period in quota):
+            complete[period] = (remuneration, office, quota[period])
+    if not complete:
+        return None
+    as_of = record.get('snapshotAt')
+    settled = costs.settled_periods(complete, as_of)
+    latest = settled[-1]
+    total = sum(complete[latest])
+    average = sum(sum(values[i] for p in settled for values in [complete[p]]) // len(settled) for i in range(3))
+    caveat = ' (a cota desse mês ainda recebe notas; o valor pode subir)' if _cost_month_unsettled(latest, as_of) else ''
+    return (f'Somou {money_cents(total)} em {MONTHS[int(latest[5:7])]}/{latest[:4]}{caveat}; média de {money_cents(average)} por mês '
+            f'({len(settled)} {"mês" if len(settled) == 1 else "meses"} com as três partes identificadas). Soma remuneração do(a) senador(a), '
+            'equipe do gabinete e cota parlamentar, em valores da época; não compare com o custo de deputados(as).')
+
+
+def _senate_presence(identifier):
+    """Presenças registradas no Diário do Senado, como no cartão: contagem, sem percentual nem faltas."""
+    try:
+        data = json.loads((SNAPSHOTS_PATH / 'senado-presenca.json').read_text(encoding='utf-8'))
+    except (OSError, ValueError):
+        return None
+    presence = data.get('presenca') if isinstance(data, dict) else None
+    items = presence.get('items') if isinstance(presence, dict) else None
+    row = next((r for r in items or [] if isinstance(r, dict) and r.get('id') == identifier), None)
+    if not row or not isinstance(row.get('presente'), int) or isinstance(row['presente'], bool) or row['presente'] <= 0:
+        return None
+    sessions = row.get('sessoesEmExercicio')
+    span = presence.get('period') if isinstance(presence.get('period'), str) else ''
+    if isinstance(sessions, int) and not isinstance(sessions, bool):
+        sessions = max(sessions, row['presente'])
+        return (f'{row["presente"]} sessões deliberativas com presença registrada no Diário do Senado, de {sessions} com lista validada em que '
+                f'estava em exercício{f" ({span})" if span else ""}. Faltas e justificativas não apuradas; sem percentual.')
+    return (f'{row["presente"]} sessões deliberativas com presença registrada no Diário do Senado{f" ({span})" if span else ""}. '
+            'Faltas e justificativas não apuradas; sem percentual.')
+
+
 def _cost_month_unsettled(period, as_of):
     """True quando o mês principal ainda não tem os 3 meses de folga (nenhum mês assentado): a cota pode subir."""
     cutoff = settled_cutoff(as_of)
@@ -184,7 +231,7 @@ def profile_facts(db, identifier):
         if average:
             difference = monthly / average - 1
             comparison = (' Parecido com a média do cargo.' if abs(difference) < 0.1
-                          else f' {round(abs(difference) * 100)}% {"acima" if difference > 0 else "abaixo"} da média do cargo ({money(average)}).')
+                          else f' {sections.half_up(abs(difference) * 100)}% {"acima" if difference > 0 else "abaixo"} da média do cargo ({money(average)}).')
         facts['lines'].append(('Cota parlamentar', f'{money(monthly)} por mês em reembolsos da cota '
                                f'({period_label(period.get("inicio"), period.get("fim"))}, nos meses com notas já assentadas).{comparison}'))
     else:
@@ -192,8 +239,15 @@ def profile_facts(db, identifier):
     house, number = identifier.split(':', 1)
     presence = _chamber_presence(number) if house == 'camara' else None
     if presence:
-        facts['lines'].append(('Trabalha', f'Presença no Plenário no mandato ({period_label(presence.get("inicio"), presence.get("fim"))}): {round(presence["presente"] / presence["dias"] * 100)}% '
+        facts['lines'].append(('Trabalha', f'Presença no Plenário no mandato ({period_label(presence.get("inicio"), presence.get("fim"))}): {sections.half_up(presence["presente"] / presence["dias"] * 100)}% '
                                f'({presence["presente"]} de {presence["dias"]} dias com sessão deliberativa).'))
+    if house == 'senado':
+        senate_cost = _senate_cost_line((profiles.profile(identifier) or {}).get('senateCost'), record)
+        if senate_cost:
+            facts['lines'].insert(0, ('Quanto custa', senate_cost))
+        registered = _senate_presence(identifier)
+        if registered:
+            facts['lines'].append(('Trabalha', registered))
     alerts = record.get('alertas') or []
     coverage = record.get('coberturaAlertas') or []
     evaluated = any((c.get('regra') == 'pico' and c.get('avaliados')) or (c.get('regra') == 'fornecedor' and c.get('avaliado'))
@@ -403,10 +457,10 @@ def profile_page(db, page_html, path, origin):
         person_ld['affiliation'] = {'@type': 'PoliticalParty', 'name': person['party']}
     json_ld = [person_ld, breadcrumb_ld(origin, [('Início', '/'), ('Políticos', '/politicos'), (person['name'], canonical)])]
     items = ''.join(f'<li><b>{_escape(label)}:</b> {_escape(text)}</li>' for label, text in facts['lines'])
-    house_name = 'Câmara dos Deputados' if house == 'camara' else 'Senado Federal'
+    house_name = 'da Câmara dos Deputados' if house == 'camara' else 'do Senado Federal'
     body = (f'<a class="back" href="/politicos">‹ Todos os políticos</a>'
             f'<article class="seo-summary"><h1>{_escape(person["name"])}</h1><p>{_escape(subtitle)}</p><ul>{items}</ul>'
-            f'<p>Fontes: dados públicos oficiais da {house_name}. Retrato de {_escape(facts["snapshotAt"] or "data não informada")}. '
+            f'<p>Fontes: dados públicos oficiais {house_name}. Retrato de {_escape(facts["snapshotAt"] or "data não informada")}. '
             f'<a href="{_escape(facts["sourceUrl"])}" rel="noopener">Página oficial ↗</a>.</p>'
             f'<p>{sections.INDEPENDENCE_NOTE} <a href="/metodologia">Como os números são calculados</a>.</p>'
             f'<div class="citizen-actions"><a class="fchip" href="/comparar">Comparar com outro(a) →</a><a class="fchip" href="/alertas">Todos os alertas →</a></div></article>')
@@ -501,7 +555,7 @@ def llms(origin):
 > {DEFAULT_DESCRIPTION}
 
 Cada deputado(a) federal e senador(a) tem uma página com endereço próprio, no formato
-{origin}/deputado/<id>-<nome> ou {origin}/senador/<id>-<nome>, com custo médio por mês, cota, presença, votos
+{origin}/deputado/<id>-<nome> ou {origin}/senador/<id>-<nome>, com o custo de um mês de referência e a média do mandato, cota, presença, votos
 e alertas, sempre com o período dos dados e a data da fotografia. Cada votação do Placar tem endereço próprio,
 {origin}/placar/<id>, com a decisão, o que significava votar Sim e Não, o resultado e o voto de cada deputado(a).
 A lista completa está no sitemap: {origin}/sitemap.xml. O conteúdo essencial de cada página está no HTML inicial,
