@@ -41,6 +41,8 @@ USER_AGENT = "QuantoCusta/1.0 (public-data importer)"
 # Mesmos valores de backend/config.py: o complemento de moradia da CEAP fica fora da cota.
 HOUSING_COMPLEMENT_CATEGORY = "COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA"
 HOUSING_COMPLEMENT_KIND = "complemento_moradia"
+# Passagens emitidas pela agência da Câmara; desde ago/2025 vêm da página analítica (ingest/chamber_sigepa.py).
+SIGEPA_CATEGORY = "PASSAGEM AÉREA - SIGEPA"
 # Companhia aérea citada no detalhamento das passagens do Senado ("Companhia Aérea: LATAM, Localizador: ...").
 # Só o nome da companhia é guardado; passageiros, matrículas e localizadores não.
 AIRLINE_IN_DETAIL = re.compile(r"Companhia A[ée]rea:\s*([^,;\n]+)", re.IGNORECASE)
@@ -434,7 +436,85 @@ def add_chamber_authority(
                 current[key] = value[key]
 
 
-def load_chamber_expenses(path: Path, year: int, authorities: dict[str, dict[str, Any]], source_id: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def sigepa_cache_for(path: Path, year: int) -> dict[str, Any] | None:
+    """Cache dos bilhetes SIGEPA ao lado do arquivo anual (ingest/chamber_sigepa.py), se existir."""
+    try:
+        data = json.loads(path.with_name(f"camara-sigepa-{year}.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) and data.get("year") == year else None
+
+
+def apply_sigepa(
+    expenses: list[dict[str, Any]], native_ids: list[str | None], year: int, cache: dict[str, Any], source_id: str
+) -> dict[str, Any]:
+    """Troca as linhas SIGEPA do arquivo pelos bilhetes da página analítica nos meses que ela cobre.
+
+    Só para quem teve a página consultada com sucesso; para os demais, o arquivo fica como veio.
+    A lista da página é a completa do mês (bilhetes e estornos), por isso substitui em vez de somar.
+    """
+    start, end = str(cache.get("start") or ""), str(cache.get("end") or "")
+    template = str(cache.get("url") or "")
+    covered: set[tuple[str, int]] = set()
+    added: list[tuple[dict[str, Any], str | None]] = []
+    people = 0
+    for deputy, item in sorted((cache.get("deputies") or {}).items()):
+        if item.get("status") != "imported" or not item.get("authorityId"):
+            continue
+        people += 1
+        last = str(item.get("end") or end)
+        for month in range(1, 13):
+            if start <= f"{year}-{month:02d}" <= last:
+                covered.add((item["authorityId"], month))
+        for index, row in enumerate(item.get("rows") or [], start=1):
+            if int(row.get("year") or 0) != year:
+                continue
+            fiscal = str(row.get("fiscalId") or "").strip()
+            added.append(({
+                "id": "",
+                "authorityId": item["authorityId"],
+                "sourceId": source_id,
+                "date": row.get("date"),
+                "year": year,
+                "month": int(row["month"]),
+                "category": SIGEPA_CATEGORY,
+                "amount": parse_amount(row["amount"]),
+                "documentId": str(row.get("document") or "").strip() or None,
+                # A lista oficial dos bilhetes do mês (sem passageiro nem trecho); o arquivo anual não traz link.
+                "documentUrl": template.format(
+                    deputy=urllib.parse.quote(str(deputy)), start_year=year, start_month=int(row["month"]),
+                    end_year=year, end_month=int(row["month"]),
+                ) if template.startswith("https://www.camara.leg.br/cota-parlamentar/") else None,
+                "supplier": supplier_fields(row.get("supplier"), row.get("taxId"), "camara", index),
+                "kind": "reembolso",
+            }, f"sigepa:{fiscal}" if fiscal else None))
+    kept_expenses, kept_ids, replaced = [], [], 0
+    for expense, native_id in zip(expenses, native_ids):
+        if expense.get("category") == SIGEPA_CATEGORY and expense.get("year") == year \
+                and (expense["authorityId"], expense.get("month")) in covered:
+            replaced += 1
+            continue
+        kept_expenses.append(expense)
+        kept_ids.append(native_id)
+    expenses[:] = kept_expenses + [expense for expense, _ in added]
+    native_ids[:] = kept_ids + [native_id for _, native_id in added]
+    return {
+        "applied": True, "start": start, "end": end, "deputies": people,
+        "failed": len(cache.get("failed") or []), "rowsAdded": len(added), "rowsReplaced": replaced,
+        "collectedAt": cache.get("collectedAt"),
+    }
+
+
+def load_chamber_expenses(
+    path: Path,
+    year: int,
+    authorities: dict[str, dict[str, Any]],
+    source_id: str,
+    sigepa: dict[str, Any] | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Linhas do arquivo anual da CEAP, com os bilhetes SIGEPA do cache vizinho quando houver (ver apply_sigepa)."""
+    if sigepa is None:
+        sigepa = sigepa_cache_for(path, year)
     expenses: list[dict[str, Any]] = []
     native_ids: list[str | None] = []
     row_index = 0
@@ -510,8 +590,10 @@ def load_chamber_expenses(path: Path, year: int, authorities: dict[str, dict[str
                         }
                     )
                     native_ids.append(native_id)
+    sigepa_stats = apply_sigepa(expenses, native_ids, year, sigepa, source_id) if sigepa else {"applied": False}
     identity_stats = assign_stable_expense_ids(expenses, source_id, native_ids)
     return expenses, {
+        "sigepa": sigepa_stats,
         "rows": row_index,
         "csvMembers": len([name for name in members if name.lower().endswith(".csv")]),
         "zipMembers": members,
@@ -779,6 +861,15 @@ def import_year(year: int, output: Path) -> dict[str, Any]:
         chamber_content = download(chamber_url, chamber_path)
         if not zipfile.is_zipfile(io.BytesIO(chamber_content)):
             raise ValueError("Câmara endpoint did not return a valid ZIP archive")
+        # Bilhetes SIGEPA que o arquivo deixou de trazer; uma falha mantém o cache anterior.
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from ingest import chamber_sigepa
+        try:
+            # Um pedido por vez e no máximo 15 minutos por execução; o restante fica com a consulta anterior.
+            chamber_sigepa.collect(year, chamber_path, RAW_DIR, budget_seconds=15 * 60)
+        except Exception as error:  # noqa: BLE001 - o arquivo anual continua importável sem os bilhetes
+            print(f"SIGEPA {year}: {type(error).__name__}: {error}", file=sys.stderr)
         chamber_expenses, chamber_stats = load_chamber_expenses(
             chamber_path, year, authorities, "camara_ceap"
         )
@@ -804,6 +895,7 @@ def import_year(year: int, output: Path) -> dict[str, Any]:
             detail += " Correções nesses lançamentos podem aparecer como novos registros, pois não há ID nativo exclusivo."
         if chamber_stats["documentIdsRedacted"]:
             detail += f" {chamber_stats['documentIdsRedacted']} referências documentais ambíguas de 11 dígitos foram omitidas."
+        detail += chamber_sigepa.sigepa_detail(chamber_stats)
     except Exception as error:
         chamber_status = "unavailable"
         detail = f"Não foi possível importar o arquivo oficial de despesas da CEAP de {year}."

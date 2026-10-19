@@ -215,12 +215,15 @@ class CitizenPoliticiansTests(unittest.TestCase):
             'media': deputy_total / 12,
             'comRegistros': 12,
             'periodo': {'inicio': '2026-01', 'fim': '2026-11'},
+            # Sem data da fotografia, todos os meses contam como assentados.
+            'mediaPeriodo': {'inicio': '2026-01', 'fim': '2026-11'},
         })
         self.assertEqual(result['reembolsos']['senador'], {
             'total': 50.0,
             'media': 50.0,
             'comRegistros': 1,
             'periodo': {'inicio': '2026-01', 'fim': '2026-01'},
+            'mediaPeriodo': {'inicio': '2026-01', 'fim': '2026-01'},
         })
         categories = {item['nome']: item['valor'] for item in result['categoriasCamara']}
         self.assertEqual(categories['Escritório'], 123.45)
@@ -282,7 +285,9 @@ class CitizenPoliticiansTests(unittest.TestCase):
         self.assertEqual(context['meses'], 1)
         self.assertEqual(context['mediaMensal'], 100)
         self.assertEqual(context['total'], 2110)
-        self.assertIn('R$ 100 por mês em média no 1 mês com notas assentadas', context['frase'])
+        # O total (jul–out) e a média (só jul) cobrem meses diferentes: a frase nomeia os dois períodos.
+        self.assertIn('Em 2026, gastou R$ 2.110 na cota (jul–out/2026).', context['frase'])
+        self.assertIn('No 1 mês com notas assentadas (jul/2026), a média foi de R$ 100 por mês', context['frase'])
 
     def test_home_summary_averages_monthly_cost_per_house_without_inventing_missing_costs(self):
         self.payload['authorities'].append(

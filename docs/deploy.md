@@ -66,7 +66,7 @@ aleatório). O timer chama
 
 | Etapa | O que faz | Se falhar |
 |---|---|---|
-| `collect` | `ingest/legislative.py --year <ano corrente>` grava `data/imports/legislative.json` | Fonte indisponível vira execução **parcial** e preserva a fotografia anterior daquela fonte; coletor que morre interrompe |
+| `collect` | `ingest/legislative.py --year <ano corrente>` grava `data/imports/legislative.json`, com as passagens SIGEPA da página analítica da Câmara (até 15 min, um pedido por vez; ver [Dados](data.md#coletas-manuais)) | Fonte indisponível vira execução **parcial** e preserva a fotografia anterior daquela fonte; coletor que morre interrompe |
 | `validate` | Confere fontes, ano das notas (nunca importa outro ano no caminho padrão) e o que será substituído | Interrompe antes de tocar o banco |
 | `backup` | Cópia consistente em `data/backups/na-lupa-daily-<data>.sqlite3`; mantém as 7 mais recentes | Interrompe |
 | `stage` | Copia o banco publicado para `data/pipeline/`; o banco em uso nunca recebe escrita | Interrompe |

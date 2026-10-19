@@ -115,7 +115,9 @@ test('spending is compared per resident with the typical city of the same size, 
   assert.match(spend, /<small>R\$<\/small>5\.164/);
   assert.match(spend, /dividido pelos 1\.349\.100 moradores \(estimativa do IBGE para 2025\)/);
   assert.match(html, /usam a população estimada pelo IBGE para 2025, o ano das contas; o cabeçalho da página mostra a estimativa mais recente/);
-  assert.match(spend, /16% abaixo do típico/);
+  // O veredito é do gasto total (5.164 contra 6.176), não da última barra; o típico total aparece junto.
+  assert.match(spend, /Gasto total: 16% abaixo do típico/);
+  assert.match(spend, /O típico do gasto total é R\$ 6\.176 por morador/);
   assert.match(spend, /cidades com mais de 500 mil habitantes/);
   assert.match(spend, /Saúde<\/span><b class="mono">R\$ 1\.190[\s\S]*Típico: R\$ 1\.444/);
   assert.doesNotMatch(spend, /Típico: R\$ 1\.241/);
@@ -182,6 +184,12 @@ test('amendments lead with reserved and paid values, top authors and a Pix subse
   const later = showCity(makeView().context, SP, { amendments: { year: 2025, status: 'available', recordCount: 1,
     totals: { committedCents: 100000, paidCents: 0, restosPaidCents: 40000 }, authors: [] } });
   assert.match(later, /Nada foi pago no ano até a data da consulta\. Além disso, R\$ 400 foram pagos depois, como restos a pagar\./);
+  // Sem a cobertura nacional, o aviso geral; com ela, a fatia do dinheiro que informa a cidade.
+  assert.match(answer, /Só entram emendas que informam esta cidade como destino; muitas vão para o estado/);
+  const covered = showCity(makeView().context, SP, { amendments: { year: 2026, status: 'available', recordCount: 1,
+    totals: { committedCents: 100000, paidCents: 0, restosPaidCents: null }, authors: [],
+    coverage: { nationalTotals: { committedCents: 4006037833046 }, municipalCommittedCents: 135283021702 } } });
+  assert.match(covered, /Só 3% do valor reservado em emendas de 2026 informa a cidade de destino\. As demais vão para o estado/);
   assert.equal((answer.match(/data-deputy=/g) || []).length, 1);
   assert.match(answer, /Ver as 4 autorias/);
   assert.doesNotMatch(answer, /Quarto Nome/);

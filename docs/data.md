@@ -24,6 +24,28 @@ make db-check
 
 No servidor, essa sequência roda sozinha todo dia para o ano corrente, com backup, cópia de trabalho, guarda de regressão e aviso por e-mail: `python3 -m ingest.pipeline daily` (`make update-daily`), descrito em [Publicação](deploy.md#atualização-automática-dos-dados). O job mensal (`make update-monthly`) encadeia os coletores do custo do mandato, o histórico da cota, o Senado e a remontagem da página. O semanal (`make update-weekly`) refaz o inventário do Placar e monta a fila editorial, que também avisa sobre `arrecadacao.json`, a tabela de gabinetes do Senado, o exercício das contas municipais e as eleições; Placar, Minha cidade e eleições continuam decisões de uma pessoa.
 
+**Passagens SIGEPA da Câmara (desde 19/10/2026):** até jul/2025 o arquivo anual da CEAP trazia as passagens
+aéreas emitidas pela agência da Câmara ("PASSAGEM AÉREA - SIGEPA", subcota 998; cerca de R$ 3,5–4,7 mi por mês
+no total). De ago/2025 em diante o arquivo só traz estornos avulsos dessa subcota, mas a página analítica da cota de
+cada deputado(a) continua listando os bilhetes, e o gráfico da página do(a) deputado(a) os soma. Sem eles, a cota de
+2026 ficava, na mediana de uma amostra de 35 deputados(as), 21% abaixo da página da Câmara (até 52%), e o custo,
+os rankings, os totais e a referência dos alertas mudavam de base no meio da série. `ingest/chamber_sigepa.py`
+consulta essa página uma vez por pessoa e ano (quem tem linha no arquivo anual), a partir de ago/2025, e guarda
+em `data/raw/legislative/camara-sigepa-{ano}.json` só companhia, CNPJ, data, número, valor e mês de competência;
+a página de detalhe, com passageiro e trecho, não é consultada. A soma das linhas precisa fechar com o total da
+página. Para alguns IDs a página analítica dá erro 500 em qualquer tipo de despesa; aí o resumo por tipo do mesmo
+período (`sumarizado`) comprova quando não há linha SIGEPA, e só nesse caso a pessoa conta como zero bilhete.
+`load_chamber_expenses` troca, nos meses cobertos, as linhas SIGEPA do arquivo pela lista da página (que é a
+completa, com bilhetes e estornos), com link para a lista do mês. `legislative.py` chama a coleta antes de importar,
+um pedido por vez, com pausa de 1 s e no máximo 15 minutos por execução: em 19/10/2026, uma coleta com 4 pedidos
+paralelos fez a Câmara parar de responder a este endereço. Quem fica sem consulta mantém a anterior; quem nunca foi
+consultado fica sem os bilhetes (dado ausente, não zero), e o detalhe da fonte `camara_ceap` diz quantos. Conferido:
+em jan–jul/2025, quando o arquivo ainda trazia a subcota, a página lista as mesmas linhas e valores; em jan–jul/2026,
+a cota com os bilhetes bate centavo a centavo com o gráfico da página em 238 de 266 meses de 38 deputados(as) (os
+demais, complemento de moradia, que a cota exclui, e notas posteriores à fotografia). Para reaplicar sem rede sobre
+um documento já gerado: `python3 -m ingest.chamber_sigepa --apply data/imports/legislative.json --year 2026`
+(e `--collect` para uma coleta completa manual).
+
 Os importadores atuais usam apenas a biblioteca padrão do Python. Downloads podem ser grandes. Os snapshots normalizados ficam em `data/imports/`, e os originais/cache em `data/raw/`. Nem todos os brutos são retidos; preserve os normalizados se precisar reconstruir exatamente a mesma fotografia. Recoletar uma fonte pode produzir outro retrato.
 
 Complementos manuais da Câmara:
@@ -740,9 +762,9 @@ partir de fev/2023.
 - **Notas do mês:** na ficha da Câmara, a fonte da cota de cada mês do mandato abre a lista
   das notas daquele mês (`/api/c/notas?id=camara:<id>&mes=AAAA-MM`), com link para
   cada nota original, o total e como achar o mesmo total no arquivo anual (filtrar
-  `ideCadastro` e `numMes` e somar `vlrLiquido`). A página do deputado na Câmara não
-  serve de fonte: o gráfico dela inclui passagens aéreas, que ficam fora do arquivo
-  aberto. O CSV da ficha traz todas as notas desde fev/2023; nas de 2023–2025 a
+  `ideCadastro` e `numMes` e somar `vlrLiquido`; desde ago/2025, somar também as passagens
+  SIGEPA, que vêm da página analítica e têm link para a lista do mês). A página do deputado
+  na Câmara é atualizada todo dia e pode ter notas posteriores à fotografia. O CSV da ficha traz todas as notas desde fev/2023; nas de 2023–2025 a
   coluna Documento fica vazia.
 - **Telefonia sem documento (verificado em 13/10/2026):** entre a coleta de 8/10/2026 e a
   de 13/10/2026, a Câmara esvaziou `urlDocumento` em todas as notas da categoria TELEFONIA,

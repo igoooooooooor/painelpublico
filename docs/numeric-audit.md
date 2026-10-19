@@ -1,5 +1,59 @@
 # Varredura numérica
 
+## Segunda revisão de 19/10/2026 — números contra as páginas oficiais
+
+Percorremos home, fichas, lista, comparar, partidos, presença, Placar e Minha cidade como um leitor, abrindo
+cada fonte. Bateram com a fonte: salário e auxílios (remuneração de jul/2026), verba de gabinete, presença somada
+ano a ano, Placar (ex.: PLP 74/2026, 346–46–3; PL 45–23; PT 52–0 na API da Câmara) e cota do Senado por mês
+(Randolfe Rodrigues, jul/2026: R$ 85.722,91 nos detalhamentos por tipo).
+
+- **Cota da Câmara sem as passagens da agência (SIGEPA) desde ago/2025:** o arquivo anual trazia a subcota 998
+  ("PASSAGEM AÉREA - SIGEPA") até jul/2025 e deixou de trazer depois; a página do(a) deputado(a), linkada no próprio
+  cartão de custo, soma esses bilhetes. Felipe Francischini (`camara:204398`), jul/2026: R$ 33.700,83 de cota no
+  cartão, R$ 38.672,59 na Câmara; jun/2026, a diferença é exatamente a linha "PASSAGEM AÉREA - SIGEPA R$ 5.770,12"
+  do detalhamento. Numa amostra de 35 deputados(as), jan–jul/2026: diferença mediana de R$ 9,4 mil por mês (21%),
+  máxima de 52%. Afetava custo, cota média, rankings, total da home, categorias, imposto equivalente e a referência
+  dos alertas (que passava a comparar meses sem os bilhetes com meses que os tinham). Correção: coletor
+  `ingest/chamber_sigepa.py` e mescla em `load_chamber_expenses` (ver [Dados](data.md#coletas-manuais)); os textos que
+  diziam que as passagens ficavam de fora agora dizem de onde elas vêm. Na base local refeita: 27.237 linhas em
+  ago–dez/2025 (R$ 3,6–5,1 mi por mês, o mesmo nível de jan–jul/2025 no arquivo) e 39.676 em 2026; Felipe Francischini
+  bate centavo a centavo com o gráfico da Câmara nos 12 meses de 2025, e o total de 2026 (R$ 413.824) e jun/2026
+  (R$ 135.979) também. Jul/2026 fica R$ 0,03 acima do gráfico porque a própria lista de bilhetes da Câmara soma
+  R$ 4.971,79 e o gráfico arredonda para menos; seguimos a lista item a item. Efeitos: custo médio do(a) deputado(a)
+  de R$ 204 mil para R$ 207 mil por mês (mediana +R$ 2,1 mil por pessoa, máximo +R$ 27 mil), cota do mandato de
+  R$ 782,8 mi para R$ 836,0 mi, passagens aéreas de R$ 103,8 mi para R$ 157,0 mi, outro 1º lugar em "Quem mais usa a
+  cota" e 804 alertas em vez de 803, com as mesmas regras. `make audit-numbers`: 19.691 meses de cota conferidos,
+  nenhuma divergência. A página analítica dá erro 500 para alguns IDs em qualquer tipo de despesa; nesses casos, o
+  resumo por tipo do mesmo período comprova quando não há bilhete (33 casos em 2026). Ficaram sem consulta 1 conta de
+  liderança em 2026 e 27 cadastros em 2025, dos quais 8 na lista atual, todos sem nenhuma nota em ago–dez/2025 no
+  arquivo (ministros licenciados, entre outros), então nada do que o site mostra muda.
+- **Contexto dos alertas com total e média de períodos diferentes:** "Em 2026, gastou R$ 352.433 na cota, R$ 47.589
+  por mês em média nos 7 meses com notas assentadas": 352.433 ÷ 7 dá 50.347, porque o total soma jan–out e a média só
+  jan–jul. A frase agora nomeia os dois períodos quando eles diferem.
+- **Link da cota no custo do Senado:** "Página do Senado ↗" não mostrava valor nenhum. Corrigido na mesma data pela
+  segunda varredura das fichas de senadores (abaixo): o link abre a cota do ano no portal de transparência.
+- **Minha cidade, "47% acima do típico" sob a barra de Educação:** o veredito era do gasto total (Campinas: R$ 8.979
+  contra típico de R$ 6.115, que não aparecia), mas lia-se como Educação (R$ 1.762 contra R$ 1.241, 42%). Agora diz
+  "Gasto total" e mostra o típico total.
+- **Emendas da cidade sem a cobertura:** só 3% do valor reservado em emendas de 2026 (R$ 1,35 bi de R$ 40,1 bi)
+  informa a cidade de destino; "R$ 443 mil em 1 emenda" para Campinas parecia tudo o que chegou. O cartão agora diz
+  essa fatia e que pode ter chegado mais.
+- **Fatias da cota na ficha acima de 100% com estornos:** o resumo "Onde gastou a cota" ainda dividia pelo total
+  líquido (Aline Gurgel: 60% + 44% e "−5% do total"); a imagem e o detalhe já usavam os saldos positivos. Agora o
+  resumo também usa os saldos positivos quando há categoria negativa e tira a fatia dos fornecedores quando algum
+  fornecedor tem saldo negativo. Com as passagens SIGEPA, a categoria de passagens da Aline Gurgel deixou de ser
+  negativa (os estornos eram de bilhetes que faltavam), mas a GOL segue com −R$ 4.045,94 em estornos sem bilhete no
+  período; sem a regra nova, os três maiores fornecedores somariam 103%.
+- **Período do "Quem mais usa a cota":** dizia "fev/2023 a out/2026", mas a média vai só até o último mês assentado.
+  O período agora termina nele (`mediaPeriodo` no resumo).
+- **Verba de gabinete publicada como R$ 0,00:** 15 perfis da lista atual têm meses usados no custo com R$ 0,00 de gabinete
+  na própria Câmara, mesmo com equipe listada (Hildo Rocha, `camara:178884`: 5 pessoas ativas, R$ 0,00 em todos os
+  meses de 2026). É o valor publicado e fica; o cartão avisa que o total pode estar sem o custo da equipe. É o que
+  produz o "menor" da home (Paulo Soares, 2 meses: R$ 52 mil antes das passagens SIGEPA, R$ 56 mil depois).
+
+Ficam como estão, documentados: presença soma até set/2026 e a página de 2026 da Câmara já inclui outubro; notas de
+um mês podem ter data de emissão no mês seguinte (competência da Câmara).
+
 ## Revisão de 19/10/2026
 
 - **Média da cota com meses ainda em aberto:** `authority_totals.monthCount` contava todo mês com

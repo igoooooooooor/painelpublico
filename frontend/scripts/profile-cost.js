@@ -94,13 +94,18 @@ function profileCostNotesHTML(data, personId) {
   const rows = notes.map(note => {
     const url = typeof profileSafeUrl === 'function' ? profileSafeUrl(note.documentUrl) : null;
     return `<li><span class="citizen-cost-note-who">${esc(note.fornecedor || 'Fornecedor não informado')}</span><b class="mono">${esc(money(note.valor))}</b>
-      <small>${esc(note.data ? dateBR(note.data) : 'sem data')} · ${esc(note.categoria || '')}</small>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">Nota ↗</a>` : '<span class="muted">Documento não publicado pela Câmara</span>'}</li>`;
+      <small>${esc(note.data ? dateBR(note.data) : 'sem data')} · ${esc(note.categoria || '')}</small>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${note.listaDaCamara ? 'Bilhetes do mês na Câmara' : 'Nota'} ↗</a>` : '<span class="muted">Documento não publicado pela Câmara</span>'}</li>`;
   }).join('');
   const complement = data.complemento ? `<p class="muted">À parte, fora desse total: complemento do auxílio-moradia, ${esc(money(data.complemento.valor))} em ${data.complemento.notas} ${data.complemento.notas === 1 ? 'nota' : 'notas'}.</p>` : '';
   const fileUrl = typeof profileSafeUrl === 'function' ? profileSafeUrl(data.fonte?.url) : null;
+  /* Desde ago/2025 as passagens emitidas pela agência da Câmara (SIGEPA) não estão no arquivo anual: vêm da
+     página analítica da cota. Sem dizer isso, a soma da planilha não fecha com o total. */
+  const page = data.passagensDaPagina && Number(data.passagensDaPagina.notas) > 0 ? data.passagensDaPagina : null;
+  const pageUrl = page && typeof profileSafeUrl === 'function' ? profileSafeUrl(page.url) : null;
+  const pageText = page ? ` Depois, some ${esc(money(page.valor))} das ${page.notas} ${page.notas === 1 ? 'linha' : 'linhas'} de passagem aérea emitida pela agência da Câmara (SIGEPA), que o arquivo anual deixou de trazer em ago/2025 e que a Câmara lista na ${pageUrl ? `<a href="${esc(pageUrl)}" target="_blank" rel="noopener">página dos bilhetes do mês</a>` : 'página analítica da cota'}.` : '';
   return `<ul class="citizen-cost-note-list">${rows}</ul>
     <p><b>Total: ${esc(money(data.total))}</b>, soma das ${notes.length} ${notes.length === 1 ? 'nota' : 'notas'} acima.</p>${complement}
-    <p class="muted">Todas as notas vêm do arquivo oficial da Câmara, com ou sem documento. O documento é uma cópia da nota que a Câmara nem sempre publica; em outubro de 2026, deixou de publicar os das notas de telefonia. Para conferir na planilha da Câmara${fileUrl ? ` (<a href="${esc(fileUrl)}" target="_blank" rel="noopener">arquivo anual</a>, com todos os deputados, cerca de 40 MB)` : ''}: filtre <code>ideCadastro</code> = ${esc(String(personId).split(':')[1])} e <code>numMes</code> = ${Number(month)} e some a coluna <code>vlrLiquido</code>${data.complemento ? ', sem as linhas de <code>COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA</code>, que ficam fora desse total' : ''}.</p>`;
+    <p class="muted">${page ? 'As notas vêm do arquivo oficial da Câmara e, as passagens emitidas pela agência, da página de bilhetes da Câmara.' : 'Todas as notas vêm do arquivo oficial da Câmara, com ou sem documento.'} O documento é uma cópia da nota que a Câmara nem sempre publica; em outubro de 2026, deixou de publicar os das notas de telefonia. Para conferir na planilha da Câmara${fileUrl ? ` (<a href="${esc(fileUrl)}" target="_blank" rel="noopener">arquivo anual</a>, com todos os deputados, cerca de 40 MB)` : ''}: filtre <code>ideCadastro</code> = ${esc(String(personId).split(':')[1])} e <code>numMes</code> = ${Number(month)} e some a coluna <code>vlrLiquido</code>${data.complemento ? ', sem as linhas de <code>COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA</code>, que ficam fora desse total' : ''}.${pageText}</p>`;
 }
 
 /* Carrega as notas só quando a pessoa abre a lista. */
@@ -297,9 +302,12 @@ function profileCostAnswer(cost, asOf) {
     const scale = Math.max(0, ...values.filter(profileCostInteger));
     const christmas = profileCostMoney(month.christmasBonusCents);
     kicker = 'Mês mais recente';
+    /* A Câmara publica R$ 0,00 de verba de gabinete para alguns suplentes que têm equipe listada (ex.: Hildo Rocha
+       em 2025–2026): o zero é o publicado, mas o total do mês fica sem o custo da equipe e precisa dizer isso. */
     rows = PROFILE_COST_PARTS.map((entry, index) => profileCostPartRow(entry, values[index], scale,
       { source: profileCostSafeSource(sources[entry[0]]), personId: cost.id, gap: gaps.has(entry[0]),
-        detail: entry[0] === 'remuneration' ? profileCostSalaryNote(values[index], period) : '' })).join('');
+        detail: entry[0] === 'remuneration' ? profileCostSalaryNote(values[index], period)
+          : entry[0] === 'office' && values[index] === 0 ? 'a Câmara publica R$ 0,00 neste mês; o total pode estar sem o custo da equipe do gabinete' : '' })).join('');
     principal = `<div class="profile-cost-total"><span>Custou</span><b class="mono">${esc(profileCostShort(totalCents))}</b><span>em ${esc(label)}</span></div>
       <p class="citizen-cost-exact">Valor exato: <span class="mono">${esc(profileCostMoney(totalCents))}</span>, a soma das quatro partes abaixo</p>
       ${profileCostStackedComposition(values, totalCents, PROFILE_COST_PARTS.map(([, partLabel]) => partLabel))}

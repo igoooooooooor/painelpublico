@@ -86,6 +86,12 @@ test('the rows are the parts of that same month and add up to the total', () => 
   const cents = text => Number(text.replace(/[^\d]/g, ''));
   assert.equal(['remuneration', 'office', 'quota', 'allowances'].reduce((sum, key) => sum + cents(row(key)), 0), 24030419);
   assert.match(html, /Ver as notas de jul\/2026/);
+  assert.doesNotMatch(html, /o total pode estar sem o custo da equipe/);
+  // Verba de gabinete publicada como R$ 0,00: o zero fica, com o aviso de que o total pode estar sem a equipe.
+  const zeroOffice = latestFixture();
+  zeroOffice.months['2026-07'].valuesCents.office = 0;
+  const zeroHtml = profileCostAnswer(zeroOffice);
+  assert.match(zeroHtml, /data-cost-part="office">[\s\S]*?R\$\s?0,00<\/b>[\s\S]*?a Câmara publica R\$ 0,00 neste mês; o total pode estar sem o custo da equipe do gabinete/);
 });
 
 test('a confirmed gap cannot be presented as a complete monthly cost', () => {
@@ -284,6 +290,15 @@ test('quota source of a mandate month opens the month notes instead of the annua
     notas: [{ data: null, fornecedor: 'CELULAR FUNCIONAL', categoria: 'Telefone', valor: 114.08, documentUrl: null }] }, 'camara:1');
   assert.match(withoutDocument, /Documento não publicado pela Câmara/);
   assert.doesNotMatch(withoutDocument, /Sem link/);
+  // Passagens SIGEPA vêm da página de bilhetes: o link diz isso e a conferência manda somá-las à parte.
+  const sigepaUrl = 'https://www.camara.leg.br/cota-parlamentar/analitico?nuDeputadoId=3292&dataInicio=6/2026&dataFim=6/2026&despesa=998';
+  const withTickets = profileCostNotesHTML({ periodo: '2026-06', total: 1500, complemento: null,
+    passagensDaPagina: { notas: 2, valor: 500, url: sigepaUrl },
+    notas: [{ data: '2026-06-02', fornecedor: 'X', categoria: 'Escritório', valor: 1000, documentUrl: null },
+      { data: '2026-06-03', fornecedor: 'LATAM Airlines Brasil', categoria: 'Passagens aéreas', valor: 500, documentUrl: sigepaUrl, listaDaCamara: true }] }, 'camara:1');
+  assert.match(withTickets, /LATAM Airlines Brasil[\s\S]*?>Bilhetes do mês na Câmara ↗/);
+  assert.match(withTickets, /Depois, some R\$\s?500,00 das 2 linhas de passagem aérea emitida pela agência da Câmara \(SIGEPA\), que o arquivo anual deixou de trazer em ago\/2025/);
+  assert.doesNotMatch(withTickets, /Todas as notas vêm do arquivo oficial/);
 });
 
 function profileCostNotesToggleSafe(context, id, period) {

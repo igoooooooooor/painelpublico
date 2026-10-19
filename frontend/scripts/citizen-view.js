@@ -209,13 +209,13 @@ function alertVisualization(a) {
 }
 const alertIsChamber = a => String(a?.pessoa?.id || '').startsWith('camara:');
 /* Na Câmara, as notas de cada mês marcado abrem aqui mesmo (a mesma lista do cartão de custo): é a fonte
-   do valor. A página do(a) deputado(a) na Câmara inclui passagens aéreas que ficam fora do arquivo aberto. */
+   do valor. A página do(a) deputado(a) na Câmara é atualizada todo dia e pode já ter notas mais novas. */
 function alertMonthNotes(a, months) {
   if (!alertIsChamber(a) || typeof profileCostNotesToggle !== 'function') return '';
   return months.slice(0, 6).map(m => profileCostNotesToggle(a.pessoa.id, `${m.ano}-${String(m.mes).padStart(2, '0')}`,
     `Ver as notas de ${SHORT_MONTHS[m.mes]}/${m.ano}`)).join('');
 }
-const CHAMBER_PAGE_NOTE = 'O gráfico de gastos da página na Câmara inclui passagens aéreas que não estão no arquivo aberto das notas; os valores de lá podem ser maiores que os daqui.';
+const CHAMBER_PAGE_NOTE = 'A página na Câmara é atualizada todo dia: o gráfico de gastos de lá pode já ter notas que chegaram depois da fotografia desta base.';
 /* No pico com gráfico, as barras já dizem valor, referência e diferença: a frase só repetiria. */
 function alertStatement(a) {
   return a.tipo === 'pico' && alertVisualization(a) ? '' : `<p class="citizen-statement">${esc(a.frase)}</p>`;
@@ -349,7 +349,7 @@ function alertsView() {
     <section class="card citizen-how" id="alerts-how"><span class="k">Como funciona</span>
       <p><b>Mês acima da referência:</b> o gasto do mês passou de 1,75 vez a mediana dos 12 meses anteriores da própria pessoa. A avaliação começa em fevereiro de 2024, quando há 12 meses de mandato para comparar.</p>
       <p><b>Concentração em fornecedor:</b> metade ou mais do dinheiro do ano foi para a mesma empresa, ano a ano desde 2023.</p>
-      <p class="muted">Pode ter explicação, como um evento no estado ou um contrato fixo. Os dados vêm das notas que a Câmara e o Senado publicam. Na Câmara, o arquivo aberto das notas não traz todas as passagens aéreas: o gráfico da página do(a) deputado(a) inclui passagens que ficam fora dele.</p>
+      <p class="muted">Pode ter explicação, como um evento no estado ou um contrato fixo. Os dados vêm das notas que a Câmara e o Senado publicam. Na Câmara, as passagens aéreas emitidas pela agência da Câmara (SIGEPA) entram pela página de bilhetes da cota, porque o arquivo aberto das notas deixou de trazê-las em ago/2025.</p>
     </section>
   </div>`;
 }
@@ -630,17 +630,27 @@ function profileQuotaPanel(profileRecord, shared, hasExpenseData) {
   const categories = Array.isArray(profileRecord.categorias) ? profileRecord.categorias.slice(0, 6) : [];
   const suppliers = Array.isArray(profileRecord.fornecedores) ? profileRecord.fornecedores.slice(0, 3) : [];
   const total = Number.isFinite(profileRecord.total) ? profileRecord.total : null;
+  /* Com estornos, o total líquido é menor que a soma das categorias positivas e as fatias passariam de 100%:
+     como na imagem de compartilhar, as categorias usam a soma dos saldos positivos e os fornecedores ficam sem fatia. */
+  const allCategories = Array.isArray(profileRecord.categorias) ? profileRecord.categorias : [];
+  const allSuppliers = Array.isArray(profileRecord.fornecedores) ? profileRecord.fornecedores : [];
+  const hasCredits = allCategories.some(item => Number.isFinite(item.valor) && item.valor < 0);
+  // Estorno sem o bilhete no período deixa um fornecedor negativo mesmo com as categorias positivas.
+  const supplierCredits = hasCredits || allSuppliers.some(item => Number.isFinite(item.valor) && item.valor < 0);
+  const positiveTotal = allCategories.reduce((sum, item) => sum + (Number.isFinite(item.valor) && item.valor > 0 ? item.valor : 0), 0);
+  const shareBase = hasCredits ? positiveTotal : total;
+  const shareLabel = hasCredits ? 'dos saldos positivos' : 'do total';
   const categoryScale = Math.max(0, ...categories.map(item => Number.isFinite(item.valor) ? item.valor : 0));
   const categoryRows = categories.length ? categories.map(item => {
     const value = Number.isFinite(item.valor) ? item.valor : null;
     const width = value !== null && categoryScale > 0 && value > 0 ? Math.min(100, value / categoryScale * 100) : 0;
-    const share = value !== null && total > 0 ? `${Math.round(value / total * 100)}% do total` : '';
+    const share = value !== null && value > 0 && shareBase > 0 ? `${Math.round(value / shareBase * 100)}% ${shareLabel}` : value !== null && value < 0 ? 'estornos maiores que as notas' : '';
     return `<div class="profile-quota-row"><div><span>${esc(item.nome)}</span><b class="mono">${value === null ? 'Sem dado' : esc(profileQuotaAmount(value))}</b></div>
       ${value !== null && categoryScale > 0 ? `<span class="profile-quota-bar" aria-hidden="true"><i style="width:${width.toFixed(1)}%"></i></span>` : ''}<small>${share}</small></div>`;
   }).join('') : '<p class="muted">Categorias não disponíveis neste recorte.</p>';
   const supplierRows = suppliers.length ? suppliers.map(item => {
     const value = Number.isFinite(item.valor) ? item.valor : null;
-    const share = value !== null && total > 0 ? `${Math.round(value / total * 100)}% do total` : '';
+    const share = !supplierCredits && value !== null && total > 0 ? `${Math.round(value / total * 100)}% do total` : '';
     return `<div class="profile-quota-row profile-supplier-row"><div><span>${esc(citizenName(item.name || 'Fornecedor não informado'))}</span><b class="mono">${value === null ? 'Sem dado' : esc(profileQuotaAmount(value))}</b></div>
       <small>${[share, Number.isInteger(item.notas) ? `${item.notas} ${item.notas === 1 ? 'nota' : 'notas'}` : 'contagem de notas não informada'].filter(Boolean).join(' · ')}</small></div>`;
   }).join('') : '<p class="muted">Fornecedores não disponíveis neste recorte.</p>';
@@ -650,8 +660,8 @@ function profileQuotaPanel(profileRecord, shared, hasExpenseData) {
   return `<article class="card profile-quota-panel">
     <div class="profile-quota-head"><span class="k">Onde gastou a cota</span><b class="mono">${total === null ? 'Total não informado' : `${esc(formatCitizenAmount(total))} no mandato`}</b></div>
     <p class="muted">${count === null ? 'Quantidade de notas não informada.' : `${count.toLocaleString('pt-BR')} ${count === 1 ? 'nota observada' : 'notas observadas'}`}${period ? ` · ${esc(period)}` : ''}</p>
-    <div class="profile-quota-group"><h3 class="k">Categorias · até 6</h3>${categoryRows}</div>
-    <div class="profile-quota-group"><h3 class="k">Maiores fornecedores · até 3</h3>${supplierRows}</div>
+    <div class="profile-quota-group"><h3 class="k">Categorias · até 6</h3>${categoryRows}${hasCredits ? '<p class="muted">Há estornos no período: as porcentagens usam a soma das categorias com saldo positivo, e o total líquido acima já desconta os estornos.</p>' : ''}</div>
+    <div class="profile-quota-group"><h3 class="k">Maiores fornecedores · até 3</h3>${supplierRows}${supplierCredits && !hasCredits ? '<p class="muted">Há estornos de fornecedor no período; sem porcentagem, para as fatias não passarem de 100%.</p>' : ''}</div>
     <div class="profile-card-links"><a class="more" href="${esc(csv)}" download>${count === null ? 'Baixar notas da cota (CSV)' : `Baixar todas as ${count.toLocaleString('pt-BR')} notas (CSV)`} →</a><button type="button" class="more" data-profile-open="expenses">Ver meses e notas →</button></div>
   </article>`;
 }
@@ -1030,7 +1040,7 @@ function profileView() {
   const personNumber = String(person.id).split(':')[1];
   const presenceLinks = isChamberPerson ? chamberPresenceSourceLinks(personNumber, shared.presence, 'Fonte da presença no Plenário') : '';
   const sourcesHtml = `<p>Cota é reembolso de gastos com o trabalho: escritório, divulgação, carro e viagens.</p>
-    <p class="src">Fonte: notas da cota publicadas ${isChamberPerson ? 'pela Câmara (o arquivo aberto não traz todas as passagens aéreas: o gráfico da página do(a) deputado(a) na Câmara inclui passagens que ficam fora dele)' : 'pelo Senado'}. Retrato de ${f.snapshotAt ? esc(dateBR(f.snapshotAt)) : 'data não informada'}.</p>
+    <p class="src">Fonte: notas da cota publicadas ${isChamberPerson ? 'pela Câmara (as passagens aéreas emitidas pela agência da Câmara, que o arquivo aberto deixou de trazer em ago/2025, vêm da página de bilhetes da cota)' : 'pelo Senado'}. Retrato de ${f.snapshotAt ? esc(dateBR(f.snapshotAt)) : 'data não informada'}.</p>
     ${isChamberPerson ? `<p class="muted">Presença em sessões deliberativas do mandato atual, desde fev/2023. Média da Câmara: média das proporções individuais entre registros válidos. O selo compara os percentuais arredondados. Os dias observados podem variar entre mandatos.</p>
     ${presenceLinks ? `<span class="src">${presenceLinks}</span>` : ''}
     <p class="muted">Os votos cobrem apenas as votações selecionadas no Placar: texto principal de PL, PLP e PEC desde fev/2023. Cada votação abre seu resumo e fontes oficiais.</p>` : ''}

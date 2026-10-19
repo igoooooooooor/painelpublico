@@ -61,7 +61,7 @@ function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'
     state,
   };
   vm.createContext(context);
-  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + senateCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { profileTenureLabel, senateCostAnswer, senateCostDetails, senateCostMonths, citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileAttendanceCard, profileVoteCountHTML, profileView, profileQuotaDifferenceNote, profileMandateStartNote, profileExpenseDetails, profileShareCard, alertCard, skel };', context);
+  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + senateCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { profileTenureLabel, senateCostAnswer, senateCostDetails, senateCostMonths, citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileAttendanceCard, profileVoteCountHTML, profileView, profileQuotaDifferenceNote, profileMandateStartNote, profileExpenseDetails, profileQuotaPanel, profileShareCard, alertCard, skel };', context);
   context.votesForPerson = id => context.profileVotes(id).filter(record => record?.vote);
   context.attendanceBar = presence => presence
     ? `<span class="pbar" data-presence-days="${presence.dias}"></span>` : '';
@@ -719,6 +719,19 @@ test('quota category shares use positive amounts while keeping refunds visible i
   assert.match(supplierDetails, /Gol[\s\S]*?R\$ -4 mil[\s\S]*?4 notas/);
   assert.doesNotMatch(supplierDetails, /% do total/);
   assert.match(api.profileExpenseDetails({ ...profile, fornecedores: [] }, true), /Nenhum fornecedor identificado nas notas publicadas/);
+  // O resumo "Onde gastou a cota" da ficha usa a mesma base: 58% + 42%, não 60% + 44% sobre o total líquido.
+  const panel = api.profileQuotaPanel(profile, { id: profile.pessoa.id }, true);
+  assert.match(panel, /Divulgação[\s\S]*?58% dos saldos positivos/);
+  assert.match(panel, /Locação de veículos[\s\S]*?42% dos saldos positivos/);
+  assert.match(panel, /Passagem aérea[\s\S]*?estornos maiores que as notas/);
+  assert.doesNotMatch(panel, /60% do total|44% do total|-5% do total/);
+  assert.doesNotMatch(panel.split('Maiores fornecedores')[1], /% do total/);
+  const positive = { ...profile, total: 90101.14, categorias: profile.categorias.filter(item => item.valor > 0) };
+  assert.match(api.profileQuotaPanel({ ...positive, fornecedores: [profile.fornecedores[0]] }, { id: 'x' }, true), /58% do total/);
+  // Categorias positivas, mas um fornecedor com estorno: sem fatia por fornecedor.
+  const supplierCredit = api.profileQuotaPanel(positive, { id: 'x' }, true);
+  assert.doesNotMatch(supplierCredit.split('Maiores fornecedores')[1], /% do total/);
+  assert.match(supplierCredit, /Há estornos de fornecedor no período/);
   const emptySuppliers = api.profileExpenseDetails({ ...profile, categorias: undefined, fornecedores: [
     { name: 'Fornecedor zerado', valor: 0, notas: 0 }, { name: 'Fornecedor sem valor', notas: 2 },
   ] }, true);
@@ -876,6 +889,9 @@ test('senate cost card shows the latest complete month, with the average of comp
   assert.doesNotMatch(html, /<small>\/mês|reajustes do subsídio/);
   assert.match(api.senateCostDetails(senateFixture(), senateQuota), /Não compare com o custo de deputados\(as\)/);
   assert.doesNotMatch(html, /Custa em média|custo do mandato/);
+  // A cota do mês abre o portal de transparência no ano do mês, não a lista de senadores.
+  assert.match(html, /data-cost-part="quota">[\s\S]*?href="https:\/\/www6g\.senado\.leg\.br\/transparencia\/sen\/1\/ceaps\/\?ano=2026"[^>]*>Cota de 2026 no portal do Senado ↗/);
+  assert.doesNotMatch(html, /senador\/lista\/atual/);
 });
 
 test('senate cost card skips months whose quota may still receive notes, in the month and in the average', () => {
@@ -1029,7 +1045,7 @@ test('visible profile alerts are chronological and keep their source and explana
   assert.match(html, /href="https:\/\/www.camara.leg.br\/deputados\/55\?ano=2026"/);
   assert.match(html, /Página na Câmara ↗/);
   assert.doesNotMatch(html, /Conferir na fonte/);
-  assert.match(html, /inclui passagens aéreas que não estão no arquivo aberto/);
+  assert.match(html, /pode já ter notas que chegaram depois da fotografia desta base/);
   assert.match(html, /Por que apareceu aqui/);
   assert.match(html, /não indicam irregularidade/);
 });
@@ -1075,7 +1091,7 @@ test('chamber alerts open the month notes here and name the official page as the
   assert.match(html, /<details class="citizen-cost-notes" data-cost-notes="2026-06" data-cost-person="camara:1">\s*<summary>Ver as notas de jun\/2026<\/summary>/);
   assert.match(html, /class="citizen-peak-notes" href="https:\/\/www.camara.leg.br\/deputados\/1\?ano=2026"[^>]*>Página do\(a\) deputado\(a\) na Câmara ↗/);
   assert.match(html, /Página na Câmara ↗/);
-  assert.match(html, /citizen-alert-source-note">O gráfico de gastos da página na Câmara inclui passagens aéreas que não estão no arquivo aberto das notas/);
+  assert.match(html, /citizen-alert-source-note">A página na Câmara é atualizada todo dia/);
   assert.doesNotMatch(html, /Ver as notas na fonte oficial|Conferir na fonte/);
   // Senado: a página do(a) senador(a) continua como fonte, sem a lista de notas da Câmara nem a ressalva.
   const senate = api.alertCard({ ...alert, pessoa: { id: 'senado:5', name: 'Senadora', role: 'senador' } });

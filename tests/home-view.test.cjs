@@ -67,6 +67,10 @@ test('home categories list every category with refunds kept and the ranking uses
   // A lista completa abre na mesma conta do card, não na de custo total.
   assert.match(ranking, /data-home-quota-list/);
   assert.doesNotMatch(ranking, /data-go="politicians"/);
+  // O ranking é a média dos meses assentados: o período termina no último deles, não no da nota mais nova.
+  assert.match(ranking, /jan\/2026 a out\/2026/);
+  data.reembolsos.deputado.mediaPeriodo = { inicio: '2026-01', fim: '2026-07' };
+  assert.match(ctx.homeTopCard(data), /jan\/2026 a jul\/2026/);
 });
 
 test('failed home summary stays explicit and can retry without any sample fallback', async () => {

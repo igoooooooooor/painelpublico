@@ -374,8 +374,19 @@ function citySpendAnswer(data, isDf, isFernando) {
     <div class="huge"><small>R$</small>${cityNumber(Number(total.perCapitaCents) / 100)}</div>
     <p class="city-answer-note">Tudo o que a prefeitura gastou${residents ? `, dividido pelos ${cityNumber(residents)} moradores${residentsYear ? ` (estimativa do IBGE para ${residentsYear})` : ''}` : ' por morador'}.</p>
     ${bars ? `<div class="city-bars">${bars}</div>` : ''}
-    ${verdict ? `<div class="city-verdict"><span class="fchip citizen-verdict">${esc(verdict)}</span><small class="muted">Comparado com ${esc(cityBandText(accounts.comparison?.band))}. A marca na barra é o típico.</small></div>` : ''}
+    ${verdict ? `<div class="city-verdict"><span class="fchip citizen-verdict">Gasto total: ${esc(verdict.charAt(0).toLowerCase() + verdict.slice(1))}</span><small class="muted">O típico do gasto total é ${esc(cityPerResident(typicalTotal))} por morador, entre ${esc(cityBandText(accounts.comparison?.band))}. Nas barras de saúde e educação, a marca é o típico de cada área.</small></div>` : ''}
   </section>`;
+}
+
+/* Só uma parte do dinheiro das emendas informa a cidade de destino; sem isso, o número parece tudo o que chegou. */
+function cityAmendmentsCoverageNote(amendments, year) {
+  const national = Number(amendments.coverage?.nationalTotals?.committedCents);
+  const local = Number(amendments.coverage?.municipalCommittedCents);
+  const base = 'Só entram emendas que informam esta cidade como destino; muitas vão para o estado ou para órgãos federais sem dizer a cidade, então pode ter chegado mais.';
+  if (!(national > 0) || !Number.isFinite(local) || local < 0 || local > national) return base;
+  const share = local / national * 100;
+  const shareText = share < 1 ? 'menos de 1%' : `${cityNumber(Math.round(share))}%`;
+  return `Só ${shareText} do valor reservado em emendas${year ? ` de ${year}` : ''} informa a cidade de destino. ${base.replace('Só entram emendas que informam esta cidade como destino; muitas', 'As demais')}`;
 }
 
 function cityAmendmentsAnswer(data, cityName) {
@@ -403,6 +414,7 @@ function cityAmendmentsAnswer(data, cityName) {
       : `<b>${esc(cityCompactMoney(paid, true))}</b> já ${paid >= 200 ? 'foram pagos' : 'foi pago'} (${shareText}%).${restosText}`;
   return `${open}<div class="huge">${cityHugeMoney(committed)}</div>
     <p class="city-answer-note">reservados para a cidade em ${records} ${records === 1 ? 'emenda' : 'emendas'}.</p>
+    <p class="city-answer-note">${esc(cityAmendmentsCoverageNote(amendments, year))}</p>
     ${share !== null ? `<div class="city-progress" role="img" aria-label="${cityNumber(share)}% pago"><i style="width:${share.toFixed(1)}%"></i></div>` : ''}
     <p class="city-answer-note">${paidText}</p>
     ${authors.length ? `<ol class="city-top-authors">${authors.slice(0, 3).map(author => `<li><span>${esc(cityTitleCase(author.name) || 'Autoria não identificada')}</span><b class="mono">${esc(cityCompactMoney(author.committedCents))}</b>${cityProfileButton(author.profileId, 'Ficha')}</li>`).join('')}</ol>` : ''}

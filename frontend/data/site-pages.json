@@ -212,7 +212,7 @@
           {
             "question": "De onde vêm as notas?",
             "answer": [
-              "Dos dados abertos da Câmara e do portal de transparência do Senado. Na Câmara, o arquivo aberto das notas traz as passagens aéreas lançadas como nota (reembolso e requisição), mas não todas as que aparecem no gráfico de gastos da página do(a) deputado(a) na Câmara; essas ficam fora da conta, e por isso o valor de lá pode ser maior. No Senado, a análise usa os registros publicados; a imagem do documento não está disponível nesta base."
+              "Dos dados abertos da Câmara e do portal de transparência do Senado. Na Câmara, o arquivo aberto das notas deixou de trazer, em ago/2025, as passagens aéreas emitidas pela agência da Câmara (SIGEPA); desde então, elas vêm da página de bilhetes da cota de cada deputado(a), que lista companhia, data, número e valor de cada bilhete e estorno. Assim a cota daqui soma o mesmo que o gráfico de gastos da página do(a) deputado(a) na Câmara, que pode ter valores maiores só por notas que chegaram depois da fotografia desta base. No Senado, a análise usa os registros publicados; a imagem do documento não está disponível nesta base."
             ]
           }
         ]

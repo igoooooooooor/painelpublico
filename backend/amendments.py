@@ -65,10 +65,20 @@ def author_links(data, roster):
     return {key: value for key, value in candidates.items() if len(reverse[value]) == 1}
 
 
+def _coverage(data):
+    """Cobertura do ano com o valor reservado que indica alguma cidade (o resto não diz o destino municipal)."""
+    coverage = deepcopy(data.get('coverage') or {})
+    cities = data.get('municipalities')
+    if isinstance(cities, dict) and 'municipalCommittedCents' not in coverage:
+        values = [(city.get('totals') or {}).get('committedCents') for city in cities.values()]
+        coverage['municipalCommittedCents'] = sum(v for v in values if isinstance(v, int) and not isinstance(v, bool))
+    return coverage
+
+
 def detail(identifier, db_path, snapshot_path):
     data = _load(snapshot_path) or {}
     source = deepcopy(data.get('source') or {'label': 'Portal da Transparência', 'url': SOURCE_URL})
-    base = {'year': data.get('year'), 'source': source, 'coverage': data.get('coverage', {}),
+    base = {'year': data.get('year'), 'source': source, 'coverage': _coverage(data),
             'totals': {'committedCents': None, 'paidCents': None, 'restosPaidCents': None},
             'recordCount': 0, 'authors': [], 'records': [],
             'specialTransfers': {'identified': False, 'recordCount': 0,

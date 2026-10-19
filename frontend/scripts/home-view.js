@@ -73,7 +73,7 @@ function homeTopCard(data) {
   return `<section class="card home-panel">
     <div class="home-panel-head"><h2 class="h">Quem mais usa a cota</h2><span class="muted">Média mensal nos meses com notas já assentadas</span></div>
     ${top.length ? `<ol class="home-ranking">${top.map((p, i) => `<li>${profileLinkOpen(p.id, '')}<span class="home-rank">${i + 1}</span><span class="home-rank-name"><b>${esc(p.nome)}</b><small>${esc(p.partido || '')} · ${esc(p.uf || '')}</small></span><span class="home-rank-value">R$ ${mil(p.gastoMensal)} mil</span><i style="width:${(Math.max(0, p.gastoMensal) / max * 100).toFixed(2)}%"></i>${profileLinkClose(p.id)}</li>`).join('')}</ol>` : '<p>Sem reembolsos importados para ordenar.</p>'}
-    <span class="muted">Os cinco maiores valores entre ${ranking.length} deputados(as) com dados. ${esc(homePeriod(data.reembolsos.deputado.periodo))}. Valores altos não indicam irregularidade.</span>
+    <span class="muted">Os cinco maiores valores entre ${ranking.length} deputados(as) com dados. ${esc(homePeriod(data.reembolsos.deputado.mediaPeriodo || data.reembolsos.deputado.periodo))}. Valores altos não indicam irregularidade.</span>
     <button type="button" class="more" data-home-quota-list>Ver a lista completa →</button>
   </section>`;
 }

@@ -141,9 +141,23 @@ def _context(db, person, authority, source, year, cache, total=None):
     else:
         comparison = (f'{round(abs(difference) * 100)}% {"mais" if difference > 0 else "menos"} que a média mensal '
                       f'dos(as) {group_label} em {year} ({store_money(average)})')
+    count = f'{"no" if months == 1 else "nos"} {months} {"mês" if months == 1 else "meses"} com notas assentadas'
+    if set(settled) == set(series):
+        sentence = f'Em {year}, gastou {store_money(total)} na cota, {store_money(monthly)} por mês em média {count}, {comparison}.'
+    else:
+        # O total soma meses que ainda recebem notas; a média, não. Os dois períodos aparecem para a conta fechar.
+        sentence = (f'Em {year}, gastou {store_money(total)} na cota ({_month_span(series, year)}). '
+                    f'{count[0].upper()}{count[1:]} ({_month_span(settled, year)}), a média foi de {store_money(monthly)} '
+                    f'por mês, {comparison}.')
     return {'total': total, 'mediaMensal': monthly, 'meses': months, 'media': average, 'diferenca': difference,
-            'frase': f'Em {year}, gastou {store_money(total)} na cota, {store_money(monthly)} por mês em média '
-                     f'{"no" if months == 1 else "nos"} {months} {"mês" if months == 1 else "meses"} com notas assentadas, {comparison}.'}
+            'frase': sentence}
+
+
+def _month_span(series, year):
+    """'jan–out/2026' do primeiro ao último mês da série."""
+    short = [m[:3] for m in MONTHS]
+    first, last = min(series), max(series)
+    return f'{short[first]}/{year}' if first == last else f'{short[first]}–{short[last]}/{year}'
 
 
 def _settled_series(series, year, cutoff):
@@ -487,7 +501,7 @@ def summary(db):
     """
     aggregates = rows(db, f'''SELECT a.role,COUNT(*) total,COUNT(t.authorityId) comReembolsos,
             SUM(t.amountCents) cents,AVG({MONTHLY}) mediaCents,
-            MIN(t.periodStart) inicio,MAX(t.periodEnd) fim
+            MIN(t.periodStart) inicio,MAX(t.periodEnd) fim,MAX(t.settledPeriodEnd) mediaFim
         FROM authorities a LEFT JOIN authority_totals t
             ON t.authorityId=a.id AND t.kind='reembolso'
         WHERE (a.role=? AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?)) OR (a.role=? AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?))
@@ -495,7 +509,7 @@ def summary(db):
         ('deputado', CURRENT['deputado'], 'senador', CURRENT['senador']))
     by_role = {role: {
         'total': 0, 'comReembolsos': 0, 'cents': None, 'mediaCents': None,
-        'inicio': None, 'fim': None,
+        'inicio': None, 'fim': None, 'mediaFim': None,
     } for role in ROLES}
     for row in aggregates:
         by_role[row['role']] = row
@@ -509,6 +523,8 @@ def summary(db):
             'media': row['mediaCents'] / 100 if with_records else None,
             'comRegistros': with_records,
             'periodo': {'inicio': row['inicio'], 'fim': row['fim']},
+            # A média mensal (e o ranking da cota) só usa meses com notas assentadas: termina antes do total.
+            'mediaPeriodo': {'inicio': row['inicio'], 'fim': row['mediaFim'] or row['fim']},
         }
 
     category_rows = rows(db, f'SELECT x.category,SUM(x.amountCents) cents FROM {ROSTER_QUOTA} x GROUP BY x.category',
@@ -669,6 +685,9 @@ def politician(db, identifier):
                                    'meses': sorted(set(complement[2].split(',')))} if complement[1] else None}
 
 
+SIGEPA_PAGE_PATH = 'camara.leg.br/cota-parlamentar/analitico?'
+
+
 def month_notes(db, identifier, period):
     """Notas da cota de um mês, para conferir o valor da ficha (ano corrente e anos anteriores do mandato).
 
@@ -698,8 +717,13 @@ def month_notes(db, identifier, period):
         return {'data': note['data'], 'categoria': category_name(note['category']), 'valor': note['amountCents'] / 100,
                 'fornecedor': (note['fornecedor'] or '').strip() or None, 'cnpj': note['cnpj'],
                 'documentUrl': store.safe_url(note['documentUrl'])}
+    # Desde ago/2025 o arquivo anual não traz as passagens emitidas pela agência da Câmara (SIGEPA); elas vêm
+    # da página analítica da cota, e a conferência no arquivo precisa somá-las à parte.
+    from_page = [n for n in reimbursements if SIGEPA_PAGE_PATH in str(n['documentUrl'] or '')]
     return {'pessoa': {'id': person[0], 'name': person[1]}, 'periodo': f'{year:04d}-{month:02d}',
-            'notas': [public(n) for n in reimbursements],
+            'notas': [{**public(n), 'listaDaCamara': SIGEPA_PAGE_PATH in str(n['documentUrl'] or '')} for n in reimbursements],
+            'passagensDaPagina': {'notas': len(from_page), 'valor': sum(n['amountCents'] for n in from_page) / 100,
+                                  'url': store.safe_url(from_page[0]['documentUrl'])} if from_page else None,
             'total': sum(n['amountCents'] for n in reimbursements) / 100,
             'complemento': {'valor': sum(n['amountCents'] for n in complement) / 100, 'notas': len(complement)} if complement else None,
             'fonte': {'label': first['fonte'], 'url': store.safe_url(first['fonteUrl']), 'coletadoEm': first['coletadoEm']}}
