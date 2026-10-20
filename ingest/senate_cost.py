@@ -44,7 +44,8 @@ EXERCISE_URL = 'https://legis.senado.leg.br/dadosabertos/senador/{code}/mandatos
 # Senador: Consulte" da página do ano. O código interno (fcodigo) não é o código parlamentar, por isso é lido de lá.
 SUBSIDY_DIR = ROOT / 'data' / 'raw' / 'senado-subsidio'
 SUBSIDY_PAGE = 'https://www6g.senado.leg.br/transparencia/sen/{code}/?ano={year}'
-SUBSIDY_LINK = re.compile(r'https://www\.senado\.leg\.br/transparencia/rh/servidores/detalhe\.asp\?fcodigo=(\d+)&(?:amp;)?fvinculo=1')
+# O vínculo varia (1 na maioria; 3 para quem também tem outro vínculo com o Senado, ex.: Esperidião Amin).
+SUBSIDY_LINK = re.compile(r'https://www\.senado\.leg\.br/transparencia/rh/servidores/detalhe\.asp\?fcodigo=(\d+)&(?:amp;)?fvinculo=(\d+)')
 
 
 def _as_list(value):
@@ -96,7 +97,8 @@ def load_exercises(code: str, collect: bool) -> tuple[list | None, str | None]:
 def subsidy_url(content: str) -> str | None:
     """Link da página de remuneração do(a) senador(a), lido da página do ano no portal; sem link, None."""
     match = SUBSIDY_LINK.search(content or '')
-    return f'https://www.senado.leg.br/transparencia/rh/servidores/detalhe.asp?fcodigo={match.group(1)}&fvinculo=1' if match else None
+    return (f'https://www.senado.leg.br/transparencia/rh/servidores/detalhe.asp?fcodigo={match.group(1)}&fvinculo={match.group(2)}'
+            if match else None)
 
 
 def load_subsidy_url(code: str, year: int, collect: bool) -> str | None:

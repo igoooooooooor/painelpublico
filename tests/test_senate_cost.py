@@ -86,6 +86,9 @@ class SubsidyLinkTests(unittest.TestCase):
         self.assertEqual(senate_cost.subsidy_url(page),
                          'https://www.senado.leg.br/transparencia/rh/servidores/detalhe.asp?fcodigo=3868907&fvinculo=1')
         self.assertIsNone(senate_cost.subsidy_url('<a href="/outra">Consulte</a>'))
+        other = '<a href="https://www.senado.leg.br/transparencia/rh/servidores/detalhe.asp?fcodigo=2422700&amp;fvinculo=3">Consulte</a>'
+        self.assertEqual(senate_cost.subsidy_url(other),
+                         'https://www.senado.leg.br/transparencia/rh/servidores/detalhe.asp?fcodigo=2422700&fvinculo=3')
 
 if __name__ == '__main__':
     unittest.main()
