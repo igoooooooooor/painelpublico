@@ -31,11 +31,15 @@ const senateStaffPortalUrl = (identifier, period) => {
   const url = senatePortalUrl(identifier, period, 'pessoal/');
   return url ? `${url}&local=gabinete&vinculo=COMISSIONADO` : null;
 };
-const senatePartSource = (key, identifier, period) => {
-  const year = String(period || '').slice(0, 4);
+/* Remuneração: a página de remuneração da própria pessoa (o Senado pede para escolher o mês e um captcha, então não
+   há link direto para o valor); sem ela, a página do ano, onde fica "Subsídios do Senador". */
+const senatePartSource = (key, cost, period) => {
+  const identifier = cost?.id, year = String(period || '').slice(0, 4);
+  const month = /^\d{4}-\d{2}$/.test(period || '') ? `${period.slice(5)}/${period.slice(0, 4)}` : '';
   if (key === 'quota') return [senateQuotaPortalUrl(identifier, period), `Cota de ${year} no portal do Senado`];
-  if (key === 'office') return [senateStaffPortalUrl(identifier, period), `Equipe do gabinete em ${year} no portal do Senado`];
-  return [senatePortalUrl(identifier, period), `Subsídio no portal do Senado (${year})`];
+  if (key === 'office') return [senateStaffPortalUrl(identifier, period), `Lista da equipe do gabinete em ${year} no Senado`];
+  const own = typeof profileSafeUrl === 'function' ? profileSafeUrl(cost?.subsidyUrl) : null;
+  return own ? [own, `Remuneração no Senado${month ? ` (escolha ${month})` : ''}`] : [senatePortalUrl(identifier, period), `Subsídio no portal do Senado (${year})`];
 };
 const senateCostReason = key => SENATE_COST_REASONS[key] || 'Não identificado nesta fonte';
 
@@ -108,13 +112,13 @@ function senateCostAnswer(cost, profileRecord) {
     .sort((first, second) => String(first.competence).localeCompare(String(second.competence)));
   const latestPayroll = sourceRows.at(-1);
   let principal, rows = '';
-  const row = ([key, label, detail], value, scale, note, sourceUrl = null, sourceLabel = '', perMonth = true) => {
+  const row = ([key, label, detail], value, scale, note, sourceUrl = null, sourceLabel = '', perMonth = true, extra = '') => {
     const money = profileCostMoney(value);
     const width = money !== null && scale > 0 && value > 0 ? Math.max(1, value / scale * 100).toFixed(1) : 0;
     return `<div class="citizen-cost-part" data-cost-part="${key}">
       <div class="citizen-cost-part-label"><span>${label}</span><b class="mono">${money === null ? 'Não identificado' : `${esc(money)}${perMonth ? '<small>/mês</small>' : ''}`}</b></div>
       ${money !== null ? `<span class="citizen-cost-bar" aria-hidden="true"><i style="width:${width}%"></i></span>` : ''}
-      <small>${esc(note || detail)}${sourceUrl ? ` · <a href="${esc(sourceUrl)}" target="_blank" rel="noopener">${esc(sourceLabel)} ↗</a>` : ''}</small>
+      <small>${esc(note || detail)}${extra ? ` · ${extra}` : sourceUrl ? ` · <a href="${esc(sourceUrl)}" target="_blank" rel="noopener">${esc(sourceLabel)} ↗</a>` : ''}</small>
     </div>`;
   };
   const latest = senateCostLatest(months, profileRecord?.snapshotAt);
@@ -126,8 +130,15 @@ function senateCostAnswer(cost, profileRecord) {
     const values = SENATE_COST_PARTS.map(([key]) => latest.month.parts[key]);
     const scale = Math.max(...values);
     const payroll = sourceRows.find(source => source.competence === latest.period);
-    rows = SENATE_COST_PARTS.map((part, index) => row(part, values[index], scale, '',
-      ...senatePartSource(part[0], cost?.id, latest.period), false)).join('');
+    /* Cota: a lista de notas do mês, com o total e o detalhe oficial de cada tipo (o portal não tem o total do mês).
+       Equipe: o Senado não publica esse total; o texto diz de onde vem a soma. */
+    const people = latest.month.officePeople;
+    const notes = {
+      office: `soma da remuneração bruta ${people ? `dos ${people} comissionados` : 'dos comissionados'} do gabinete na folha de ${profileCostLabel(latest.period)}; o Senado não publica esse total`,
+    };
+    rows = SENATE_COST_PARTS.map((part, index) => row(part, values[index], scale, notes[part[0]] || '',
+      ...senatePartSource(part[0], cost, latest.period), false,
+      part[0] === 'quota' && typeof profileCostNotesToggle === 'function' ? profileCostNotesToggle(cost?.id, latest.period, `Ver as notas de ${profileCostLabel(latest.period)}`) : '')).join('');
     principal = `<div class="profile-cost-total"><span>Somou</span><b class="mono">${esc(profileCostShort(latest.cents))}</b><span>em ${esc(profileCostLabel(latest.period))}</span></div>
       <p class="citizen-cost-exact">Valor exato: <span class="mono">${esc(profileCostMoney(latest.cents))}</span>, a soma das três partes abaixo</p>
       ${profileCostStackedComposition(values, latest.cents, SENATE_COST_PARTS.map(([, label]) => label))}
@@ -143,7 +154,7 @@ function senateCostAnswer(cost, profileRecord) {
     const lastQuotaPeriod = averages[SENATE_COST_PARTS.findIndex(([key]) => key === 'quota')].periods.at(-1) || cost?.periodEnd;
     rows = SENATE_COST_PARTS.map((part, index) => row(part, averages[index].value, scale,
       averages[index].periods.length ? `média de ${senateCostMonthList(averages[index].periods)} (${averages[index].periods.length} ${averages[index].periods.length === 1 ? 'mês' : 'meses'})` : '',
-      ...senatePartSource(part[0], cost?.id, part[0] === 'quota' ? lastQuotaPeriod : latestPayroll?.competence || cost?.periodEnd))).join('');
+      ...senatePartSource(part[0], cost, part[0] === 'quota' ? lastQuotaPeriod : latestPayroll?.competence || cost?.periodEnd))).join('');
     principal = `<p class="citizen-cost-unavailable">Sem total mensal no recorte (${esc(range)}).</p>
       <p class="citizen-cost-period">${ownOffice ? 'Em nenhum mês as três partes foram identificadas juntas.' : esc(senateCostReason('sem_lotacao_propria')) + ': remuneração e equipe não identificadas.'} Cada parte aparece com os próprios meses.</p>`;
   }

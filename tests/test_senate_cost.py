@@ -78,5 +78,14 @@ class ProfileTests(unittest.TestCase):
             self.assertIsNone(profile('camara:1', root / 'perfis.json'))
 
 
+
+class SubsidyLinkTests(unittest.TestCase):
+    def test_reads_the_remuneration_page_link_from_the_year_page_and_none_without_it(self):
+        page = ('<a href="https://www25.senado.leg.br/documents/16011/153370284/5672.pdf">Consulte</a>'
+                '<a href="https://www.senado.leg.br/transparencia/rh/servidores/detalhe.asp?fcodigo=3868907&amp;fvinculo=1">Consulte</a>')
+        self.assertEqual(senate_cost.subsidy_url(page),
+                         'https://www.senado.leg.br/transparencia/rh/servidores/detalhe.asp?fcodigo=3868907&fvinculo=1')
+        self.assertIsNone(senate_cost.subsidy_url('<a href="/outra">Consulte</a>'))
+
 if __name__ == '__main__':
     unittest.main()

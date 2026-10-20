@@ -299,6 +299,13 @@ test('quota source of a mandate month opens the month notes instead of the annua
   assert.match(withTickets, /LATAM Airlines Brasil[\s\S]*?>Bilhetes do mês na Câmara ↗/);
   assert.match(withTickets, /Depois, some R\$\s?500,00 das 2 linhas de passagem aérea emitida pela agência da Câmara \(SIGEPA\), que o arquivo anual deixou de trazer em ago\/2025/);
   assert.doesNotMatch(withTickets, /Todas as notas vêm do arquivo oficial/);
+  // Senado: a lista termina com o detalhe oficial de cada tipo no mês, sem as instruções do arquivo da Câmara.
+  const senate = profileCostNotesHTML({ periodo: '2026-07', total: 6990.42, complemento: null,
+    detalhesOficiais: [{ categoria: 'Consultoria', valor: 6990.42, notas: 4, url: 'https://www6g.senado.leg.br/transparencia/sen/5672/ceaps/4/detalhe/?mesAno=07/2026' }],
+    notas: [{ data: '2026-07-08', fornecedor: 'Aerotur Serviços', categoria: 'Consultoria', valor: 2894.39, documentUrl: null }] }, 'senado:5672');
+  assert.match(senate, /href="https:\/\/www6g\.senado\.leg\.br\/transparencia\/sen\/5672\/ceaps\/4\/detalhe\/\?mesAno=07\/2026"[^>]*>Consultoria em jul\/2026 ↗<\/a>: <b class="mono">R\$\s?6\.990,42/);
+  assert.doesNotMatch(senate, /ideCadastro|vlrLiquido|Documento não publicado pela Câmara/);
+  assert.match(profileCostNotesToggleSafe(load(), 'senado:5672', '2026-07'), /data-cost-notes="2026-07" data-cost-person="senado:5672"/);
 });
 
 function profileCostNotesToggleSafe(context, id, period) {

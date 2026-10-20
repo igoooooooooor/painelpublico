@@ -24,6 +24,7 @@ import argparse
 import calendar
 from datetime import date, datetime, timezone
 import json
+import re
 from pathlib import Path
 import sqlite3
 import sys
@@ -39,6 +40,11 @@ OUTPUT_PATH = ROOT / 'data' / 'snapshots' / 'senate-cost.json'
 EXERCISE_DIR = ROOT / 'data' / 'raw' / 'senado-exercicios'
 DB_PATH = ROOT / 'data' / 'na-lupa.sqlite3'
 EXERCISE_URL = 'https://legis.senado.leg.br/dadosabertos/senador/{code}/mandatos.json'
+# Página de remuneração da pessoa no portal (escolhe-se o mês e o Senado pede um captcha): o link "Subsídios do
+# Senador: Consulte" da página do ano. O código interno (fcodigo) não é o código parlamentar, por isso é lido de lá.
+SUBSIDY_DIR = ROOT / 'data' / 'raw' / 'senado-subsidio'
+SUBSIDY_PAGE = 'https://www6g.senado.leg.br/transparencia/sen/{code}/?ano={year}'
+SUBSIDY_LINK = re.compile(r'https://www\.senado\.leg\.br/transparencia/rh/servidores/detalhe\.asp\?fcodigo=(\d+)&(?:amp;)?fvinculo=1')
 
 
 def _as_list(value):
@@ -87,6 +93,30 @@ def load_exercises(code: str, collect: bool) -> tuple[list | None, str | None]:
         return None, stored.get('fetchedAt')
 
 
+def subsidy_url(content: str) -> str | None:
+    """Link da página de remuneração do(a) senador(a), lido da página do ano no portal; sem link, None."""
+    match = SUBSIDY_LINK.search(content or '')
+    return f'https://www.senado.leg.br/transparencia/rh/servidores/detalhe.asp?fcodigo={match.group(1)}&fvinculo=1' if match else None
+
+
+def load_subsidy_url(code: str, year: int, collect: bool) -> str | None:
+    """Do cache local; com ``collect``, lê a página do ano e atualiza o cache (falha preserva o anterior)."""
+    cache = SUBSIDY_DIR / f'{code}.json'
+    if collect:
+        try:
+            request = Request(SUBSIDY_PAGE.format(code=code, year=year), headers={'User-Agent': offices.USER_AGENT})
+            with urlopen(request, timeout=60) as response:
+                url = subsidy_url(response.read().decode('utf-8', errors='replace'))
+            if url:
+                SUBSIDY_DIR.mkdir(parents=True, exist_ok=True)
+                offices.write_atomic(cache, {'fetchedAt': datetime.now(timezone.utc).replace(microsecond=0).isoformat(), 'url': url})
+        except OSError as error:
+            print(f'senado:{code}: página do ano indisponível ({type(error).__name__}); usa o cache, se houver')
+    if not cache.exists():
+        return None
+    return json.loads(cache.read_text(encoding='utf-8')).get('url')
+
+
 def _reason(month, exercise, part):
     """Motivo de ausência de uma parte (remuneração ou gabinete) num mês do arquivo."""
     if month['subsidyReason'] == 'lotacao_ausente':
@@ -96,8 +126,8 @@ def _reason(month, exercise, part):
     return 'menos_de_3' if month['office']['suppressed'] else None
 
 
-def build(pilot, people, exercises, fetched_at):
-    """``people``: {id: nome}; ``exercises``: {id: intervalos ou None}."""
+def build(pilot, people, exercises, fetched_at, subsidy_urls=None):
+    """``people``: {id: nome}; ``exercises``: {id: intervalos ou None}; ``subsidy_urls``: {id: link da remuneração}."""
     periods = [source['competence'] for source in pilot['sources']]
     by_id = {s['id']: s for s in pilot['senators']}
     records = {}
@@ -127,7 +157,7 @@ def build(pilot, people, exercises, fetched_at):
                 months[period]['paidOutsideExercise'] = True
         records[identifier] = {'id': identifier, 'office': senator['office'] if senator else None,
                                'exerciseHistory': intervals is not None, 'exerciseFetchedAt': fetched_at.get(identifier),
-                               'months': months}
+                               'subsidyUrl': (subsidy_urls or {}).get(identifier), 'months': months}
     return {
         'schemaVersion': 1,
         'generatedAt': datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
@@ -155,7 +185,9 @@ def main(argv=None) -> int:
             failures.append(identifier)
             exercises[identifier], fetched_at[identifier] = load_exercises(identifier.split(':')[1], False)
             print(f'{identifier}: histórico de exercício indisponível ({type(error).__name__}); usa o cache, se houver')
-    payload = build(pilot, people, exercises, fetched_at)
+    year = int(pilot['sources'][-1]['competence'][:4]) if pilot.get('sources') else date.today().year
+    subsidy_urls = {identifier: load_subsidy_url(identifier.split(':')[1], year, args.collect) for identifier in people}
+    payload = build(pilot, people, exercises, fetched_at, subsidy_urls)
     offices.write_atomic(args.output, payload)
     without = sum(1 for v in exercises.values() if v is None)
     print(f'{len(payload["profiles"])} senadores(as), {len(pilot["sources"])} meses; sem histórico de exercício: {without}')

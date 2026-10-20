@@ -81,7 +81,7 @@ function profileCostAllOutside(cost) {
 
 /* A fonte da cota de cada mês do mandato abre a lista de notas daquele mês, não o arquivo anual. */
 function profileCostNotesToggle(personId, period, label) {
-  if (!/^camara:\d+$/.test(personId || '') || !PROFILE_COST_PERIODS.has(period)) return '';
+  if (!/^(camara|senado):\d+$/.test(personId || '') || !PROFILE_COST_PERIODS.has(period)) return '';
   return `<details class="citizen-cost-notes" data-cost-notes="${esc(period)}" data-cost-person="${esc(personId)}">
     <summary>${esc(label)}</summary><div class="citizen-cost-notes-body" aria-live="polite"></div></details>`;
 }
@@ -91,10 +91,11 @@ function profileCostNotesHTML(data, personId) {
   const notes = Array.isArray(data?.notas) ? data.notas : [];
   if (!notes.length) return '<p class="muted">Nenhuma nota de reembolso publicada neste mês.</p>';
   const [year, month] = String(data.periodo).split('-');
+  const senate = /^senado:/.test(String(personId || ''));
   const rows = notes.map(note => {
     const url = typeof profileSafeUrl === 'function' ? profileSafeUrl(note.documentUrl) : null;
     return `<li><span class="citizen-cost-note-who">${esc(note.fornecedor || 'Fornecedor não informado')}</span><b class="mono">${esc(money(note.valor))}</b>
-      <small>${esc(note.data ? dateBR(note.data) : 'sem data')} · ${esc(note.categoria || '')}</small>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${note.listaDaCamara ? 'Bilhetes do mês na Câmara' : 'Nota'} ↗</a>` : '<span class="muted">Documento não publicado pela Câmara</span>'}</li>`;
+      <small>${esc(note.data ? dateBR(note.data) : 'sem data')} · ${esc(note.categoria || '')}</small>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${note.listaDaCamara ? 'Bilhetes do mês na Câmara' : 'Nota'} ↗</a>` : senate ? '' : '<span class="muted">Documento não publicado pela Câmara</span>'}</li>`;
   }).join('');
   const complement = data.complemento ? `<p class="muted">À parte, fora desse total: complemento do auxílio-moradia, ${esc(money(data.complemento.valor))} em ${data.complemento.notas} ${data.complemento.notas === 1 ? 'nota' : 'notas'}.</p>` : '';
   const fileUrl = typeof profileSafeUrl === 'function' ? profileSafeUrl(data.fonte?.url) : null;
@@ -103,6 +104,16 @@ function profileCostNotesHTML(data, personId) {
   const page = data.passagensDaPagina && Number(data.passagensDaPagina.notas) > 0 ? data.passagensDaPagina : null;
   const pageUrl = page && typeof profileSafeUrl === 'function' ? profileSafeUrl(page.url) : null;
   const pageText = page ? ` Depois, some ${esc(money(page.valor))} das ${page.notas} ${page.notas === 1 ? 'linha' : 'linhas'} de passagem aérea emitida pela agência da Câmara (SIGEPA), que o arquivo anual deixou de trazer em ago/2025 e que a Câmara lista na ${pageUrl ? `<a href="${esc(pageUrl)}" target="_blank" rel="noopener">página dos bilhetes do mês</a>` : 'página analítica da cota'}.` : '';
+  /* Senado: o portal tem o detalhe do mês por tipo de despesa, com o total de cada tipo; a soma deles dá o total. */
+  if (senate) {
+    const official = (Array.isArray(data.detalhesOficiais) ? data.detalhesOficiais : []).map(item => {
+      const url = typeof profileSafeUrl === 'function' ? profileSafeUrl(item.url) : null;
+      return `<li>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(item.categoria)} em ${esc(profileCostLabel(data.periodo))} ↗</a>` : esc(item.categoria)}: <b class="mono">${esc(money(item.valor))}</b></li>`;
+    }).join('');
+    return `<ul class="citizen-cost-note-list">${rows}</ul>
+    <p><b>Total: ${esc(money(data.total))}</b>, soma das ${notes.length} ${notes.length === 1 ? 'nota' : 'notas'} acima.</p>
+    ${official ? `<p class="muted">No portal do Senado, cada tipo de despesa tem o detalhe do mês, com o total do tipo; somados, dão o total acima:</p><ul class="citizen-cost-official">${official}</ul>` : ''}`;
+  }
   return `<ul class="citizen-cost-note-list">${rows}</ul>
     <p><b>Total: ${esc(money(data.total))}</b>, soma das ${notes.length} ${notes.length === 1 ? 'nota' : 'notas'} acima.</p>${complement}
     <p class="muted">${page ? 'As notas vêm do arquivo oficial da Câmara e, as passagens emitidas pela agência, da página de bilhetes da Câmara.' : 'Todas as notas vêm do arquivo oficial da Câmara, com ou sem documento.'} O documento é uma cópia da nota que a Câmara nem sempre publica; em outubro de 2026, deixou de publicar os das notas de telefonia. Para conferir na planilha da Câmara${fileUrl ? ` (<a href="${esc(fileUrl)}" target="_blank" rel="noopener">arquivo anual</a>, com todos os deputados, cerca de 40 MB)` : ''}: filtre <code>ideCadastro</code> = ${esc(String(personId).split(':')[1])} e <code>numMes</code> = ${Number(month)} e some a coluna <code>vlrLiquido</code>${data.complemento ? ', sem as linhas de <code>COMPLEMENTAÇÃO DO AUXÍLIO-MORADIA</code>, que ficam fora desse total' : ''}.${pageText}</p>`;

@@ -36,6 +36,12 @@ ano a ano, Placar (ex.: PLP 74/2026, 346–46–3; PL 45–23; PT 52–0 na API 
   equipe do gabinete apontavam para a planilha CSV da folha de todo o Senado, que baixava sem contexto; agora abrem a
   página do ano (subsídio) e a de "Pessoal de Gabinete" do portal, e a planilha fica nos detalhes, identificada como
   CSV de todo o Senado, com como achar a linha.
+  Depois, cada parte passou a levar ao número: a cota abre "Ver as notas do mês", com o total e o detalhe oficial de
+  cada tipo de despesa no mês (Alan Rick, jul/2026: "Contratação de serviços de apoio", total R$ 6.990,42 na página do
+  Senado); o portal não tem uma página com o total do mês. A remuneração abre a página de remuneração da própria pessoa
+  (link lido da página do ano por `ingest/senate_cost.py`), onde só falta escolher o mês: o Senado exige captcha, então
+  não há link direto para o valor. A equipe do gabinete diz que o total é a nossa soma da remuneração bruta dos
+  comissionados na folha do mês, porque o Senado não publica esse total, e abre a lista da equipe.
 - **Minha cidade, "47% acima do típico" sob a barra de Educação:** o veredito era do gasto total (Campinas: R$ 8.979
   contra típico de R$ 6.115, que não aparecia), mas lia-se como Educação (R$ 1.762 contra R$ 1.241, 42%). Agora diz
   "Gasto total" e mostra o típico total.

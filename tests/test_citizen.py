@@ -324,6 +324,20 @@ class CitizenPoliticiansTests(unittest.TestCase):
         self.assertEqual((first['custoUltimoMes'], first['custoUltimoMesPeriodo'], first['custoMensal']), (260000.0, '2026-07', 250000.0))
         self.assertEqual(result['custoMedias']['deputado']['mediaUltimoMes'], 230000.0)
 
+    def test_senate_month_notes_list_the_official_detail_page_of_each_type_with_its_total(self):
+        self.payload['authorities'].append(self.authority('senado:77', 'Senador Teste', 'senador', 'senado_senators_current'))
+        for identifier, category, amount in (('s1', 'Passagens aéreas, aquáticas e terrestres nacionais', 300),
+                                             ('s2', 'Passagens aéreas, aquáticas e terrestres nacionais', 200),
+                                             ('s3', 'Aluguel de imóveis para escritório político', 1000)):
+            self.payload['expenses'].append({**self.expense(identifier, 'senado:77', 'senado_ceaps', amount), 'category': category})
+        self.import_data()
+        with closing(store.connect(self.db_path)) as db:
+            notes = citizen.month_notes(db, 'senado:77', '2026-01')
+        self.assertEqual(notes['total'], 1500)
+        self.assertEqual([(item['valor'], item['notas'], item['url']) for item in notes['detalhesOficiais']], [
+            (1000, 1, 'https://www6g.senado.leg.br/transparencia/sen/77/ceaps/1/detalhe/?mesAno=01/2026'),
+            (500, 2, 'https://www6g.senado.leg.br/transparencia/sen/77/ceaps/8/detalhe/?mesAno=01/2026')])
+
     def test_home_cost_range_leaves_out_zero_office_profiles_but_the_average_keeps_them(self):
         for identifier, name in (('camara:full', 'Gabinete Cheio'), ('camara:zero', 'Gabinete Zerado')):
             self.payload['authorities'].append(self.authority(identifier, name, 'deputado', 'camara_deputies_current'))

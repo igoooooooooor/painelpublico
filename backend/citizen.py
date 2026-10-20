@@ -733,8 +733,23 @@ def month_notes(db, identifier, period):
     # Desde ago/2025 o arquivo anual não traz as passagens emitidas pela agência da Câmara (SIGEPA); elas vêm
     # da página analítica da cota, e a conferência no arquivo precisa somá-las à parte.
     from_page = [n for n in reimbursements if SIGEPA_PAGE_PATH in str(n['documentUrl'] or '')]
+    # Senado: o portal não tem uma página com o total do mês; tem o detalhe do mês por tipo de despesa.
+    official = []
+    code = identifier.split(':', 1)[1] if identifier.startswith('senado:') else None
+    if code and code.isdigit():
+        by_page = {}
+        for note in reimbursements:
+            page = _senate_page(note['category'])
+            key = page if page is not None else category_name(note['category'])
+            entry = by_page.setdefault(key, {'categoria': category_name(note['category']), 'valor': 0, 'notas': 0,
+                                             'url': f'https://www6g.senado.leg.br/transparencia/sen/{code}/ceaps/{page}/detalhe/?mesAno={month:02d}/{year}'
+                                             if page is not None else None})
+            entry['valor'] += note['amountCents']
+            entry['notas'] += 1
+        official = sorted(({**entry, 'valor': entry['valor'] / 100} for entry in by_page.values()), key=lambda entry: -entry['valor'])
     return {'pessoa': {'id': person[0], 'name': person[1]}, 'periodo': f'{year:04d}-{month:02d}',
             'notas': [{**public(n), 'listaDaCamara': SIGEPA_PAGE_PATH in str(n['documentUrl'] or '')} for n in reimbursements],
+            'detalhesOficiais': official or None,
             'passagensDaPagina': {'notas': len(from_page), 'valor': sum(n['amountCents'] for n in from_page) / 100,
                                   'url': store.safe_url(from_page[0]['documentUrl'])} if from_page else None,
             'total': sum(n['amountCents'] for n in reimbursements) / 100,
