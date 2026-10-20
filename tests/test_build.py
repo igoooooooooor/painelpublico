@@ -39,7 +39,7 @@ class BuildTests(unittest.TestCase):
                 "geradoEm", "ultimaVotacao", "votacoes", "presencaTodos", "votosCompletos",
                 "arrecadacao", "arrecadacaoEstadual", "perfis", "senado", "sitePages",
             })
-            self.assertEqual([section["path"] for section in data["sitePages"]["sections"]][:3], ["/", "/alertas", "/placar"])
+            self.assertEqual([section["path"] for section in data["sitePages"]["sections"]][:3], ["/", "/picos-e-concentracoes", "/placar"])
             self.assertIn("alerts", [section["id"] for section in data["sitePages"]["methodology"]["sections"]])
             self.assertTrue(data["sitePages"]["about"]["sections"])
             self.assertIsNone(data["geradoEm"])

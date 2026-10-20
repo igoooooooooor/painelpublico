@@ -315,7 +315,7 @@ test('profile starts with three ordered answers and keeps the complementary deta
   assert.deepEqual(answers, ['cost', 'work', 'alerts']);
   assert.match(html, /aria-label="Resumo da ficha"/);
   assert.ok(html.indexOf('Quanto custa?') < html.indexOf('Aparece para trabalhar?'));
-  assert.ok(html.indexOf('Aparece para trabalhar?') < html.indexOf('Algum alerta na cota?'));
+  assert.ok(html.indexOf('Aparece para trabalhar?') < html.indexOf('Algum pico ou concentração na cota?'));
   assert.match(html, /class="citizen-details/);
   const detailKeys = [...html.matchAll(/data-profile-section="([^"]+)"/g)].map(match => match[1]);
   assert.deepEqual(detailKeys, ['expenses', 'votes', 'projects', 'staff', 'contact', 'sources']);
@@ -363,7 +363,7 @@ test('profile without alerts explains which rules were checked and keeps neutral
   });
   const html = api.profileView();
   const answer = html.slice(html.indexOf('id="profile-alerts"'));
-  assert.match(answer, /Nenhum alerta nos períodos avaliados/);
+  assert.match(answer, /Nenhum pico ou concentração nos períodos avaliados/);
   assert.match(answer, /<h4 role="rowheader">2026<\/h4>/);
   assert.match(answer, /Avaliados: abr–jun\./);
   assert.match(answer, /jul–set: prazo de apresentação das notas ainda aberto/);
@@ -560,7 +560,7 @@ test('three-answer alert shows the first alert in API order, without a severity 
   });
   const html = api.profileView();
   const answer = html.match(/<a[^>]*href="#profile-alerts"[\s\S]*?<\/a>/)?.[0] || '';
-  assert.match(answer, /4<small> alertas/);
+  assert.match(answer, /4<small> picos e concentrações/);
   assert.match(answer, /Primeiro alerta informativo/);
   assert.doesNotMatch(answer, /Primeiro alerta alto|Alerta médio|Segundo alerta alto/);
   const details = html.slice(html.indexOf('id="profile-alerts"'), html.indexOf('class="profile-detail-area"'));
@@ -998,14 +998,14 @@ test('redesigned profile keeps real quota totals, suppliers and all alerts in th
   });
   const html = api.profileView();
   assert.match(html, /Como trabalha/);
-  assert.match(html, /Alertas na cota/);
+  assert.match(html, /Picos e concentrações na cota/);
   assert.match(html, /O que foi avaliado/);
   assert.match(html, /Categoria da fonte/);
   assert.match(html, /Fornecedor da fonte/);
   assert.match(html, /17 notas/);
   assert.match(html, /Registro mais recente/);
   assert.match(html, /Registro anterior/);
-  assert.match(html, /Alerta em jan–fev/);
+  assert.match(html, /Pico em jan–fev/);
   assert.match(html, /Avaliados: jan–fev\./);
   assert.doesNotMatch(html, /\[voto real\]|\[Confirmar|confirmar na cobertura gravada/);
 });

@@ -112,7 +112,7 @@ A lista e a comparação mostram o mesmo mês principal da ficha, com a média d
 ## Endereços e buscadores
 
 Cada deputado(a) e senador(a) tem endereço próprio (`/deputado/<id>-<nome>`, `/senador/<id>-<nome>`), cada
-votação do Placar também (`/placar/<id>`), assim como as seções (`/alertas`, `/placar`, `/politicos`, `/partidos`,
+votação do Placar também (`/placar/<id>`), assim como as seções (`/picos-e-concentracoes`, antes `/alertas`, que redireciona; `/placar`, `/politicos`, `/partidos`,
 `/comparar`, `/presenca`, `/minha-cidade`, `/metodologia`, `/sobre`). `backend/seo.py` entrega o mesmo
 `dist/index.html` com título, descrição, endereço canônico, Open Graph (com `og-image.png`), dados estruturados
 (schema.org: `WebSite`, `WebPage`/`CollectionPage`/`AboutPage`, `Person`, `BreadcrumbList`) e, dentro de `#app`,

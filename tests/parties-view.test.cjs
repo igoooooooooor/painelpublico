@@ -257,21 +257,21 @@ test('alerts compare people with at least one alert, never an extrapolated rate 
   const ctx = load(DATA);
   const html = ctx.partyComparisonTable(party('AAA', { membros: 1, comDados: 1, media: 100, alertas: 2, comAlerta: 1 }),
     party('BBB', { membros: 3, comDados: 3, media: 200, alertas: 0, comAlerta: 0 }));
-  const row = html.split('\n').find(line => line.includes('Parlamentares com algum alerta na cota'));
-  assert.match(row, /<b>1<\/b><small> de 1 com notas · 2 alertas no total<\/small>/);
-  assert.match(row, /<b>0<\/b><small> de 3 com notas · 0 alertas no total<\/small>/);
+  const row = html.split('\n').find(line => line.includes('Parlamentares com algum pico ou concentração na cota'));
+  assert.match(row, /<b>1<\/b><small> de 1 com notas · 2 picos e concentrações no total<\/small>/);
+  assert.match(row, /<b>0<\/b><small> de 3 com notas · 0 picos e concentrações no total<\/small>/);
   assert.doesNotMatch(row, /cmp-v best|a cada 10|<b>20<\/b>/);
   assert.doesNotMatch(row, /fora da conta/);
   const partial = ctx.partyComparisonTable(party('AAA', { membros: 74, comDados: 73, media: 100, alertas: 105, comAlerta: 41 }),
     party('BBB', { membros: 3, comDados: 3, media: 200, alertas: 0, comAlerta: 0 }));
-  const partialRow = partial.split('\n').find(line => line.includes('Parlamentares com algum alerta na cota'));
-  assert.match(partialRow, /<b>41<\/b><small> de 73 com notas · 105 alertas no total<\/small><small class="party-note">1 dos\(as\) 74 na lista não tem notas da cota e fica fora da conta\.<\/small>/);
+  const partialRow = partial.split('\n').find(line => line.includes('Parlamentares com algum pico ou concentração na cota'));
+  assert.match(partialRow, /<b>41<\/b><small> de 73 com notas · 105 picos e concentrações no total<\/small><small class="party-note">1 dos\(as\) 74 na lista não tem notas da cota e fica fora da conta\.<\/small>/);
   const older = ctx.partyComparisonTable(party('AAA', { membros: 1, comDados: 1, media: 100, alertas: 2 }),
     party('BBB', { membros: 3, comDados: 0, media: null, alertas: 0, comAlerta: 0 }));
-  const olderRow = older.split('\n').find(line => line.includes('Parlamentares com algum alerta na cota'));
+  const olderRow = older.split('\n').find(line => line.includes('Parlamentares com algum pico ou concentração na cota'));
   assert.equal((olderRow.match(/Sem dados/g) || []).length, 2);
   const card = ctx.partyShareCard(party('AAA', { membros: 1, comDados: 1, media: 100, alertas: 2, comAlerta: 1 }),
     party('BBB', { membros: 3, comDados: 3, media: 200, alertas: 0, comAlerta: 0 }));
-  assert.equal(card.alertsLabel, 'Parlamentares com algum alerta');
+  assert.equal(card.alertsLabel, 'Parlamentares com pico ou concentração');
   assert.deepEqual([...card.alerts], ['1 de 1', '0 de 3']);
 });

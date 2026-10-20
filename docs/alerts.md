@@ -89,6 +89,8 @@ pico e na concentração: para a lista atual, eram R$ 972.810,24 contados em dob
 
 ## Apresentação
 
+Na interface, o conjunto se chama **Picos e concentrações** (desde 19/10/2026; antes, "Alertas"), em `/picos-e-concentracoes`; `/alertas` redireciona (301) para os links já compartilhados. O nome descreve o que as regras medem, sem sugerir suspeita. A API (`/api/c/radar`, campos `alertas`, `coberturaAlertas`), o banco e a versão da regra (`cota-alertas-v3`) mantêm os nomes. Ao contar por pessoa, a interface diz "pico ou concentração" no singular e "picos e concentrações" no plural.
+
 Títulos factuais ("Mês acima da referência: maio de 2024", "Concentração em fornecedor"), sem selo de
 intensidade nem ordenação por gravidade. A cor identifica o tipo de informação. Comparações não destacam
 como "melhor" quem tem menos alertas. A home, a página de Alertas e a ficha mostram os alertas dos mais

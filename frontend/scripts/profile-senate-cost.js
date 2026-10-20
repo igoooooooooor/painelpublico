@@ -208,7 +208,7 @@ function senateCostDetails(cost, profileRecord) {
 
 /* "Qual mês aparece", na versão do Senado: a mesma folga da Câmara, com o aviso de que no Senado as notas da
    cota podem entrar até abril do ano seguinte (o prazo que os alertas usam). */
-const SENATE_COST_MONTH_RULE = `<p class="muted"><b>Qual mês aparece no “Quanto custa?”:</b> o mais recente com as três partes identificadas e com ${PROFILE_COST_SETTLE_MONTHS} meses de folga até a data das notas importadas, a mesma regra da Câmara. No Senado, as notas da cota podem ser apresentadas até o fim de abril do ano seguinte, então mesmo um mês com a folga ainda pode receber notas; por isso os alertas da cota do Senado esperam esse prazo maior. O mês muda a cada atualização dos dados.</p>`;
+const SENATE_COST_MONTH_RULE = `<p class="muted"><b>Qual mês aparece no “Quanto custa?”:</b> o mais recente com as três partes identificadas e com ${PROFILE_COST_SETTLE_MONTHS} meses de folga até a data das notas importadas, a mesma regra da Câmara. No Senado, as notas da cota podem ser apresentadas até o fim de abril do ano seguinte, então mesmo um mês com a folga ainda pode receber notas; por isso as regras de pico e concentração da cota do Senado esperam esse prazo maior. O mês muda a cada atualização dos dados.</p>`;
 
 /* Seção "Equipe e verba de gabinete" do Senado: o mês mais recente com equipe identificada e a média dos
    meses em exercício com equipe e com as notas da cota assentadas (o mesmo corte do cartão de custo), a partir

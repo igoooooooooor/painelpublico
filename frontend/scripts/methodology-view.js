@@ -26,12 +26,12 @@ function methodologyQuestion({ question, answer = [], links = [] }) {
 function methodologyView() {
   const METHODOLOGY_PAGE = methodologyPage();
   const sections = Array.isArray(METHODOLOGY_PAGE.sections) ? METHODOLOGY_PAGE.sections : [];
-  const notice = String(METHODOLOGY_PAGE.notice || '').replace(/^Alertas não indicam irregularidade\.\s*/, '');
+  const notice = String(METHODOLOGY_PAGE.notice || '').replace(/^Picos e concentrações não indicam irregularidade\.\s*/, '');
   return `<div class="methodology-page">
     <section class="methodology-intro">
       <h1 class="h ph-t">${esc(METHODOLOGY_PAGE.title)}</h1>
       <p class="ph-lead">${esc(METHODOLOGY_PAGE.lead)}</p>
-      <p class="card methodology-notice"><span><b>Alertas não indicam irregularidade.</b> ${esc(notice)}</span></p>
+      <p class="card methodology-notice"><span><b>Picos e concentrações não indicam irregularidade.</b> ${esc(notice)}</span></p>
     </section>
     <div class="methodology-layout">
       <nav class="methodology-toc" aria-label="Nesta página"><span class="k">Nesta página</span>

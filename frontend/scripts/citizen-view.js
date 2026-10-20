@@ -1,4 +1,4 @@
-/* Telas do cidadão: "Gastos incomuns" (Home), "Alertas", "Políticos" (busca) e a ficha leve.
+/* Telas do cidadão: "Gastos incomuns" (Home), "Picos e concentrações", "Políticos" (busca) e a ficha leve.
    Tudo em linguagem simples. */
 const citizenState = {
   cache: new Map(), pending: new Set(),
@@ -221,7 +221,7 @@ function alertStatement(a) {
   return a.tipo === 'pico' && alertVisualization(a) ? '' : `<p class="citizen-statement">${esc(a.frase)}</p>`;
 }
 function alertExplanation(a) {
-  if (a.tipo === 'pico') return `Aparece quando o gasto de um mês passa de 1,75 vez a referência da própria pessoa, a diferença é de pelo menos R$ 10 mil e o mês também fica acima do gasto mensal típico dos(as) colegas${Number.isFinite(a.piso) ? ` (${formatCitizenAmount(a.piso)} em ${esc(a.ano || String(a.periodo).slice(0, 4))})` : ''}. ${a.base && a.base !== 'year' ? 'A referência é o valor do meio (a mediana) dos 12 meses anteriores, atravessando o ano, todos com notas. Como o mandato começa em fevereiro de 2023, a avaliação começa em fevereiro de 2024.' : 'A referência é o valor do meio (a mediana) dos meses anteriores do mesmo ano, com pelo menos 3 meses sem lacuna.'} Só entram meses cujo prazo de apresentação das notas já tinha terminado na data da coleta: 90 dias na Câmara; no Senado, até o fim de abril do ano seguinte. Meses seguidos marcados contam como um alerta só. Novembro e dezembro também são avaliados; o cartão avisa que o saldo não usado da cota se acumula no ano e expira em 31 de dezembro. A mesma regra vale para todos(as).`;
+  if (a.tipo === 'pico') return `Aparece quando o gasto de um mês passa de 1,75 vez a referência da própria pessoa, a diferença é de pelo menos R$ 10 mil e o mês também fica acima do gasto mensal típico dos(as) colegas${Number.isFinite(a.piso) ? ` (${formatCitizenAmount(a.piso)} em ${esc(a.ano || String(a.periodo).slice(0, 4))})` : ''}. ${a.base && a.base !== 'year' ? 'A referência é o valor do meio (a mediana) dos 12 meses anteriores, atravessando o ano, todos com notas. Como o mandato começa em fevereiro de 2023, a avaliação começa em fevereiro de 2024.' : 'A referência é o valor do meio (a mediana) dos meses anteriores do mesmo ano, com pelo menos 3 meses sem lacuna.'} Só entram meses cujo prazo de apresentação das notas já tinha terminado na data da coleta: 90 dias na Câmara; no Senado, até o fim de abril do ano seguinte. Meses seguidos marcados contam como um pico só. Novembro e dezembro também são avaliados; o cartão avisa que o saldo não usado da cota se acumula no ano e expira em 31 de dezembro. A mesma regra vale para todos(as).`;
   if (a.tipo === 'fornecedor') return `Aparece quando metade ou mais do dinheiro da cota no ano foi para uma mesma empresa, somando pelo menos R$ 30 mil.${a.parcial ? ` Período parcial: o cálculo usa as notas disponíveis de ${esc(a.periodoObservado || 'o ano')}, e o ano ainda pode receber notas.` : ''} ${a.intermediacao ? ' Aqui, a maioria das notas cita uma companhia aérea que não é o fornecedor pago: o fornecedor é uma agência que intermediou passagens. O critério usa a companhia citada no registro oficial do Senado; quando o registro traz o nome da própria agência, não há como saber a companhia.' : ' Pagamentos recorrentes podem ser compatíveis com um contrato; vale conferir as notas.'}`;
   return `Aparece para toda nota de R$ 10 mil ou mais. É só um corte de valor.`;
 }
@@ -263,18 +263,18 @@ function homeAlertCard() {
   const data = citizenState.cache.get(path);
   if (!data) {
     if (!citizenState.pending.has(path)) { citizenState.pending.add(path); citizenGet(path).then(() => { citizenState.pending.delete(path); if (state.view === 'home') rerender(); }).catch(() => { citizenState.pending.delete(path); citizenState.cache.set(path, { error: true }); if (state.view === 'home') rerender(); }); }
-    return `<section class="citizen-home"><div class="citizen-head"><h2 class="h">Alertas da cota</h2></div><div class="carousel citizen-carousel">${skel('alerta', 3)}</div></section>`;
+    return `<section class="citizen-home"><div class="citizen-head"><h2 class="h">Picos e concentrações da cota</h2></div><div class="carousel citizen-carousel">${skel('alerta', 3)}</div></section>`;
   }
-  if (data.error) return `<section class="citizen-home"><div class="citizen-head"><div><h2 class="h">Alertas da cota</h2><span class="muted">Os alertas da Câmara e do Senado não carregaram.</span></div></div><section class="card"><p>Não deu para carregar os alertas agora.</p><button type="button" class="more" data-home-retry>Tentar de novo</button></section></section>`;
+  if (data.error) return `<section class="citizen-home"><div class="citizen-head"><div><h2 class="h">Picos e concentrações da cota</h2><span class="muted">Os dados da Câmara e do Senado não carregaram.</span></div></div><section class="card"><p>Não deu para carregar os picos e concentrações agora.</p><button type="button" class="more" data-home-retry>Tentar de novo</button></section></section>`;
   const alerts = data.itens;
   return `<section class="citizen-home">
-    <div class="citizen-head"><div><h2 class="h">Alertas da cota</h2><span class="muted">Meses acima da referência e concentração em fornecedor nas notas do mandato${data.periodo ? ` (${esc(citizenQuotaPeriod(data.periodo.inicio, data.periodo.fim))})` : ''} de deputados(as) e senadores(as), pelas mesmas regras para todos(as), dos mais recentes aos mais antigos. Não indicam irregularidade.</span></div></div>
+    <div class="citizen-head"><div><h2 class="h">Picos e concentrações da cota</h2><span class="muted">Meses acima da referência e concentração em fornecedor nas notas do mandato${data.periodo ? ` (${esc(citizenQuotaPeriod(data.periodo.inicio, data.periodo.fim))})` : ''} de deputados(as) e senadores(as), pelas mesmas regras para todos(as), dos mais recentes aos mais antigos. Não indicam irregularidade.</span></div></div>
     <div class="carousel citizen-carousel">${alerts.map(alert => alertCard(alert)).join('')}</div>
-    <a class="opt citizen-cta" href="/alertas" data-go="alerts">Ver os ${data.total} alertas</a>
+    <a class="opt citizen-cta" href="/picos-e-concentracoes" data-go="alerts">Ver os ${data.total} picos e concentrações</a>
   </section>`;
 }
 
-/* ---------- Aba "Alertas" ---------- */
+/* ---------- Aba "Picos e concentrações" ---------- */
 function alertFilterKey() { const l = citizenState.alerts; return `tipo=${l.type}&cargo=${l.role}&ano=${l.year}`; }
 function loadAlerts(more) {
   const l = citizenState.alerts, key = alertFilterKey();
@@ -310,16 +310,16 @@ function alertRuleCards() {
 function alertTopPeople() {
   const topPeople = (citizenState.cache.get(TOP_ALERTS_PATH)?.itens || []).filter(person => person.alertas);
   if (!topPeople.length) return '';
-  return `<div class="alerts-top"><span class="k">Valor das despesas nos alertas do mandato</span>
+  return `<div class="alerts-top"><span class="k">Valor das despesas nos picos e concentrações do mandato</span>
     <div class="faces citizen-top5">${topPeople.map(person => `${profileLinkOpen(person.id, 'face')}${citizenAvatar(person, 54)}<span>${esc(citizenName(person.name).split(' ')[0])}</span><em>${person.valorAlertas ? esc(formatCitizenAmount(person.valorAlertas)) + (person.valorAlertasParcial ? ' · parcial' : '') : `${person.alertas} ${person.alertas === 1 ? 'ALERTA' : 'ALERTAS'}`}</em>${profileLinkClose(person.id)}`).join('')}</div>
-    <span class="muted">Soma das despesas observadas nos alertas, cada nota contada uma vez. Não é estimativa de prejuízo. "Parcial": inclui concentração calculada com o ano ainda aberto.</span></div>`;
+    <span class="muted">Soma das despesas observadas nos picos e concentrações, cada nota contada uma vez. Não é estimativa de prejuízo. "Parcial": inclui concentração calculada com o ano ainda aberto.</span></div>`;
 }
 function alertFilterGroup(label, attr, options, current) {
   return `<span class="alerts-seg" role="group" aria-label="${label}">${options.map(([k, n]) => `<button type="button" data-${attr}="${k}" aria-pressed="${current === k}">${n}</button>`).join('')}</span>`;
 }
 function alertsView() {
   const l = citizenState.alerts; loadAlerts(false); loadTopAlerts();
-  if (l.loading && !l.items.length && !l.error && serverRendered('/alertas')) return serverRendered('/alertas');
+  if (l.loading && !l.items.length && !l.error && serverRendered('/picos-e-concentracoes')) return serverRendered('/picos-e-concentracoes');
   const types = [['pico,fornecedor', 'Todos'], ['pico', 'Mês acima da referência'], ['fornecedor', 'Concentração em fornecedor']];
   const roles = [['', 'Todas'], ['deputado', 'Câmara'], ['senador', 'Senado']];
   const years = [['', 'Mandato'], ...(l.years || []).map(y => [String(y.ano), String(y.ano)])];
@@ -327,25 +327,25 @@ function alertsView() {
   return `<div class="alerts-page">
     <section class="alerts-hero">
       <div class="alerts-intro">
-        <h1 class="h ph-t">Alertas</h1>
-        <p class="ph-lead">Meses acima da referência e concentração em fornecedor nas notas da cota de deputados(as) e senadores(as), pelas mesmas regras para todos(as). Os alertas não indicam irregularidade: confira sempre as notas na fonte oficial.</p>
+        <h1 class="h ph-t">Picos e concentrações</h1>
+        <p class="ph-lead">Meses acima da referência e concentração em fornecedor nas notas da cota de deputados(as) e senadores(as), pelas mesmas regras para todos(as). Os picos e as concentrações não indicam irregularidade: confira sempre as notas na fonte oficial.</p>
         <a class="alerts-how-link" href="/metodologia#methodology-alerts" data-go="methodology">Como as regras funcionam →</a>
         ${alertTopPeople()}
       </div>
       ${alertRuleCards()}
     </section>
     <section class="alerts-filters" aria-label="Filtros">
-      ${alertFilterGroup('Tipo de alerta', 'alert-type', types, l.type)}
+      ${alertFilterGroup('Tipo', 'alert-type', types, l.type)}
       ${alertFilterGroup('Casa', 'alert-role', roles, l.role)}
       ${years.length > 2 || l.year ? alertFilterGroup('Período', 'alert-year', years, l.year) : ''}
-      ${l.total !== null ? `<span class="muted alerts-status" role="status">${l.total.toLocaleString('pt-BR')} ${l.total === 1 ? 'alerta' : 'alertas'} ${scope} · dos mais recentes aos mais antigos</span>` : ''}
+      ${l.total !== null ? `<span class="muted alerts-status" role="status">${l.total.toLocaleString('pt-BR')} ${l.total === 1 ? 'pico ou concentração' : 'picos e concentrações'} ${scope} · dos mais recentes aos mais antigos</span>` : ''}
     </section>
-    ${l.error ? `<section class="card"><p>Não deu para carregar os alertas agora.</p><p class="muted">${esc(l.error)}</p><button type="button" class="more" data-alert-retry>Tentar de novo</button></section>` : ''}
+    ${l.error ? `<section class="card"><p>Não deu para carregar os picos e concentrações agora.</p><p class="muted">${esc(l.error)}</p><button type="button" class="more" data-alert-retry>Tentar de novo</button></section>` : ''}
     <div class="alerts-grid">
       ${l.items.map(a => alertCard(a)).join('')}
       ${l.loading && !l.error ? skel('alerta', l.items.length ? 1 : 3) : ''}
     </div>
-    ${!l.loading && l.total !== null && l.items.length < l.total ? `<button type="button" class="opt alerts-more" data-alert-more>Carregar mais alertas</button>` : ''}
+    ${!l.loading && l.total !== null && l.items.length < l.total ? `<button type="button" class="opt alerts-more" data-alert-more>Carregar mais</button>` : ''}
     <section class="card citizen-how" id="alerts-how"><span class="k">Como funciona</span>
       <p><b>Mês acima da referência:</b> o gasto do mês passou de 1,75 vez a mediana dos 12 meses anteriores da própria pessoa. A avaliação começa em fevereiro de 2024, quando há 12 meses de mandato para comparar.</p>
       <p><b>Concentração em fornecedor:</b> metade ou mais do dinheiro do ano foi para a mesma empresa, ano a ano desde 2023.</p>
@@ -407,12 +407,12 @@ function politicianRow(person, max) {
     average !== null && person.custoMeses ? `média do mandato ${formatCitizenAmount(average)}/mês (${person.custoMeses} ${person.custoMeses === 1 ? 'mês' : 'meses'})` : '',
     quota === null ? 'sem despesa de cota observada' : `cota ${quota === 0 ? 'R$ 0' : formatCitizenAmount(quota)}`,
     aboveAverage ? `acima da média ${person.role === 'senador' ? 'do Senado' : 'da Câmara'}` : '',
-    citizenState.politicians.order === 'alertas' && person.valorAlertas ? `${formatCitizenAmount(person.valorAlertas)} em alertas${person.valorAlertasParcial ? ' · parcial' : ''}` : '',
+    citizenState.politicians.order === 'alertas' && person.valorAlertas ? `${formatCitizenAmount(person.valorAlertas)} em picos e concentrações${person.valorAlertasParcial ? ' · parcial' : ''}` : '',
   ].filter(Boolean).join(' · ');
   /* À direita só o valor; os detalhes vão embaixo do nome, que assim não é cortado no celular. */
   return `${profileLinkOpen(person.id, 'citizen-row')}${citizenAvatar(person, 48)}<span class="citizen-rowtxt"><b>${esc(citizenName(person.name))}</b><small>${[roleLabel, person.party, person.uf].filter(Boolean).map(esc).join(' · ')}</small>
       <span class="citizen-rowbar"><i style="width:${barWidth}%" class="${aboveAverage ? 'hi' : ''}"></i></span><small class="citizen-rowdetail">${esc(details)}</small></span>
-    <span class="citizen-rowval">${cost !== null ? `<b class="mono">${esc(formatCitizenAmount(cost))}</b><small>${month ? `em ${esc(month)}` : 'no mês'}</small>` : '<b class="mono">Sem custo</b>'}${person.alertas ? `<span class="citizen-chip info citizen-mini"><i></i>${person.alertas} ${person.alertas === 1 ? 'alerta' : 'alertas'}</span>` : ''}</span>${profileLinkClose(person.id)}`;
+    <span class="citizen-rowval">${cost !== null ? `<b class="mono">${esc(formatCitizenAmount(cost))}</b><small>${month ? `em ${esc(month)}` : 'no mês'}</small>` : '<b class="mono">Sem custo</b>'}${person.alertas ? `<span class="citizen-chip info citizen-mini"><i></i>${person.alertas} ${person.alertas === 1 ? 'pico ou concentração' : 'picos e concentrações'}</span>` : ''}</span>${profileLinkClose(person.id)}`;
 }
 /* Ordem "Quem mais usa a cota": o valor à direita e a barra são a média mensal da cota; o custo vai embaixo. */
 function politicianQuotaRow(person, quota, cost, max) {
@@ -422,7 +422,7 @@ function politicianQuotaRow(person, quota, cost, max) {
     cost !== null ? `custo total ${formatCitizenAmount(cost)}${politicianCostMonth(person) ? ` em ${politicianCostMonth(person)}` : ''}` : ''].filter(Boolean).join(' · ');
   return `${profileLinkOpen(person.id, 'citizen-row')}${citizenAvatar(person, 48)}<span class="citizen-rowtxt"><b>${esc(citizenName(person.name))}</b><small>${[roleLabel, person.party, person.uf].filter(Boolean).map(esc).join(' · ')}</small>
       <span class="citizen-rowbar"><i style="width:${barWidth}%"></i></span><small class="citizen-rowdetail">${esc(details)}</small></span>
-    <span class="citizen-rowval">${quota !== null ? `<b class="mono">${esc(formatCitizenAmount(quota))}</b><small>/mês de cota</small>` : '<b class="mono">Sem notas</b>'}${person.alertas ? `<span class="citizen-chip info citizen-mini"><i></i>${person.alertas} ${person.alertas === 1 ? 'alerta' : 'alertas'}</span>` : ''}</span>${profileLinkClose(person.id)}`;
+    <span class="citizen-rowval">${quota !== null ? `<b class="mono">${esc(formatCitizenAmount(quota))}</b><small>/mês de cota</small>` : '<b class="mono">Sem notas</b>'}${person.alertas ? `<span class="citizen-chip info citizen-mini"><i></i>${person.alertas} ${person.alertas === 1 ? 'pico ou concentração' : 'picos e concentrações'}</span>` : ''}</span>${profileLinkClose(person.id)}`;
 }
 function politicianCoverageHTML(coverage) {
   if (!coverage) return skL('260px', 14);
@@ -476,12 +476,12 @@ function renderPoliticianList() {
 function politiciansView() {
   const p = citizenState.politicians; loadPoliticians(false);
   if (p.loading && !p.items.length && !p.error && !p.query && serverRendered('/politicos')) return serverRendered('/politicos');
-  return `${pageHead('Deputados(as) e senadores(as)', 'Políticos', 'Busque qualquer um(a) e veja quanto custa por mês, com os alertas.')}
+  return `${pageHead('Deputados(as) e senadores(as)', 'Políticos', 'Busque qualquer um(a) e veja quanto custa por mês, com os picos e concentrações da cota.')}
     <div id="citizen-politician-summary" class="citizen-roster-summary" role="status">${politicianCoverageHTML(p.coverage)}</div>
     <label class="search" for="citizen-search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="citizen-search" type="search" placeholder="Nome, partido ou estado" value="${esc(p.query)}" autocomplete="off"></label>
     <div class="citizen-filters">
       <div class="chips" role="group" aria-label="Cargo">${[['', 'Todos'], ['deputado', 'Deputados(as)'], ['senador', 'Senadores(as)']].map(([k, n]) => `<button type="button" class="fchip" data-politician-role="${k}" aria-pressed="${p.role === k}">${n}</button>`).join('')}</div>
-      <div class="chips" role="group" aria-label="Ordenar">${[['nome', 'A–Z'], ['gasto', 'Quem mais custa'], ['cota', 'Quem mais usa a cota'], ['alertas', 'Valor das despesas nos alertas'], ['quantidade-alertas', 'Mais alertas']].map(([k, n]) => `<button type="button" class="fchip" data-politician-order="${k}" aria-pressed="${p.order === k}">${n}</button>`).join('')}</div>
+      <div class="chips" role="group" aria-label="Ordenar">${[['nome', 'A–Z'], ['gasto', 'Quem mais custa'], ['cota', 'Quem mais usa a cota'], ['alertas', 'Valor em picos e concentrações'], ['quantidade-alertas', 'Mais picos e concentrações']].map(([k, n]) => `<button type="button" class="fchip" data-politician-order="${k}" aria-pressed="${p.order === k}">${n}</button>`).join('')}</div>
     </div>
     <div class="citizen-actions"><button type="button" class="fchip" data-cmp-start="">Comparar políticos(as) →</button><a class="fchip" href="/partidos" data-go="parties">Comparar partidos →</a><a class="fchip" href="/presenca" data-go="attendance">Presença dos deputados →</a></div>
     <div id="citizen-politician-list" class="citizen-stack" aria-live="polite">${politicianListHTML()}</div>
@@ -524,7 +524,7 @@ function profileAveragePeriod(profileRecord) {
   const average = profileRecord?.mediaPeriodo, full = profileRecord?.periodo;
   return average && typeof average === 'object' ? average : full && typeof full === 'object' ? full : {};
 }
-/* As duas regras de alerta, iguais para todos(as); detalhes na aba Alertas. */
+/* As duas regras (pico e concentração), iguais para todos(as); detalhes na aba Picos e concentrações. */
 const ALERT_RULES_HTML = `<ul class="citizen-alert-rules">
     <li><b>Mês acima da referência:</b> um mês com gasto 1,75 vez maior que a mediana dos 12 meses anteriores da própria pessoa, com pelo menos R$ 10 mil de diferença e acima do gasto mensal típico dos(as) colegas. Só meses com o prazo de apresentação das notas encerrado; a avaliação começa em fev/2024.</li>
     <li><b>Concentração em fornecedor:</b> metade ou mais da cota do ano paga a uma só empresa, somando pelo menos R$ 30 mil.</li>
@@ -589,13 +589,13 @@ function profileSummaryCards(shared, profileRecord, alerts, hasExpenseData) {
 
   const coverage = alertCoverageState(profileRecord.coberturaAlertas);
   const alertValue = alerts.length ? String(alerts.length) : coverage.evaluated ? '0' : '—';
-  const alertNote = alerts.length ? `Mais recente: ${alerts[0].titulo || 'Título não informado'}. Alertas não indicam irregularidade.`
-    : coverage.evaluated ? 'Nenhum alerta nos períodos avaliados; não indicam irregularidade.' : 'Dados insuficientes para avaliar; alertas não indicam irregularidade.';
+  const alertNote = alerts.length ? `Mais recente: ${alerts[0].titulo || 'Título não informado'}. Picos e concentrações não indicam irregularidade.`
+    : coverage.evaluated ? 'Nenhum pico ou concentração nos períodos avaliados; não indicam irregularidade.' : 'Dados insuficientes para avaliar; picos e concentrações não indicam irregularidade.';
   const hasMonthlyCost = costValue !== 'Sem dados' && costValue !== 'Sem total';
   return `<nav class="profile-summary-grid" aria-label="Resumo da ficha">
     <a class="card profile-summary-card" href="#profile-cost"><span class="k">${esc(costLabel)}</span><b class="mono">${esc(costValue)}${hasMonthlyCost ? `<small>${esc(costUnit)}</small>` : ''}</b><small>${esc(costNote)}</small></a>
     <a class="card profile-summary-card" href="#profile-work"><span class="k">Aparece para trabalhar?</span><b class="mono">${esc(presenceValue)}${percentForSummary(shared) !== null ? '<small>presença</small>' : ''}</b><small>${esc(presenceNote)}</small></a>
-    <a class="card profile-summary-card profile-summary-alert" href="#profile-alerts"><span class="k">Algum alerta na cota?</span><b class="mono">${esc(alertValue)}<small>${alerts.length || coverage.evaluated ? (alerts.length === 1 ? ' alerta' : ' alertas') : ''}</small></b><small>${esc(alertNote)}</small></a>
+    <a class="card profile-summary-card profile-summary-alert" href="#profile-alerts"><span class="k">Algum pico ou concentração na cota?</span><b class="mono">${esc(alertValue)}<small>${alerts.length || coverage.evaluated ? (alerts.length === 1 ? ' pico ou concentração' : ' picos e concentrações') : ''}</small></b><small>${esc(alertNote)}</small></a>
   </nav>`;
 }
 function percentForSummary(shared) {
@@ -746,17 +746,17 @@ function profileAlertsSection(alerts, coverage) {
   const ordered = profileAlertChronology(alerts);
   const coverageState = alertCoverageState(coverage);
   const intro = ordered.length
-    ? `${ordered.length} ${ordered.length === 1 ? 'alerta' : 'alertas'} na cota do mandato, dos mais recentes aos mais antigos. As regras detectam variação de gasto ou concentração; não indicam irregularidade.`
-    : coverageState.evaluated ? 'Nenhum alerta nos períodos avaliados pelas regras da cota. A falta de alerta não significa gasto baixo nem regular.' : 'Dados insuficientes para avaliar os alertas da cota.';
+    ? `${ordered.length} ${ordered.length === 1 ? 'pico ou concentração' : 'picos e concentrações'} na cota do mandato, dos mais recentes aos mais antigos. As regras detectam variação de gasto ou concentração; não indicam irregularidade.`
+    : coverageState.evaluated ? 'Nenhum pico ou concentração nos períodos avaliados pelas regras da cota. A falta deles não significa gasto baixo nem regular.' : 'Dados insuficientes para avaliar picos e concentrações na cota.';
   return `<section class="profile-area" id="profile-alerts" aria-labelledby="profile-alerts-title">
-    <header class="profile-area-head"><h2 class="h" id="profile-alerts-title">Alertas na cota</h2><p>${esc(intro)}</p></header>
+    <header class="profile-area-head"><h2 class="h" id="profile-alerts-title">Picos e concentrações na cota</h2><p>${esc(intro)}</p></header>
     ${ordered.length ? `<div class="profile-alert-list">${ordered.map(alert => alertCard(alert, { semPessoa: true, profile: true })).join('')}</div>` : ''}
     ${profileCoverageSection(coverage, ordered)}
   </section>`;
 }
 /* Regras, aviso e metodologia: uma vez só, no pé do cartão de cobertura. */
 function profileAlertMethod(footnote = '') {
-  return `<div class="profile-alert-method"><h4>Como funcionam as regras</h4>${ALERT_RULES_HTML}<p>Alertas são registros para conferir, não conclusões de irregularidade.${footnote ? ` ${footnote}` : ''}</p><a class="more" href="/metodologia#methodology-alerts" data-go="methodology">Metodologia completa →</a></div>`;
+  return `<div class="profile-alert-method"><h4>Como funcionam as regras</h4>${ALERT_RULES_HTML}<p>Picos e concentrações são registros para conferir, não conclusões de irregularidade.${footnote ? ` ${footnote}` : ''}</p><a class="more" href="/metodologia#methodology-alerts" data-go="methodology">Metodologia completa →</a></div>`;
 }
 /* Uma célula da tabela: situação curta + detalhe do período. */
 function coverageCell(rule, status, detail, tone = '') {
@@ -786,16 +786,16 @@ function profileCoverageSection(coverage, alerts = []) {
       const noHistory = !evaluated.length && skipped.length && peak.naoAvaliados.every(item => !item.meses?.length || item.motivo === 'historico_insuficiente');
       const detail = noHistory ? 'Sem 12 meses anteriores com notas para comparar; a avaliação começa em fev/2024.'
         : [evaluated.length ? `Avaliados: ${alertMonthList(evaluated)}.` : '', skipped.length ? `Não avaliados: ${skipped.join('; ')}.` : ''].filter(Boolean).join(' ');
-      peakCell = marked.length ? coverageCell(peakLabel, `Alerta em ${alertMonthList(marked)}`, detail, 'alert')
-        : hasAlert('pico') ? coverageCell(peakLabel, 'Alerta registrado', detail, 'alert')
-        : evaluated.length ? coverageCell(peakLabel, 'Nenhum alerta', detail)
+      peakCell = marked.length ? coverageCell(peakLabel, `Pico em ${alertMonthList(marked)}`, detail, 'alert')
+        : hasAlert('pico') ? coverageCell(peakLabel, 'Pico registrado', detail, 'alert')
+        : evaluated.length ? coverageCell(peakLabel, 'Nenhum pico', detail)
         : coverageCell(peakLabel, 'Não avaliado', detail, 'muted');
     }
     let supplierCell = coverageCell(supplierLabel, 'Sem cobertura', '', 'muted');
     if (supplier) {
       const detail = supplier.avaliado ? `Notas de ${esc(supplier.periodo || year)}${supplier.parcial ? ' · período parcial, o ano ainda pode receber notas' : ''}.` : 'Sem total positivo de notas.';
       supplierCell = !supplier.avaliado ? coverageCell(supplierLabel, 'Não avaliada', detail, 'muted')
-        : coverageCell(supplierLabel, hasAlert('fornecedor') ? 'Alerta registrado' : 'Nenhum alerta', detail, hasAlert('fornecedor') ? 'alert' : '');
+        : coverageCell(supplierLabel, hasAlert('fornecedor') ? 'Concentração registrada' : 'Nenhuma concentração', detail, hasAlert('fornecedor') ? 'alert' : '');
     }
     return `<div class="profile-coverage-row" role="row"><h4 role="rowheader">${year}</h4>${peakCell}${supplierCell}</div>`;
   }).join('');
@@ -803,7 +803,7 @@ function profileCoverageSection(coverage, alerts = []) {
   const ruleVersion = [...new Set(rows.map(row => row.regraVersao).filter(Boolean))].join(', ');
   const footnote = [ruleVersion ? `Regra ${esc(ruleVersion)}` : '', collected ? `coleta de ${dateBR(collected)}` : ''].filter(Boolean).join(' · ');
   return `<section class="card profile-alert-coverage"><h3 class="k">O que foi avaliado</h3>
-    <div class="profile-coverage-table" role="table" aria-label="Avaliação das regras de alerta por ano">
+    <div class="profile-coverage-table" role="table" aria-label="Avaliação das regras da cota por ano">
       <div class="profile-coverage-row profile-coverage-head" role="row"><span role="columnheader">Ano</span><span role="columnheader">${peakLabel}</span><span role="columnheader">${supplierLabel}</span></div>
       ${years}
     </div>
@@ -897,7 +897,7 @@ function profileMandateStartNote(mandate, tenure = null) {
   return ` O mandato começou em ${name} de ${year}; antes de fev/2023 a cota não entra aqui, para seguir a mesma regra da Câmara.`;
 }
 function profileExpenseDetails(f, hasExpenseData, cost = null, mandate = null, tenure = null) {
-  if (!hasExpenseData) return '<p class="muted">Não há lançamentos observados para calcular total, média, série mensal ou alertas.</p>';
+  if (!hasExpenseData) return '<p class="muted">Não há lançamentos observados para calcular total, média, série mensal, picos ou concentrações.</p>';
   const maxMonth = Math.max(1, ...f.meses.map(month => month.valor));
   const categories = Array.isArray(f.categorias) ? f.categorias : [];
   const categoryTotal = categories.reduce((sum, category) => sum + (Number.isFinite(category?.valor) ? Math.max(0, category.valor) : 0), 0);
@@ -1051,7 +1051,7 @@ function profileView() {
     <p class="muted">Os votos cobrem apenas as votações selecionadas no Placar: texto principal de PL, PLP e PEC desde fev/2023. Cada votação abre seu resumo e fontes oficiais.</p>` : ''}
     ${!isChamberPerson ? ['presenca', 'votacoes'].map(key => { const source = profileSenateSource(key); return source ? `<p><b>${key === 'presenca' ? 'Presença' : 'Votações'} do Senado</b></p>${profileSource(source)}<p class="muted">${esc(datesInTextBR(source.detail))}</p>` : ''; }).join('') : ''}
     ${!isChamberPerson ? profileAttendanceSources(shared.id) : ''}
-    <p class="muted">Alertas indicam registros para conferir, não conclusões de irregularidade. “Parecido com a média” mantém a faixa de diferença inferior a 10% na cota.</p>
+    <p class="muted">Picos e concentrações indicam registros para conferir, não conclusões de irregularidade. “Parecido com a média” mantém a faixa de diferença inferior a 10% na cota.</p>
     ${citizenSourceUrl(person) ? `<a class="fchip" href="${esc(citizenSourceUrl(person))}" target="_blank" rel="noopener">Página oficial ↗</a>` : ''}
     ${hasExpenseData ? `<a class="fchip" href="${esc('/api/c/gastos.csv?id=' + encodeURIComponent(person.id))}" download>Baixar todas as notas (CSV)</a>` : ''}
     ${hasExpenseData ? '<p class="muted">O arquivo traz uma nota por linha, desde fev/2023. Nas notas de 2023 a 2025, a coluna Documento fica vazia; o link da nota continua.</p>' : ''}`;

@@ -606,7 +606,7 @@ function profileSectionsHTML(value, slots = {}) {
     ${typeof slots?.sources === 'string' ? slots.sources : ''}`;
   const sections = [
     ['expenses', 'Gastos em detalhe', slot('expenses'), {}],
-    ['alerts', 'Alertas em detalhe', slot('alerts'), {}],
+    ['alerts', 'Picos e concentrações em detalhe', slot('alerts'), {}],
     ['votes', 'Como votou', slot('votes'), {}],
     ['projects', projectTitle, projectContent, {}],
     ['staff', 'Equipe e verba de gabinete', officeContent, {}],

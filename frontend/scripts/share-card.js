@@ -5,7 +5,7 @@ const SHARE_STATE = { card: null, busy: false, message: '' };
 const SHARE_SIZE = { width: 1080, height: 1350, padding: 72 };
 const SHARE_COLORS = { bg: '#F4F5F7', surface: '#FFFFFF', ink: '#111318', ink2: '#3B3F48', muted: '#5B606B', line: '#E3E5EA', accent: '#5B3DF5' };
 const SHARE_FONTS = { display: "'Newsreader', Georgia, serif", body: "'Geist', system-ui, sans-serif", data: "'Geist Mono', ui-monospace, monospace" };
-const SHARE_DISCLAIMER = 'Projeto pessoal e apartidário com dados públicos oficiais. Alertas não indicam irregularidade.';
+const SHARE_DISCLAIMER = 'Projeto pessoal e apartidário com dados públicos oficiais. Picos e concentrações não indicam irregularidade.';
 /* Comparação de políticos: tema escuro, uma cor para cada pessoa (só distingue os lados). */
 const SHARE_DARK = { bg: '#0E0F13', surface: '#17191F', ink: '#ECEDF1', ink2: '#C9CCD4', muted: '#A2A7B2', faint: '#6B707B', behind: '#8A8F9A',
   line: '#2A2D36', track: '#3A3E48', people: ['#A898FA', '#FF9A6B'], others: ['#6B707B', '#4E535E'], rest: '#22252D' };
@@ -326,7 +326,7 @@ function shareDrawFaceoff(card, context, images = new Map()) {
   y += 128 + 46;
   context.fillStyle = SHARE_DARK.ink2;
   context.font = shareFont(400, 21);
-  context.fillText(card.alertsLabel || 'Alertas na cota', padding + 28, y);
+  context.fillText(card.alertsLabel || 'Picos e concentrações na cota', padding + 28, y);
   const alerts = card.alerts || [];
   context.textAlign = 'right';
   context.font = shareFont(700, 26, SHARE_FONTS.data);

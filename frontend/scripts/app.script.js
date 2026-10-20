@@ -102,8 +102,8 @@ function votesView() {
 function notFoundView() {
   return serverRendered(currentPath()) || `${pageHead('Erro 404', 'Página não encontrada', 'O endereço não existe ou mudou. Os caminhos do site estão abaixo.')}
     <section class="card wide"><span class="k">Talvez você procure</span><ul class="seo-plain-list">
-      <li><a href="/politicos" data-go="politicians">Deputados(as) e senadores(as)</a>: custo, cota, presença, votos e alertas de cada ficha.</li>
-      <li><a href="/alertas" data-go="alerts">Alertas da cota</a>: meses acima da referência e concentração em fornecedor.</li>
+      <li><a href="/politicos" data-go="politicians">Deputados(as) e senadores(as)</a>: custo, cota, presença, votos, picos e concentrações de cada ficha.</li>
+      <li><a href="/picos-e-concentracoes" data-go="alerts">Picos e concentrações da cota</a>: meses acima da referência e concentração em fornecedor.</li>
       <li><a href="/placar" data-go="votes">Placar das votações</a>: como cada deputado(a) votou no texto principal dos projetos.</li>
       <li><a href="/minha-cidade" data-go="city">Minha cidade</a>: quem governa, contas da prefeitura e emendas.</li>
       <li><a href="/metodologia" data-go="methodology">Metodologia</a> e <a href="/sobre" data-go="about">sobre o projeto</a>.</li></ul></section>`;
@@ -138,7 +138,7 @@ function render() {
 }
 /* Endereços próprios: /deputado/<id>, /senador/<id> e seções. O servidor entrega a mesma página com
    conteúdo e metadados para buscadores; aqui o app lê o endereço ao abrir e o atualiza ao navegar. */
-const PATH_BY_VIEW = { home: '/', alerts: '/alertas', votes: '/placar', vote: '/placar', politicians: '/politicos',
+const PATH_BY_VIEW = { home: '/', alerts: '/picos-e-concentracoes', votes: '/placar', vote: '/placar', politicians: '/politicos',
   parties: '/partidos', compare: '/comparar', attendance: '/presenca', city: '/minha-cidade', methodology: '/metodologia', about: '/sobre' };
 const currentPath = () => (typeof location === 'undefined' || typeof location.pathname !== 'string' ? '/' : location.pathname.replace(/^\/index\.html$/, '/').replace(/\/+$/, '') || '/');
 const currentQuery = name => { try { return new URLSearchParams(typeof location !== 'undefined' ? location.search || '' : '').get(name); } catch (error) { return null; } };

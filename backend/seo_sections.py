@@ -29,7 +29,7 @@ SEGMENT_OUTCOMES = {'kept': 'Trecho mantido', 'removed': 'Trecho retirado', 'app
 URGENCY_OUTCOMES = {'approved': 'Urgência aprovada', 'rejected': 'Urgência rejeitada', 'not_approved': 'Urgência não aprovada'}
 VOTE_CHOICE_GROUPS = ['Sim', 'Não', 'Abstenção', 'Obstrução', 'Presidiu']
 INDEPENDENCE_NOTE = (f'{SITE_NAME} é um projeto pessoal e apartidário que reúne dados públicos oficiais. '
-                     'Alertas não indicam irregularidade. Dado ausente não significa zero.')
+                     'Picos e concentrações não indicam irregularidade. Dado ausente não significa zero.')
 
 
 def esc(value):
@@ -173,16 +173,16 @@ def alerts_body(db):
     rule_cards = ''.join(f'<article class="card alerts-rule" data-kind="{kind}"><b>{esc(title)}</b><span>{esc(text)}</span>'
                          f'<b class="mono alerts-rule-count">{pt_int(counts.get(key, 0))}</b></article>' for key, kind, title, text in rules)
     items = radar.get('itens') or []
-    status = (f'{pt_int(total)} {"alerta" if total == 1 else "alertas"} no mandato{f" ({esc(scope)})" if scope else ""} · '
+    status = (f'{pt_int(total)} {"pico ou concentração" if total == 1 else "picos e concentrações"} no mandato{f" ({esc(scope)})" if scope else ""} · '
               f'dos mais recentes aos mais antigos{f"; os {len(items)} mais recentes abaixo" if total > len(items) else ""}')
     return (f'<div class="alerts-page"><section class="alerts-hero"><div class="alerts-intro">'
-            f'<h1 class="h ph-t">Alertas</h1>'
+            f'<h1 class="h ph-t">Picos e concentrações</h1>'
             f'<p class="ph-lead">Meses acima da referência e concentração em fornecedor nas notas da cota de deputados(as) e senadores(as), '
-            f'pelas mesmas regras para todos(as). Os alertas não indicam irregularidade: confira sempre as notas na fonte oficial.</p>'
+            f'pelas mesmas regras para todos(as). Os picos e as concentrações não indicam irregularidade: confira sempre as notas na fonte oficial.</p>'
             f'<a class="alerts-how-link" href="/metodologia#methodology-alerts">Como as regras funcionam →</a></div>'
             f'<div class="alerts-rules">{rule_cards}</div></section>'
             f'<p class="muted alerts-status" role="status">{status}</p>'
-            f'<div class="alerts-grid">{"".join(alert_card(alert) for alert in items) or "<p class=\"note\">Nenhum alerta na base atual.</p>"}</div>'
+            f'<div class="alerts-grid">{"".join(alert_card(alert) for alert in items) or "<p class=\"note\">Nenhum pico ou concentração na base atual.</p>"}</div>'
             f'<section class="card citizen-how" id="alerts-how"><span class="k">Como funciona</span>'
             f'<p><b>Mês acima da referência:</b> o gasto do mês passou de 1,75 vez a mediana dos 12 meses anteriores da própria pessoa. '
             f'A avaliação começa em fevereiro de 2024, quando há 12 meses de mandato para comparar.</p>'
@@ -232,7 +232,7 @@ def _home_stats(summary, alerts_total):
     if isinstance(quota.get('total'), (int, float)):
         stats.append((short_amount(quota['total']), f'de cota usada pelos deputados(as) da lista, {esc(period_text(quota.get("periodo")))}'))
     if isinstance(alerts_total, int):
-        stats.append((pt_int(alerts_total), 'alertas na cota pelas regras do painel; não indicam irregularidade'))
+        stats.append((pt_int(alerts_total), 'picos e concentrações na cota pelas regras do painel; não indicam irregularidade'))
     if categories and positive_total > 0:
         stats.append((f'{half_up(categories[0]["valor"] / positive_total * 100)}%', f'da cota foi para {esc(categories[0]["nome"].lower())}'))
     if not stats:
@@ -287,11 +287,11 @@ def home_body(db):
             '<div class="home-shortcuts"><a href="/minha-cidade">Minha cidade</a><a href="/comparar">Comparar dois políticos</a><a href="/placar">Placar das votações</a></div></div>')
     alerts_section = ''
     if alerts:
-        alerts_section = (f'<section class="citizen-home"><div class="citizen-head"><div><h2 class="h">Alertas da cota</h2>'
+        alerts_section = (f'<section class="citizen-home"><div class="citizen-head"><div><h2 class="h">Picos e concentrações da cota</h2>'
                           f'<span class="muted">Meses acima da referência e concentração em fornecedor nas notas do mandato{f" ({esc(scope)})" if scope else ""} '
                           f'de deputados(as) e senadores(as), pelas mesmas regras para todos(as), dos mais recentes aos mais antigos. Não indicam irregularidade.</span></div></div>'
                           f'<div class="carousel citizen-carousel">{"".join(alert_card(alert) for alert in alerts)}</div>'
-                          f'<a class="opt citizen-cta" href="/alertas">Ver os {pt_int(radar.get("total") or 0)} alertas</a></section>')
+                          f'<a class="opt citizen-cta" href="/picos-e-concentracoes">Ver os {pt_int(radar.get("total") or 0)} picos e concentrações</a></section>')
     return (f'<section class="home-hero">{hero}{_home_cost_card(summary)}</section>'
             f'{_home_stats(summary, radar.get("total"))}{alerts_section}'
             f'<div class="home-pair">{_home_top_card(summary)}{_home_categories_card(summary)}</div>'
@@ -327,12 +327,12 @@ def politicians_body(db):
     senators = [person for person in people if person['role'] == 'senador']
     senate_note = (' O Senado tem 81 cadeiras; registros extras no retrato da fonte podem refletir suplentes em transição.'
                    if len(senators) > 81 else '')
-    return (page_head('Deputados(as) e senadores(as)', 'Políticos', 'Busque qualquer um(a) e veja quanto custa por mês, com os alertas.')
+    return (page_head('Deputados(as) e senadores(as)', 'Políticos', 'Busque qualquer um(a) e veja quanto custa por mês, com os picos e concentrações da cota.')
             + f'<div class="citizen-roster-summary" role="status"><b>{len(deputies)} deputados(as)</b> · <b>{len(senators)} registros do Senado</b></div>'
             '<div class="citizen-actions"><a class="fchip" href="/comparar">Comparar políticos(as) →</a><a class="fchip" href="/partidos">Comparar partidos →</a>'
             '<a class="fchip" href="/presenca">Presença dos deputados →</a></div>'
             f'<section class="card wide"><h2 class="h">Câmara dos Deputados</h2><p class="muted">{len(deputies)} deputados(as) federais na lista oficial atual, em ordem alfabética. '
-            f'Cada ficha mostra o custo de um mês de referência, a média do mandato, notas da cota, presença, votos e alertas.</p>{directory_list(deputies)}</section>'
+            f'Cada ficha mostra o custo de um mês de referência, a média do mandato, notas da cota, presença, votos, picos e concentrações.</p>{directory_list(deputies)}</section>'
             f'<section class="card wide"><h2 class="h">Senado Federal</h2><p class="muted">{len(senators)} registros na lista oficial atual.{senate_note}</p>{directory_list(senators)}</section>'
             '<span class="src">Fonte: listas oficiais da Câmara dos Deputados e do Senado Federal. A busca mostra só deputados(as) federais e senadores(as) com mandato em curso; '
             'eleitos(as) em 2026 aparecem a partir da posse, em 1º de fevereiro de 2027. Custo por mês na lista: média do mandato nos meses disponíveis com as partes exigidas e as notas assentadas. Na ficha, essa média é contexto para o custo de um mês específico; '
@@ -613,21 +613,21 @@ def parties_body(db):
     table = ('<div class="seo-table-wrap"><table class="seo-table"><caption class="muted">Lista oficial atual; cota média mensal por deputado(a), nos meses com notas já assentadas, desde fev/2023. '
              'Sem notas importadas, a média fica em branco (ausência não é zero).</caption>'
              '<thead><tr><th scope="col">Partido</th><th scope="col">Registros</th><th scope="col">Câmara</th><th scope="col">Senado</th>'
-             '<th scope="col">Cota média/mês (Câmara)</th><th scope="col">Alertas</th></tr></thead>'
+             '<th scope="col">Cota média/mês (Câmara)</th><th scope="col">Picos e concentrações</th></tr></thead>'
              f'<tbody>{"".join(rows)}</tbody></table></div>') if rows else '<p class="note">Sem partidos na lista atual.</p>'
     return ('<div class="compare-intro"><span class="k">Câmara e Senado</span><h1 class="h ph-t">Partidos lado a lado</h1>'
             '<p class="ph-lead">Registros da lista, gastos com a cota, presença e votos de dois partidos. Compare a média, não o total: partidos maiores têm mais gente.</p></div>'
             f'<section class="card wide"><h2 class="h">Partidos na lista atual</h2>{table}'
-            '<p class="muted">Com JavaScript, escolha dois partidos para ver cota média, presença, alertas e como as bancadas votaram, lado a lado, e compartilhe a comparação.</p></section>'
-            f'<span class="src">Gastos pelas notas da cota, com as passagens aéreas emitidas pela agência da Câmara. Alertas não indicam irregularidade. Partidos maiores tendem a ter mais variação interna; '
+            '<p class="muted">Com JavaScript, escolha dois partidos para ver cota média, presença, picos e concentrações e como as bancadas votaram, lado a lado, e compartilhe a comparação.</p></section>'
+            f'<span class="src">Gastos pelas notas da cota, com as passagens aéreas emitidas pela agência da Câmara. Picos e concentrações não indicam irregularidade. Partidos maiores tendem a ter mais variação interna; '
             f'compare a média, não o total.{snapshot_note(data.get("snapshotAt"))}</span>')
 
 
 def compare_body():
     return ('<div class="compare-intro"><span class="k">Comparar</span><h1 class="h ph-t">Lado a lado</h1>'
-            '<p class="ph-lead">Gastos, alertas, presença e votos de dois(duas) políticos(as) na mesma tela.</p></div>'
+            '<p class="ph-lead">Gastos, presença, votos, picos e concentrações de dois(duas) políticos(as) na mesma tela.</p></div>'
             '<section class="card wide"><span class="k">Como funciona</span>'
-            '<p>Escolha dois(duas) deputados(as) ou senadores(as) e veja custo médio por mês, cota, alertas, presença e como votaram nas votações do Placar, lado a lado. '
+            '<p>Escolha dois(duas) deputados(as) ou senadores(as) e veja custo médio por mês, cota, presença, picos e concentrações e como votaram nas votações do Placar, lado a lado. '
             'Câmara e Senado não publicam as mesmas partes do custo: a comparação direta de valores só vale entre pessoas da mesma Casa.</p>'
             '<p class="muted">A escolha das pessoas usa a busca do app. Sem JavaScript, abra a lista de políticos e consulte cada ficha.</p>'
             '<div class="citizen-actions"><a class="fchip" href="/politicos">Lista de deputados(as) e senadores(as) →</a><a class="fchip" href="/partidos">Comparar partidos →</a></div></section>')
@@ -677,7 +677,7 @@ def methodology_body(page, section_paths):
         blocks.append(f'<section class="methodology-section" id="methodology-{esc(section["id"])}"><header><h2 class="h">{esc(section["title"])}</h2><p>{esc(section.get("lead"))}</p></header>'
                       f'<div class="methodology-questions">{questions}</div>{view_link}</section>')
     return (f'<div class="methodology-page"><section class="methodology-intro"><h1 class="h ph-t">{esc(page.get("title"))}</h1><p class="ph-lead">{esc(page.get("lead"))}</p>'
-            f'<p class="card methodology-notice"><span><b>Alertas não indicam irregularidade.</b> {esc(str(page.get("notice") or "").removeprefix("Alertas não indicam irregularidade. "))}</span></p></section>'
+            f'<p class="card methodology-notice"><span><b>Picos e concentrações não indicam irregularidade.</b> {esc(str(page.get("notice") or "").removeprefix("Picos e concentrações não indicam irregularidade. "))}</span></p></section>'
             f'<div class="methodology-layout"><nav class="methodology-toc" aria-label="Nesta página"><span class="k">Nesta página</span>{toc}</nav>'
             f'<div class="methodology-sections">{"".join(blocks)}</div></div></div>')
 
@@ -695,8 +695,8 @@ def about_body(page):
 def not_found_body():
     return (page_head('Erro 404', 'Página não encontrada', 'O endereço não existe ou mudou. Os caminhos do site estão abaixo.')
             + '<section class="card wide"><span class="k">Talvez você procure</span><ul class="seo-plain-list">'
-            '<li><a href="/politicos">Deputados(as) e senadores(as)</a>: custo, cota, presença, votos e alertas de cada ficha.</li>'
-            '<li><a href="/alertas">Alertas da cota</a>: meses acima da referência e concentração em fornecedor.</li>'
+            '<li><a href="/politicos">Deputados(as) e senadores(as)</a>: custo, cota, presença, votos, picos e concentrações de cada ficha.</li>'
+            '<li><a href="/picos-e-concentracoes">Picos e concentrações da cota</a>: meses acima da referência e concentração em fornecedor.</li>'
             '<li><a href="/placar">Placar das votações</a>: como cada deputado(a) votou no texto principal dos projetos.</li>'
             '<li><a href="/minha-cidade">Minha cidade</a>: quem governa, contas da prefeitura e emendas.</li>'
             '<li><a href="/metodologia">Metodologia</a> e <a href="/sobre">sobre o projeto</a>.</li></ul></section>')

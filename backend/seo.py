@@ -51,6 +51,8 @@ PARTY_PAIR_PATH = re.compile(r'^/partidos/([^/]{1,60})-vs-([^/]{1,60})$')
 COMPARE_PAIR_PATH = re.compile(r'^/comparar/(deputado|senador)-(\d{1,9})-vs-(deputado|senador)-(\d{1,9})$')
 PROFILE_PATH = re.compile(r'^/(deputado|senador)/(\d{1,9})(?:-[a-z0-9-]*)?/?$')
 VOTE_DETAIL_PATH = re.compile(r'^/placar/(\d{1,12}-\d{1,6})$')
+# Endereços antigos de seções, mantidos para os links já compartilhados.
+LEGACY_SECTION_PATHS = {'/alertas': '/picos-e-concentracoes'}
 ROLE_BY_PREFIX = {'deputado': ('camara', 'deputado'), 'senador': ('senado', 'senador')}
 PREFIX_BY_HOUSE = {'camara': 'deputado', 'senado': 'senador'}
 ROLE_LABEL = {'deputado': 'Deputado(a) federal', 'senador': 'Senador(a)'}
@@ -253,11 +255,11 @@ def profile_facts(db, identifier):
     evaluated = any((c.get('regra') == 'pico' and c.get('avaliados')) or (c.get('regra') == 'fornecedor' and c.get('avaliado'))
                     for c in coverage)
     if alerts:
-        facts['lines'].append(('Alertas na cota', f'{len(alerts)} {"alerta" if len(alerts) == 1 else "alertas"} pelas regras do painel, iguais para todos(as). Alertas não indicam irregularidade.'))
+        facts['lines'].append(('Picos e concentrações na cota', f'{len(alerts)} {"pico ou concentração" if len(alerts) == 1 else "picos e concentrações"} pelas regras do painel, iguais para todos(as). Não indicam irregularidade.'))
     elif evaluated:
-        facts['lines'].append(('Alertas na cota', 'Nenhum alerta nos meses do mandato avaliados pelas regras do painel.'))
+        facts['lines'].append(('Picos e concentrações na cota', 'Nenhum pico ou concentração nos meses do mandato avaliados pelas regras do painel.'))
     elif record.get('hasExpenseData'):
-        facts['lines'].append(('Alertas na cota', 'Dados insuficientes para avaliar os alertas da cota no mandato.'))
+        facts['lines'].append(('Picos e concentrações na cota', 'Dados insuficientes para avaliar picos e concentrações na cota do mandato.'))
     facts['sourceUrl'] = (f'https://www.camara.leg.br/deputados/{number}' if house == 'camara'
                           else f'https://www25.senado.leg.br/web/senadores/senador/-/perfil/{number}')
     facts['alerts'] = alerts
@@ -367,7 +369,7 @@ def section_body(db, path):
         return ''
     if path == '/':
         return sections.home_body(db)
-    if path == '/alertas':
+    if path == '/picos-e-concentracoes':
         return sections.alerts_body(db)
     if path == '/politicos':
         return sections.politicians_body(db)
@@ -391,7 +393,7 @@ def section_page(db, page_html, path, origin):
     if path == '/':
         json_ld = [website_ld(origin)]
     else:
-        page_type = 'AboutPage' if path == '/sobre' else 'CollectionPage' if path in ('/politicos', '/alertas', '/placar', '/presenca') else 'WebPage'
+        page_type = 'AboutPage' if path == '/sobre' else 'CollectionPage' if path in ('/politicos', '/picos-e-concentracoes', '/placar', '/presenca') else 'WebPage'
         json_ld = [webpage_ld(origin, url, full_title(title), description, page_type), breadcrumb_ld(origin, [('Início', '/'), (title, path)])]
     return render(page_html, title, description, url, origin, body, json_ld, marker=path)
 
@@ -401,7 +403,7 @@ def party_pair_page(page_html, path, origin):
     match = PARTY_PAIR_PATH.match(path)
     first, second = (unquote(part).strip()[:30] for part in match.groups())
     title = f'{first} × {second} · Comparar partidos'
-    description = (f'{first} e {second} lado a lado: gasto médio de cota, presença, alertas e como votaram '
+    description = (f'{first} e {second} lado a lado: gasto médio de cota, presença, picos e concentrações e como votaram '
                    'na Câmara e no Senado, com dados públicos oficiais.')
     body = (f'<div class="compare-intro"><span class="k">Câmara e Senado</span><h1 class="h ph-t">{_escape(first)} × {_escape(second)}</h1>'
             f'<p class="ph-lead">{_escape(description)}</p></div><p class="note">A comparação é montada no navegador. <a href="/partidos">Ver os partidos</a>.</p>')
@@ -423,7 +425,7 @@ def compare_pair_page(db, page_html, path, origin):
         people.append(f'{person["name"]} ({party_place})' if party_place else person['name'])
         links.append(f'<a class="fchip" href="{profile_path(f"{house}:{number}", person["name"])}">{_escape(person["name"])} →</a>')
     title = f'{people[0]} × {people[1]} · Comparar políticos'
-    description = f'{people[0]} e {people[1]} lado a lado: custo, cota, alertas, presença e votos, com dados públicos oficiais.'
+    description = f'{people[0]} e {people[1]} lado a lado: custo, cota, presença, votos, picos e concentrações, com dados públicos oficiais.'
     body = (f'<div class="compare-intro"><span class="k">Comparar</span><h1 class="h ph-t">{_escape(people[0])} × {_escape(people[1])}</h1>'
             f'<p class="ph-lead">{_escape(description)}</p></div><div class="citizen-actions">{"".join(links)}</div>')
     # noindex: o par é escolha de quem compartilha, não uma página para indexar.
@@ -463,7 +465,7 @@ def profile_page(db, page_html, path, origin):
             f'<p>Fontes: dados públicos oficiais {house_name}. Retrato de {_escape(facts["snapshotAt"] or "data não informada")}. '
             f'<a href="{_escape(facts["sourceUrl"])}" rel="noopener">Página oficial ↗</a>.</p>'
             f'<p>{sections.INDEPENDENCE_NOTE} <a href="/metodologia">Como os números são calculados</a>.</p>'
-            f'<div class="citizen-actions"><a class="fchip" href="/comparar">Comparar com outro(a) →</a><a class="fchip" href="/alertas">Todos os alertas →</a></div></article>')
+            f'<div class="citizen-actions"><a class="fchip" href="/comparar">Comparar com outro(a) →</a><a class="fchip" href="/picos-e-concentracoes">Todos os picos e concentrações →</a></div></article>')
     return 200, render(page_html, title, description, url, origin, body, json_ld, marker=profile_path(identifier)), None
 
 
@@ -500,6 +502,8 @@ def not_found_page(page_html, path, origin):
 
 def page(db, page_html, path, origin):
     """(status, html, redirect) de qualquer endereço de página; ``db`` pode ser None antes da primeira importação."""
+    if path in LEGACY_SECTION_PATHS:
+        return 301, None, LEGACY_SECTION_PATHS[path]
     if PARTY_PAIR_PATH.match(path):
         return 200, party_pair_page(page_html, path, origin), None
     if path in SECTIONS:
@@ -555,8 +559,8 @@ def llms(origin):
 > {DEFAULT_DESCRIPTION}
 
 Cada deputado(a) federal e senador(a) tem uma página com endereço próprio, no formato
-{origin}/deputado/<id>-<nome> ou {origin}/senador/<id>-<nome>, com o custo de um mês de referência e a média do mandato, cota, presença, votos
-e alertas, sempre com o período dos dados e a data da fotografia. Cada votação do Placar tem endereço próprio,
+{origin}/deputado/<id>-<nome> ou {origin}/senador/<id>-<nome>, com o custo de um mês de referência e a média do mandato, cota, presença, votos,
+picos e concentrações, sempre com o período dos dados e a data da fotografia. Cada votação do Placar tem endereço próprio,
 {origin}/placar/<id>, com a decisão, o que significava votar Sim e Não, o resultado e o voto de cada deputado(a).
 A lista completa está no sitemap: {origin}/sitemap.xml. O conteúdo essencial de cada página está no HTML inicial,
 sem depender de JavaScript.
@@ -569,8 +573,8 @@ sem depender de JavaScript.
 
 Os números vêm de dados públicos oficiais (Câmara dos Deputados, Senado Federal, Portal da Transparência,
 IBGE, TSE, Tesouro Nacional e Receita Federal) e cada página indica fonte, período e data da coleta. Câmara e
-Senado publicam partes diferentes do custo: compare só dentro da mesma Casa. Alertas seguem regras fixas e iguais
-para todos(as) e não indicam irregularidade. Ausência de dado não significa zero. Valores são da época, sem
+Senado publicam partes diferentes do custo: compare só dentro da mesma Casa. Picos e concentrações seguem regras fixas e
+iguais para todos(as) e não indicam irregularidade. Ausência de dado não significa zero. Valores são da época, sem
 correção pela inflação. Regras completas: {origin}/metodologia.
 
 ## Uso e citação

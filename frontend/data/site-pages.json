@@ -9,10 +9,10 @@
       "description": "Quanto custa, se trabalha e se há gastos incomuns: deputados(as) e senadores(as) em dados públicos oficiais da Câmara e do Senado, com fonte e data. Projeto pessoal e apartidário."
     },
     {
-      "path": "/alertas",
+      "path": "/picos-e-concentracoes",
       "view": "alerts",
-      "title": "Alertas de gastos incomuns na cota parlamentar",
-      "description": "Gastos da cota de deputados(as) e senadores(as) que fogem do padrão pelas mesmas regras para todos(as). Alertas não indicam irregularidade."
+      "title": "Picos e concentrações na cota parlamentar",
+      "description": "Gastos da cota de deputados(as) e senadores(as) que fogem do padrão pelas mesmas regras para todos(as). Picos e concentrações não indicam irregularidade."
     },
     {
       "path": "/placar",
@@ -24,19 +24,19 @@
       "path": "/politicos",
       "view": "politicians",
       "title": "Deputados(as) e senadores(as)",
-      "description": "Busque qualquer deputado(a) federal ou senador(a) e veja custo do mandato, presença, votos e alertas."
+      "description": "Busque qualquer deputado(a) federal ou senador(a) e veja custo do mandato, presença, votos, picos e concentrações."
     },
     {
       "path": "/partidos",
       "view": "parties",
       "title": "Comparar partidos",
-      "description": "Gasto médio de cota, presença, alertas e votos de dois partidos lado a lado, na Câmara e no Senado."
+      "description": "Gasto médio de cota, presença, picos e concentrações e votos de dois partidos lado a lado, na Câmara e no Senado."
     },
     {
       "path": "/comparar",
       "view": "compare",
       "title": "Comparar políticos",
-      "description": "Dois(duas) parlamentares lado a lado: custo, cota, alertas, presença e votos."
+      "description": "Dois(duas) parlamentares lado a lado: custo, cota, presença, votos, picos e concentrações."
     },
     {
       "path": "/presenca",
@@ -54,7 +54,7 @@
       "path": "/metodologia",
       "view": "methodology",
       "title": "Metodologia e perguntas",
-      "description": "Como o painel calcula custo, cota, presença, alertas, Placar e contador de impostos: fontes oficiais, regras, prazos e limites de cada número."
+      "description": "Como o painel calcula custo, cota, presença, picos e concentrações, Placar e contador de impostos: fontes oficiais, regras, prazos e limites de cada número."
     },
     {
       "path": "/sobre",
@@ -66,19 +66,19 @@
   "methodology": {
     "title": "Como o painel funciona",
     "lead": "Cada número do site vem de uma fonte oficial e segue uma regra escrita aqui. As regras são iguais para todos(as) e o código é aberto: qualquer pessoa pode refazer as contas.",
-    "notice": "Alertas não indicam irregularidade. Eles detectam variação de gasto e concentração em fornecedor. Um contrato recorrente legítimo pode gerar um alerta, e um gasto problemático pode não gerar nenhum. Confira sempre as notas na fonte oficial.",
+    "notice": "Picos e concentrações não indicam irregularidade. As regras detectam variação de gasto e concentração em fornecedor. Um contrato recorrente legítimo pode gerar um pico ou uma concentração, e um gasto problemático pode não gerar nenhum dos dois. Confira sempre as notas na fonte oficial.",
     "sections": [
       {
         "id": "alerts",
-        "title": "Alertas da cota",
+        "title": "Picos e concentrações da cota",
         "view": [
           "alerts",
-          "Ver os alertas"
+          "Ver os picos e concentrações"
         ],
         "lead": "Duas regras fixas, aplicadas igualmente a deputados(as) e senadores(as), nas notas do mandato inteiro (fev/2023 em diante). Versão em uso: cota-alertas-v3, desde 8/10/2026.",
         "questions": [
           {
-            "question": "O que é um alerta de “mês acima da referência”?",
+            "question": "O que é um “mês acima da referência”?",
             "answer": [
               "Aparece quando o gasto de um mês com a cota:",
               [
@@ -86,7 +86,7 @@
                 "fica pelo menos R$ 10 mil acima dela;",
                 "e também fica acima do gasto mensal típico dos(as) colegas (o piso: mediana dos meses fechados dos parlamentares da mesma Casa e ano)."
               ],
-              "A referência é a mediana dos 12 meses anteriores completos, atravessando o ano. Os 12 meses precisam ter notas. Como o mandato começa em fev/2023, o primeiro mês avaliado é fev/2024. Meses seguidos marcados contam como um alerta só, dentro do mesmo ano."
+              "A referência é a mediana dos 12 meses anteriores completos, atravessando o ano. Os 12 meses precisam ter notas. Como o mandato começa em fev/2023, o primeiro mês avaliado é fev/2024. Meses seguidos marcados contam como um pico só, dentro do mesmo ano."
             ]
           },
           {
@@ -98,7 +98,7 @@
           {
             "question": "E “passagens intermediadas por uma agência”?",
             "answer": [
-              "Quando a maioria das notas de uma concentração cita, no registro oficial, uma companhia aérea (LATAM/TAM, GOL ou Azul) que não é o fornecedor pago, o alerta sai com esse título. O valor é o total pago pelas passagens, não a receita da agência nem gasto com uma só companhia. Só o Senado publica a companhia; na Câmara não há essa evidência."
+              "Quando a maioria das notas de uma concentração cita, no registro oficial, uma companhia aérea (LATAM/TAM, GOL ou Azul) que não é o fornecedor pago, a concentração sai com esse título. O valor é o total pago pelas passagens, não a receita da agência nem gasto com uma só companhia. Só o Senado publica a companhia; na Câmara não há essa evidência."
             ]
           },
           {
@@ -135,21 +135,21 @@
             ]
           },
           {
-            "question": "O que é o “valor das despesas nos alertas”?",
+            "question": "O que é o “valor das despesas nos picos e concentrações”?",
             "answer": [
-              "A soma das notas que estão em algum alerta do mandato, contando cada lançamento uma vez só e preservando estornos. É a soma de despesas observadas, não estimativa de prejuízo."
+              "A soma das notas que estão em algum pico ou concentração do mandato, contando cada lançamento uma vez só e preservando estornos. É a soma de despesas observadas, não estimativa de prejuízo."
             ]
           },
           {
-            "question": "Os alertas estão ordenados por gravidade?",
+            "question": "Os picos e concentrações estão ordenados por gravidade?",
             "answer": [
-              "Não. Eles aparecem dos mais recentes aos mais antigos, com títulos factuais e sem selo de intensidade. Ter menos alertas não torna ninguém “melhor”: os alertas não medem irregularidade."
+              "Não. Eles aparecem dos mais recentes aos mais antigos, com títulos factuais e sem selo de intensidade. Ter menos picos e concentrações não torna ninguém “melhor”: eles não medem irregularidade."
             ]
           },
           {
             "question": "Posso refazer as contas?",
             "answer": [
-              "Sim. O cálculo está num único arquivo do código aberto, usado para gerar os alertas, explicar cada cartão e rodar a simulação. A simulação é somente leitura, usa semente fixa e grava os parâmetros, a fotografia do banco e os resultados por Casa e ano."
+              "Sim. O cálculo está num único arquivo do código aberto, usado para gerar os picos e concentrações, explicar cada cartão e rodar a simulação. A simulação é somente leitura, usa semente fixa e grava os parâmetros, a fotografia do banco e os resultados por Casa e ano."
             ],
             "links": [
               [
@@ -157,7 +157,7 @@
                 "https://github.com/igoooooooooor/painelpublico/blob/main/backend/alert_rules.py"
               ],
               [
-                "Documentação dos alertas",
+                "Documentação das regras",
                 "https://github.com/igoooooooooor/painelpublico/blob/main/docs/alerts.md"
               ]
             ]
@@ -176,7 +176,7 @@
           {
             "question": "O que entra no custo de um deputado(a)?",
             "answer": [
-              "Salário bruto, auxílios, cota parlamentar e verba do gabinete. O número principal da ficha é o mês mais recente com as quatro partes publicadas e com 3 meses de folga até a data das notas importadas, porque as notas da cota chegam por semanas (na base de outubro, até julho: a folga conta em meses, não em 90 dias, e é mais curta que o prazo dos alertas); a média do mandato usa só os meses com as quatro partes e essa mesma folga. Quando a Câmara não publicou uma parte para ninguém em um mês (dez/2024, verba do gabinete), o mês entra com essa parte vazia e a média dela usa os outros meses. Meses parciais não são estimados para o mês inteiro.",
+              "Salário bruto, auxílios, cota parlamentar e verba do gabinete. O número principal da ficha é o mês mais recente com as quatro partes publicadas e com 3 meses de folga até a data das notas importadas, porque as notas da cota chegam por semanas (na base de outubro, até julho: a folga conta em meses, não em 90 dias, e é mais curta que o prazo das regras de pico e concentração); a média do mandato usa só os meses com as quatro partes e essa mesma folga. Quando a Câmara não publicou uma parte para ninguém em um mês (dez/2024, verba do gabinete), o mês entra com essa parte vazia e a média dela usa os outros meses. Meses parciais não são estimados para o mês inteiro.",
               "Ficam de fora: 13º salário (mostrado à parte), diárias, vantagens indenizatórias, encargos do gabinete e apartamento funcional."
             ]
           },
@@ -462,14 +462,14 @@
       },
       {
         "id": "alerts",
-        "title": "Alertas não são acusações",
+        "title": "Picos e concentrações não são acusações",
         "paragraphs": [
-          "Os alertas da cota são calculados por regras fixas, documentadas e iguais para todos(as). Eles apontam registros para conferir: um mês acima da referência da própria pessoa ou a concentração das notas de um ano em um mesmo fornecedor.",
+          "Os picos e as concentrações da cota são calculados por regras fixas, documentadas e iguais para todos(as). Eles apontam registros para conferir: um mês acima da referência da própria pessoa ou a concentração das notas de um ano em um mesmo fornecedor.",
           "“Incomum” e “acima do habitual” descrevem apenas uma diferença numérica. Não são acusação, juízo de valor nem indício de irregularidade. Um gasto incomum pode ter explicação legítima, como um evento, um contrato fixo ou atraso na publicação das notas."
         ],
         "links": [
           [
-            "Regras dos alertas",
+            "Regras dos picos e concentrações",
             "/metodologia#methodology-alerts"
           ]
         ]

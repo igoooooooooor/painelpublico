@@ -125,10 +125,10 @@ function partyAlertRow(a, b) {
     if (!people) return PARTY_UNAVAILABLE_LABEL;
     // Quem não tem notas não pode ser avaliado(a) pelas regras: fica fora da base, e a tela diz quantos(as).
     const outside = people.members - people.base;
-    return `<b>${people.flagged}</b><small> de ${people.base} com notas · ${people.alerts} ${people.alerts === 1 ? 'alerta' : 'alertas'} no total</small>${outside > 0
+    return `<b>${people.flagged}</b><small> de ${people.base} com notas · ${people.alerts} ${people.alerts === 1 ? 'pico ou concentração' : 'picos e concentrações'} no total</small>${outside > 0
       ? `<small class="party-note">${outside} dos(as) ${people.members} na lista não ${outside === 1 ? 'tem' : 'têm'} notas da cota e ${outside === 1 ? 'fica' : 'ficam'} fora da conta.</small>` : ''}`;
   };
-  return `<div class="cmp-row"><span class="cmp-l">Parlamentares com algum alerta na cota<small>Mandato atual. Alertas não indicam irregularidade; sem destaque.</small></span><div class="cmp-v">${show(a)}</div><div class="cmp-v">${show(b)}</div></div>`;
+  return `<div class="cmp-row"><span class="cmp-l">Parlamentares com algum pico ou concentração na cota<small>Mandato atual. Picos e concentrações não indicam irregularidade; sem destaque.</small></span><div class="cmp-v">${show(a)}</div><div class="cmp-v">${show(b)}</div></div>`;
 }
 const partyVoteDate = vote => /^\d{4}-\d{2}-\d{2}/.test(String(vote?.data || '')) && typeof dateBR === 'function' ? `${dateBR(vote.data)} · ` : '';
 function partyVoteChip(record) {
@@ -171,7 +171,7 @@ function partyShareCard(a, b) {
     layout: 'faceoff', title: `${a.sigla} × ${b.sigla}`, people,
     agreement: shared.length ? { lead: 'As bancadas votaram igual em', matching: shared.filter(id => majorities[0].get(id) === majorities[1].get(id)).length,
       total: shared.length, source: 'votações do Placar · Câmara' } : null,
-    alertsLabel: 'Parlamentares com algum alerta', alerts: parties.map(flaggedText),
+    alertsLabel: 'Parlamentares com pico ou concentração', alerts: parties.map(flaggedText),
     fileName: `${a.sigla}-x-${b.sigla}`,
     footnote: 'Câmara e Senado, mandato atual. Cota, presença e votações: deputados(as). Legenda pelo cadastro atual.',
   };
@@ -270,7 +270,7 @@ function partiesView() {
     <span class="muted">O número ao lado conta registros incluídos na lista (deputados(as) + senadores(as)); o Senado tem 81 cadeiras e a lista pode incluir suplentes em transição. Toque para trocar; o mais antigo da comparação sai.</span>
   </section>
   ${a && b ? partyComparisonTable(a, b) : '<p class="note">Escolha dois partidos para comparar.</p>'}
-  <span class="src">Destaque em roxo: menor gasto médio ou mais presença na Câmara; alertas e unidade nas votações só informam, sem destaque. Registros de presença do Senado são contagens informativas, sem ranking, e não contam sessões sem linha publicada. Partidos maiores tendem a ter mais variação interna; compare a média, não o total. Gastos pelas notas da cota, com as passagens aéreas emitidas pela agência da Câmara; presença e votos são mostrados separadamente por casa e pelos recortes das respectivas fontes.</span>
+  <span class="src">Destaque em roxo: menor gasto médio ou mais presença na Câmara; picos, concentrações e unidade nas votações só informam, sem destaque. Registros de presença do Senado são contagens informativas, sem ranking, e não contam sessões sem linha publicada. Partidos maiores tendem a ter mais variação interna; compare a média, não o total. Gastos pelas notas da cota, com as passagens aéreas emitidas pela agência da Câmara; presença e votos são mostrados separadamente por casa e pelos recortes das respectivas fontes.</span>
   ${a && b ? `<div class="compare-actions">${shareActionsHTML(partyShareCard(a, b), 'Compartilhar imagem')}<button type="button" class="fchip" data-cmp-start="">Comparar políticos →</button></div>` : ''}`);
 }
 

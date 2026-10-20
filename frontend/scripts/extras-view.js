@@ -373,7 +373,7 @@ function comparisonView() {
       <button type="button" class="back" data-back>‹ Voltar</button>
       <span class="k">Comparar</span>
       <h1 class="h ph-t">Lado a lado</h1>
-      <p class="ph-lead">Gastos, alertas, presença e votos de dois(duas) políticos(as) na mesma tela.</p>
+      <p class="ph-lead">Gastos, presença, votos, picos e concentrações de dois(duas) políticos(as) na mesma tela.</p>
     </div>
     ${extrasState.comparisonIds.length ? `<div class="compare-people">${extrasState.comparisonIds.map(comparisonPersonCard).join('')}</div>` : ''}
     ${pickerSection}${content}${footer}
@@ -684,7 +684,7 @@ function comparisonTable([a, b]) {
     <div class="cmp-row cmp-bars"><span class="cmp-l"></span><div><i style="width:${a.mediaMensal == null ? 0 : a.mediaMensal / maxMonthly * 100}%"></i></div><div><i style="width:${b.mediaMensal == null ? 0 : b.mediaMensal / maxMonthly * 100}%"></i></div></div>
     <div class="cmp-row"><span class="cmp-l"></span><div class="cmp-v muted cmp-source">${esc(quotaPeriod(a))}</div><div class="cmp-v muted cmp-source">${esc(quotaPeriod(b))}</div></div>
     <div class="cmp-row"><span class="cmp-l">Comparado à média do cargo</span>${sideHtml(vsAverage(a), vsAverage(b), value => `<b>${value > 0 ? '+' : ''}${value}%</b>`)}</div>
-    <div class="cmp-row"><span class="cmp-l">Alertas na cota (mandato)</span>${sideHtml(alertCountOrNull(a), alertCountOrNull(b), value => `<b>${value}</b>`, null)}</div>
+    <div class="cmp-row"><span class="cmp-l">Picos e concentrações na cota (mandato)</span>${sideHtml(alertCountOrNull(a), alertCountOrNull(b), value => `<b>${value}</b>`, null)}</div>
     ${comparisonAttendanceRows(a, b, pA, pB)}
     ${comparisonInfoRow('Participação e exercício', comparisonParticipation(profileA), comparisonParticipation(profileB))}
     ${comparisonInfoRow('Contato institucional', esc(comparisonContact(profileA)), esc(comparisonContact(profileB)))}
@@ -701,7 +701,7 @@ function comparisonTable([a, b]) {
     ${votes.length > (extrasState.comparisonVoteLimit || COMPARISON_VOTE_PAGE) ? `<button type="button" class="opt citizen-more" data-cmp-votes-more>Mostrar mais (${votes.length - (extrasState.comparisonVoteLimit || COMPARISON_VOTE_PAGE)})</button>` : ''}`}
     ${voteChamber === 'senado' ? `${senateVoteSource?.detail ? `<p class="muted">${esc(datesInTextBR(senateVoteSource.detail))}</p>` : ''}${activitySource(senateVoteSource, 'Fonte e período')}` : '<span class="muted">Votações do Placar: texto principal de PL, PLP e PEC no Plenário desde fev/2023. A comparação considera apenas votos registrados por ambos; ausência de registro não significa que a pessoa não votou.</span>'}
   </section>` : String(personA.id).split(':')[0] !== String(personB.id).split(':')[0] ? '<section class="card wide"><span class="k">Votações</span><p class="muted">Votações de casas diferentes não são comparadas.</p></section>' : ''}
-  <span class="src">Destaque em roxo: quem gastou menos, teve menos alertas ou teve maior presença na Câmara. O Senado aparece como contagem de presenças registradas, sem ranking; votações entre casas não são comparadas. Gastos pelas notas da cota publicadas pela Câmara e pelo Senado, com as passagens aéreas emitidas pela agência da Câmara.</span>`;
+  <span class="src">Destaque em roxo: quem gastou menos ou teve maior presença na Câmara; picos e concentrações só informam, sem destaque. O Senado aparece como contagem de presenças registradas, sem ranking; votações entre casas não são comparadas. Gastos pelas notas da cota publicadas pela Câmara e pelo Senado, com as passagens aéreas emitidas pela agência da Câmara.</span>`;
 }
 
 /* ---------- Eventos ---------- */

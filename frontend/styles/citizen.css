@@ -145,6 +145,8 @@
 .citizen-rowbar i.hi { background: var(--accent); }
 .citizen-rowval { gap: 4px; }
 .citizen-mini { padding: 3px 8px; font-size: 11px; }
+/* "2 picos e concentrações" quebra em duas linhas na lista, sem tirar espaço do nome. */
+.citizen-rowval .citizen-mini { max-width: 112px; white-space: normal; line-height: 1.25; text-align: left; }
 .citizen-mini i { width: 6px; height: 6px; }
 
 .brand { font-size: 22px; white-space: nowrap; }

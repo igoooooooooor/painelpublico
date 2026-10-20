@@ -46,7 +46,7 @@ def main(base):
         weighted.extend([path] * weight)
 
     add('/', 220)
-    for section, weight in (('/politicos', 40), ('/placar', 40), ('/alertas', 20), ('/comparar', 15), ('/minha-cidade', 15)):
+    for section, weight in (('/politicos', 40), ('/placar', 40), ('/picos-e-concentracoes', 20), ('/comparar', 15), ('/minha-cidade', 15)):
         add(section, weight)
     add('/api/c/resumo', 40), add('/api/c/radar', 20), add('/api/c/partidos', 15), add('/api/c/politicos', 60)
     for page in range(2, 8):

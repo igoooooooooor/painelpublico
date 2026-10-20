@@ -80,7 +80,7 @@ test('deep links open the profile and navigation updates the address bar', () =>
   assert.equal(vm.runInContext('state.politicianId', context), 'camara:73604');
   assert.deepEqual(pushed, [], 'o endereço com nome continua valendo para a mesma ficha');
   vm.runInContext('navigateToView("alerts")', context);
-  assert.deepEqual(pushed.at(-1), ['push', '/alertas']);
+  assert.deepEqual(pushed.at(-1), ['push', '/picos-e-concentracoes']);
   vm.runInContext('openPolitician("senado:22")', context);
   assert.deepEqual(pushed.at(-1), ['push', '/senador/22']);
 });
@@ -97,7 +97,7 @@ test('methodology page has its own address and its links open the page at the ri
   const { context, document, app, listeners } = loadApp({ pathname: '/metodologia', history });
   assert.equal(document.body.dataset.view, 'methodology');
   assert.equal(context.document.title, 'Metodologia e perguntas · Painel Público', 'mesmo título que o servidor entrega no HTML');
-  for (const text of ['Como o painel funciona', 'Alertas não indicam irregularidade', 'id="methodology-alerts"', 'href="#methodology-sources"',
+  for (const text of ['Como o painel funciona', 'Picos e concentrações não indicam irregularidade', 'id="methodology-alerts"', 'href="#methodology-sources"',
     '1,75 vez a referência', '50% e pelo menos R$ 30 mil', 'cota-alertas-v3', 'Dado ausente não significa zero']) assert.ok(app.innerHTML.includes(text), text);
   assert.doesNotMatch(app.innerHTML, /\[Confirmar/);
   vm.runInContext("navigateToView('alerts')", context);
@@ -174,10 +174,10 @@ test('section titles and descriptions follow the shared site pages file on inter
   const { context, document, head } = loadApp({ pathname: '/' });
   assert.equal(document.title, 'Painel Público: quanto custa e como trabalha cada parlamentar');
   vm.runInContext("navigateToView('alerts')", context);
-  const alerts = SITE_PAGES.sections.find(section => section.path === '/alertas');
+  const alerts = SITE_PAGES.sections.find(section => section.path === '/picos-e-concentracoes');
   assert.equal(document.title, `${alerts.title} · Painel Público`);
   assert.equal(head.description.content, alerts.description);
-  assert.equal(head.canonical.href, 'https://painel.test/alertas');
+  assert.equal(head.canonical.href, 'https://painel.test/picos-e-concentracoes');
   assert.equal(head.robots, null);
   vm.runInContext("partyState.selected = ['PL', 'PT']; navigateToView('parties')", context);
   assert.equal(head.canonical.href, 'https://painel.test/partidos/PL-vs-PT');

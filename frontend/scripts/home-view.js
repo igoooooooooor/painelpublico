@@ -48,7 +48,7 @@ function homeStats(data) {
   const tax = typeof taxWidget === 'function' ? taxWidget() : null;
   const stats = [
     Number.isFinite(quota.total) && [formatCitizenAmount(quota.total), `de cota usada pelos deputados(as) da lista, ${esc(homePeriod(quota.periodo))}`],
-    Number.isFinite(alerts?.total) && [alerts.total.toLocaleString('pt-BR'), 'alertas na cota pelas regras do painel; não indicam irregularidade'],
+    Number.isFinite(alerts?.total) && [alerts.total.toLocaleString('pt-BR'), 'picos e concentrações na cota pelas regras do painel; não indicam irregularidade'],
     positive.length && positiveTotal > 0 && [`${Math.round(positive[0].valor / positiveTotal * 100)}%`, `da cota foi para ${esc(positive[0].nome.toLocaleLowerCase('pt-BR'))}`],
     tax && Number.isFinite(quota.total) && quota.total > 0 && [`${Math.round(quota.total / tax.perSecond / 60).toLocaleString('pt-BR')} min`, `de impostos ${tax.state != null ? 'federais e estaduais' : 'federais'} pagam toda essa cota (estimativa)`],
   ].filter(Boolean);
