@@ -22,7 +22,7 @@ make import
 make db-check
 ```
 
-No servidor, essa sequência roda sozinha todo dia para o ano corrente, com backup, cópia de trabalho, guarda de regressão e aviso por e-mail: `python3 -m ingest.pipeline daily` (`make update-daily`), descrito em [Publicação](deploy.md#atualização-automática-dos-dados). O job mensal (`make update-monthly`) encadeia os coletores do custo do mandato, o histórico da cota, o Senado e a remontagem da página. O semanal (`make update-weekly`) refaz o inventário do Placar e monta a fila editorial, que também avisa sobre `arrecadacao.json`, a tabela de gabinetes do Senado, o exercício das contas municipais e as eleições; Placar, Minha cidade e eleições continuam decisões de uma pessoa.
+No servidor, essa sequência roda sozinha todo dia para o ano corrente, com backup, cópia de trabalho, guarda de regressão e aviso por e-mail: `python3 -m ingest.pipeline daily` (`make update-daily`), descrito em [Publicação](deploy.md#atualização-automática-dos-dados). O job mensal (`make update-monthly`) encadeia os coletores do custo do mandato, o histórico da cota, o Senado e a remontagem da página. O semanal (`make update-weekly`) refaz o inventário do Placar e monta a fila editorial, que também avisa sobre a tabela de gabinetes do Senado, o exercício das contas municipais e as eleições; Placar, Minha cidade e eleições continuam decisões de uma pessoa.
 
 **Passagens SIGEPA da Câmara (desde 19/10/2026):** até jul/2025 o arquivo anual da CEAP trazia as passagens
 aéreas emitidas pela agência da Câmara ("PASSAGEM AÉREA - SIGEPA", subcota 998; cerca de R$ 3,5–4,7 mi por mês
@@ -95,7 +95,7 @@ deputado, a lista anterior da consulta por deputado com a dos arquivos: a equiva
 caminhos oficiais ainda não foi verificada com dados reais e deve ser conferida nessa execução antes de
 aceitar diferenças.
 
-Os coletores de perfis continuam sendo a fonte manual dos complementos para a lista completa; contatos, projetos, gabinete e presença têm a cobertura registrada em seus snapshots. A arrecadação federal (`arrecadacao.json`) é outro complemento atualizado manualmente, com fonte e data: use as receitas administradas pela Receita Federal (impostos e contribuições), não o total das receitas federais, que inclui receitas de outros órgãos que não são tributos. A estadual (`state-tax-revenue.json`) vem de `python3 -m ingest.state_tax_revenue`: soma ICMS, IPVA e ITCD do Anexo 3 do RREO (Siconfi) dos 27 estados, do último bimestre em que todos entregaram, antes das transferências aos municípios e do Fundeb; estado sem relatório não vira zero, e o build só usa o arquivo com os 27. Impostos municipais ainda ficam de fora, porque cidades pequenas só detalham a receita mensal a cada semestre. Os geradores da página e dos PDFs da amostra editorial foram removidos. `ingest/editorial/requirements.txt` só é necessário para as ferramentas opcionais de passagens e agregação eleitoral; não é requisito do app nem do build.
+Os coletores de perfis continuam sendo a fonte manual dos complementos para a lista completa; contatos, projetos, gabinete e presença têm a cobertura registrada em seus snapshots. Os geradores da página e dos PDFs da amostra editorial foram removidos. `ingest/editorial/requirements.txt` só é necessário para as ferramentas opcionais de passagens e agregação eleitoral; não é requisito do app nem do build.
 
 ## Placar — inventário e catálogo nominal
 

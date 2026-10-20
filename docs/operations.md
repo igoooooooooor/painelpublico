@@ -42,7 +42,7 @@ avisa por e-mail quando precisa.
 |---|---|---|---|
 | `daily` | todo dia, 5h40 | Cota da Câmara e do Senado do ano corrente no banco; recomposição offline do custo do mandato; perfis (projetos pelos arquivos anuais), situação dos projetos, autoria e votações do Senado | Só em falha ou resultado parcial |
 | `weekly` | segunda, 3h | Inventário das votações do Plenário, fila editorial do Placar, avisos sobre arquivos mantidos à mão, eventos com data (eleições) | Quando há trabalho novo para uma pessoa, ou falha |
-| `monthly` | dia 10, 1h30 | Custo do mandato (folha, moradia, exercício, gabinete, presença), histórico da cota no banco, Senado (folha, exercício, presença, participação, tempo de mandato), impostos estaduais e remontagem da página | Só em falha ou resultado parcial |
+| `monthly` | dia 10, 1h30 | Custo do mandato (folha, moradia, exercício, gabinete, presença), histórico da cota no banco, Senado (folha, exercício, presença, participação, tempo de mandato) e remontagem da página | Só em falha ou resultado parcial |
 
 Os jobs compartilham um lock: o segundo a chegar espera até 30 minutos. Cada coletor é retomável
 e usa cache, então repetir uma execução custa pouco. Localmente, `make update-daily DRY_RUN=1`,
@@ -98,8 +98,6 @@ O job semanal escreve `data/reviews/editorial-queue.md` e manda por e-mail quand
   `confirmed` (ou `excluded`/`pending` com motivo). Copie as entradas prontas para
   `chamber-vote-reviews-<data>.json` e rode `make collect-votes THROUGH=<data>`. Regras e exemplos
   em [Metodologia do Placar](voting-scoreboard.md).
-- **Arrecadação federal** (`data/snapshots/arrecadacao.json`): atualizar `acumulado`, `inicio` e
-  `ate` com o relatório mais recente da Receita Federal. O aviso chega quando passa de 60 dias.
 - **Gabinetes do Senado.** Senador novo com nome de lotação igual ao do cadastro entra sozinho no
   job mensal, em `data/snapshots/senate-office-map-auto.json`. Nome diferente ou ambíguo aparece
   no aviso: confira à mão e acrescente em `ingest/senate_office_map.json` com a evidência.

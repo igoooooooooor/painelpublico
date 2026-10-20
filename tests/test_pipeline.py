@@ -293,9 +293,9 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(names[:4], ['legislative-2023', 'legislative-2024', 'legislative-2025', 'quota-history'])
         self.assertEqual(names[4:9], ['backup', 'stage', 'import-history', 'verify', 'publish'])
         self.assertEqual(names[9:12], ['payroll-2023', 'housing-2023', 'service-2023'])
-        self.assertEqual(names[-11:], ['chamber-mandate-history', 'mandate-cost', 'senate-office-pilot', 'senate-cost',
+        self.assertEqual(names[-10:], ['chamber-mandate-history', 'mandate-cost', 'senate-office-pilot', 'senate-cost',
                                        'senate-attendance', 'senate-activity', 'senate-participation', 'tenure',
-                                       'state-tax-revenue', 'build', 'notify'])
+                                       'build', 'notify'])
         history_call = next(call for call in self.snapshot_calls if call[:2] == ('-m', 'backend.quota_history'))
         self.assertEqual(history_call[2:], ('--db', str(self.config.work_db)))
         payroll_2023 = next(call for call in self.snapshot_calls if call[0] == 'ingest/chamber_payroll.py')
@@ -335,7 +335,7 @@ class PipelineTests(unittest.TestCase):
 
     def test_weekly_runs_inventory_and_mails_when_the_queue_has_news(self):
         self.snapshot_results['ingest.editorial_queue'] = (0, 'resumo: {"placar": "ok", "candidatos": 12, "semRevisao": 2, '
-                                                            '"pendentes": 1, "novos": ["7-1"], "arquivosManuais": ["arrecadacao.json"], "atencao": true}\nfila: x')
+                                                            '"pendentes": 1, "novos": ["7-1"], "arquivosManuais": ["accounts.json"], "atencao": true}\nfila: x')
         with mock.patch.dict('os.environ', {'PAINEL_TODAY': '2026-10-11'}), \
                 mock.patch.object(pipeline, 'run_snapshot_collector', self.fake_snapshot_collector), redirect_stdout(StringIO()):
             status = pipeline.run_weekly(self.config, mail_sender=self.fake_mail)
@@ -346,7 +346,7 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(len(self.sent), 1)
         self.assertIn('Atualização semanal concluída', self.sent[0][1])
         self.assertIn('Novos sem revisão desde a fila anterior: 7-1', self.sent[0][2])
-        self.assertIn('arrecadacao.json', self.sent[0][2])
+        self.assertIn('accounts.json', self.sent[0][2])
         self.assertTrue((self.config.status_dir / 'weekly.json').exists())
         # Sem novidade e sem avisos: nada de e-mail.
         self.sent.clear()

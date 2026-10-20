@@ -37,7 +37,7 @@ class BuildTests(unittest.TestCase):
             data, _ = embedded_data(output)
             self.assertEqual(set(data), {
                 "geradoEm", "ultimaVotacao", "votacoes", "presencaTodos", "votosCompletos",
-                "arrecadacao", "arrecadacaoEstadual", "perfis", "senado", "sitePages",
+                "perfis", "senado", "sitePages",
             })
             self.assertEqual([section["path"] for section in data["sitePages"]["sections"]][:3], ["/", "/picos-e-concentracoes", "/placar"])
             self.assertIn("alerts", [section["id"] for section in data["sitePages"]["methodology"]["sections"]])
@@ -45,8 +45,6 @@ class BuildTests(unittest.TestCase):
             self.assertIsNone(data["geradoEm"])
             self.assertEqual(data["presencaTodos"], [])
             self.assertEqual(data["votosCompletos"], {})
-            self.assertIsNone(data["arrecadacao"])
-            self.assertIsNone(data["arrecadacaoEstadual"])
             self.assertEqual(data["perfis"], {"profiles": {}, "sobDemanda": False})
             self.assertEqual(data["senado"], {"sobDemanda": False})
             self.assertEqual(len(data["votacoes"]), 4)

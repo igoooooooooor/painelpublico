@@ -7,8 +7,7 @@ do mandato quando já existe uma fotografia-base; também atualiza os snapshots 
 pelos arquivos anuais da Câmara), a situação dos projetos e a autoria e as votações do Senado.
 O comando ``monthly`` roda a cadeia mensal do custo do mandato e do Senado (folha, moradia,
 exercício, gabinete e presença da Câmara, histórico da cota no banco, composição do custo, folha,
-exercício, presença, participação e tempo de mandato do Senado, impostos estaduais) e remonta a
-página. O comando ``weekly`` refaz o inventário de votações do Plenário, monta a fila editorial do
+exercício, presença, participação e tempo de mandato do Senado) e remonta a página. O comando ``weekly`` refaz o inventário de votações do Plenário, monta a fila editorial do
 Placar e dos arquivos mantidos à mão e executa os eventos com data pendentes (recoleta das eleições
 após o segundo turno), avisando quando há trabalho novo para uma pessoa. Cada etapa fica registrada
 em ``data/status/<job>.json``.
@@ -839,7 +838,6 @@ def monthly_steps(config: PipelineConfig) -> list[tuple[str, tuple[str, ...], in
         ("senate-activity", ("ingest/senate_activity.py", "--collect", "--mandate"), SNAPSHOT_TIMEOUT_SECONDS),
         ("senate-participation", ("ingest/senate_participation.py", "--collect"), SNAPSHOT_TIMEOUT_SECONDS),
         ("tenure", ("ingest/tenure.py", "--collect"), SNAPSHOT_TIMEOUT_SECONDS),
-        ("state-tax-revenue", ("-m", "ingest.state_tax_revenue"), SNAPSHOT_TIMEOUT_SECONDS),
         ("build", ("scripts/build.py",), SNAPSHOT_TIMEOUT_SECONDS),
     ]
     if wants_data_release(config.environ):

@@ -131,7 +131,7 @@ custa pouco. A ordem:
    versionada `ingest/senate_office_map.json` prevalece), `senate-cost`, `senate-attendance` (PDFs do
    Diário; precisa de `pdfplumber`, instalado no venv pelo deploy), `senate-activity`,
    `senate-participation` e `tenure`.
-4. `state-tax-revenue` e `build`, que remonta `dist/index.html` com a presença e os impostos estaduais novos.
+4. `build`, que remonta `dist/index.html` com a presença nova.
 5. `publish-data`, só com `PAINEL_DATA_RELEASE=1` em `/etc/painel/pipeline.env`: publica banco, snapshots e
    revisões do Placar como release de dados no GitHub, com a tag `data-<data>` e o token de `PAINEL_GITHUB_TOKEN`
    ([Dados e SQLite](data.md#publicar-a-base)). Em `--dry-run`, só monta o pacote em `data/releases/`.
@@ -157,7 +157,7 @@ os candidatos do inventário com todas as revisões locais e lista os sem revis�
 motivo e os alertas de tipo do inventário, e grava para cada candidato sem revisão um rascunho em
 `chamber-vote-reviews-draft-<data>.json`, com ID, data, proposição, placar e links preenchidos e
 `status: draft`, que o catálogo recusa até uma pessoa julgar; também avisa sobre os arquivos mantidos à mão
-(`arrecadacao.json` com mais de 60 dias, senador da lista atual sem gabinete em
+(senador da lista atual sem gabinete em
 `ingest/senate_office_map.json`, contas municipais com exercício atrasado a partir de julho e a
 fotografia das eleições antes do segundo turno). Nada é publicado: o catálogo do Placar continua
 seguindo a revisão descrita em [Metodologia do Placar](voting-scoreboard.md). O e-mail sai quando há

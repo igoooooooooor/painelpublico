@@ -7,9 +7,9 @@ Duas coisas são conferidas, sem rede:
    ``data/reviews/``). Candidato sem revisão é
    trabalho pendente; revisão ``pending`` continua listada com o motivo. O alerta de tipos do inventário
    (``typeGuard``) é repetido aqui, porque um turno de PEC classificado como emenda some da fila em silêncio.
-2. **Arquivos mantidos à mão.** ``arrecadacao.json`` (arrecadação federal, com ``ate``), a tabela de
-   gabinetes do Senado (``ingest/senate_office_map.json``) contra a lista atual de senadores, o exercício
-   das contas municipais e a fotografia das eleições de 2026 depois do segundo turno.
+2. **Arquivos mantidos à mão.** A tabela de gabinetes do Senado (``ingest/senate_office_map.json``)
+   contra a lista atual de senadores, o exercício das contas municipais e a fotografia das eleições de
+   2026 depois do segundo turno.
 
 Para cada candidato sem revisão, um rascunho entra em ``chamber-vote-reviews-draft-<data>.json``
 com os campos objetivos preenchidos (ID, data, proposição, placar, links); os campos de texto e a
@@ -40,7 +40,6 @@ REVIEWS_DIR = ROOT / 'data' / 'reviews'
 QUEUE_NAME = 'editorial-queue'
 INVENTORY_PATTERN = re.compile(r'chamber-vote-inventory-(\d{4}-\d{2}-\d{2})\.json$')
 REVIEW_PATTERN = re.compile(r'chamber-vote-reviews-(\d{4}-\d{2}-\d{2})\.json$')
-REVENUE_MAX_AGE_DAYS = 60
 ROSTER_SENATE_SOURCE = 'senado_senators_current'
 
 
@@ -203,18 +202,6 @@ def manual_file_warnings(root: Path, reference: date) -> list[dict]:
     """Avisos sobre arquivos que só uma pessoa atualiza; cada um diz o que fazer."""
     warnings: list[dict] = []
     snapshots = root / 'data' / 'snapshots'
-
-    revenue = _read_json(snapshots / 'arrecadacao.json')
-    if not isinstance(revenue, dict):
-        warnings.append({'file': 'arrecadacao.json', 'issue': 'ausente ou ilegível',
-                         'action': 'Atualize a arrecadação federal (receitas administradas pela RFB) com fonte, inicio e ate.'})
-    else:
-        until = _parse_any_date(revenue.get('ate'))
-        if until is None:
-            warnings.append({'file': 'arrecadacao.json', 'issue': 'sem data final (ate) legível', 'action': 'Informe a última data publicada.'})
-        elif (reference - until).days > REVENUE_MAX_AGE_DAYS:
-            warnings.append({'file': 'arrecadacao.json', 'issue': f'última data publicada {until.isoformat()}, há {(reference - until).days} dias',
-                             'action': 'Atualize com o relatório mais recente da Receita Federal.'})
 
     roster = _read_json(root / 'data' / 'imports' / 'legislative.json', {})
     office_map = _read_json(root / 'ingest' / 'senate_office_map.json', {})

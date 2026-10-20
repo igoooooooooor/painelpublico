@@ -31,14 +31,14 @@ Em um servidor novo, a primeira execução mensal recolhe o histórico desde 202
 
 Automático, com fontes e cobertura registradas nos próprios snapshots:
 
-- cota parlamentar, perfis, projetos, custo do mandato, presença, votos e licenças do Senado, impostos estaduais;
+- cota parlamentar, perfis, projetos, custo do mandato, presença, votos e licenças do Senado;
 - inventário das votações do Plenário (a lista bruta de candidatos ao Placar);
 - backups, verificação de regressão, e-mail de falha e o release mensal de dados.
 
 Depende de decisão humana, e por isso vai no release de dados para ninguém precisar refazer:
 
 - **Placar**: quais votações entram, o que Sim e Não significavam e os trechos destacados. As decisões ficam em `reviews/chamber-vote-reviews-*.json` e `chamber-vote-segment-reviews-*.json`, versionadas no Git; o catálogo sai com `make collect-votes`. A metodologia está em [Placar](voting-scoreboard.md). O `make update-weekly` monta a fila do que está pendente.
-- **Curadoria pontual**: `editorial.json`, `arrecadacao.json` (receita federal, com fonte e data), a tabela de gabinetes do Senado (`ingest/senate_office_map.json`), Minha cidade e eleições. O job semanal avisa quando algum deles precisa de atenção.
+- **Curadoria pontual**: `editorial.json`, a tabela de gabinetes do Senado (`ingest/senate_office_map.json`), Minha cidade e eleições. O job semanal avisa quando algum deles precisa de atenção.
 
 Sem ninguém revisando o Placar, o site continua funcionando com o catálogo publicado no último release; ele só deixa de ganhar votações novas.
 

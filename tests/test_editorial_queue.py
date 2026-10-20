@@ -40,6 +40,7 @@ class EditorialQueueTests(unittest.TestCase):
             'entries': entries})
 
     def test_unreviewed_candidates_and_new_since_last_run(self):
+        self.write(self.snapshots / 'accounts.json', {'year': 2024})  # exercício atrasado: aviso de arquivo manual
         self.inventory('2026-10-04', [entry('1-1', '2026-09-30'), entry('2-1', '2026-10-01'), entry('3-1', '2026-10-02', candidate=False)])
         self.inventory('2026-10-11', [entry('1-1', '2026-09-30'), entry('2-1', '2026-10-01'), entry('4-1', '2026-10-09'),
                                       entry('5-1', '2026-10-09')])
@@ -61,7 +62,7 @@ class EditorialQueueTests(unittest.TestCase):
         markdown = (self.reviews / 'editorial-queue.md').read_text(encoding='utf-8')
         self.assertIn('**1 sem revisão**', markdown)
         self.assertIn('| 2026-10-09 | 5-1 |', markdown)
-        self.assertIn('arrecadacao.json', markdown)
+        self.assertIn('accounts.json', markdown)
         # Segunda execução sem novidade: nada novo, mas os avisos de arquivo manual continuam.
         second = editorial_queue.build_queue(self.root, self.today)
         self.assertEqual(second['newSinceLastRun'], [])
@@ -117,7 +118,6 @@ class EditorialQueueTests(unittest.TestCase):
         self.assertIn('"placar": "unavailable"', out.getvalue())
 
     def test_manual_file_warnings(self):
-        self.write(self.snapshots / 'arrecadacao.json', {'acumulado': 1.0, 'inicio': '2026-01-01', 'ate': '2026-07-31'})
         self.write(self.root / 'data' / 'imports' / 'legislative.json', {'authorities': [
             {'id': 'senado:1', 'name': 'Senadora Nova', 'sourceId': 'senado_senators_current'},
             {'id': 'senado:2', 'name': 'Senador Antigo', 'sourceId': 'senado_senators_current'},
@@ -126,13 +126,11 @@ class EditorialQueueTests(unittest.TestCase):
         self.write(self.snapshots / 'accounts.json', {'year': 2024})
         self.write(self.snapshots / 'eleicoes-2026.json', {'segundoTurno': '2026-10-25', 'fonte': {'geradoNoTse': '07/10/2026 16:30:39'}})
         warnings = {w['file']: w for w in editorial_queue.manual_file_warnings(self.root, self.today)}
-        self.assertIn('há 72 dias', warnings['arrecadacao.json']['issue'])
         self.assertIn('senado:1 (Senadora Nova)', warnings['ingest/senate_office_map.json']['action'])
         self.assertIn('2025', warnings['accounts.json']['issue'])
         self.assertNotIn('eleicoes-2026.json', warnings)  # antes do segundo turno
         after = {w['file'] for w in editorial_queue.manual_file_warnings(self.root, date(2026, 10, 26))}
         self.assertIn('eleicoes-2026.json', after)
-        self.write(self.snapshots / 'arrecadacao.json', {'acumulado': 1.0, 'inicio': '2026-01-01', 'ate': '2026-09-30'})
         self.write(self.snapshots / 'eleicoes-2026.json', {'segundoTurno': '2026-10-25', 'fonte': {'geradoNoTse': '27/10/2026 10:00:00'}})
         self.write(self.snapshots / 'accounts.json', {'year': 2025})
         remaining = {w['file'] for w in editorial_queue.manual_file_warnings(self.root, date(2026, 10, 26))}
