@@ -694,7 +694,7 @@ nav.tabs :is(button, a) svg { flex: none; }
 .home-search-box input:focus-visible { outline: none; }
 .home-search-box button:focus-visible, .home-shortcuts :is(button, a):focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .home-shortcuts { display: flex; flex-wrap: wrap; gap: 8px; }
-.home-shortcuts :is(button, a) { min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--chip); color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.home-shortcuts :is(button, a) { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--chip); color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
 .home-cost { gap: 16px; padding: 24px; box-shadow: var(--shadow-raised); }
 .home-cost-label { font-size: 14px; color: var(--muted); }
 .home-cost-value { font-family: var(--f-data); font-weight: 700; font-size: clamp(48px, 15vw, 72px); line-height: 1; letter-spacing: -0.05em; font-variant-numeric: tabular-nums; }
