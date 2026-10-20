@@ -423,6 +423,16 @@ class PipelineTests(unittest.TestCase):
         self.assertIn('notas senado_ceaps: 12', body)
         self.assertIn('publish: ok', body)
 
+    def test_mail_checks_the_server_certificate(self):
+        for security, client_class in (('starttls', 'SMTP'), ('ssl', 'SMTP_SSL')):
+            config = pipeline.MailConfig.from_environ({**self.mail_environ, 'PAINEL_SMTP_SECURITY': security})
+            with self.subTest(security=security), mock.patch.object(pipeline.smtplib, client_class) as client:
+                pipeline.send_mail(config, 'assunto', 'corpo')
+            session = client.return_value
+            context = client.call_args.kwargs.get('context') if security == 'ssl' else session.starttls.call_args.kwargs['context']
+            self.assertEqual(context.verify_mode, pipeline.ssl.CERT_REQUIRED)
+            self.assertTrue(context.check_hostname)
+
     def test_mail_failure_is_recorded_without_hiding_the_result(self):
         def broken(mail, subject, body):
             raise OSError('smtp down')

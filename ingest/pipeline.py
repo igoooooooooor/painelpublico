@@ -40,6 +40,7 @@ import os
 import shutil
 import smtplib
 import sqlite3
+import ssl
 import subprocess
 import sys
 import time
@@ -674,13 +675,15 @@ def send_mail(config: MailConfig, subject: str, body: str) -> None:
     message["To"] = ", ".join(config.to)
     message["Subject"] = subject
     message.set_content(body)
+    # Sem contexto próprio, o smtplib aceita qualquer certificado: a senha iria a quem interceptasse a conexão.
+    context = ssl.create_default_context()
     if config.security == "ssl":
-        client = smtplib.SMTP_SSL(config.host, config.port, timeout=30)
+        client = smtplib.SMTP_SSL(config.host, config.port, timeout=30, context=context)
     else:
         client = smtplib.SMTP(config.host, config.port, timeout=30)
     with client:
         if config.security == "starttls":
-            client.starttls()
+            client.starttls(context=context)
         if config.user:
             client.login(config.user, config.password or "")
         client.send_message(message)
