@@ -774,7 +774,7 @@ test('senators whose mandate began before 2023 are told the quota counts from Fe
 test('senate cost card links the quota to the CEAPS portal and treats a non-positive gross as not identified', () => {
   const { api } = makeView();
   const html = api.senateCostAnswer(senateFixture(), senateQuota);
-  assert.match(html, /href="https:\/\/www6g\.senado\.leg\.br\/transparencia\/sen\/1\/ceaps\/\?ano=2026"[^>]*>Cota de 2026 no portal do Senado ↗/);
+  assert.match(html, /href="https:\/\/www6g\.senado\.leg\.br\/transparencia\/sen\/1\/\?ano=2026"[^>]*>Cota de 2026 no portal do Senado ↗/);
   assert.doesNotMatch(html, /Página do Senado ↗|dadosabertos/);
   const negative = senateFixture();
   negative.months['2026-08'].remunerationCents = -144744;
@@ -897,8 +897,13 @@ test('senate cost card shows the latest complete month, with the average of comp
   assert.match(api.senateCostDetails(senateFixture(), senateQuota), /Não compare com o custo de deputados\(as\)/);
   assert.doesNotMatch(html, /Custa em média|custo do mandato/);
   // A cota do mês abre o portal de transparência no ano do mês, não a lista de senadores.
-  assert.match(html, /data-cost-part="quota">[\s\S]*?href="https:\/\/www6g\.senado\.leg\.br\/transparencia\/sen\/1\/ceaps\/\?ano=2026"[^>]*>Cota de 2026 no portal do Senado ↗/);
+  assert.match(html, /data-cost-part="quota">[\s\S]*?href="https:\/\/www6g\.senado\.leg\.br\/transparencia\/sen\/1\/\?ano=2026"[^>]*>Cota de 2026 no portal do Senado ↗/);
   assert.doesNotMatch(html, /senador\/lista\/atual/);
+  // Remuneração e equipe abrem páginas do portal com contexto, não a planilha CSV de todo o Senado.
+  assert.match(html, /data-cost-part="remuneration">[\s\S]*?href="https:\/\/www6g\.senado\.leg\.br\/transparencia\/sen\/1\/\?ano=2026"[^>]*>Subsídio no portal do Senado \(2026\) ↗/);
+  assert.match(html, /data-cost-part="office">[\s\S]*?href="https:\/\/www6g\.senado\.leg\.br\/transparencia\/sen\/1\/pessoal\/\?ano=2026&amp;local=gabinete&amp;vinculo=COMISSIONADO"[^>]*>Equipe do gabinete em 2026 no portal do Senado ↗/);
+  assert.doesNotMatch(html, /data-cost-part="(remuneration|office)">[^]*?\.csv[^]*?data-cost-part="quota"/);
+  assert.doesNotMatch(html, /ceaps\/\?ano=/);
 });
 
 test('senate cost card skips months whose quota may still receive notes, in the month and in the average', () => {
@@ -909,7 +914,7 @@ test('senate cost card skips months whose quota may still receive notes, in the 
   assert.match(settled, /Ago\/2026 já tem todas as partes publicadas, mas a cota desse mês ainda tem notas chegando\. Jul\/2026 é o mês mais recente com as notas já assentadas\./);
   // A média fica só com jul: ago ainda recebe notas.
   assert.match(settled, /Média: <span class="mono">R\$\s?386\.366,19<\/span> por mês, 1 mês com as três partes identificadas e as notas da cota já assentadas, dos 3 meses em exercício ou com dado no recorte \([^)]*\): jul\/2026/);
-  assert.match(settled, /Folha de jul\/2026 ↗/);
+  assert.match(settled, /Subsídio no portal do Senado \(2026\) ↗/);
   const early = api.senateCostAnswer(senateFixture(), { ...senateQuota, snapshotAt: '2026-09-01' });
   assert.match(early, /em ago\/2026[\s\S]*data-cost-why="none-settled"[\s\S]*Ago\/2026 é o mais recente com todas as partes, mas a cota dele ainda tem notas chegando: o valor pode subir\./);
   assert.match(early, /2 meses com as três partes identificadas, dos 3 meses em exercício ou com dado no recorte/);

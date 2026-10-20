@@ -30,8 +30,12 @@ ano a ano, Placar (ex.: PLP 74/2026, 346–46–3; PL 45–23; PT 52–0 na API 
 - **Contexto dos alertas com total e média de períodos diferentes:** "Em 2026, gastou R$ 352.433 na cota, R$ 47.589
   por mês em média nos 7 meses com notas assentadas": 352.433 ÷ 7 dá 50.347, porque o total soma jan–out e a média só
   jan–jul. A frase agora nomeia os dois períodos quando eles diferem.
-- **Link da cota no custo do Senado:** "Página do Senado ↗" não mostrava valor nenhum. Corrigido na mesma data pela
-  segunda varredura das fichas de senadores (abaixo): o link abre a cota do ano no portal de transparência.
+- **Link da cota no custo do Senado:** "Página do Senado ↗" não mostrava valor nenhum. A segunda varredura das fichas
+  (abaixo) trocou por `/transparencia/sen/<código>/ceaps/?ano=`, que responde 404 para todos os senadores; corrigido
+  para a página do ano, `/transparencia/sen/<código>/?ano=`, com a cota por tipo e o detalhe mensal. Remuneração e
+  equipe do gabinete apontavam para a planilha CSV da folha de todo o Senado, que baixava sem contexto; agora abrem a
+  página do ano (subsídio) e a de "Pessoal de Gabinete" do portal, e a planilha fica nos detalhes, identificada como
+  CSV de todo o Senado, com como achar a linha.
 - **Minha cidade, "47% acima do típico" sob a barra de Educação:** o veredito era do gasto total (Campinas: R$ 8.979
   contra típico de R$ 6.115, que não aparecia), mas lia-se como Educação (R$ 1.762 contra R$ 1.241, 42%). Agora diz
   "Gasto total" e mostra o típico total.

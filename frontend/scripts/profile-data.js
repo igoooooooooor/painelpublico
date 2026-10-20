@@ -373,7 +373,8 @@ function senateCostSourcesHTML(senateCost) {
   const exercise = senateCost?.exerciseSource ? profileSafeUrl(String(senateCost.exerciseSource).replace('{codigo}', String(senateCost.id || '').split(':')[1] || '')) : null;
   return `<article class="citizen-source"><b>Remuneração e equipe do gabinete (Senado)</b>
     <p class="muted">Arquivo mensal de remuneração do Senado, uma folha por competência${sources.length ? `, de ${esc(label(sources[0].competence))} a ${esc(label(latest.competence))}` : ''}${senateCost?.generatedAt ? `. Fotografia: ${esc(dateBR(senateCost.generatedAt))}` : ''}.</p>
-    ${latest ? `<span class="src"><a href="${esc(profileSafeUrl(latest.url))}" target="_blank" rel="noopener">Folha de ${esc(label(latest.competence))} ↗</a>${exercise ? ` · <a href="${esc(exercise)}" target="_blank" rel="noopener">Histórico de exercício ↗</a>` : ''}</span>` : exercise ? `<span class="src"><a href="${esc(exercise)}" target="_blank" rel="noopener">Histórico de exercício ↗</a></span>` : ''}
+    <p class="muted">O arquivo é uma planilha (CSV) com todos os servidores e senadores do Senado no mês: para conferir, filtre a lotação “Gabinete do Senador …” com o nome da pessoa e o vínculo (PARLAMENTAR para o subsídio, COMISSIONADO para a equipe).</p>
+    ${latest ? `<span class="src"><a href="${esc(profileSafeUrl(latest.url))}" target="_blank" rel="noopener">Planilha da folha de ${esc(label(latest.competence))} (CSV) ↓</a>${exercise ? ` · <a href="${esc(exercise)}" target="_blank" rel="noopener">Histórico de exercício ↗</a>` : ''}</span>` : exercise ? `<span class="src"><a href="${esc(exercise)}" target="_blank" rel="noopener">Histórico de exercício ↗</a></span>` : ''}
     <p class="muted">As folhas dos outros meses estão em “Como calculamos e ver mês a mês”.</p></article>`;
 }
 function profileSource(section, label = 'Conferir na fonte', dateLabel = 'Fotografia') {
