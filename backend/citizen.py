@@ -64,6 +64,9 @@ CATEGORIES = [
 ]
 
 
+# Fonte das notas detalhadas do ano corrente de cada Casa (a data da coleta vale para o mandato inteiro na ficha).
+QUOTA_SOURCE_BY_ROLE = {'deputado': 'camara_ceap', 'senador': 'senado_ceaps'}
+
 def category_name(name):
     text = (name or '').lower()
     for pattern, short_name in CATEGORIES:
@@ -689,6 +692,10 @@ def politician(db, identifier):
     averages = _averages(db)
     span = db.execute("SELECT t.periodStart,t.periodEnd,t.monthCount,t.settledAmountCents,t.settledMonthCount,t.settledPeriodEnd "
                       "FROM authority_totals t WHERE t.authorityId=? AND t.kind='reembolso'", (identifier,)).fetchone()
+    # Data da última coleta que forneceu notas da Casa: o mesmo marco para todos(as) da Casa, ao contrário do
+    # fim de `periodo`, que é o mês da última nota da própria pessoa.
+    quota_source = QUOTA_SOURCE_BY_ROLE.get(person.get('role'))
+    fetched = db.execute('SELECT dataFetchedAt FROM sources WHERE id=?', (quota_source,)).fetchone() if quota_source else None
     # `periodo` e `total` cobrem todas as notas; `mediaMensal` e `mediaPeriodo` só os meses assentados.
     return {'pessoa': person, 'total': total, 'hasExpenseData': has_expense_data,
             'mediaMensal': span[3] / 100 / span[4] if has_expense_data and span else None,
@@ -699,6 +706,7 @@ def politician(db, identifier):
             'fornecedores': suppliers, 'maiores': largest_expenses, 'alertas': [_alert(db, signal, people, cache) for signal in signals],
             'coberturaAlertas': alert_coverage(db, identifier),
             'media': averages.get(person.get('role'), {}).get('media'), 'snapshotAt': _snapshot(db),
+            'coletaCota': fetched[0] if fetched and fetched[0] else None,
             'complementoMoradia': {'valor': complement[0] / 100, 'notas': complement[1],
                                    'meses': sorted(set(complement[2].split(',')))} if complement[1] else None}
 

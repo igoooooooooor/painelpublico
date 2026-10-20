@@ -685,7 +685,7 @@ function profileQuotaPanel(profileRecord, shared, hasExpenseData) {
       <small>${[share, Number.isInteger(item.notas) ? `${item.notas} ${item.notas === 1 ? 'nota' : 'notas'}` : 'contagem de notas não informada'].filter(Boolean).join(' · ')}</small></div>`;
   }).join('') : '<p class="muted">Fornecedores não disponíveis neste recorte.</p>';
   const count = Number.isInteger(profileRecord.expenseCount) ? profileRecord.expenseCount : null;
-  const period = profileRecord.periodo ? citizenQuotaPeriod(profileRecord.periodo.inicio, profileRecord.periodo.fim) : '';
+  const period = profileQuotaSpan(profileRecord.periodo, profileRecord.coletaCota);
   const csv = `/api/c/gastos.csv?id=${encodeURIComponent(shared.id)}`;
   return `<article class="card profile-quota-panel">
     <div class="profile-quota-head"><span class="k">Onde gastou a cota</span><b class="mono">${total === null ? 'Total não informado' : `${esc(formatCitizenAmount(total))} no mandato`}</b></div>
@@ -694,6 +694,16 @@ function profileQuotaPanel(profileRecord, shared, hasExpenseData) {
     <div class="profile-quota-group"><h3 class="k">Maiores fornecedores · até 3</h3>${supplierRows}${supplierCredits && !hasCredits ? '<p class="muted">Há estornos de fornecedor no período; sem porcentagem, para as fatias não passarem de 100%.</p>' : ''}</div>
     <div class="profile-card-links"><a class="more" href="${esc(csv)}" download>${count === null ? 'Baixar notas da cota (CSV)' : `Baixar todas as ${count.toLocaleString('pt-BR')} notas (CSV)`} →</a><button type="button" class="more" data-profile-open="expenses">Ver meses e notas →</button></div>
   </article>`;
+}
+/* Período das notas com o mesmo marco para todos(as) da Casa, a data da coleta; o mês da última nota é da pessoa
+   (as notas chegam até 90 dias depois do gasto, então os meses finais variam). Sem a data, fica o intervalo das notas. */
+function profileQuotaSpan(period, fetchedAt) {
+  const label = value => citizenQuotaPeriod(value, value);
+  const start = label(period?.inicio), last = label(period?.fim);
+  const fetched = /^\d{4}-\d{2}-\d{2}/.test(String(fetchedAt || '')) ? dateBR(fetchedAt) : '';
+  if (!start || !last) return '';
+  if (!fetched) return citizenQuotaPeriod(period.inicio, period.fim);
+  return `${start} até a coleta de ${fetched} · última nota de ${last}`;
 }
 function profileQuotaAmount(value) { return value === 0 ? 'R$ 0' : formatCitizenAmount(value); }
 function profileAttendanceCard(shared) {

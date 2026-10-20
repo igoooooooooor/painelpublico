@@ -18,7 +18,7 @@ class CitizenPoliticiansTests(unittest.TestCase):
         self.db_path = self.root / 'citizen.sqlite3'
         self.payload = {
             'sources': [
-                {'id': source, 'label': source, 'status': 'imported'}
+                {'id': source, 'label': source, 'status': 'imported', 'fetchedAt': '2026-10-13T03:17:28+00:00'}
                 for source in (
                     'camara_deputies_current', 'senado_senators_current',
                     'camara_ceap', 'senado_ceaps',
@@ -115,6 +115,8 @@ class CitizenPoliticiansTests(unittest.TestCase):
             self.assertNotIn('camara:paid', {person['id'] for person in listed['itens']})
             self.assertEqual(listed['cobertura']['deputado']['count'], 2)
             ficha = citizen.politician(db, 'camara:paid')
+            # Marco comum da Casa para o período das notas: a data da coleta que forneceu as notas.
+            self.assertEqual(ficha['coletaCota'], '2026-10-13T03:17:28+00:00')
             self.assertTrue(ficha['pessoa']['foraDaLista'])
             self.assertEqual(ficha['total'], 123.45)
             self.assertEqual(citizen.summary(db)['parlamentares']['deputado'], {'total': 2, 'comReembolsos': 1})

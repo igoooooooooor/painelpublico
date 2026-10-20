@@ -61,7 +61,7 @@ function makeView({ fetchImpl = async () => { throw new Error('Unexpected fetch'
     state,
   };
   vm.createContext(context);
-  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + senateCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { profileTenureLabel, senateCostAnswer, senateCostDetails, senateCostMonths, citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileAttendanceCard, profileVoteCountHTML, profileView, profileQuotaDifferenceNote, profileMandateStartNote, profileExpenseDetails, profileQuotaPanel, profileShareCard, alertCard, skel };', context);
+  vm.runInContext(profileSource + '\n' + profileCostSource + '\n' + senateCostSource + '\n' + shareSource + '\n' + source + '\nthis.__api = { profileTenureLabel, senateCostAnswer, senateCostDetails, senateCostMonths, citizenState, openPolitician, citizenAvatar, citizenHasProfile, politicianRow, politicianCoverageHTML, politicianCoverageNotesHTML, loadPoliticians, politiciansView, homeAlertCard, profileData, profileSectionsHTML, profileAttendanceCard, profileVoteCountHTML, profileView, profileQuotaDifferenceNote, profileMandateStartNote, profileExpenseDetails, profileQuotaPanel, profileQuotaSpan, profileShareCard, alertCard, skel };', context);
   context.votesForPerson = id => context.profileVotes(id).filter(record => record?.vote);
   context.attendanceBar = presence => presence
     ? `<span class="pbar" data-presence-days="${presence.dias}"></span>` : '';
@@ -348,6 +348,17 @@ test('Senate work answer keeps attendance in 2026 and labels votes from their co
   const unavailable = api.profileVoteCountHTML(shared);
   assert.match(unavailable, /Dados de votações nominais do Senado indisponíveis neste recorte/);
   assert.doesNotMatch(unavailable, /Voto identificado em <b>0|0 de 0/);
+});
+
+test('quota panel period uses the House collection date as the common mark and the person last note as detail', () => {
+  const { api } = makeView();
+  assert.equal(api.profileQuotaSpan({ inicio: '2023-02', fim: '2026-09' }, '2026-10-13T03:17:28+00:00'), 'fev/2023 até a coleta de 13/10/2026 · última nota de set/2026');
+  // Sem a data da coleta, fica o intervalo das notas, como antes; sem período, nada.
+  assert.equal(api.profileQuotaSpan({ inicio: '2023-02', fim: '2026-09' }, null), 'fev/2023–set/2026');
+  assert.equal(api.profileQuotaSpan(null, '2026-10-13'), '');
+  const panel = api.profileQuotaPanel({ total: 100, expenseCount: 2, periodo: { inicio: '2023-02', fim: '2026-10', meses: 45 }, coletaCota: '2026-10-13',
+    categorias: [{ nome: 'Divulgação', valor: 100 }], fornecedores: [] }, { id: 'camara:1' }, true);
+  assert.match(panel, /2 notas observadas · fev\/2023 até a coleta de 13\/10\/2026 · última nota de out\/2026/);
 });
 
 test('profile without alerts explains which rules were checked and keeps neutral contact wording', () => {
