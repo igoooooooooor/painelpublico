@@ -402,7 +402,13 @@ function comparisonShareCard([a, b]) {
   const sameHouse = chamber(a) === chamber(b);
   const figures = [a, b].map(comparisonCostFigures);
   const costs = figures.map(item => item.total ? item.total.cents / 100 : null);
-  const costLabel = !sameHouse ? 'Média por mês*' : chamber(a) === 'senado' ? 'Despesas médias por mês' : 'Custo médio por mês';
+  const months = figures.map(item => item.total?.period ? comparisonCostMonth(item.total.period) : '');
+  const sameMonth = months[0] && months[0] === months[1];
+  /* Mês principal das fichas quando os dois têm; sem mês completo, a média do mandato, com o rótulo de média. */
+  const inMonth = months.every(Boolean);
+  const when = sameMonth ? `em ${months[0]}` : 'no mês mais recente';
+  const costLabel = !inMonth ? (!sameHouse ? 'Média por mês*' : chamber(a) === 'senado' ? 'Despesas médias por mês' : 'Custo médio por mês')
+    : !sameHouse ? `Custo ${when}*` : chamber(a) === 'senado' ? `Despesas ${when}` : `Custo ${when}`;
   const presence = [a, b].map(f => {
     if (chamber(f) === 'senado') { const record = senateRegisteredPresence(f.pessoa.id); return record ? { text: `${record.presente} sessões`, share: null } : null; }
     const p = attendanceForPerson(f.pessoa.id);
@@ -411,7 +417,7 @@ function comparisonShareCard([a, b]) {
   const costWinner = sameHouse && costs.every(v => v != null) && costs[0] !== costs[1] ? (costs[0] < costs[1] ? 0 : 1) : null;
   const shares = presence.map(p => p?.share ?? null);
   const presenceWinner = sameHouse && shares.every(v => v != null) && Math.round(shares[0] * 100) !== Math.round(shares[1] * 100) ? (shares[0] > shares[1] ? 0 : 1) : null;
-  const costGap = costWinner === null ? '' : `${formatCitizenAmount(Math.abs(figures[0].total.cents - figures[1].total.cents) / 100)} a menos por mês`;
+  const costGap = costWinner === null ? '' : `${formatCitizenAmount(Math.abs(figures[0].total.cents - figures[1].total.cents) / 100)} a menos${!inMonth ? ' por mês' : sameMonth ? ` em ${months[0]}` : ''}`;
   const monthLabel = item => item?.month && item?.year ? `${SHORT_MONTHS[item.month]}/${item.year}` : '';
   const quotaCategories = [a, b].map(f => shareQuotaCategories(f.categorias));
   const people = [a, b].map((f, index) => ({
@@ -439,9 +445,12 @@ function comparisonShareCard([a, b]) {
     layout: 'faceoff', title: `${name(a)} × ${name(b)}`, people, agreement,
     alerts: [a, b].map(f => alertCountOrNull(f) == null ? 'Sem avaliação' : String(f.alertas.length)),
     fileName: `${name(a)}-x-${name(b)}`,
-    footnote: sameHouse
+    footnote: !inMonth ? (sameHouse
       ? `Médias mensais do mandato. Dados ${chamber(a) === 'senado' ? 'do Senado' : 'da Câmara'}. Custo: ${COST_COMPOSITION[chamber(a)] || 'partes publicadas'}.`
-      : '*Médias mensais do mandato. Câmara e Senado publicam partes diferentes do custo e medem presença de jeitos diferentes: sem destaque entre as Casas.',
+      : '*Médias mensais do mandato. Câmara e Senado publicam partes diferentes do custo e medem presença de jeitos diferentes: sem destaque entre as Casas.')
+      : sameHouse
+      ? `Custo do mês mais recente com todas as partes, como na ficha. Dados ${chamber(a) === 'senado' ? 'do Senado' : 'da Câmara'}. Custo: ${COST_COMPOSITION[chamber(a)] || 'partes publicadas'}.`
+      : '*Custo do mês mais recente com todas as partes, como na ficha. Câmara e Senado publicam partes diferentes do custo e medem presença de jeitos diferentes: sem destaque entre as Casas.',
   };
 }
 function comparisonProfile(f) {
@@ -501,22 +510,40 @@ function comparisonCostFigures(f) {
     const monthCount = value => Array.isArray(value) ? value.length : Number.isInteger(value) ? value : null;
     const withMonths = key => money(part(key)?.averageCents) && { cents: part(key).averageCents, months: monthCount(part(key).months) };
     const average = typeof profileCostAverage === 'function' ? profileCostAverage(profile.cost, f.snapshotAt) : null;
-    return { house, total: average ? { cents: average.cents, months: average.months.length } : null,
-      remuneration: withMonths('remuneration'), office: withMonths('office'), officePeople: null };
+    /* Como no "Quanto custa?" da ficha: o mês mais recente com as quatro partes, e as partes desse mesmo mês;
+       a média do mandato vai de contexto. Sem mês completo, ficam as médias de cada parte. */
+    const latest = typeof profileCostLatest === 'function' && average ? profileCostLatest(profile.cost, f.snapshotAt) : null;
+    const ofLatest = key => latest && money(latest.month.valuesCents?.[key]) ? { cents: latest.month.valuesCents[key], period: latest.period } : null;
+    return { house,
+      total: latest ? { cents: latest.totalCents, period: latest.period, settled: latest.settled,
+        average: { cents: average.cents, months: average.months.length } } : average ? { cents: average.cents, months: average.months.length } : null,
+      remuneration: ofLatest('remuneration') || withMonths('remuneration'), office: ofLatest('office') || withMonths('office'), officePeople: null };
   }
-  if (house === 'senado' && profile.senateCost && typeof senateCostFigures === 'function') return { house, ...senateCostFigures(profile.senateCost, f) };
+  if (house === 'senado' && profile.senateCost && typeof senateCostFigures === 'function') {
+    const figures = senateCostFigures(profile.senateCost, f), latest = figures.latest;
+    const ofLatest = key => latest && money(latest.month.parts?.[key]) ? { cents: latest.month.parts[key], period: latest.period } : null;
+    return { ...figures, house,
+      total: latest ? { cents: latest.cents, period: latest.period, settled: latest.settled, average: figures.total } : figures.total,
+      remuneration: ofLatest('remuneration') || figures.remuneration, office: ofLatest('office') || figures.office,
+      officePeople: latest?.month.officePeople || figures.officePeople };
+  }
   return { house, total: null, remuneration: null, office: null, officePeople: null };
 }
 /* `partOnly`: a parte é média de todos os meses em que foi publicada, não só dos meses assentados do total. */
-const comparisonCostMoney = (item, partOnly = false) => item ? `<b class="mono">${esc(formatCitizenAmount(item.cents / 100))}</b><small> /mês${Number.isInteger(item.months) ? ` · média de ${item.months} ${item.months === 1 ? 'mês' : 'meses'}${partOnly ? ' com a parte publicada' : ''}` : ''}</small>` : 'Sem dados';
+const comparisonCostMonth = period => /^\d{4}-\d{2}$/.test(period || '') ? `${SHORT_MONTHS[Number(period.slice(5))]}/${period.slice(0, 4)}` : '';
+/* Valor do mês (com a média do mandato embaixo, quando houver) ou, sem mês completo, a média da parte. */
+const comparisonCostMoney = (item, partOnly = false) => !item ? 'Sem dados' : item.period
+  ? `<b class="mono">${esc(formatCitizenAmount(item.cents / 100))}</b><small> em ${esc(comparisonCostMonth(item.period))}${item.settled === false ? ' (a cota do mês ainda recebe notas)' : ''}${item.average ? ` · média do mandato ${esc(formatCitizenAmount(item.average.cents / 100))}/mês${Number.isInteger(item.average.months) ? ` (${item.average.months} ${item.average.months === 1 ? 'mês' : 'meses'})` : ''}` : ''}</small>`
+  : `<b class="mono">${esc(formatCitizenAmount(item.cents / 100))}</b><small> /mês${Number.isInteger(item.months) ? ` · média de ${item.months} ${item.months === 1 ? 'mês' : 'meses'}${partOnly ? ' com a parte publicada' : ''}` : ''}</small>`;
 function comparisonCostRows(a, b, sideHtml) {
   const [costA, costB] = [a, b].map(comparisonCostFigures);
   if (costA.house === costB.house) {
-    const label = costA.house === 'senado' ? 'Despesas identificadas por mês · Senado' : 'Custa por mês · Câmara';
+    const inMonth = Boolean(costA.total?.period || costB.total?.period);
+    const label = costA.house === 'senado' ? `Despesas identificadas ${inMonth ? 'no mês' : 'por mês'} · Senado` : inMonth ? 'Quanto custa no mês · Câmara' : 'Custa por mês · Câmara';
     return `<div class="cmp-row"><span class="cmp-l">${label}</span>${sideHtml(costA.total ? costA.total.cents : null, costB.total ? costB.total.cents : null, (value, side) => comparisonCostMoney(side === 'a' ? costA.total : costB.total))}</div>`;
   }
   const cell = figures => `${comparisonCostMoney(figures.total)}${COST_COMPOSITION[figures.house] ? `<br><small>${COST_COMPOSITION[figures.house]}</small>` : ''}`;
-  return `${comparisonInfoRow('Quanto custa por mês', cell(costA), cell(costB))}
+  return `${comparisonInfoRow(costA.total?.period || costB.total?.period ? 'Quanto custa no mês' : 'Quanto custa por mês', cell(costA), cell(costB))}
     <div class="cmp-row"><span class="cmp-l"></span><div class="cmp-v muted cmp-source" style="grid-column: 2 / -1">Câmara e Senado publicam partes diferentes: parte da diferença vem do que cada Casa inclui, não só do quanto cada um gasta. Por isso nenhum valor é destacado como menor.</div></div>`;
 }
 function comparisonOfficeCell(f) {

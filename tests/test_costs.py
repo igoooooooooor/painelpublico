@@ -44,15 +44,30 @@ class SettledAverageTests(unittest.TestCase):
         full = {'remuneration': 100, 'allowances': 0, 'quota': 50, 'office': 1000}
         chamber = {'profiles': {'camara:1': chamber_record({'2026-07': full, '2026-09': {**full, 'quota': 0}}, average=1125)}}
         self.assertEqual(costs._chamber(chamber, '2026-10-13'), {'camara:1': {'house': 'camara', 'cents': 1150, 'months': 1,
-                                                                             'zeroOffice': False}})
+                                                                             'zeroOffice': False, 'latestCents': 1150,
+                                                                             'latestPeriod': '2026-07', 'latestSettled': True}})
         # Gabinete publicado como R$ 0,00 num mês da média marca o perfil (fica fora do menor e do maior da home).
         zero = {'profiles': {'camara:1': chamber_record({'2026-07': {**full, 'office': 0}}, average=150)}}
         self.assertTrue(costs._chamber(zero, '2026-10-13')['camara:1']['zeroOffice'])
         month = {'remunerationCents': 100, 'officeCents': 1000}
         senate = {'profiles': {'senado:1': {'id': 'senado:1', 'months': {'2026-07': month, '2026-08': month, '2026-09': month}}}}
         quota = {('senado:1', '2026-07'): 90, ('senado:1', '2026-08'): 30, ('senado:1', '2026-09'): 10}
-        self.assertEqual(costs._senate(senate, quota, '2026-10-13'), {'senado:1': {'house': 'senado', 'cents': 1190, 'months': 1}})
-        self.assertEqual(costs._senate(senate, quota, None), {'senado:1': {'house': 'senado', 'cents': 1143, 'months': 3}})
+        self.assertEqual(costs._senate(senate, quota, '2026-10-13'), {'senado:1': {'house': 'senado', 'cents': 1190, 'months': 1,
+                                                                                    'latestCents': 1190, 'latestPeriod': '2026-07',
+                                                                                    'latestSettled': True}})
+        # Sem data da fotografia, todos os meses contam e o mês principal é o mais recente.
+        self.assertEqual(costs._senate(senate, quota, None), {'senado:1': {'house': 'senado', 'cents': 1143, 'months': 3,
+                                                                            'latestCents': 1110, 'latestPeriod': '2026-09',
+                                                                            'latestSettled': True}})
+
+    def test_latest_month_is_the_profile_principal_month_not_the_average(self):
+        # Como no cartão: o mês mais recente com as quatro partes e a folga; jul vale mais que a média de jun e jul.
+        record = chamber_record({'2026-06': {'remuneration': 100, 'allowances': 0, 'quota': 50, 'office': 1000},
+                                 '2026-07': {'remuneration': 100, 'allowances': 0, 'quota': 450, 'office': 1000},
+                                 '2026-09': {'remuneration': 100, 'allowances': 0, 'quota': 10, 'office': 1000}}, average=1350)
+        self.assertEqual(costs.chamber_latest(record, '2026-10-13'), (1550, '2026-07', True))
+        # Sem nenhum mês com a folga, o mais recente, marcado como não assentado.
+        self.assertEqual(costs.chamber_latest(record, '2026-07-01'), (1110, '2026-09', False))
 
 
 if __name__ == '__main__':

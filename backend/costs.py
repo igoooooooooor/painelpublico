@@ -1,4 +1,4 @@
-"""Custo médio mensal por parlamentar para a lista, com as mesmas regras das fichas.
+"""Custo mensal por parlamentar para a lista: o mês principal da ficha e a média do mandato, com as mesmas regras.
 
 Câmara: a média do custo do mandato (``mandate-cost.json``): salário bruto, auxílios, cota e verba de
 gabinete, nos meses com as quatro partes. Senado: despesas identificadas (``senate-cost.json`` e a cota do
@@ -20,7 +20,7 @@ import threading
 from fractions import Fraction
 
 from . import config, profiles
-from .settlement import SETTLE_MONTHS, settled_periods  # noqa: F401 - regra compartilhada com a média da cota
+from .settlement import SETTLE_MONTHS, settled_cutoff, settled_periods  # noqa: F401 - regra compartilhada com a média da cota
 
 _PARTS = ('remuneration', 'allowances', 'quota', 'office')
 
@@ -57,6 +57,33 @@ def chamber_average(record, as_of):
     return math.floor(total), periods
 
 
+def latest_period(periods, as_of):
+    """(mês, assentado) mostrado no "Quanto custa?" da ficha: o mais recente com a folga; sem nenhum, o mais recente.
+
+    Mesma regra de ``profileCostPickMonth`` em ``frontend/scripts/profile-cost.js``.
+    """
+    ordered = sorted({period for period in periods if isinstance(period, str)})
+    if not ordered:
+        return None
+    cutoff = settled_cutoff(as_of)
+    settled = [period for period in ordered if cutoff is None or period <= cutoff]
+    return (settled[-1], True) if settled else (ordered[-1], False)
+
+
+def chamber_latest(record, as_of):
+    """(centavos, mês, assentado) do mês principal da ficha na Câmara: as quatro partes publicadas no mês."""
+    months = record.get('months') if isinstance(record, dict) else None
+    if not isinstance(months, dict):
+        return None
+    complete = [period for period in record.get('usedMonths') or []
+                if all(_cents(((months.get(period) or {}).get('valuesCents') or {}).get(part)) for part in _PARTS)]
+    pick = latest_period(complete, as_of)
+    if not pick:
+        return None
+    values = months[pick[0]]['valuesCents']
+    return sum(values[part] for part in _PARTS), pick[0], pick[1]
+
+
 def _chamber(snapshot, as_of=None):
     out = {}
     for identifier, record in ((snapshot or {}).get('profiles') or {}).items():
@@ -70,6 +97,9 @@ def _chamber(snapshot, as_of=None):
                                   for period in average[1])
                 out[identifier] = {'house': 'camara', 'cents': average[0], 'months': len(average[1]),
                                    'zeroOffice': zero_office}
+                latest = chamber_latest(record, as_of)
+                if latest:
+                    out[identifier].update(latestCents=latest[0], latestPeriod=latest[1], latestSettled=latest[2])
     return out
 
 
@@ -89,11 +119,14 @@ def _senate(snapshot, quota_by_month, as_of=None):
             if (_cents(month.get('remunerationCents')) and month['remunerationCents'] > 0 and _cents(month.get('officeCents'))
                     and quota is not None):
                 complete[period] = (month['remunerationCents'], month['officeCents'], quota)
+        pick = latest_period(complete, as_of)
+        by_period = complete
         complete = [complete[period] for period in settled_periods(complete, as_of)]
         if complete:
             # Média de cada parte sobre os mesmos meses, arredondada para baixo, e a soma das três (como no cartão).
             cents = sum(_floor_average([values[i] for values in complete]) for i in range(3))
-            out[identifier] = {'house': 'senado', 'cents': cents, 'months': len(complete)}
+            out[identifier] = {'house': 'senado', 'cents': cents, 'months': len(complete),
+                               'latestCents': sum(by_period[pick[0]]), 'latestPeriod': pick[0], 'latestSettled': pick[1]}
     return out
 
 

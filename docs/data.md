@@ -792,11 +792,14 @@ partir de fev/2023.
   O Regimento (art. 13, § 2º) pede que quem está presente participe das votações nominais. As licenças vêm de
   `/senador/{codigo}/licencas`, desde fev/2023, com data e tipo. O cartão "Trabalha?" traz o resumo; a seção
   "Mandato", o detalhe e as licenças por tipo.
-- **Lista de políticos:** o valor principal é o custo médio por mês da própria Casa, a média do mandato
-  que o "Quanto custa?" da ficha mostra abaixo do mês mais recente (`backend/costs.py`): na Câmara, salário bruto, auxílios, cota e verba de gabinete nos
-  meses com as quatro partes; no Senado, remuneração, equipe do gabinete e cota nos meses com as três; nas
-  duas, só meses com as notas da cota já assentadas (3 meses de folga até `snapshotAt`). A
-  linha diz quantos meses entram na média e mostra a cota à parte. As Casas não publicam as mesmas partes:
+- **Lista de políticos:** desde 19/10/2026, o valor principal é o mesmo do "Quanto custa?" da ficha: o custo do
+  mês mais recente com todas as partes e as notas da cota assentadas (`custoUltimoMes`, com o mês ao lado; regra de
+  `latest_period` em `backend/costs.py`, igual à de `profileCostPickMonth`), e "Quem mais custa" ordena por ele. A
+  média do mandato (`custoMensal`) aparece embaixo, como contexto: na Câmara, salário bruto, auxílios, cota e verba
+  de gabinete nos meses com as quatro partes; no Senado, remuneração, equipe do gabinete e cota nos meses com as
+  três; nas duas, só meses com as notas da cota já assentadas (3 meses de folga até `snapshotAt`). O "acima da
+  média" compara com a média do mês principal da Casa (`mediaUltimoMes`). O comparar e a imagem da comparação
+  seguem a mesma regra, com as partes do mesmo mês. A home continua com a média do grupo, que diz "em média". As Casas não publicam as mesmas partes:
   "Quem mais custa" com "Todos" mostra dois blocos (Câmara e Senado), cada um ordenado por dentro, e a
   barra e o "acima da média" comparam só com a mesma Casa. Sem mês com todas as partes, "Sem custo", sem
   estimativa; quem está nessa situação vai para o fim da ordem, pela cota.

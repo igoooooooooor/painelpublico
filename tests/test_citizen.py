@@ -308,6 +308,22 @@ class CitizenPoliticiansTests(unittest.TestCase):
         self.assertEqual(result['senador'], {'media': None, 'minimo': None, 'maximo': None, 'comCusto': 0, 'total': result['senador']['total'],
                                              'foraDaFaixa': 0})
 
+    def test_cost_order_uses_the_profile_principal_month_and_keeps_the_average_as_context(self):
+        for identifier, name in (('camara:avg-high', 'Media Alta'), ('camara:month-high', 'Mes Alto')):
+            self.payload['authorities'].append(self.authority(identifier, name, 'deputado', 'camara_deputies_current'))
+        self.import_data()
+        fake = {'camara:avg-high': {'house': 'camara', 'cents': 30000000, 'months': 10, 'latestCents': 20000000,
+                                    'latestPeriod': '2026-07', 'latestSettled': True},
+                'camara:month-high': {'house': 'camara', 'cents': 25000000, 'months': 10, 'latestCents': 26000000,
+                                      'latestPeriod': '2026-07', 'latestSettled': True}}
+        with closing(store.connect(self.db_path)) as db, db, mock.patch.object(citizen.costs, 'monthly_costs', return_value=fake):
+            result = citizen.politicians(db, {'ordem': 'gasto', 'cargo': 'deputado', 'pageSize': 100})
+        ids = [item['id'] for item in result['itens']]
+        self.assertLess(ids.index('camara:month-high'), ids.index('camara:avg-high'))
+        first = next(item for item in result['itens'] if item['id'] == 'camara:month-high')
+        self.assertEqual((first['custoUltimoMes'], first['custoUltimoMesPeriodo'], first['custoMensal']), (260000.0, '2026-07', 250000.0))
+        self.assertEqual(result['custoMedias']['deputado']['mediaUltimoMes'], 230000.0)
+
     def test_home_cost_range_leaves_out_zero_office_profiles_but_the_average_keeps_them(self):
         for identifier, name in (('camara:full', 'Gabinete Cheio'), ('camara:zero', 'Gabinete Zerado')):
             self.payload['authorities'].append(self.authority(identifier, name, 'deputado', 'camara_deputies_current'))

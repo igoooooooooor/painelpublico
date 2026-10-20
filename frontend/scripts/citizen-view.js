@@ -387,19 +387,24 @@ function citizenQuotaPeriod(start, end) {
   const from = label(start), to = label(end);
   return from && to ? (from === to ? from : `${from}–${to}`) : '';
 }
-/* Linha da lista: o custo médio por mês da própria Casa (a média de contexto da ficha), com a cota
-   à parte. A barra e o "acima da média" comparam só com a mesma Casa. */
+/* Linha da lista: o mesmo número do "Quanto custa?" da ficha (o mês mais recente com todas as partes), com a
+   média do mandato e a cota embaixo. A barra e o "acima da média" comparam só com a mesma Casa. */
+const politicianCostMonth = person => /^\d{4}-\d{2}$/.test(person.custoUltimoMesPeriodo || '')
+  ? `${SHORT_MONTHS[Number(person.custoUltimoMesPeriodo.slice(5))]}/${person.custoUltimoMesPeriodo.slice(0, 4)}` : '';
 function politicianRow(person, max) {
   const hasExpenseData = person.hasExpenseData === undefined ? person.gastoMensal != null : Boolean(person.hasExpenseData);
-  const cost = Number.isFinite(person.custoMensal) ? person.custoMensal : null;
+  const cost = Number.isFinite(person.custoUltimoMes) ? person.custoUltimoMes : null;
+  const average = Number.isFinite(person.custoMensal) ? person.custoMensal : null;
+  const month = politicianCostMonth(person);
   const quota = hasExpenseData && Number.isFinite(person.gastoMensal) ? person.gastoMensal : null;
   if (citizenState.politicians.order === 'cota') return politicianQuotaRow(person, quota, cost, max);
-  const houseAverage = citizenState.politicians.averageCost?.[person.role]?.media;
+  const houseAverage = citizenState.politicians.averageCost?.[person.role]?.mediaUltimoMes;
   const aboveAverage = cost !== null && houseAverage && cost > houseAverage * 1.25;
   const roleLabel = person.role === 'senador' ? 'Senador(a)' : 'Deputado(a)';
   const barWidth = cost !== null && cost > 0 ? Math.max(2, cost / max * 100) : 0;
   const details = [
-    cost !== null && person.custoMeses ? `média de ${person.custoMeses} ${person.custoMeses === 1 ? 'mês' : 'meses'}` : cost === null ? 'custo não identificado' : '',
+    cost === null ? 'custo não identificado' : person.custoUltimoMesAssentado === false ? 'a cota do mês ainda recebe notas' : '',
+    average !== null && person.custoMeses ? `média do mandato ${formatCitizenAmount(average)}/mês (${person.custoMeses} ${person.custoMeses === 1 ? 'mês' : 'meses'})` : '',
     quota === null ? 'sem despesa de cota observada' : `cota ${quota === 0 ? 'R$ 0' : formatCitizenAmount(quota)}`,
     aboveAverage ? `acima da média ${person.role === 'senador' ? 'do Senado' : 'da Câmara'}` : '',
     citizenState.politicians.order === 'alertas' && person.valorAlertas ? `${formatCitizenAmount(person.valorAlertas)} em alertas${person.valorAlertasParcial ? ' · parcial' : ''}` : '',
@@ -407,14 +412,14 @@ function politicianRow(person, max) {
   /* À direita só o valor; os detalhes vão embaixo do nome, que assim não é cortado no celular. */
   return `${profileLinkOpen(person.id, 'citizen-row')}${citizenAvatar(person, 48)}<span class="citizen-rowtxt"><b>${esc(citizenName(person.name))}</b><small>${[roleLabel, person.party, person.uf].filter(Boolean).map(esc).join(' · ')}</small>
       <span class="citizen-rowbar"><i style="width:${barWidth}%" class="${aboveAverage ? 'hi' : ''}"></i></span><small class="citizen-rowdetail">${esc(details)}</small></span>
-    <span class="citizen-rowval">${cost !== null ? `<b class="mono">${esc(formatCitizenAmount(cost))}</b><small>/mês</small>` : '<b class="mono">Sem custo</b>'}${person.alertas ? `<span class="citizen-chip info citizen-mini"><i></i>${person.alertas} ${person.alertas === 1 ? 'alerta' : 'alertas'}</span>` : ''}</span>${profileLinkClose(person.id)}`;
+    <span class="citizen-rowval">${cost !== null ? `<b class="mono">${esc(formatCitizenAmount(cost))}</b><small>${month ? `em ${esc(month)}` : 'no mês'}</small>` : '<b class="mono">Sem custo</b>'}${person.alertas ? `<span class="citizen-chip info citizen-mini"><i></i>${person.alertas} ${person.alertas === 1 ? 'alerta' : 'alertas'}</span>` : ''}</span>${profileLinkClose(person.id)}`;
 }
 /* Ordem "Quem mais usa a cota": o valor à direita e a barra são a média mensal da cota; o custo vai embaixo. */
 function politicianQuotaRow(person, quota, cost, max) {
   const roleLabel = person.role === 'senador' ? 'Senador(a)' : 'Deputado(a)';
   const barWidth = quota !== null && quota > 0 ? Math.max(2, quota / max * 100) : 0;
   const details = [quota !== null ? 'média da cota nos meses com notas já assentadas' : 'sem despesa de cota observada',
-    cost !== null ? `custo total ${formatCitizenAmount(cost)}/mês` : ''].filter(Boolean).join(' · ');
+    cost !== null ? `custo total ${formatCitizenAmount(cost)}${politicianCostMonth(person) ? ` em ${politicianCostMonth(person)}` : ''}` : ''].filter(Boolean).join(' · ');
   return `${profileLinkOpen(person.id, 'citizen-row')}${citizenAvatar(person, 48)}<span class="citizen-rowtxt"><b>${esc(citizenName(person.name))}</b><small>${[roleLabel, person.party, person.uf].filter(Boolean).map(esc).join(' · ')}</small>
       <span class="citizen-rowbar"><i style="width:${barWidth}%"></i></span><small class="citizen-rowdetail">${esc(details)}</small></span>
     <span class="citizen-rowval">${quota !== null ? `<b class="mono">${esc(formatCitizenAmount(quota))}</b><small>/mês de cota</small>` : '<b class="mono">Sem notas</b>'}${person.alertas ? `<span class="citizen-chip info citizen-mini"><i></i>${person.alertas} ${person.alertas === 1 ? 'alerta' : 'alertas'}</span>` : ''}</span>${profileLinkClose(person.id)}`;
@@ -433,7 +438,7 @@ function politicianCoverageNotesHTML(coverage) {
     ? '<p class="muted">O Senado tem 81 cadeiras; registros extras no retrato da fonte podem refletir suplentes em transição.</p>'
     : '';
   return `<details class="card"><summary><b>Sobre estes dados</b></summary>
-    <p class="muted">Custo por mês: a média do mandato, apresentada como contexto no “Quanto custa?” da ficha. O número principal da ficha mostra um mês específico. Na Câmara, salário bruto, auxílios, cota e verba de gabinete, nos meses com as quatro partes. No Senado, remuneração do(a) senador(a), equipe comissionada do gabinete e cota, nos meses com as três. As Casas não publicam as mesmas partes: compare só dentro da mesma Casa. Sem mês com todas as partes, a linha diz “Sem custo”, sem estimativa.</p>
+    <p class="muted">Custo: o mesmo número do “Quanto custa?” da ficha, o mês mais recente com todas as partes publicadas e as notas da cota já assentadas (3 meses de folga). A média do mandato aparece embaixo, como contexto. Na Câmara, salário bruto, auxílios, cota e verba de gabinete, nos meses com as quatro partes. No Senado, remuneração do(a) senador(a), equipe comissionada do gabinete e cota, nos meses com as três. As Casas não publicam as mesmas partes: compare só dentro da mesma Casa. Sem mês com todas as partes, a linha diz “Sem custo”, sem estimativa.</p>
     ${Number.isFinite(coverage.custo?.deputado) && Number.isFinite(coverage.custo?.senador) ? `<p class="muted">Custo identificado para ${coverage.custo.deputado} de ${deputies.count} deputados(as) e ${coverage.custo.senador} de ${senators.count} senadores(as).</p>` : ''}
     <p class="muted">Despesas de cota observadas para ${deputies.withExpenses} de ${deputies.count} deputados(as) e ${senators.withExpenses} de ${senators.count} senadores(as).</p>${senateSeatNote}
   </details>`;
@@ -447,17 +452,17 @@ function politicianListHTML() {
   const quotaOrder = p.order === 'cota';
   const scale = role => quotaOrder
     ? Math.max(1, ...p.items.filter(person => person.role === role && Number.isFinite(person.gastoMensal)).map(person => person.gastoMensal))
-    : Math.max(1, ...p.items.filter(person => person.role === role && Number.isFinite(person.custoMensal)).map(person => person.custoMensal),
-      (p.averageCost?.[role]?.media || 0) * 1.5);
+    : Math.max(1, ...p.items.filter(person => person.role === role && Number.isFinite(person.custoUltimoMes)).map(person => person.custoUltimoMes),
+      (p.averageCost?.[role]?.mediaUltimoMes || 0) * 1.5);
   const rows = items => items.map(person => politicianRow(person, scale(person.role))).join('');
   if (p.blocks) {
     return ROLES_ORDER.filter(role => p.blocks[role].items.length).map(role => {
       const block = p.blocks[role], plural = role === 'senador' ? 'senadores(as)' : 'deputados(as)';
-      return `<h3 class="k citizen-list-head">${role === 'senador' ? 'Senado' : 'Câmara'} · ${quotaOrder ? 'quem mais usa a cota por mês' : 'quem mais custa por mês'}</h3><section class="card citizen-list">${rows(block.items)}</section>
+      return `<h3 class="k citizen-list-head">${role === 'senador' ? 'Senado' : 'Câmara'} · ${quotaOrder ? 'quem mais usa a cota por mês' : 'quem mais custa no mês mais recente'}</h3><section class="card citizen-list">${rows(block.items)}</section>
         ${block.total > block.items.length ? `<button type="button" class="opt citizen-more" data-politician-role="${role}">Ver todos os ${block.total} ${plural}</button>` : ''}`;
     }).join('') + `<p class="muted">${quotaOrder ? 'Câmara e Senado aparecem separados: as cotas das duas Casas têm regras e tetos diferentes.' : 'Câmara e Senado aparecem separados: as duas Casas não publicam as mesmas partes do custo.'}</p>`;
   }
-  return `<span class="muted" role="status">${p.total} ${p.total === 1 ? 'pessoa' : 'pessoas'} · ${quotaOrder ? 'média mensal da cota, nos meses com notas já assentadas' : 'custo médio por mês na própria Casa'}</span><section class="card citizen-list">${rows(p.items)}</section>
+  return `<span class="muted" role="status">${p.total} ${p.total === 1 ? 'pessoa' : 'pessoas'} · ${quotaOrder ? 'média mensal da cota, nos meses com notas já assentadas' : 'custo no mês mais recente com todas as partes, na própria Casa'}</span><section class="card citizen-list">${rows(p.items)}</section>
     ${p.loading ? skel('lista', 3) : p.items.length < p.total ? '<button type="button" class="opt citizen-more" data-politician-more>Mostrar mais</button>' : ''}`;
 }
 function renderPoliticianList() {
@@ -483,7 +488,7 @@ function politiciansView() {
     <div id="citizen-politician-notes">${politicianCoverageNotesHTML(p.coverage)}</div>
     <span class="src">${p.order === 'cota'
       ? 'Valor: média mensal da cota parlamentar (reembolsos de despesas do mandato), nos meses com notas já assentadas, desde fev/2023, a mesma conta do “Quem mais usa a cota” da página inicial. Os meses mais recentes, cuja cota ainda recebe notas, ficam fora da média. Embaixo, o custo total por mês (salário, auxílios, cota e gabinete). As cotas da Câmara e do Senado têm regras e tetos diferentes: compare só dentro da mesma Casa. Valores da época, sem correção pela inflação.'
-      : 'Valor: custo médio por mês desde fev/2023, início da legislatura atual, também mostrado como contexto na ficha; a linha diz quantos meses entram na média. Embaixo, a média da cota parlamentar (reembolsos). Câmara e Senado não publicam as mesmas partes: a barra e o “acima da média” comparam só com a mesma Casa. Valores da época, sem correção pela inflação.'}</span>`;
+      : 'Valor: o custo do mês mais recente com todas as partes publicadas, o mesmo número principal da ficha, e o mês ao lado. Embaixo, a média do mandato desde fev/2023 (contexto) e a média da cota parlamentar (reembolsos). Câmara e Senado não publicam as mesmas partes: a barra e o “acima da média” comparam só com a mesma Casa. Valores da época, sem correção pela inflação.'}</span>`;
 }
 
 /* ---------- Ficha leve (qualquer deputado ou senador) ---------- */

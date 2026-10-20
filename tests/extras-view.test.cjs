@@ -484,9 +484,28 @@ test('deputy cost in the comparison leaves out months whose quota still receives
   const months = { '2026-06': { valuesCents: values(3000000) }, '2026-07': { valuesCents: values(3000000) }, '2026-08': { valuesCents: values(600000) } };
   context.profileData = value => ({ id: value.id, person: value, cost: { monthlyAverageCents: 21836619, usedMonths: Object.keys(months), months, parts: {} } });
   const person = id => ({ ...profile(id, 100), pessoa: { id, name: id, role: 'deputado' }, snapshotAt: '2026-10-13T03:17:32+00:00' });
-  const row = api.comparisonTable([person('camara:1'), person('camara:2')]).split('\n').find(line => line.includes('Custa por mês · Câmara'));
-  // Só jun e jul: 46.366,19 + 150.000 + 30.000; ago ainda recebe notas.
-  assert.match(row, /R\$ 226366\.19<\/b><small> \/mês · média de 2 meses/);
+  const row = api.comparisonTable([person('camara:1'), person('camara:2')]).split('\n').find(line => line.includes('Quanto custa no mês · Câmara'));
+  // Como na ficha: jul, o mês mais recente com a folga (ago ainda recebe notas); a média de jun e jul vai de contexto.
+  assert.match(row, /R\$ 226366\.19<\/b><small> em jul\/2026 · média do mandato R\$ 226366\.19\/mês \(2 meses\)/);
+  const card = api.comparisonShareCard([person('camara:1'), person('camara:2')]);
+  assert.equal(card.people[0].stats[0].label, 'Custo em jul/2026');
+  assert.match(card.footnote, /Custo do mês mais recente com todas as partes, como na ficha/);
+});
+
+test('comparison shows the month of the profile card, not the average, and its parts of the same month', () => {
+  const { api, context } = comparison(profile('camara:1', 100), profile('camara:2', 100));
+  const months = high => ({ '2026-06': { valuesCents: { remuneration: 4636619, allowances: 0, quota: 3000000, office: 15000000 } },
+    '2026-07': { valuesCents: { remuneration: 4636619, allowances: 0, quota: high ? 9000000 : 1000000, office: 16000000 } } });
+  context.profileData = value => ({ id: value.id, person: value, cost: { monthlyAverageCents: 1, usedMonths: ['2026-06', '2026-07'],
+    months: months(value.id === 'camara:1'), parts: {} } });
+  const person = id => ({ ...profile(id, 100), pessoa: { id, name: id, role: 'deputado' }, snapshotAt: '2026-10-13T03:17:32+00:00' });
+  const html = api.comparisonTable([person('camara:1'), person('camara:2')]);
+  assert.match(html, /R\$ 296366\.19<\/b><small> em jul\/2026/);
+  assert.match(html, /R\$ 216366\.19<\/b><small> em jul\/2026/);
+  // Gabinete e remuneração do mesmo mês do total, não a média de cada parte.
+  assert.match(html.split('\n').find(line => line.includes('verba de gabinete (Câmara)')) || html, /R\$ 160000<\/b><small> em jul\/2026/);
+  const card = api.comparisonShareCard([person('camara:1'), person('camara:2')]);
+  assert.equal(card.people[1].stats[0].tag, 'R$ 80000 a menos em jul/2026');
 });
 
 test('share card for two deputies tags only who costs less and who attended more, never alerts', () => {

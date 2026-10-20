@@ -615,11 +615,16 @@ def politicians(db, params):
         cost = monthly.get(item['id'])
         item['custoMensal'] = cost['cents'] / 100 if cost else None
         item['custoMeses'] = cost['months'] if cost else None
+        # Número principal da linha: o mesmo mês do "Quanto custa?" da ficha; a média do mandato fica de contexto.
+        latest = cost.get('latestCents') if cost else None
+        item['custoUltimoMes'] = latest / 100 if isinstance(latest, int) else None
+        item['custoUltimoMesPeriodo'] = cost.get('latestPeriod') if item['custoUltimoMes'] is not None else None
+        item['custoUltimoMesAssentado'] = cost.get('latestSettled') if item['custoUltimoMes'] is not None else None
     cost_averages = _cost_averages(db, monthly)
     if by_cost:
         house = {'deputado': 0, 'senador': 1}
         # Sem custo identificado: no fim da Casa, pela cota (sem cota, por último).
-        items.sort(key=lambda item: (house.get(item['role'], 2), item['custoMensal'] is None, -(item['custoMensal'] or 0),
+        items.sort(key=lambda item: (house.get(item['role'], 2), item['custoUltimoMes'] is None, -(item['custoUltimoMes'] or 0),
                                      item['gastoMensal'] is None, -(item['gastoMensal'] or 0), item['name']))
         items = items[offset:offset + size]
     return {'itens': items, 'total': total, 'page': page, 'pageSize': size,
@@ -632,8 +637,12 @@ def _cost_averages(db, monthly):
     """Custo médio mensal por Casa, entre quem está na lista atual e tem custo identificado (para "acima da média")."""
     out = {}
     for role in ROLES:
-        values = [monthly[i]['cents'] for (i,) in db.execute('SELECT authorityId FROM roster WHERE sourceId=?', (CURRENT[role],)) if i in monthly]
-        out[role] = {'media': sum(values) / len(values) / 100 if values else None, 'n': len(values)}
+        ids = [i for (i,) in db.execute('SELECT authorityId FROM roster WHERE sourceId=?', (CURRENT[role],)) if i in monthly]
+        values = [monthly[i]['cents'] for i in ids]
+        latest = [monthly[i]['latestCents'] for i in ids if isinstance(monthly[i].get('latestCents'), int)]
+        out[role] = {'media': sum(values) / len(values) / 100 if values else None, 'n': len(values),
+                     # Média do mês principal de cada um, para o "acima da média" comparar a mesma coisa que a linha mostra.
+                     'mediaUltimoMes': sum(latest) / len(latest) / 100 if latest else None}
     return out
 
 

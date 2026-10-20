@@ -107,7 +107,7 @@ aprovado. Visitantes não iniciam coleta nem cálculo sobre o arquivo CEAP.
 A interface recebe centavos, meses usados, parcelas, períodos de exercício e
 fontes. Ela formata os valores; não decide elegibilidade, corrige sinais ou
 soma moradia. O complemento permanece separado uma vez e com o sinal original.
-Ranking, home e comparação não consomem o novo valor.
+A lista e a comparação mostram o mesmo mês principal da ficha, com a média do mandato como contexto; a home mostra a média do grupo.
 
 ## Endereços e buscadores
 

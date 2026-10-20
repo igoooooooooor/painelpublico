@@ -166,19 +166,26 @@ test('the roster and profile distinguish missing reimbursements from an observed
   assert.match(profile, /Dados insuficientes para avaliar/);
 });
 
-test('roster rows show the monthly cost of the own house, with the quota apart', () => {
+test('roster rows show the same month as the profile card, with the mandate average and the quota apart', () => {
   const { api } = makeView();
-  api.citizenState.politicians.averageCost = { senador: { media: 300000 }, deputado: { media: 200000 } };
+  api.citizenState.politicians.averageCost = { senador: { media: 300000, mediaUltimoMes: 300000 }, deputado: { media: 200000, mediaUltimoMes: 200000 } };
   const row = api.politicianRow({ id: 'senado:70', name: 'Renan Calheiros', role: 'senador', custoMensal: 375869.84, custoMeses: 43,
+    custoUltimoMes: 383699.21, custoUltimoMesPeriodo: '2026-07', custoUltimoMesAssentado: true,
     gastoMensal: 27451.33, hasExpenseData: true, alertas: 0 }, 400000);
-  assert.match(row, /R\$ 376 mil<\/b><small>\/mês<\/small>/);
-  assert.match(row, /média de 43 meses · cota R\$ 27 mil · acima da média do Senado/);
-  assert.match(row, /width:93\.9/);  // 375,9 mil sobre a escala de 400 mil do Senado
+  assert.match(row, /R\$ 384 mil<\/b><small>em jul\/2026<\/small>/);
+  assert.match(row, /média do mandato R\$ 376 mil\/mês \(43 meses\) · cota R\$ 27 mil · acima da média do Senado/);
+  assert.match(row, /width:95\.9/);  // 383,7 mil sobre a escala de 400 mil do Senado
+  assert.doesNotMatch(row, /<small>\/mês<\/small>/);
+  // Sem nenhum mês com a folga, o mês mostrado avisa que a cota ainda recebe notas, como na ficha.
+  const open = api.politicianRow({ id: 'camara:9', name: 'Pessoa', role: 'deputado', custoMensal: 200000, custoMeses: 2,
+    custoUltimoMes: 210000, custoUltimoMesPeriodo: '2026-09', custoUltimoMesAssentado: false, gastoMensal: 1, hasExpenseData: true, alertas: 0 }, 300000);
+  assert.match(open, /<small>em set\/2026<\/small>/);
+  assert.match(open, /a cota do mês ainda recebe notas/);
 });
 
 test('ordering by cost with all houses shows Câmara and Senado in separate blocks', async () => {
   const people = role => Array.from({ length: 10 }, (_, i) => ({ id: `${role === 'senador' ? 'senado' : 'camara'}:${i}`, name: `P${i}`, role,
-    custoMensal: 100000 - i, custoMeses: 42, gastoMensal: 30000, hasExpenseData: true, alertas: 0 }));
+    custoMensal: 100000 - i, custoMeses: 42, custoUltimoMes: 110000 - i, custoUltimoMesPeriodo: '2026-07', gastoMensal: 30000, hasExpenseData: true, alertas: 0 }));
   const calls = [];
   const { api } = makeView({ fetchImpl: async url => { calls.push(String(url)); const role = String(url).includes('cargo=senador') ? 'senador' : 'deputado';
     return { ok: true, json: async () => ({ itens: people(role), total: role === 'senador' ? 81 : 513, medias: {}, custoMedias: {}, cobertura: null }) }; } });
@@ -188,7 +195,7 @@ test('ordering by cost with all houses shows Câmara and Senado in separate bloc
   assert.equal(calls.length, 2);
   assert.ok(calls.every(url => /ordem=gasto/.test(url) && /pageSize=10/.test(url)));
   const html = api.politiciansView();
-  assert.match(html, /Câmara · quem mais custa por mês[\s\S]*Senado · quem mais custa por mês/);
+  assert.match(html, /Câmara · quem mais custa no mês mais recente[\s\S]*Senado · quem mais custa no mês mais recente/);
   assert.match(html, /data-politician-role="deputado">Ver todos os 513 deputados\(as\)/);
   assert.match(html, /data-politician-role="senador">Ver todos os 81 senadores\(as\)/);
 });
