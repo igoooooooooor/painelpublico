@@ -129,7 +129,9 @@ que o que o buscador lê depois de executar o JavaScript seja o mesmo do HTML. M
 rostos, atalhos e cartões de votação são links reais (`<a href>`), que abrem em nova aba com Ctrl/Cmd ou botão do
 meio; o clique simples continua navegando dentro do app. Endereço sem o nome redireciona (301) para o canônico;
 endereço desconhecido recebe a página 404 do site, com `noindex`. Pares de comparação (`/comparar/a-vs-b`,
-`/partidos/A-vs-B`) têm metadados próprios e `noindex`.
+`/partidos/A-vs-B`) têm metadados próprios e `noindex`. O par de partidos só aceita siglas com parlamentares em
+exercício; outro texto redireciona para `/partidos`, para o título e a prévia de compartilhamento não repetirem
+frase escolhida por quem monta o link.
 
 As páginas usam o cache do modo de produção, invalidado quando o banco, o build ou qualquer snapshot muda. O
 servidor também responde `robots.txt` (a API fica fora do rastreamento), `sitemap.xml` (seções, fichas da lista

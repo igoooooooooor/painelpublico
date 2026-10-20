@@ -172,14 +172,18 @@ class SeoPagesTests(unittest.TestCase):
         self.assertIn('/deputado/<id>-<nome>', llms)
         self.assertIn(f'{self.base}/metodologia', llms)
 
-    def test_party_pair_path_has_its_own_escaped_metadata(self):
-        response, page = self.get('/partidos/PL-vs-PT')
+    def test_party_pair_path_names_only_parties_in_office(self):
+        response, page = self.get('/partidos/AAA-vs-bbb')
         self.assertEqual(response.status, 200)
-        self.assertIn('<title>PL × PT · Comparar partidos · Painel Público</title>', page)
+        self.assertIn('<title>AAA × BBB · Comparar partidos · Painel Público</title>', page)
         self.assertIn('<meta name="robots" content="noindex">', page)
-        _, escaped = self.get('/partidos/%3Cb%3E-vs-PT')
-        self.assertNotIn('<b> ×', escaped)
-        self.assertIn('&lt;b&gt; × PT', escaped)
+        # Texto inventado no endereço não vira título nem prévia de compartilhamento no domínio do site.
+        for path in ('/partidos/Fulano%20desviou%20R%24%201%20bi-vs-AAA', '/partidos/%3Cb%3E-vs-AAA', '/partidos/AAA-vs-aaa'):
+            with self.subTest(path=path), self.assertRaises(urllib.error.HTTPError) as moved:
+                self.get(path)
+            self.assertEqual(moved.exception.code, 301)
+            self.assertEqual(moved.exception.headers['Location'], '/partidos')
+            moved.exception.close()
 
     def test_compare_pair_path_names_both_people_and_falls_back_for_unknown_ids(self):
         response, page = self.get('/comparar/deputado-1-vs-senador-2')

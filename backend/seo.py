@@ -19,7 +19,7 @@ from urllib.parse import unquote
 
 from .settlement import settled_cutoff
 from . import cities, citizen, costs, profiles, seo_sections as sections, votes
-from .config import ROOT, SNAPSHOTS_PATH
+from .config import ROOT, ROSTER_SOURCES, SNAPSHOTS_PATH
 from .database import fold
 
 SITE_NAME = 'Painel Público'
@@ -410,17 +410,33 @@ def section_page(db, page_html, path, origin):
     return render(page_html, title, description, url, origin, body, json_ld, marker=path)
 
 
-def party_pair_page(page_html, path, origin):
-    """Metadados próprios para o link de comparação; a tela confere as siglas ao carregar."""
+def current_parties(db):
+    """Siglas dos partidos com parlamentares em exercício, pela sigla em maiúsculas (como a tela compara)."""
+    if db is None:
+        return {}
+    marks = ','.join('?' * len(ROSTER_SOURCES))
+    found = db.execute(f"""SELECT DISTINCT TRIM(a.party) FROM authorities a JOIN roster r ON r.authorityId=a.id
+        WHERE r.sourceId IN ({marks}) AND a.role IN ('deputado','senador') AND TRIM(COALESCE(a.party,''))<>''""", ROSTER_SOURCES)
+    return {party.upper(): party for (party,) in found}
+
+
+def party_pair_page(db, page_html, path, origin):
+    """Metadados próprios para o link de comparação de dois partidos em exercício.
+
+    Outro texto no endereço volta para /partidos: o título e a prévia de compartilhamento não repetem
+    frase escolhida por quem monta o link."""
     match = PARTY_PAIR_PATH.match(path)
-    first, second = (unquote(part).strip()[:30] for part in match.groups())
+    known = current_parties(db)
+    first, second = (known.get(unquote(part).strip().upper()) for part in match.groups())
+    if not first or not second or first == second:
+        return 301, None, '/partidos'
     title = f'{first} × {second} · Comparar partidos'
     description = (f'{first} e {second} lado a lado: gasto médio de cota, presença, picos e concentrações e como votaram '
                    'na Câmara e no Senado, com dados públicos oficiais.')
     body = (f'<div class="compare-intro"><span class="k">Câmara e Senado</span><h1 class="h ph-t">{_escape(first)} × {_escape(second)}</h1>'
             f'<p class="ph-lead">{_escape(description)}</p></div><p class="note">A comparação é montada no navegador. <a href="/partidos">Ver os partidos</a>.</p>')
     # noindex: o par é escolha de quem compartilha, não uma página para indexar.
-    return render(page_html, title, description, origin + path, origin, body, noindex=True, marker=path)
+    return 200, render(page_html, title, description, origin + path, origin, body, noindex=True, marker=path), None
 
 
 def compare_pair_page(db, page_html, path, origin):
@@ -551,7 +567,7 @@ def page(db, page_html, path, origin):
     if path in LEGACY_SECTION_PATHS:
         return 301, None, LEGACY_SECTION_PATHS[path]
     if PARTY_PAIR_PATH.match(path):
-        return 200, party_pair_page(page_html, path, origin), None
+        return party_pair_page(db, page_html, path, origin)
     if path in SECTIONS:
         return 200, section_page(db, page_html, path, origin), None
     if VOTE_DETAIL_PATH.match(path):
