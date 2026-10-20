@@ -49,7 +49,9 @@ ano a ano, Placar (ex.: PLP 74/2026, 346–46–3; PL 45–23; PT 52–0 na API 
 - **Verba de gabinete publicada como R$ 0,00:** 15 perfis da lista atual têm meses usados no custo com R$ 0,00 de gabinete
   na própria Câmara, mesmo com equipe listada (Hildo Rocha, `camara:178884`: 5 pessoas ativas, R$ 0,00 em todos os
   meses de 2026). É o valor publicado e fica; o cartão avisa que o total pode estar sem o custo da equipe. É o que
-  produz o "menor" da home (Paulo Soares, 2 meses: R$ 52 mil antes das passagens SIGEPA, R$ 56 mil depois).
+  produzia o "menor" da home (Paulo Soares, 2 meses: R$ 52 mil antes das passagens SIGEPA, R$ 56 mil depois). O menor e
+  o maior da home agora deixam de fora quem tem gabinete publicado como R$ 0,00 num mês da própria média (15
+  deputados(as) na base local, que seguem na média); o card diz quantos. Na base local, o menor passa a R$ 133 mil.
 
 - **Trava diária do custo barrando nota removida pela Câmara:** desde a atualização das 8h49 de 19/10/2026, a
   recomposição do custo era recusada ("camara:220643 2026-03 lost numeric quota"): a Câmara tirou do arquivo o único

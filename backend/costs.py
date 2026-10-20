@@ -63,7 +63,13 @@ def _chamber(snapshot, as_of=None):
         if isinstance(record, dict) and record.get('house') == 'camara' and record.get('id') == identifier:
             average = chamber_average(record, as_of)
             if average:
-                out[identifier] = {'house': 'camara', 'cents': average[0], 'months': len(average[1])}
+                months = record.get('months') or {}
+                # Verba de gabinete publicada como R$ 0,00 num mês da média (suplentes com equipe listada):
+                # o custo fica sem a equipe e não serve de "menor" ou "maior" da home.
+                zero_office = any(((months.get(period) or {}).get('valuesCents') or {}).get('office') == 0
+                                  for period in average[1])
+                out[identifier] = {'house': 'camara', 'cents': average[0], 'months': len(average[1]),
+                                   'zeroOffice': zero_office}
     return out
 
 

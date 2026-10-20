@@ -203,6 +203,9 @@ def _home_cost_card(summary):
                 '<div class="home-cost-value">Sem dados</div><p class="muted">O custo mensal ainda não foi calculado para a lista atual.</p>'
                 '<a class="more" href="/politicos">Ver a lista de políticos →</a></section>')
     low, high = chamber.get('minimo'), chamber.get('maximo')
+    excluded = chamber.get('foraDaFaixa') if isinstance(chamber.get('foraDaFaixa'), int) else 0
+    out_of_range = (f' O menor e o maior deixam de fora {excluded} {"deputado(a)" if excluded == 1 else "deputados(as)"} com verba de '
+                    'gabinete publicada pela Câmara como R$ 0,00 em algum mês, que entram só na média.') if excluded > 0 else ''
     has_range = all(isinstance(value, (int, float)) for value in (low, high)) and high > low
     range_html = ''
     if has_range:
@@ -217,7 +220,7 @@ def _home_cost_card(summary):
             f'<p class="home-cost-parts">Salário, auxílios, cota parlamentar e verba do gabinete, somados.</p>{range_html}{senate_html}'
             f'<p class="home-cost-note">Média de {chamber.get("comCusto", 0)} deputados(as) com custo identificado, dos {chamber.get("total", 0)} da lista atual, '
             f'nos meses com todas as partes publicadas e as notas da cota já assentadas (3 meses de folga); valores da época. Na Câmara, ficam fora 13º, encargos do gabinete e apartamento funcional. '
-            f'Câmara e Senado publicam partes diferentes do custo: compare só dentro da mesma Casa.</p>'
+            f'Câmara e Senado publicam partes diferentes do custo: compare só dentro da mesma Casa.{out_of_range}</p>'
             f'<a class="more" href="/politicos">Ver quanto custa cada um(a) →</a></section>')
 
 

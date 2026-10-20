@@ -304,7 +304,21 @@ class CitizenPoliticiansTests(unittest.TestCase):
         self.assertEqual(result['deputado']['maximo'], 300000.0)
         self.assertEqual(result['deputado']['comCusto'], 1)
         self.assertGreater(result['deputado']['total'], 1)
-        self.assertEqual(result['senador'], {'media': None, 'minimo': None, 'maximo': None, 'comCusto': 0, 'total': result['senador']['total']})
+        self.assertEqual(result['deputado']['foraDaFaixa'], 0)
+        self.assertEqual(result['senador'], {'media': None, 'minimo': None, 'maximo': None, 'comCusto': 0, 'total': result['senador']['total'],
+                                             'foraDaFaixa': 0})
+
+    def test_home_cost_range_leaves_out_zero_office_profiles_but_the_average_keeps_them(self):
+        for identifier, name in (('camara:full', 'Gabinete Cheio'), ('camara:zero', 'Gabinete Zerado')):
+            self.payload['authorities'].append(self.authority(identifier, name, 'deputado', 'camara_deputies_current'))
+        self.import_data()
+        fake = {'camara:full': {'house': 'camara', 'cents': 20000000, 'months': 10, 'zeroOffice': False},
+                'camara:zero': {'house': 'camara', 'cents': 5000000, 'months': 2, 'zeroOffice': True}}
+        with closing(store.connect(self.db_path)) as db, db, mock.patch.object(citizen.costs, 'monthly_costs', return_value=fake):
+            result = citizen.summary(db)['custoMensal']['deputado']
+        self.assertEqual(result['media'], 125000.0)
+        self.assertEqual((result['minimo'], result['maximo']), (200000.0, 200000.0))
+        self.assertEqual(result['foraDaFaixa'], 1)
 
     def test_party_summary_counts_roster_and_keeps_missing_spending_null(self):
         self.payload['authorities'].append(

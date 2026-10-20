@@ -548,10 +548,14 @@ def summary(db):
             WHERE a.role=? AND a.id IN (SELECT authorityId FROM roster WHERE sourceId=?)''', (role, CURRENT[role]))]
         values = [monthly[identifier]['cents'] / 100 for identifier in ids
                   if isinstance(monthly.get(identifier, {}).get('cents'), int)]
+        # Menor e maior sem quem tem gabinete publicado como R$ 0,00: a média geral continua com todos.
+        ranged = [monthly[identifier]['cents'] / 100 for identifier in ids
+                  if isinstance(monthly.get(identifier, {}).get('cents'), int) and not monthly[identifier].get('zeroOffice')]
         monthly_cost[role] = {
             'media': sum(values) / len(values) if values else None,
-            'minimo': min(values) if values else None,
-            'maximo': max(values) if values else None,
+            'minimo': min(ranged) if ranged else None,
+            'maximo': max(ranged) if ranged else None,
+            'foraDaFaixa': len(values) - len(ranged),
             'comCusto': len(values),
             'total': len(ids),
         }

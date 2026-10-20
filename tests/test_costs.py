@@ -43,7 +43,11 @@ class SettledAverageTests(unittest.TestCase):
     def test_lists_use_the_same_settled_months_in_both_houses(self):
         full = {'remuneration': 100, 'allowances': 0, 'quota': 50, 'office': 1000}
         chamber = {'profiles': {'camara:1': chamber_record({'2026-07': full, '2026-09': {**full, 'quota': 0}}, average=1125)}}
-        self.assertEqual(costs._chamber(chamber, '2026-10-13'), {'camara:1': {'house': 'camara', 'cents': 1150, 'months': 1}})
+        self.assertEqual(costs._chamber(chamber, '2026-10-13'), {'camara:1': {'house': 'camara', 'cents': 1150, 'months': 1,
+                                                                             'zeroOffice': False}})
+        # Gabinete publicado como R$ 0,00 num mês da média marca o perfil (fica fora do menor e do maior da home).
+        zero = {'profiles': {'camara:1': chamber_record({'2026-07': {**full, 'office': 0}}, average=150)}}
+        self.assertTrue(costs._chamber(zero, '2026-10-13')['camara:1']['zeroOffice'])
         month = {'remunerationCents': 100, 'officeCents': 1000}
         senate = {'profiles': {'senado:1': {'id': 'senado:1', 'months': {'2026-07': month, '2026-08': month, '2026-09': month}}}}
         quota = {('senado:1', '2026-07'): 90, ('senado:1', '2026-08'): 30, ('senado:1', '2026-09'): 10}

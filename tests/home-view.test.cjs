@@ -44,6 +44,9 @@ test('home cost card uses the monthly cost from the API per House and keeps miss
   assert.match(html, /Senador\(a\), em média<\/span><b>R\$ 302 mil\/mês/);
   assert.match(html, /Média de 510 deputados\(as\) com custo identificado, dos 513/);
   assert.match(html, /compare só dentro da mesma Casa/);
+  assert.doesNotMatch(html, /deixam de fora/);
+  data.custoMensal.deputado.foraDaFaixa = 15;
+  assert.match(ctx.homeCostCard(data), /O menor e o maior deixam de fora 15 deputados\(as\) com verba de gabinete publicada pela Câmara como R\$ 0,00/);
   data.custoMensal = { deputado: { media: null, minimo: null, maximo: null, comCusto: 0, total: 513 } };
   assert.match(ctx.homeCostCard(data), /Sem dados/);
   assert.doesNotMatch(ctx.homeCostCard(data), /NaN/);
