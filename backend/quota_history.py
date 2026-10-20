@@ -14,6 +14,7 @@ from pathlib import Path
 from .config import DB_PATH, ROOT
 from .database import fold, migrate
 from .public_store import connect, rebuild_aggregates, safe_url
+from .supplier_keys import public_key
 
 HISTORY_DIR = ROOT / 'data' / 'imports-history'
 AUTHORITY_COLUMNS = ('id', 'name', 'role', 'branch', 'sphere', 'institution', 'uf', 'party', 'sourceId',
@@ -76,8 +77,9 @@ def import_history(paths, db_path=DB_PATH):
                 db.executemany('INSERT OR IGNORE INTO quota_categories(name) VALUES(?)', {(n['category'],) for n in notes})
                 categories = dict(db.execute('SELECT name,id FROM quota_categories'))
                 # Nome e CNPJ ficam na tabela de fornecedores; um nome já conhecido não é trocado.
+                # Arquivos gerados antes da chave cpf-hmac trazem cpf-sha256: a chave é convertida aqui também.
                 db.executemany('INSERT OR IGNORE INTO suppliers VALUES(?,?,?)', {
-                    (n['supplier']['key'], n['supplier']['name'], n['supplier'].get('cnpj')) for n in notes if n.get('supplier')})
+                    (public_key(n['supplier']['key']), n['supplier']['name'], n['supplier'].get('cnpj')) for n in notes if n.get('supplier')})
                 db.execute('DELETE FROM quota_history_notes WHERE year=? AND authorityId LIKE ?', (year, HOUSE_PREFIX[house] + '%'))
                 sequence, rows = {}, []
                 for n in notes:
@@ -85,7 +87,7 @@ def import_history(paths, db_path=DB_PATH):
                     sequence[key] = sequence.get(key, 0) + 1
                     rows.append((n['authorityId'], year, int(n['month']), sequence[key], n.get('date'), categories[n['category']],
                                  int(n['amountCents']), 1 if n['kind'] == 'complemento_moradia' else 0,
-                                 (n.get('supplier') or {}).get('key'), _document_path(n.get('documentUrl')), n.get('airline')))
+                                 public_key((n.get('supplier') or {}).get('key')), _document_path(n.get('documentUrl')), n.get('airline')))
                 db.executemany('INSERT INTO quota_history_notes(authorityId,year,month,seq,date,categoryId,amountCents,'
                                'complement,supplierKey,documentPath,airline) VALUES(?,?,?,?,?,?,?,?,?,?,?)', rows)
                 counts['notes'] += len(rows)

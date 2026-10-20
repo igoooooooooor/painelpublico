@@ -197,7 +197,9 @@ deploy-data:
 	$(PYTHON) -c "import sqlite3; s=sqlite3.connect('data/na-lupa.sqlite3'); d=sqlite3.connect('data/backups/deploy.sqlite3'); s.backup(d); d.close()"
 	rsync -az --progress --rsync-path="$(SUDO) rsync" data/backups/deploy.sqlite3 $(SERVER):$(APP_DIR)/data/na-lupa.sqlite3.new
 	rsync -az --delete --exclude-from=deploy/snapshots-local-only.txt --rsync-path="$(SUDO) rsync" data/snapshots/ $(SERVER):$(APP_DIR)/data/snapshots/
-	$(SSH) $(SERVER) "$(SUDO) sh -c 'cd $(APP_DIR)/data && chown -R painel:painel na-lupa.sqlite3.new snapshots reviews && rm -f na-lupa.sqlite3-wal na-lupa.sqlite3-shm && mv -f na-lupa.sqlite3.new na-lupa.sqlite3 && ( [ -d $(APP_DIR)/app/scripts ] && $(REMOTE_BUILD) || true )'"
+	@# Segredo da chave de fornecedor pessoa física (backend/supplier_keys.py): o banco enviado foi gravado com ele.
+	@if [ -f data/supplier-key.secret ]; then rsync -az --rsync-path="$(SUDO) rsync" data/supplier-key.secret $(SERVER):$(APP_DIR)/data/supplier-key.secret; fi
+	$(SSH) $(SERVER) "$(SUDO) sh -c 'cd $(APP_DIR)/data && chown -R painel:painel na-lupa.sqlite3.new snapshots reviews && ( [ ! -f supplier-key.secret ] || ( chown painel:painel supplier-key.secret && chmod 600 supplier-key.secret ) ) && rm -f na-lupa.sqlite3-wal na-lupa.sqlite3-shm && mv -f na-lupa.sqlite3.new na-lupa.sqlite3 && ( [ -d $(APP_DIR)/app/scripts ] && $(REMOTE_BUILD) || true )'"
 	rm -f data/backups/deploy.sqlite3
 	@echo "Banco e snapshots publicados; página remontada e serviço reiniciado."
 

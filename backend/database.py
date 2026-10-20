@@ -112,6 +112,11 @@ def migrate(db):
                                        ('settledPeriodEnd', 'TEXT')):
                 db.execute(f'ALTER TABLE authority_totals ADD COLUMN {column} {definition}')
             dropped = True
+        # v9: fornecedor pessoa física deixa a chave cpf-sha256 (reversível) pela cpf-hmac (backend/supplier_keys.py).
+        from . import supplier_keys
+        if supplier_keys.legacy_count(db):
+            supplier_keys.rekey_legacy(db)
+            dropped = True
         if dropped:
             from .public_store import rebuild_aggregates
             rebuild_aggregates(db)

@@ -200,7 +200,13 @@ Na fotografia de 6 de outubro de 2026 (importada em 7/10), o banco tem 671 cadas
 nas listas atuais, mais 76 registros que só aparecem nos arquivos de despesas (54 deputados, 10 do Senado e 12 contas
 institucionais de lideranças) —,
 127.778 notas de reembolso, 22.216 chaves de fornecedor e 3.572 sinais. Fornecedores são associados por CNPJ quando a fonte o publica; chaves alternativas
-são limitadas à fonte e não garantem conciliação de empresas com nomes iguais.
+são limitadas à fonte e não garantem conciliação de empresas com nomes iguais. Fornecedor pessoa física não guarda o CPF:
+a chave é `cpf-hmac:` + HMAC-SHA256 do SHA-256 do CPF, com um segredo que não sai da máquina (`PAINEL_SUPPLIER_SECRET` ou
+`data/supplier-key.secret`, criado sozinho na primeira vez; [`backend/supplier_keys.py`](../backend/supplier_keys.py)).
+Até a v8 do esquema a chave era o SHA-256 puro (`cpf-sha256:`), que se desfaz testando todos os CPFs; a v9 converte as
+chaves gravadas sem precisar dos CPFs, o importador converte arquivos antigos e `make publish-data` recusa um banco
+com a chave antiga. Com outro segredo, a mesma pessoa ganha outra chave: `make deploy-data` envia o arquivo junto
+do banco, e quem recomeça de um release só concilia o ano corrente depois da primeira coleta.
 
 A home, o resumo e a lista parlamentar consultam o roster atual da Câmara e do Senado no SQLite, junto com todos os reembolsos importados desses registros. As contagens cobrem a lista inteira; médias incluem somente parlamentares com reembolso observado e ausências continuam sem valor, nunca zero. A classificação mostra cinco nomes por espaço visual, mas considera todos os deputados com dados. Não há resultados eleitorais para a lista completa; o bloco eleitoral da home foi removido até haver cobertura ampla.
 

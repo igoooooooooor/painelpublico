@@ -27,6 +27,10 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from backend import supplier_keys  # noqa: E402
+
 RAW_DIR = ROOT / "data" / "raw" / "legislative"
 CHAMBER_CEAP_URL = "https://www.camara.leg.br/cotas/Ano-{year}.csv.zip"
 CHAMBER_DEPUTIES_URL = (
@@ -306,8 +310,8 @@ def supplier_fields(name: Any, raw_tax_id: Any, source: str, row_index: int) -> 
             "cnpj": tax_digits,
         }
     if len(tax_digits) == 11:
-        key = hashlib.sha256(tax_digits.encode("ascii")).hexdigest()
-        return {"key": f"cpf-sha256:{key}", "name": supplier_name, "cnpj": None}
+        # CPF: chave com segredo local (backend/supplier_keys.py); um hash puro do CPF seria reversível.
+        return {"key": supplier_keys.cpf_key(tax_digits), "name": supplier_name, "cnpj": None}
     if normalized_identifier:
         return {
             "key": source_specific_identifier_key(source, raw_identifier),

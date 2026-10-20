@@ -11,6 +11,7 @@ from pathlib import Path
 from .config import DB_PATH, HOUSING_COMPLEMENT_KIND, ROOT, ROSTER_SOURCES
 from .database import fold, migrate
 from .settlement import settled_cutoff
+from .supplier_keys import public_key
 
 
 def connect(path=DB_PATH):
@@ -129,7 +130,8 @@ def import_documents(paths, db_path=DB_PATH):
                         cnpj = supplier.get('cnpj')
                         if cnpj is not None and not re.fullmatch(r'\d{14}', str(cnpj)):
                             raise ValueError('Identificador público de fornecedor deve ser CNPJ de 14 dígitos; CPF não é aceito')
-                        key = 'cnpj:' + cnpj if cnpj else supplier.get('key')
+                        # Arquivos gerados antes da chave cpf-hmac trazem cpf-sha256: a chave é convertida aqui também.
+                        key = 'cnpj:' + cnpj if cnpj else public_key(supplier.get('key'))
                         if not key or not supplier.get('name'):
                             raise ValueError('Fornecedor sem identidade/nome')
                         db.execute('INSERT INTO suppliers VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET '

@@ -30,6 +30,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from backend.database import backup_database  # noqa: E402
+from backend.supplier_keys import LEGACY_PREFIX  # noqa: E402
 
 DEFAULT_DB = ROOT / 'data' / 'na-lupa.sqlite3'
 DEFAULT_SNAPSHOTS = ROOT / 'data' / 'snapshots'
@@ -109,6 +110,14 @@ def database_summary(db_path):
     return {'schemaVersion': version, 'tables': counts}
 
 
+def legacy_supplier_keys(connection):
+    """Quantas chaves de fornecedor ainda estão no formato cpf-sha256 (só nas tabelas que existem)."""
+    tables = {row[0] for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+    return sum(connection.execute(f'SELECT COUNT(*) FROM {table} WHERE {column} LIKE ?', (LEGACY_PREFIX + '%',)).fetchone()[0]
+               for table, column in (('suppliers', 'key'), ('expenses', 'supplierKey'), ('quota_history_notes', 'supplierKey'))
+               if table in tables and column in {row[1] for row in connection.execute(f'PRAGMA table_info({table})')})
+
+
 def package_database(db_path, out_dir, tag):
     """Cópia consistente do banco, VACUUM na cópia e gzip. Devolve (arquivo, resumo)."""
     db_path = Path(db_path)
@@ -123,6 +132,9 @@ def package_database(db_path, out_dir, tag):
     try:
         connection = sqlite3.connect(working)
         try:
+            # A chave cpf-sha256 se desfaz em minutos e revela o CPF; o banco precisa estar migrado (make db-init).
+            if legacy_supplier_keys(connection):
+                raise RuntimeError('O banco ainda tem chaves de fornecedor cpf-sha256; rode make db-init antes de publicar.')
             connection.execute('PRAGMA journal_mode = DELETE')
             connection.execute('VACUUM')
         finally:
