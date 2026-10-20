@@ -198,6 +198,14 @@ function scoreboardLegacyVisibleVotes() {
       && (!list.result || list.result === result);
   });
 }
+/* Total conferido: texto principal, trechos e urgências; cada parte com a própria contagem, como no filtro. */
+function scoreboardCheckedStat(coverage) {
+  const urgency = Number.isInteger(coverage.urgencyCount) && Number.isInteger(coverage.standaloneUrgencyCount) ? coverage.urgencyCount + coverage.standaloneUrgencyCount : null;
+  const parts = [[coverage.publishedCount, 'do texto principal'], [coverage.segmentCount, 'sobre trechos'], [urgency, 'pedidos de urgência']];
+  if (!parts.every(([count]) => Number.isInteger(count) && count >= 0)) return `<div><dt>Votações conferidas</dt><dd>${scoreboardCount(coverage.publishedCount)}</dd></div>`;
+  const total = parts.reduce((sum, [count]) => sum + count, 0);
+  return `<div><dt>Votações conferidas<small>${parts.map(([count, label]) => `${scoreboardCount(count)} ${label}`).join(' · ')}</small></dt><dd>${scoreboardCount(total)}</dd></div>`;
+}
 function scoreboardCoverage(data) {
   const period = data?.period || {};
   const coverage = data?.coverage || {};
@@ -225,13 +233,13 @@ function scoreboardCoverage(data) {
   const funnelSteps = [
     [coverage.inventoryCount, 'Registros de votação publicados pela Câmara', 'inventory'],
     [coverage.candidateCount, 'Pareciam votar o texto principal', 'candidates'],
-    [coverage.publishedCount, 'Entraram no Placar', 'published'],
+    [coverage.publishedCount, 'Texto principal no Placar', 'published'],
   ];
   const funnel = funnelSteps.every(([count]) => Number.isInteger(count) && count >= 0) && coverage.inventoryCount > 0
     ? `<ol class="scoreboard-funnel" aria-label="Como as votações foram selecionadas">${funnelSteps.map(([count, label, key]) => `<li><span>${label}</span><b>${scoreboardCount(count)}</b><i class="funnel-${key}" style="width:${Math.max(1.5, count / coverage.inventoryCount * 100).toFixed(2)}%"></i></li>`).join('')}</ol>` : '';
   const years = /^\d{4}-/.test(period.start || '') && /^\d{4}-/.test(period.end || '') ? `${period.start.slice(0, 4)}${period.start.slice(0, 4) === period.end.slice(0, 4) ? '' : `–${period.end.slice(2, 4)}`}` : '';
   const stats = `<dl class="scoreboard-stats">
-      ${Number.isInteger(coverage.publishedCount) ? `<div><dt>Votações conferidas</dt><dd>${published}</dd></div>` : ''}
+      ${Number.isInteger(coverage.publishedCount) ? scoreboardCheckedStat(coverage) : ''}
       <div><dt>Tipos de proposta</dt><dd>PL · PLP · PEC</dd></div>
       ${years ? `<div><dt>Período</dt><dd>${years}</dd></div>` : ''}
     </dl>`;
@@ -372,7 +380,7 @@ function scoreboardVotesView() {
   const empty = list.status === 'ready' && !fallback && items.length === 0 || fallback && legacyVotes.length === 0
     ? '<p class="card scoreboard-empty">Nenhuma votação encontrada com esses filtros.</p>' : '';
   const paginationData = fallback ? null : data;
-  return `${pageHead('Câmara · Plenário', 'Placar', fallback ? 'Consulte as votações selecionadas e suas fontes oficiais.' : 'Veja o que foi decidido sobre o texto principal dos projetos e como cada deputado votou.')}
+  return `${pageHead('Câmara · Plenário', 'Placar', fallback ? 'Consulte as votações selecionadas e suas fontes oficiais.' : 'Veja o que o Plenário decidiu sobre o texto principal, os trechos e os pedidos de urgência dos projetos, e como cada deputado votou.')}
     ${data ? scoreboardCoverage(data) : ''}
     ${unavailableNote}
     ${scoreboardFilterForm(data, fallback)}

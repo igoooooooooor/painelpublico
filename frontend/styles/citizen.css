@@ -753,6 +753,7 @@ body[data-view="home"] .citizen-alert { box-shadow: var(--shadow-raised); }
 .scoreboard-stats { display: flex; flex-wrap: wrap; gap: var(--space-3) 32px; margin: 0; }
 .scoreboard-stats > div { display: flex; flex-direction: column-reverse; gap: 2px; }
 .scoreboard-stats dt { color: var(--muted); font-size: 12px; }
+.scoreboard-stats dt small { display: block; margin-top: 2px; font-size: 12px; }
 .scoreboard-stats dd { margin: 0; white-space: nowrap; font-family: var(--f-data); font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
 .scoreboard-coverage { color: var(--muted); font-size: 13px; }
 .scoreboard-coverage > .h { color: var(--ink); }

@@ -463,6 +463,17 @@ def scoreboard_items():
     return first, items
 
 
+def checked_stat(coverage):
+    """Total conferido: texto principal, trechos e urgências; cada parte com a própria contagem, como no filtro."""
+    urgency = coverage.get('urgencyCount'), coverage.get('standaloneUrgencyCount')
+    urgency = urgency[0] + urgency[1] if all(isinstance(value, int) for value in urgency) else None
+    parts = [(coverage.get('publishedCount'), 'do texto principal'), (coverage.get('segmentCount'), 'sobre trechos'), (urgency, 'pedidos de urgência')]
+    if not all(isinstance(value, int) and value >= 0 for value, _ in parts):
+        return f'<div><dt>Votações conferidas</dt><dd>{count(coverage.get("publishedCount"))}</dd></div>'
+    detail = ' · '.join(f'{count(value)} {label}' for value, label in parts)
+    return f'<div><dt>Votações conferidas<small>{esc(detail)}</small></dt><dd>{count(sum(value for value, _ in parts))}</dd></div>'
+
+
 def scoreboard_body():
     listing, items = scoreboard_items()
     if not listing.get('available'):
@@ -476,7 +487,7 @@ def scoreboard_body():
     years = f'{start[:4]}{"" if start[:4] == end[:4] else "–" + end[2:4]}' if start[:4].isdigit() and end[:4].isdigit() else ''
     published = coverage.get('publishedCount')
     stats = ('<dl class="scoreboard-stats">'
-             + (f'<div><dt>Votações conferidas</dt><dd>{count(published)}</dd></div>' if isinstance(published, int) else '')
+             + (checked_stat(coverage) if isinstance(published, int) else '')
              + '<div><dt>Tipos de proposta</dt><dd>PL · PLP · PEC</dd></div>'
              + (f'<div><dt>Período</dt><dd>{esc(years)}</dd></div>' if years else '') + '</dl>')
     groups, current = [], None
@@ -490,7 +501,7 @@ def scoreboard_body():
     sections = ''.join(f'<section class="scoreboard-month"><h2>{esc(month_name(key))} <span>{len(group)} {"votação" if len(group) == 1 else "votações"}</span></h2>'
                        f'{"".join(vote_card(item) for item in group)}</section>' for key, group in groups)
     timeframe = f'em {year}' if year else 'no período consultado'
-    return (page_head('Câmara · Plenário', 'Placar', 'Veja o que foi decidido sobre o texto principal dos projetos e como cada deputado votou.')
+    return (page_head('Câmara · Plenário', 'Placar', 'Veja o que o Plenário decidiu sobre o texto principal, os trechos e os pedidos de urgência dos projetos, e como cada deputado votou.')
             + stats
             + f'<div class="card scoreboard-coverage"><h2 class="h">O que é o Placar</h2>'
             f'<p>Aqui estão votações da Câmara {timeframe} em que os deputados votaram o texto principal de um projeto de lei ou de uma mudança na Constituição, com o voto de cada um registrado.</p>'

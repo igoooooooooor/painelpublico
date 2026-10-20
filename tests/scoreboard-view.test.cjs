@@ -97,6 +97,18 @@ test('coverage distinguishes exclusions from pending decisions without inventing
   assert.match(current, /5 ainda estão pendentes/);
 });
 
+test('checked total adds main texts, parts and urgency requests, and falls back without inventing counts', () => {
+  const { context } = loadApp();
+  const data = listPayload();
+  const partial = vm.runInContext(`scoreboardCoverage(${JSON.stringify(data)})`, context);
+  assert.match(partial, /<dt>Votações conferidas<\/dt><dd>7<\/dd>/, 'sem as outras contagens, fica só o texto principal');
+  data.coverage = { ...data.coverage, segmentCount: 12, urgencyCount: 3, standaloneUrgencyCount: 5 };
+  const full = vm.runInContext(`scoreboardCoverage(${JSON.stringify(data)})`, context);
+  assert.match(full, /<small>7 do texto principal · 12 sobre trechos · 8 pedidos de urgência<\/small><\/dt><dd>27<\/dd>/);
+  assert.match(full, /Texto principal no Placar/);
+  assert.doesNotMatch(full, /Entraram no Placar/);
+});
+
 test('official source notes preserve report fallback provenance and escape external text', () => {
   const { context } = loadApp();
   const html = vm.runInContext(`scoreboardDetailSources({}, ${JSON.stringify([
