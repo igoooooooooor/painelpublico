@@ -52,7 +52,7 @@ function comparison(a, b) {
   context.profileLinkOpen = (id, className) => context.profileHref(id) ? `<a class="${className}" href="${context.profileHref(id)}" data-politician="${id}">` : `<button type="button" class="${className}" data-politician="${id}">`;
   context.profileLinkClose = id => context.profileHref(id) ? '</a>' : '</button>';
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../frontend/scripts/dates.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '../frontend/scripts/profile-cost.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '../frontend/scripts/share-card.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, '../frontend/scripts/extras-view.js'), 'utf8') +
-    '\nthis.__api = { extrasState, comparisonTable, comparisonShareCard, searchComparisonPeople, comparisonPickerList, comparisonView, taxCard, taxWidget, taxTick, voteRowsForItem, votesForPerson, attendanceForPerson, attendanceRows, attendanceBar, attendanceView, comparisonPersonCard, profileExtras };', context);
+    '\nthis.__api = { extrasState, comparisonTable, comparisonShareCard, searchComparisonPeople, comparisonPickerList, comparisonView, voteRowsForItem, votesForPerson, attendanceForPerson, attendanceRows, attendanceBar, attendanceView, comparisonPersonCard, profileExtras };', context);
   return { html: context.__api.comparisonTable([a, b]), api: context.__api, context, senate };
 }
 const profile = (id, total) => ({ pessoa: { id, name: id, role: 'senador' }, total, mediaMensal: total, media: 100,
@@ -401,81 +401,6 @@ test('comparison suggestions show an API error and a retry control', async () =>
   await new Promise(resolve => setImmediate(resolve));
   assert.match(picker.innerHTML, /offline/);
   assert.match(picker.innerHTML, /data-cmp-retry/);
-});
-
-test('tax card receives the observed Chamber roster total as an argument', () => {
-  const { api, context } = comparison(profile('camara:1', 100), profile('camara:2', 200));
-  context.DATA.arrecadacao = {
-    inicio: '2026-01-01', ate: '2026-10-06', acumulado: 1000000,
-    populacao: 100, url: 'https://example.test/arrecadacao',
-  };
-  const html = api.taxCard(300000, Date.parse('2026-10-07T12:00:00-03:00'));
-  assert.match(html, /cota registrada para os deputados\(as\) da lista no recorte \(R\$ 300000\)/);
-  assert.doesNotMatch(html, /Tudo o que a Câmara gastou/);
-});
-
-test('tax counter adds the 27 states to the federal revenue and says what is still missing', () => {
-  const { api, context } = comparison(profile('camara:1', 100), profile('camara:2', 200));
-  context.DATA.arrecadacao = { inicio: '2026-01-01', ate: '2026-08-31', acumulado: 2_000_000_000_000, populacao: 200, url: 'https://example.test/federal' };
-  const federalOnly = context.taxWidget(Date.parse('2026-08-31T12:00:00-03:00'));
-  assert.equal(Math.round(federalOnly.value), 2_000_000_000_000);
-  assert.equal(federalOnly.state, null);
-  assert.match(api.taxCard(null, Date.parse('2026-08-31T12:00:00-03:00')), /Não inclui impostos estaduais e municipais/);
-  context.DATA.arrecadacaoEstadual = { inicio: '2026-01-01', ate: '2026-08-31', acumulado: 700_000_000_000, url: 'https://example.test/siconfi' };
-  const both = context.taxWidget(Date.parse('2026-08-31T12:00:00-03:00'));
-  assert.equal(Math.round(both.value), 2_700_000_000_000);
-  assert.ok(both.perSecond > federalOnly.perSecond);
-  const html = api.taxCard(1_000_000, Date.parse('2026-08-31T12:00:00-03:00'));
-  assert.match(html, /impostos federais e estaduais pagos/);
-  assert.match(html, /Federal <b class="mono" data-tax-federal>R\$ [0-9],[0-9][0-9] tri/);
-  assert.match(html, /Estadual <b class="mono" data-tax-state>R\$ 0,[0-9][0-9] tri/);
-  assert.match(html, /ICMS, IPVA e ITCD dos 27 estados/);
-  assert.match(html, /Não inclui impostos municipais \(IPTU, ISS e ITBI\)/);
-  assert.match(html, /href="https:\/\/example\.test\/siconfi"/);
-});
-
-test('tax counter becomes unavailable when the federal source belongs to the previous year', () => {
-  const { api, context } = comparison(profile('camara:1', 100), profile('camara:2', 200));
-  context.DATA.arrecadacao = { inicio: '2026-01-01', ate: '2026-12-31', acumulado: 2_000_000_000_000, populacao: 200, url: 'https://example.test/federal' };
-  context.DATA.arrecadacaoEstadual = { inicio: '2026-01-01', ate: '2026-12-31', acumulado: 700_000_000_000, url: 'https://example.test/siconfi' };
-  const utcNewYearButSaoPauloStill2026 = Date.parse('2027-01-01T02:30:00Z');
-  assert.ok(api.taxWidget(utcNewYearButSaoPauloStill2026));
-  const newYear = Date.parse('2027-01-01T00:30:00-03:00');
-  assert.equal(api.taxWidget(newYear), null);
-  assert.equal(api.taxCard(1_000_000, newYear), '');
-});
-
-test('tax counter ignores state data from a different annual period and guards population', () => {
-  const { api, context } = comparison(profile('camara:1', 100), profile('camara:2', 200));
-  const now = Date.parse('2026-08-31T12:00:00-03:00');
-  context.DATA.arrecadacao = { inicio: '2026-01-01', ate: '2026-08-31', acumulado: 2_000_000_000_000, populacao: 0, url: 'https://example.test/federal' };
-  context.DATA.arrecadacaoEstadual = { inicio: '2025-01-01', ate: '2025-12-31', acumulado: 700_000_000_000, url: 'https://example.test/siconfi' };
-  const tax = api.taxWidget(now);
-  assert.equal(tax.state, null);
-  assert.equal(Math.round(tax.value), 2_000_000_000_000);
-  const html = api.taxCard(null, now);
-  assert.match(html, /Sem dados<\/b><span>por pessoa no ano/);
-  assert.doesNotMatch(html, /NaN|Infinity|federais e estaduais pagos/);
-});
-
-test('tax counter tick removes the stale widget after the year changes', () => {
-  const { api, context } = comparison(profile('camara:1', 100), profile('camara:2', 200));
-  context.DATA.arrecadacao = { inicio: '2026-01-01', ate: '2026-12-31', acumulado: 2_000_000_000_000, populacao: 200, url: 'https://example.test/federal' };
-  let removed = 0;
-  const card = { remove() { removed += 1; } };
-  const value = { firstChild: { data: 'R$ 2 tri' } };
-  context.document.querySelector = selector => selector === '[data-tax]' ? value : selector === '.tax-card' ? card : null;
-  api.taxTick(Date.parse('2027-01-01T00:30:00-03:00'));
-  assert.equal(removed, 1);
-});
-
-test('tax counter rejects malformed or non-current federal periods', () => {
-  const { api, context } = comparison(profile('camara:1', 100), profile('camara:2', 200));
-  const now = Date.parse('2026-08-31T12:00:00-03:00');
-  context.DATA.arrecadacao = { inicio: '2026-02-01', ate: '2026-08-31', acumulado: 2_000_000_000_000, populacao: 200 };
-  assert.equal(api.taxWidget(now), null);
-  context.DATA.arrecadacao = { inicio: '2026-01-01', ate: '2026-02-31', acumulado: 2_000_000_000_000, populacao: 200 };
-  assert.equal(api.taxWidget(now), null);
 });
 
 test('deputy cost in the comparison leaves out months whose quota still receives notes', () => {

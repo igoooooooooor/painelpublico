@@ -45,12 +45,12 @@ function homeStats(data) {
   const quota = data.reembolsos?.deputado || {}, alerts = citizenState.cache.get(HOME_ALERTS_PATH);
   const positive = (data.categoriasCamara || []).filter(category => category.valor > 0);
   const positiveTotal = positive.reduce((total, category) => total + category.valor, 0);
-  const tax = typeof taxWidget === 'function' ? taxWidget() : null;
+  const checked = homeCheckedVotes(citizenState.cache.get(HOME_VOTES_PATH)?.coverage);
   const stats = [
     Number.isFinite(quota.total) && [formatCitizenAmount(quota.total), `de cota usada pelos deputados(as) da lista, ${esc(homePeriod(quota.periodo))}`],
     Number.isFinite(alerts?.total) && [alerts.total.toLocaleString('pt-BR'), 'picos e concentrações na cota pelas regras do painel; não indicam irregularidade'],
     positive.length && positiveTotal > 0 && [`${Math.round(positive[0].valor / positiveTotal * 100)}%`, `da cota foi para ${esc(positive[0].nome.toLocaleLowerCase('pt-BR'))}`],
-    tax && Number.isFinite(quota.total) && quota.total > 0 && [`${Math.round(quota.total / tax.perSecond / 60).toLocaleString('pt-BR')} min`, `de impostos ${tax.state != null ? 'federais e estaduais' : 'federais'} pagam toda essa cota (estimativa)`],
+    checked && [checked.total.toLocaleString('pt-BR'), 'votações da Câmara conferidas no Placar, com o voto de cada deputado(a)'],
   ].filter(Boolean);
   return stats.length ? `<dl class="home-stats">${stats.map(([value, label]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join('')}</dl>` : '';
 }
@@ -77,6 +77,84 @@ function homeTopCard(data) {
     <button type="button" class="more" data-home-quota-list>Ver a lista completa →</button>
   </section>`;
 }
+/* "Como trabalham": presença no Plenário e a votação mais recente do Placar, com os mesmos números das telas /presenca e /placar. */
+const HOME_VOTES_PATH = '/api/c/votes?pageSize=1';
+const homePlural = (count, singular, plural) => `${count.toLocaleString('pt-BR')} ${count === 1 ? singular : plural}`;
+/* Total conferido do Placar (texto principal, trechos e urgências), como no topo de /placar; sem as três partes, nada. */
+function homeCheckedVotes(coverage) {
+  const urgency = Number.isInteger(coverage?.urgencyCount) && Number.isInteger(coverage?.standaloneUrgencyCount) ? coverage.urgencyCount + coverage.standaloneUrgencyCount : null;
+  const parts = { text: coverage?.publishedCount, segment: coverage?.segmentCount, urgency };
+  if (!Object.values(parts).every(count => Number.isInteger(count) && count >= 0)) return null;
+  return { ...parts, total: parts.text + parts.segment + parts.urgency };
+}
+function homeAttendanceCard() {
+  const all = typeof attendanceRows === 'function' ? attendanceRows() : [];
+  const summary = all.length && typeof attendanceSummary === 'function' ? attendanceSummary(all) : null;
+  const link = '<a class="more" href="/presenca" data-go="attendance">Ver a presença de todos(as) →</a>';
+  if (!summary) return `<section class="card home-panel"><div class="home-panel-head"><h3 class="h">Presença no Plenário</h3><span class="muted">Dados de presença indisponíveis neste recorte.</span></div>${link}</section>`;
+  const rate = person => person.presente / person.dias;
+  const least = all.slice().sort((first, second) => rate(first) - rate(second) || first.nome.localeCompare(second.nome)).slice(0, 3);
+  return `<section class="card home-panel">
+    <div class="home-panel-head"><h3 class="h">Presença no Plenário</h3><span class="muted">${all.length} deputados(as) · ${summary.sessionCount} dias com sessão deliberativa${summary.period ? `, ${esc(summary.period)}` : ''}</span></div>
+    <p class="home-work-value"><b>${Math.round(summary.average * 100)}%</b><span>de presença média</span></p>
+    <dl class="home-work-facts">
+      <div><dt>${summary.fullAttendanceCount === 1 ? 'não faltou nenhum dia, com o mandato inteiro' : 'não faltaram nenhum dia, com o mandato inteiro'}</dt><dd>${summary.fullAttendanceCount}</dd></div>
+      <div><dt>${summary.belowHalfCount === 1 ? 'foi a menos da metade' : 'foram a menos da metade'}</dt><dd>${summary.belowHalfCount}</dd></div>
+    </dl>
+    <span class="home-work-label">Menos presentes</span>
+    <ol class="home-attendance">${least.map(person => `<li>${profileLinkOpen(chamberPersonId(person.id), '')}
+      <span class="home-rank-name"><b>${esc(person.nome)}</b><small>${esc(person.partido)} · ${esc(person.uf)}${attendanceStartTag(person, all)}</small></span>
+      <span class="home-attendance-value"><b class="mono${rate(person) < 0.5 ? ' warn' : ''}">${percent(person.presente, person.dias)}%</b><small class="mono">${person.presente} de ${person.dias}</small></span>
+      ${attendanceBar(person)}<small class="home-attendance-why">${attendanceAbsences(person)}</small>${profileLinkClose(chamberPersonId(person.id))}</li>`).join('')}</ol>
+    <span class="muted">Falta justificada é qualquer motivo publicado pela Câmara (missão autorizada, licença, atestado, decisão da Mesa). Quem assumiu no meio do mandato tem menos dias na conta.</span>
+    ${link}
+  </section>`;
+}
+function homeVoteCard() {
+  const data = citizenState.cache.get(HOME_VOTES_PATH);
+  const head = '<div class="home-panel-head"><h3 class="h">Última votação no Placar</h3><span class="muted">Votação nominal do texto principal no Plenário da Câmara, conferida nas fontes oficiais</span></div>';
+  const link = '<a class="more" href="/placar" data-go="votes">Ver o Placar →</a>';
+  if (!data) {
+    if (!citizenState.pending?.has(HOME_VOTES_PATH)) {
+      citizenState.pending?.add(HOME_VOTES_PATH);
+      citizenGet(HOME_VOTES_PATH).catch(() => citizenState.cache.set(HOME_VOTES_PATH, { error: true }))
+        .finally(() => { citizenState.pending?.delete(HOME_VOTES_PATH); if (state.view === 'home') rerender(); });
+    }
+    return `<section class="card home-panel">${head}<p class="muted">Carregando a votação mais recente…</p></section>`;
+  }
+  if (data.error) return `<section class="card home-panel">${head}<p>Não deu para carregar o Placar agora.</p><button type="button" class="more" data-home-votes-retry>Tentar de novo</button></section>`;
+  const item = data.available ? data.items?.[0] : null;
+  if (!item || typeof scoreboardTallyBar !== 'function') return `<section class="card home-panel">${head}<p>Nenhuma votação conferida neste recorte.</p>${link}</section>`;
+  const id = String(item.id || ''), tally = item.tally || {}, abstention = scoreboardAbstention(tally);
+  const themes = (item.themes || []).map(theme => theme?.label).filter(Boolean);
+  const checked = homeCheckedVotes(data.coverage), period = data.period || {};
+  const range = period.start && period.end ? ` de ${scoreboardPeriodDate(period.start)} a ${scoreboardPeriodDate(period.end)}` : '';
+  return `<section class="card home-panel">
+    ${head}
+    <p class="scoreboard-kicker">${scoreboardTypeBadge(scoreboardVoteType(item))}<span class="k">${esc(item.proposition || 'Proposição não informada')} · ${esc(scoreboardDate(item.date))}</span></p>
+    <div class="home-vote-body"><b class="home-vote-title">${esc(item.title || 'Título não informado')}</b>${item.summary ? `<p class="muted">${esc(item.summary)}</p>` : ''}</div>
+    ${themes.length ? `<p class="scoreboard-themes">${themes.map(theme => `<span class="pill">${esc(theme)}</span>`).join(' ')}</p>` : ''}
+    <div class="home-vote-result">
+      <p class="scoreboard-outcome" data-outcome="${esc(item.outcome || '')}">${esc(scoreboardOutcome(item.outcome, item.related))}</p>
+      ${scoreboardTallyBar(tally)}
+      <p class="scoreboard-meta"><span><b>${scoreboardCount(tally.yes)}</b> sim</span><span><b>${scoreboardCount(tally.no)}</b> não</span><span>${abstention.count === null ? 'abst. não publicada' : `${scoreboardCount(abstention.count)} abst.`}</span></p>
+    </div>
+    ${SCOREBOARD_VOTE_ID.test(id) ? `<a class="more" href="/placar/${esc(id)}" data-vote="${esc(id)}">Ver decisão e votos →</a>` : ''}
+    ${checked ? `<dl class="home-work-facts home-work-facts-3">
+      <div><dt>do texto principal</dt><dd>${checked.text.toLocaleString('pt-BR')}</dd></div>
+      <div><dt>sobre trechos</dt><dd>${checked.segment.toLocaleString('pt-BR')}</dd></div>
+      <div><dt>pedidos de urgência</dt><dd>${checked.urgency.toLocaleString('pt-BR')}</dd></div>
+    </dl>
+    <span class="muted">${homePlural(checked.total, 'votação conferida', 'votações conferidas')}${range}. Não são tudo o que a Câmara votou no período, e um projeto aprovado aqui ainda pode não ter virado lei.</span>` : ''}
+    ${link}
+  </section>`;
+}
+function homeWorkSection() {
+  return `<section class="home-work">
+    <div class="home-work-head"><h2 class="h">Como trabalham</h2><span class="muted">Presença nas sessões de votação e o que o Plenário decidiu, com o voto de cada deputado(a). Fonte: Câmara dos Deputados.</span></div>
+    <div class="home-pair">${homeAttendanceCard()}${homeVoteCard()}</div>
+  </section>`;
+}
 function homeHero() {
   return `<div class="home-intro">
     <h1 class="home-title">Quanto custa cada parlamentar — e como ele trabalha.</h1>
@@ -98,12 +176,13 @@ function homeView() {
     ${homeStats(data)}
     ${homeAlertCard()}
     <div class="home-pair">${homeTopCard(data)}${homeCategoriesCard(data)}</div>
-    ${taxCard(data?.reembolsos.deputado.total)}
+    ${homeWorkSection()}
     <span class="src">Listas e reembolsos: Câmara dos Deputados e Senado Federal. ${data?.snapshotAt ? 'Fotografia da base: ' + esc(dateBR(data.snapshotAt)) + '.' : ''} Presença e votações têm a cobertura indicada em suas telas.</span>`;
 }
 if (typeof document !== 'undefined' && document.addEventListener) {
   // "Quem mais usa a cota" abre a lista completa na mesma conta: deputados(as), pela média mensal da cota.
   document.addEventListener('click', event => {
+    if (event.target?.closest?.('[data-home-votes-retry]')) { citizenState.cache.delete(HOME_VOTES_PATH); return rerender(); }
     if (!event.target?.closest?.('[data-home-quota-list]')) return;
     Object.assign(citizenState.politicians, { query: '', role: 'deputado', order: 'cota', key: '' });
     navigateToView('politicians');

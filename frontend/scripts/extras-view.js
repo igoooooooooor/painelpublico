@@ -1,104 +1,10 @@
-/* Contador de impostos, presença de todos(as), quem votou o quê e comparação de perfis.
+/* Presença de todos(as), quem votou o quê e comparação de perfis.
    A leitura de presença e votos passa pelos helpers compartilhados de perfil. */
 // Votações por vez em "Como votaram" da comparação: listas longas cansam; "Mostrar mais" abre o próximo bloco.
 const COMPARISON_VOTE_PAGE = 10;
 const extrasState = { votes: {}, voteLimit: 40, voteQuery: '', attendanceOrder: 'less', attendanceQuery: '', attendanceLimit: 40, senateVoteLimit: 20, comparisonVoteLimit: COMPARISON_VOTE_PAGE, comparisonIds: [], comparisonQuery: '', comparisonKey: null, comparisonResults: null, comparisonError: null, comparisonLoading: false };
 const chamberPersonId = id => 'camara:' + id;
 const percent = (a, b) => b ? Math.round(a / b * 100) : 0;
-const TAX_DATE_FORMATTER = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' });
-
-/* ---------- Contador de impostos (estimativa a partir do dado oficial) ----------
-   Soma a arrecadação federal (Receita Federal) e a estadual (ICMS, IPVA e ITCD dos RREOs dos 27 estados).
-   Cada esfera segue no ritmo médio diário do próprio ano depois da última data publicada. */
-function taxLocalDate(now) {
-  if (!Number.isFinite(now)) return null;
-  try {
-    const parts = TAX_DATE_FORMATTER.formatToParts(new Date(now));
-    const part = type => parts.find(item => item.type === type)?.value;
-    const year = part('year'), month = part('month'), day = part('day');
-    return year && month && day ? { year, date: `${year}-${month}-${day}` } : null;
-  } catch (error) { return null; }
-}
-function taxDateTime(value) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ''));
-  if (!match) return null;
-  const [, year, month, day] = match, utc = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
-  if (Number(year) < 1900 || utc.getUTCFullYear() !== Number(year) || utc.getUTCMonth() + 1 !== Number(month) || utc.getUTCDate() !== Number(day)) return null;
-  const timestamp = Date.parse(`${value}T00:00:00-03:00`);
-  return Number.isFinite(timestamp) ? timestamp : null;
-}
-function taxRate(source, local = taxLocalDate(Date.now())) {
-  if (!local || !source || !Number.isFinite(source.acumulado) || source.acumulado <= 0) return null;
-  if (source.inicio !== `${local.year}-01-01` || typeof source.ate !== 'string' || source.ate < source.inicio || source.ate > local.date) return null;
-  const startTime = taxDateTime(source.inicio), endDateTime = taxDateTime(source.ate);
-  if (startTime === null || endDateTime === null) return null;
-  const endTime = endDateTime + 864e5, duration = endTime - startTime;
-  if (!(duration > 0) || !Number.isFinite(endTime)) return null;
-  const perMillisecond = source.acumulado / duration;
-  if (!(perMillisecond > 0) || !Number.isFinite(perMillisecond)) return null;
-  return { amount: source.acumulado, endTime, perMillisecond, source };
-}
-function taxWidget(now = Date.now()) {
-  const local = taxLocalDate(now);
-  const federal = taxRate(DATA.arrecadacao, local);
-  if (!federal) return null;
-  const stateCandidate = taxRate(DATA.arrecadacaoEstadual, local);
-  const state = stateCandidate?.source.inicio === federal.source.inicio ? stateCandidate : null;
-  const valueOf = part => part ? part.amount + part.perMillisecond * Math.max(0, now - part.endTime) : 0;
-  const perMillisecond = federal.perMillisecond + (state ? state.perMillisecond : 0);
-  const value = valueOf(federal) + valueOf(state), federalValue = valueOf(federal), stateValue = state ? valueOf(state) : null;
-  const perSecond = perMillisecond * 1000;
-  if (![value, federalValue, perSecond].every(Number.isFinite) || !(perSecond > 0) || (stateValue !== null && !Number.isFinite(stateValue))) return null;
-  return { value, federal: federalValue, state: stateValue, perSecond, source: federal.source, stateSource: state ? state.source : null };
-}
-const formatCurrency = v => 'R$ ' + Math.floor(v).toLocaleString('pt-BR');
-const formatTrillions = v => 'R$ ' + (v / 1e12).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' tri';
-function taxPerPerson(tax) {
-  const population = tax?.source?.populacao;
-  if (!Number.isSafeInteger(population) || population <= 0) return 'Sem dados';
-  const amount = tax.value / population;
-  return Number.isFinite(amount) ? formatCurrency(amount) : 'Sem dados';
-}
-function taxCard(quota = null, now = Date.now()) {
-  const tax = taxWidget(now);
-  if (!tax) return '';
-  const observedQuota = Number.isFinite(quota) ? quota : 0, minutes = observedQuota / tax.perSecond / 60;
-  const perPerson = taxPerPerson(tax);
-  const scope = tax.state != null ? 'federais e estaduais' : 'federais';
-  const sameDate = !tax.stateSource || tax.stateSource.ate === tax.source.ate;
-  const dates = sameDate ? `até ${formatShortDate(tax.source.ate)}` : `até ${formatShortDate(tax.source.ate)} (federal) e ${formatShortDate(tax.stateSource.ate)} (estadual)`;
-  const split = tax.state != null ? `<div class="tax-split" role="img" aria-label="Federal ${formatTrillions(tax.federal)}, estadual ${formatTrillions(tax.state)}">
-      <span class="tax-split-bar"><i style="flex-grow:${tax.federal}"></i><i style="flex-grow:${tax.state}"></i></span>
-      <span class="tax-split-legend"><span><i></i>Federal <b class="mono" data-tax-federal>${formatTrillions(tax.federal)}</b></span><span><i></i>Estadual <b class="mono" data-tax-state>${formatTrillions(tax.state)}</b></span></span>
-    </div>` : '';
-  return `<section class="card tax-card">
-    <div class="tax-card-top"><span class="k">Contador de impostos · ${esc(String(tax.source.inicio).slice(0, 4))}</span><span class="live"><i></i>ao vivo</span></div>
-    <div class="tax-value mono" data-tax aria-live="off">${formatCurrency(tax.value)}</div>
-    <span class="muted">em impostos ${scope} pagos pelos brasileiros desde 1º de janeiro. Estimativa: os valores oficiais ${dates} mais a média diária do ano.</span>
-    ${split}
-    <div class="tax-grid">
-      <div><b class="mono" data-tax-second>${formatCurrency(tax.perSecond)}</b><span>por segundo</span></div>
-      <div><b class="mono" data-tax-person>${perPerson}</b><span>por pessoa no ano</span></div>
-    </div>
-    ${observedQuota ? `<p class="tax-related">A cota registrada para os deputados(as) da lista no recorte (${formatCitizenAmount(observedQuota)}) equivale ao que o país paga de impostos ${scope} em <b>${minutes < 1 ? Math.round(minutes * 60) + ' segundos' : Math.round(minutes) + ' minutos'}</b>.</p>` : ''}
-    <p class="tax-sources src">Fontes: <a href="${esc(tax.source.url)}" target="_blank" rel="noopener">Receita Federal (impostos e contribuições administrados pela Receita até ${formatShortDate(tax.source.ate)}) ↗</a>${tax.stateSource ? `; <a href="${esc(tax.stateSource.url)}" target="_blank" rel="noopener">Tesouro Nacional, Siconfi (ICMS, IPVA e ITCD dos 27 estados até ${formatShortDate(tax.stateSource.ate)}) ↗</a>` : ''}. ${tax.stateSource ? 'Não inclui impostos municipais (IPTU, ISS e ITBI), porque nem todas as cidades publicam o dado mensal, nem taxas e contribuições estaduais.' : 'Não inclui impostos estaduais e municipais.'}</p>
-  </section>`;
-}
-function taxTick(now = Date.now()) {
-  const el = document.querySelector('[data-tax]');
-  if (el) { // troca só o texto (characterData), sem disparar o reencaixe da grade
-    const tax = taxWidget(now), card = document.querySelector('.tax-card');
-    if (!tax) card?.remove();
-    else {
-      const set = (node, value) => { if (node && node.firstChild) node.firstChild.data = value; };
-      const perPerson = taxPerPerson(tax);
-      set(el, formatCurrency(tax.value)); set(document.querySelector('[data-tax-person]'), perPerson);
-      if (tax.state != null) { set(document.querySelector('[data-tax-federal]'), formatTrillions(tax.federal)); set(document.querySelector('[data-tax-state]'), formatTrillions(tax.state)); }
-    }
-  }
-  setTimeout(taxTick, 120);
-}
-taxTick();
 
 /* ---------- Presença de todos(as) ---------- */
 function attendanceRows(chamber = 'camara') {
@@ -133,8 +39,8 @@ function attendanceSorted(all = attendanceRows()) {
   return all.filter(person => !q || foldText(`${person.nome} ${person.partido} ${person.uf}`).includes(q))
     .sort((first, second) => (extrasState.attendanceOrder === 'less' ? rate(first) - rate(second) : rate(second) - rate(first)) || first.nome.localeCompare(second.nome));
 }
-function attendanceView() {
-  const all = attendanceRows(), people = attendanceSorted(all);
+/* Números de cima da tela /presenca, também usados na home. */
+function attendanceSummary(all = attendanceRows()) {
   const average = all.length ? all.reduce((sum, person) => sum + person.presente / person.dias, 0) / all.length : null;
   // "Não faltaram nenhum dia" só entre quem tem o período inteiro: 14 de 14 dias de quem chegou agora não é o mesmo feito.
   const firstStart = all.map(person => person.inicio).filter(Boolean).sort()[0] || null;
@@ -143,6 +49,11 @@ function attendanceView() {
   const sessionCount = all.length ? Math.max(...all.map(person => person.dias)) : null;
   const starts = all.map(person => person.inicio).filter(Boolean).sort(), ends = all.map(person => person.fim).filter(Boolean).sort();
   const period = typeof citizenQuotaPeriod === 'function' && starts.length ? citizenQuotaPeriod(starts[0], ends.at(-1)) : '';
+  return { average, fullAttendanceCount, belowHalfCount, sessionCount, period };
+}
+function attendanceView() {
+  const all = attendanceRows(), people = attendanceSorted(all);
+  const { average, fullAttendanceCount, belowHalfCount, sessionCount, period } = attendanceSummary(all);
   const stat = (value, label) => `<div class="card attendance-stat"><b class="mono">${value}</b><span>${label}</span></div>`;
   return `<div class="attendance-page">
     <section class="attendance-hero">

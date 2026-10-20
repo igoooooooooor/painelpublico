@@ -155,28 +155,6 @@
 .top .pill { margin-left: auto; }
 .citizen-bar b { white-space: nowrap; }
 
-/* contador de impostos */
-.tax-card { background: var(--accent-soft); border-color: transparent; }
-.tax-card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.tax-split { display: flex; flex-direction: column; gap: 8px; }
-.tax-split-bar { display: flex; gap: 3px; height: 10px; border-radius: 999px; overflow: hidden; }
-.tax-split-bar i { display: block; flex-basis: 0; background: var(--accent); }
-.tax-split-bar i + i { background: var(--cat5); }
-.tax-split-legend { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 13px; color: var(--ink-2); }
-.tax-split-legend > span { display: inline-flex; align-items: center; gap: 6px; }
-.tax-split-legend i { width: 10px; height: 10px; border-radius: 3px; background: var(--accent); }
-.tax-split-legend > span + span i { background: var(--cat5); }
-.tax-split-legend b { color: var(--ink); }
-.tax-sources { margin: 0; line-height: 1.5; }
-.live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--accent); }
-.live i { width: 8px; height: 8px; border-radius: 4px; background: var(--accent); }
-@media (prefers-reduced-motion: no-preference) { .live i { animation: pulse 1.6s ease-in-out infinite; } @keyframes pulse { 50% { opacity: .25; } } }
-.tax-value { font-size: clamp(21px, 6.5vw, 40px); font-weight: 700; letter-spacing: -0.04em; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.tax-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--line); }
-.tax-grid > div { display: flex; flex-direction: column; gap: 2px; }
-.tax-grid b { font-size: 19px; }
-.tax-grid span { font-size: 12px; color: var(--muted); }
-.tax-related { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink-2); }
 a.src { text-decoration: none; }
 
 /* presença */
@@ -287,7 +265,6 @@ b.warn { color: var(--warn); }
   .card > .more:last-child, .card > .muted:last-child, .card > .src:last-child, .card > button.fchip:last-child, .card > .legend:last-child { margin-top: auto; }
   .card.hero > .opt:last-child { margin-top: auto; }
   .party-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 40px; }
-  .tax-card .tax-related { margin-top: auto; }
 }
 @media (min-width: 900px) { .card > .faces:last-child { margin-block: auto; } }
 
@@ -729,6 +706,30 @@ nav.tabs :is(button, a) svg { flex: none; }
 .home-category-list b { font-family: var(--f-data); font-weight: 700; white-space: nowrap; }
 .home-category-list small { color: var(--muted); font-weight: 500; }
 .home-category-list i { grid-column: 1 / -1; }
+/* Como trabalham: presença no Plenário e a votação mais recente do Placar */
+.home-work { display: flex; flex-direction: column; gap: var(--space-4); margin-top: 8px; }
+.home-work-head { display: flex; flex-direction: column; gap: 6px; }
+body[data-view="home"] .home-work-head .h { font-size: 28px; font-weight: 600; }
+.home-work-value { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin: 0; }
+.home-work-value b { font-family: var(--f-data); font-size: 48px; font-weight: 700; line-height: 1; letter-spacing: -0.04em; }
+.home-work-value span { color: var(--ink-2); }
+.home-work-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; border-block: 1px solid var(--line); }
+.home-work-facts-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.home-work-facts > div { display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: 2px; padding: 14px 12px 14px 0; }
+.home-work-facts > div + div { padding-left: 12px; border-left: 1px solid var(--line); }
+.home-work-facts dt { font-size: 12px; line-height: 1.4; color: var(--muted); }
+.home-work-facts dd { margin: 0; font-family: var(--f-data); font-size: 22px; font-weight: 700; }
+.home-work-label { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.home-attendance { list-style: none; margin: -8px 0 0; padding: 0; }
+.home-attendance :is(button, a) { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 12px 0; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.home-attendance-value { display: flex; flex-direction: column; align-items: flex-end; }
+.home-attendance-value small, .home-attendance-why { font-size: 12px; color: var(--muted); }
+.home-attendance .pbar, .home-attendance-why { grid-column: 1 / -1; }
+.home-attendance .pbar { margin: 4px 0 0; }
+.home-vote-body { display: flex; flex-direction: column; gap: 6px; }
+.home-vote-body p, .home-vote-result p { margin: 0; line-height: 1.45; }
+.home-vote-title { font-family: var(--f-display); font-size: 21px; font-weight: 600; line-height: 1.25; }
+.home-vote-result { display: flex; flex-direction: column; gap: var(--space-2); }
 body[data-view="home"] .citizen-home .h { font-size: 28px; font-weight: 600; }
 body[data-view="home"] .citizen-alert { box-shadow: var(--shadow-raised); }
 @media (min-width: 900px) {
@@ -742,7 +743,7 @@ body[data-view="home"] .citizen-alert { box-shadow: var(--shadow-raised); }
   .home-stats > div + div { border-left: 1px solid var(--line); }
   .home-stats dd { font-size: 30px; }
   .home-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
-  body[data-view="home"] .view > .tax-card { grid-column: 1 / -1; }
+  .home-work .home-pair { align-items: stretch; }
 }
 
 /* Placar nominal ampliado */

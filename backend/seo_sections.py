@@ -224,7 +224,7 @@ def _home_cost_card(summary):
             f'<a class="more" href="/politicos">Ver quanto custa cada um(a) →</a></section>')
 
 
-def _home_stats(summary, alerts_total):
+def _home_stats(summary, alerts_total, checked):
     quota = (summary.get('reembolsos') or {}).get('deputado') or {}
     categories = [category for category in summary.get('categoriasCamara') or [] if category.get('valor', 0) > 0]
     positive_total = sum(category['valor'] for category in categories)
@@ -235,6 +235,8 @@ def _home_stats(summary, alerts_total):
         stats.append((pt_int(alerts_total), 'picos e concentrações na cota pelas regras do painel; não indicam irregularidade'))
     if categories and positive_total > 0:
         stats.append((f'{half_up(categories[0]["valor"] / positive_total * 100)}%', f'da cota foi para {esc(categories[0]["nome"].lower())}'))
+    if checked:
+        stats.append((pt_int(checked['total']), 'votações da Câmara conferidas no Placar, com o voto de cada deputado(a)'))
     if not stats:
         return ''
     return '<dl class="home-stats">' + ''.join(f'<div><dt>{label}</dt><dd>{value}</dd></div>' for value, label in stats) + '</dl>'
@@ -274,9 +276,84 @@ def _home_categories_card(summary):
             f'<span class="muted">{esc(period_text(quota.get("periodo")))}. Todos os reembolsos importados dos(as) deputados(as) da lista, preservando estornos. Percentuais consideram categorias com saldo positivo; estornos permanecem no total líquido.</span></section>')
 
 
+def _checked_votes(coverage):
+    """Total conferido do Placar (texto principal, trechos e urgências), como homeCheckedVotes no app; sem as três partes, None."""
+    coverage = coverage or {}
+    urgency = coverage.get('urgencyCount'), coverage.get('standaloneUrgencyCount')
+    urgency = urgency[0] + urgency[1] if all(isinstance(value, int) for value in urgency) else None
+    parts = {'text': coverage.get('publishedCount'), 'segment': coverage.get('segmentCount'), 'urgency': urgency}
+    if not all(isinstance(value, int) and value >= 0 for value in parts.values()):
+        return None
+    return {**parts, 'total': sum(parts.values())}
+
+
+def _home_attendance_card():
+    rows = presence_rows()
+    link = '<a class="more" href="/presenca">Ver a presença de todos(as) →</a>'
+    if not rows:
+        return ('<section class="card home-panel"><div class="home-panel-head"><h3 class="h">Presença no Plenário</h3>'
+                f'<span class="muted">Dados de presença indisponíveis neste recorte.</span></div>{link}</section>')
+    summary = attendance_summary(rows)
+    least = sorted(rows, key=lambda row: (row['presente'] / row['dias'], str(row.get('nome', ''))))[:3]
+    full, below = summary['full'], summary['below_half']
+    items = ''.join(
+        f'<li><a href="/deputado/{row["id"]}"><span class="home-rank-name"><b>{esc(row.get("nome"))}</b>'
+        f'<small>{esc(row.get("partido") or "")} · {esc(row.get("uf") or "")}{start_tag(row, summary["first_start"])}</small></span>'
+        f'<span class="home-attendance-value"><b class="mono{" warn" if row["presente"] / row["dias"] < 0.5 else ""}">{pct(row["presente"], row["dias"])}%</b>'
+        f'<small class="mono">{row["presente"]} de {row["dias"]}</small></span>{attendance_bar(row)}'
+        f'<small class="home-attendance-why">{esc(attendance_absences(row))}</small></a></li>' for row in least)
+    period = f', {esc(summary["period"])}' if summary['period'] else ''
+    return (f'<section class="card home-panel"><div class="home-panel-head"><h3 class="h">Presença no Plenário</h3>'
+            f'<span class="muted">{len(rows)} deputados(as) · {summary["sessions"]} dias com sessão deliberativa{period}</span></div>'
+            f'<p class="home-work-value"><b>{half_up(summary["average"] * 100)}%</b><span>de presença média</span></p>'
+            f'<dl class="home-work-facts"><div><dt>{"não faltou" if full == 1 else "não faltaram"} nenhum dia, com o mandato inteiro</dt><dd>{full}</dd></div>'
+            f'<div><dt>{"foi" if below == 1 else "foram"} a menos da metade</dt><dd>{below}</dd></div></dl>'
+            f'<span class="home-work-label">Menos presentes</span><ol class="home-attendance">{items}</ol>'
+            '<span class="muted">Falta justificada é qualquer motivo publicado pela Câmara (missão autorizada, licença, atestado, decisão da Mesa). '
+            f'Quem assumiu no meio do mandato tem menos dias na conta.</span>{link}</section>')
+
+
+def _home_vote_card(listing):
+    head = ('<div class="home-panel-head"><h3 class="h">Última votação no Placar</h3><span class="muted">Votação nominal do texto principal '
+            'no Plenário da Câmara, conferida nas fontes oficiais</span></div>')
+    link = '<a class="more" href="/placar">Ver o Placar →</a>'
+    items = listing.get('items') or [] if listing.get('available') else []
+    if not items:
+        return f'<section class="card home-panel">{head}<p>Nenhuma votação conferida neste recorte.</p>{link}</section>'
+    item, tally = items[0], items[0].get('tally') or {}
+    count_abstention = abstention(tally)[0]
+    themes = [theme.get('label') for theme in item.get('themes') or [] if theme.get('label')]
+    checked, period = _checked_votes(listing.get('coverage')), listing.get('period') or {}
+    vote_type = item.get('type') if item.get('type') in VOTE_TYPE_NAMES else ''
+    badge = f'<abbr class="scoreboard-type" data-type="{esc(vote_type)}" title="{esc(VOTE_TYPE_NAMES[vote_type])}">{esc(vote_type)}</abbr>' if vote_type else ''
+    vote_link = f'<a class="more" href="/placar/{esc(item["id"])}">Ver decisão e votos →</a>' if item.get('id') else ''
+    facts = ''
+    if checked:
+        span = f' de {date_br(period.get("start"))} a {date_br(period.get("end"))}' if date_br(period.get('start')) and date_br(period.get('end')) else ''
+        facts = (f'<dl class="home-work-facts home-work-facts-3"><div><dt>do texto principal</dt><dd>{pt_int(checked["text"])}</dd></div>'
+                 f'<div><dt>sobre trechos</dt><dd>{pt_int(checked["segment"])}</dd></div><div><dt>pedidos de urgência</dt><dd>{pt_int(checked["urgency"])}</dd></div></dl>'
+                 f'<span class="muted">{pt_int(checked["total"])} {"votação conferida" if checked["total"] == 1 else "votações conferidas"}{span}. '
+                 'Não são tudo o que a Câmara votou no período, e um projeto aprovado aqui ainda pode não ter virado lei.</span>')
+    return (f'<section class="card home-panel">{head}<p class="scoreboard-kicker">{badge}<span class="k">{esc(item.get("proposition") or "Proposição não informada")} · {esc(vote_date(item.get("date")))}</span></p>'
+            f'<div class="home-vote-body"><b class="home-vote-title">{esc(item.get("title") or "Título não informado")}</b>'
+            + (f'<p class="muted">{esc(item["summary"])}</p>' if item.get('summary') else '') + '</div>'
+            + (f'<p class="scoreboard-themes">{" ".join(f"<span class=\"pill\">{esc(theme)}</span>" for theme in themes)}</p>' if themes else '')
+            + f'<div class="home-vote-result"><p class="scoreboard-outcome" data-outcome="{esc(item.get("outcome") or "")}">{esc(vote_outcome(item))}</p>'
+            f'<p class="scoreboard-meta"><span><b>{count(tally.get("yes"))}</b> sim</span><span><b>{count(tally.get("no"))}</b> não</span>'
+            f'<span>{"abst. não publicada" if count_abstention is None else count(count_abstention) + " abst."}</span></p></div>'
+            f'{vote_link}{facts}{link}</section>')
+
+
+def _home_work(listing):
+    return ('<section class="home-work"><div class="home-work-head"><h2 class="h">Como trabalham</h2><span class="muted">Presença nas sessões de votação e o que o '
+            'Plenário decidiu, com o voto de cada deputado(a). Fonte: Câmara dos Deputados.</span></div>'
+            f'<div class="home-pair">{_home_attendance_card()}{_home_vote_card(listing)}</div></section>')
+
+
 def home_body(db):
     summary = citizen.summary(db)
     radar = citizen.radar(db, {'pageSize': str(HOME_ALERT_COUNT)})
+    listing = votes.listing({'pageSize': '1'})
     alerts = radar.get('itens') or []
     span = radar.get('periodo') or {}
     scope = span_text(span.get('inicio'), span.get('fim'))
@@ -293,8 +370,8 @@ def home_body(db):
                           f'<div class="carousel citizen-carousel">{"".join(alert_card(alert) for alert in alerts)}</div>'
                           f'<a class="opt citizen-cta" href="/picos-e-concentracoes">Ver os {pt_int(radar.get("total") or 0)} picos e concentrações</a></section>')
     return (f'<section class="home-hero">{hero}{_home_cost_card(summary)}</section>'
-            f'{_home_stats(summary, radar.get("total"))}{alerts_section}'
-            f'<div class="home-pair">{_home_top_card(summary)}{_home_categories_card(summary)}</div>'
+            f'{_home_stats(summary, radar.get("total"), _checked_votes(listing.get("coverage")))}{alerts_section}'
+            f'<div class="home-pair">{_home_top_card(summary)}{_home_categories_card(summary)}</div>{_home_work(listing)}'
             f'<span class="src">Listas e reembolsos: Câmara dos Deputados e Senado Federal.{snapshot_note(summary.get("snapshotAt"))} '
             f'Presença e votações têm a cobertura indicada em suas telas.</span>')
 
@@ -359,35 +436,63 @@ def presence_rows():
     return valid
 
 
+def attendance_summary(rows):
+    """Números de cima de /presenca, como attendanceSummary no app; também usados na home."""
+    first_start = min((row['inicio'] for row in rows if row.get('inicio')), default=None)
+    starts = sorted(row['inicio'] for row in rows if row.get('inicio'))
+    ends = sorted(row['fim'] for row in rows if row.get('fim'))
+    return {
+        'average': sum(row['presente'] / row['dias'] for row in rows) / len(rows),
+        'first_start': first_start,
+        # "Não faltaram nenhum dia" só entre quem tem o período inteiro.
+        'full': sum(1 for row in rows if row['presente'] == row['dias'] and (not first_start or row.get('inicio') == first_start)),
+        'below_half': sum(1 for row in rows if row['presente'] / row['dias'] < 0.5),
+        'sessions': max(row['dias'] for row in rows),
+        'period': span_text(starts[0], ends[-1]) if starts and ends else '',
+    }
+
+
+def start_tag(row, first_start):
+    return f' · desde {esc(span_text(row["inicio"], row["inicio"]))}' if first_start and row.get('inicio') and row['inicio'] > first_start else ''
+
+
+def attendance_absences(row):
+    """Como attendanceAbsences no app: faltas justificadas com o motivo mais comum informado pela Câmara, e faltas."""
+    reasons = [item for item in row.get('motivos') or [] if isinstance(item, list) and len(item) == 2 and item[0] and isinstance(item[1], int) and item[1] > 0]
+    top = sorted(reasons, key=lambda item: -item[1])[0] if reasons else None
+    parts = []
+    if row.get('justificadas'):
+        reason = f' (mais comum: {str(top[0]).lower()}, {top[1]})' if top else ''
+        parts.append(f'{row["justificadas"]} {"falta justificada" if row["justificadas"] == 1 else "faltas justificadas"}{reason}')
+    if row.get('falta'):
+        parts.append(f'{row["falta"]} {"falta" if row["falta"] == 1 else "faltas"}')
+    return ' · '.join(parts) or 'Nenhuma ausência'
+
+
+def attendance_bar(row):
+    """Barra presente / justificada / falta, como attendanceBar no app."""
+    days = row['dias']
+    return (f'<span class="pbar" role="img" aria-label="{row["presente"]} presenças, {row["justificadas"]} faltas justificadas, {row["falta"]} faltas em {days} dias">'
+            f'<i style="width:{row["presente"] / days * 100}%"></i><i class="j" style="width:{row["justificadas"] / days * 100}%"></i>'
+            f'<i class="f" style="width:{row["falta"] / days * 100}%"></i></span>')
+
+
 def attendance_body():
     rows = presence_rows()
     if not rows:
         return (page_head('Câmara · mandato', 'Presença no Plenário', 'Dados de presença indisponíveis neste recorte.')
                 + '<p class="src">Fonte: página de presença em Plenário de cada deputado(a) na Câmara; nenhum registro está disponível neste recorte.</p>')
-    average = sum(row['presente'] / row['dias'] for row in rows) / len(rows)
-    first_start = min((row['inicio'] for row in rows if row.get('inicio')), default=None)
-    full = sum(1 for row in rows if row['presente'] == row['dias'] and (not first_start or row.get('inicio') == first_start))
-    below_half = sum(1 for row in rows if row['presente'] / row['dias'] < 0.5)
-    sessions = max(row['dias'] for row in rows)
-    starts = sorted(row['inicio'] for row in rows if row.get('inicio'))
-    ends = sorted(row['fim'] for row in rows if row.get('fim'))
-    period = span_text(starts[0], ends[-1]) if starts and ends else ''
+    summary = attendance_summary(rows)
+    average, first_start, full, below_half = summary['average'], summary['first_start'], summary['full'], summary['below_half']
+    sessions, period = summary['sessions'], summary['period']
     ordered = sorted(rows, key=lambda row: (row['presente'] / row['dias'], str(row.get('nome', ''))))
-
-    def absences(row):
-        parts = []
-        if row.get('justificadas'):
-            parts.append(f'{row["justificadas"]} {"falta justificada" if row["justificadas"] == 1 else "faltas justificadas"}')
-        if row.get('falta'):
-            parts.append(f'{row["falta"]} {"falta" if row["falta"] == 1 else "faltas"}')
-        return ' · '.join(parts) or 'Nenhuma ausência'
 
     items = ''.join(
         f'<li><a class="attendance-row" href="/deputado/{row["id"]}"><span class="attendance-who"><b>{esc(row.get("nome"))}</b>'
-        f'<small>{esc(row.get("partido") or "")} · {esc(row.get("uf") or "")}{f" · desde {esc(span_text(row["inicio"], row["inicio"]))}" if first_start and row.get("inicio") and row["inicio"] > first_start else ""}</small></span>'
+        f'<small>{esc(row.get("partido") or "")} · {esc(row.get("uf") or "")}{start_tag(row, first_start)}</small></span>'
         f'<span class="attendance-value"><b class="mono{" warn" if row["presente"] / row["dias"] < 0.5 else ""}">{pct(row["presente"], row["dias"])}%</b>'
         f'<small class="mono">{row["presente"]} de {row["dias"]}</small></span>'
-        f'<span class="attendance-bar"><small>{esc(absences(row))}</small></span></a></li>' for row in ordered)
+        f'<span class="attendance-bar"><small>{esc(attendance_absences(row))}</small></span></a></li>' for row in ordered)
     stat = lambda value, label: f'<div class="card attendance-stat"><b class="mono">{value}</b><span>{label}</span></div>'
     return (f'<div class="attendance-page"><section class="attendance-hero"><div class="attendance-intro">'
             f'<span class="k">Câmara · {esc(period or "mandato")}</span><h1 class="h ph-t">Presença no Plenário</h1>'

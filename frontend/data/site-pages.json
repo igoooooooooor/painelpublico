@@ -54,7 +54,7 @@
       "path": "/metodologia",
       "view": "methodology",
       "title": "Metodologia e perguntas",
-      "description": "Como o painel calcula custo, cota, presença, picos e concentrações, Placar e contador de impostos: fontes oficiais, regras, prazos e limites de cada número."
+      "description": "Como o painel calcula custo, cota, presença, picos e concentrações e o Placar: fontes oficiais, regras, prazos e limites de cada número."
     },
     {
       "path": "/sobre",
@@ -300,29 +300,6 @@
         ]
       },
       {
-        "id": "taxes",
-        "title": "Contador de impostos",
-        "view": [
-          "home",
-          "Ver o contador"
-        ],
-        "lead": "Impostos federais e estaduais pagos no ano, a partir da arrecadação publicada pela Receita Federal e pelos estados.",
-        "questions": [
-          {
-            "question": "O contador é exato?",
-            "answer": [
-              "Não. É uma estimativa: os valores oficiais até o último mês publicado mais a média diária do ano."
-            ]
-          },
-          {
-            "question": "O que entra na conta?",
-            "answer": [
-              "No federal, os impostos e contribuições administrados pela Receita Federal. No estadual, ICMS, IPVA e ITCD dos 27 estados, pelos relatórios entregues ao Tesouro Nacional (Siconfi). Ficam de fora os impostos municipais (IPTU, ISS e ITBI), porque nem todas as cidades publicam o dado mensal, e as taxas e contribuições estaduais."
-            ]
-          }
-        ]
-      },
-      {
         "id": "sources",
         "title": "Fontes, datas e erros",
         "lead": "Cada tela informa a fonte e a data da coleta.",
@@ -336,8 +313,7 @@
                 "Portal da Transparência (Controladoria-Geral da União): emendas parlamentares por município.",
                 "IBGE: lista de municípios e população.",
                 "TSE: candidaturas e resultados eleitorais.",
-                "Tesouro Nacional (Siconfi): contas anuais das prefeituras e arrecadação dos estados.",
-                "Receita Federal: arrecadação federal mensal."
+                "Tesouro Nacional (Siconfi): contas anuais das prefeituras."
               ],
               "A lista completa, com a cobertura e os limites de cada coleta, está na documentação do projeto."
             ],
@@ -478,7 +454,7 @@
         "id": "data",
         "title": "De onde vêm os dados e quando são atualizados",
         "paragraphs": [
-          "Todas as informações vêm de fontes públicas: dados abertos e páginas oficiais da Câmara dos Deputados, do Senado Federal, do Portal da Transparência, do IBGE, do TSE, do Tesouro Nacional e da Receita Federal. O projeto não produz dados novos sobre ninguém e não usa informações sigilosas.",
+          "Todas as informações vêm de fontes públicas: dados abertos e páginas oficiais da Câmara dos Deputados, do Senado Federal, do Portal da Transparência, do IBGE, do TSE e do Tesouro Nacional. O projeto não produz dados novos sobre ninguém e não usa informações sigilosas.",
           "As notas da cota do ano corrente são coletadas todos os dias, e o custo do mandato é recomposto a cada dia com elas. Folha, verba de gabinete, histórico da cota e os dados do Senado são coletados todo mês. Cada tela mostra a data da fotografia dos dados, que é diferente da data de publicação do site.",
           "Os dados podem estar incompletos, atrasados ou conter erros das fontes ou do processamento. Ausência de registro não significa valor zero. Para qualquer decisão ou uso formal, consulte a fonte oficial."
         ],

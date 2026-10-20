@@ -4,10 +4,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function load(presence = [], request = async () => ({})) {
+function load(presence = [], request = async () => ({}), extraFiles = []) {
   const context = {
     DATA: { presencaTodos: presence, votacoes: [], votosCompletos: {}, perfis: { profiles: {} } }, URL,
-    state: { view: 'home', quiz: null }, citizenState: { cache: new Map() }, citizenGet: request,
+    state: { view: 'home', quiz: null }, citizenState: { cache: new Map(), pending: new Set() }, citizenGet: request,
+    document: { addEventListener() {}, getElementById: () => ({}), querySelector: () => null },
+    MutationObserver: class { observe() {} }, addEventListener() {}, setTimeout() {},
     citizenErrorMessage: error => error.message, rerender() {},
     esc: value => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;'),
     brl: value => 'R$ ' + value.toLocaleString('pt-BR'), mil: value => String(Math.round(value / 1000)),
@@ -16,7 +18,7 @@ function load(presence = [], request = async () => ({})) {
     skel: () => 'Carregando', CATS_H: ['--cat1', '--cat2'],
   };
   vm.createContext(context);
-  for (const file of ['dates.js', 'profile-data.js', 'home-view.js']) {
+  for (const file of ['dates.js', 'profile-data.js', ...extraFiles, 'home-view.js']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../frontend/scripts', file), 'utf8'), context);
   }
   return context;
@@ -88,4 +90,55 @@ test('failed home summary stays explicit and can retry without any sample fallba
   ctx.homeReset(); ctx.homeLoad();
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(calls, 2);
+});
+
+test('home "Como trabalham" shows attendance and the latest checked vote with the numbers of their own pages', async () => {
+  const presence = [
+    { id: 1, nome: 'Ana', partido: 'AAA', uf: 'SP', presente: 9, falta: 1, justificadas: 0, dias: 10, inicio: '2023-02', fim: '2026-09' },
+    { id: 2, nome: 'Bia', partido: 'BBB', uf: 'RJ', presente: 10, falta: 0, justificadas: 0, dias: 10, inicio: '2023-02', fim: '2026-09' },
+    { id: 3, nome: 'Caio', partido: 'CCC', uf: 'MG', presente: 4, falta: 1, justificadas: 5, dias: 10, inicio: '2023-02', fim: '2026-09', motivos: [['Missão Autorizada', 5]] },
+    { id: 4, nome: 'Duda', partido: 'AAA', uf: 'BA', presente: 3, falta: 0, justificadas: 0, dias: 3, inicio: '2026-06', fim: '2026-09' },
+  ];
+  const listing = {
+    available: true, period: { start: '2023-02-01', end: '2026-10-09' },
+    coverage: { publishedCount: 187, segmentCount: 212, urgencyCount: 54, standaloneUrgencyCount: 111 },
+    items: [{ id: '100-1', date: '2026-09-03', proposition: 'PLP 74/2026', type: 'PLP', title: 'Texto <novo>', summary: 'Resumo.',
+      outcome: 'approved', tally: { yes: 346, no: 46, abstention: 3, total: 395 }, themes: [{ label: 'Finanças' }] }],
+  };
+  const calls = [];
+  const ctx = load(presence, async path => { calls.push(path); ctx.citizenState.cache.set(path, listing); return listing; }, ['extras-view.js', 'scoreboard-view.js']);
+  assert.match(ctx.homeWorkSection(), /Carregando a votação mais recente/);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(calls, ['/api/c/votes?pageSize=1']);
+  const html = ctx.homeWorkSection();
+  assert.match(html, /<h2 class="h">Como trabalham<\/h2>/);
+  // Média dos quatro; "não faltou nenhum dia" só entre quem tem o mandato inteiro (Duda chegou depois).
+  assert.match(html, /<b>83%<\/b><span>de presença média/);
+  assert.match(html, /<dt>não faltou nenhum dia, com o mandato inteiro<\/dt><dd>1<\/dd>/);
+  assert.match(html, /<dt>foi a menos da metade<\/dt><dd>1<\/dd>/);
+  const least = [...html.matchAll(/home-rank-name"><b>([^<]+)/g)].map(match => match[1]);
+  assert.deepEqual(least, ['Caio', 'Ana', 'Bia']);
+  assert.match(html, /5 faltas justificadas \(mais comum: missão autorizada, 5\) · 1 falta/);
+  assert.match(html, /Texto &lt;novo/);
+  assert.match(html, /Aprovado nesta votação/);
+  assert.match(html, /href="\/placar\/100-1"/);
+  assert.match(html, /564 votações conferidas de 01\/02\/2023 a 09\/10\/2026/);
+  assert.match(html, /<dt>pedidos de urgência<\/dt><dd>165<\/dd>/);
+  const stats = ctx.homeStats(summary());
+  assert.match(stats, /<dt>votações da Câmara conferidas no Placar, com o voto de cada deputado\(a\)<\/dt><dd>564<\/dd>/);
+  assert.doesNotMatch(html + stats, /impostos|NaN/);
+});
+
+test('home "Como trabalham" keeps missing presence and Placar data explicit', async () => {
+  const listing = { available: true, items: [{ id: '100-1', date: '2026-09-03', proposition: 'PL 1/2026', title: 'Título', tally: { yes: 1, no: 2, total: 5 } }], coverage: { publishedCount: 1 } };
+  const ctx = load([], async path => { ctx.citizenState.cache.set(path, listing); return listing; }, ['extras-view.js', 'scoreboard-view.js']);
+  ctx.homeWorkSection();
+  await new Promise(resolve => setImmediate(resolve));
+  const html = ctx.homeWorkSection();
+  assert.match(html, /Dados de presença indisponíveis neste recorte/);
+  assert.match(html, /abst\. não publicada/);
+  assert.doesNotMatch(html, /votações conferidas/);
+  assert.doesNotMatch(ctx.homeStats(summary()), /conferidas no Placar/);
+  ctx.citizenState.cache.set('/api/c/votes?pageSize=1', { error: true });
+  assert.match(ctx.homeWorkSection(), /data-home-votes-retry/);
 });

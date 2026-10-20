@@ -368,6 +368,13 @@ class ServerContentTests(unittest.TestCase):
         self.assertIn('action="/politicos" method="get"', home)
         self.assertIn('href="/deputado/1"', home)  # quem mais usa a cota, com link real
         self.assertIn('"@type": "WebSite"', home)
+        # Como trabalham: presença e a votação mais recente do Placar, com os números das telas próprias.
+        self.assertIn('<h2 class="h">Como trabalham</h2>', home)
+        self.assertIn('<b>65%</b><span>de presença média</span>', home)
+        self.assertLess(home.index('<a href="/deputado/3">'), home.index('<a href="/deputado/1"><span class="home-rank-name">'), 'menos presentes primeiro')
+        self.assertIn('Marco das &lt;bicicletas&gt;', home)
+        self.assertIn('href="/placar/100-1"', home)
+        self.assertNotIn('impostos', home)
         _, politicians = self.get('/politicos')
         self.assertIn('<a href="/deputado/1">Ana Ávila</a>', politicians)
         self.assertIn('<a href="/senador/2">Bruno Bê</a>', politicians)

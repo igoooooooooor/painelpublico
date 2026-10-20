@@ -624,7 +624,7 @@ sem depender de JavaScript.
 ## Como ler os números
 
 Os números vêm de dados públicos oficiais (Câmara dos Deputados, Senado Federal, Portal da Transparência,
-IBGE, TSE, Tesouro Nacional e Receita Federal) e cada página indica fonte, período e data da coleta. Câmara e
+IBGE, TSE e Tesouro Nacional) e cada página indica fonte, período e data da coleta. Câmara e
 Senado publicam partes diferentes do custo: compare só dentro da mesma Casa. Picos e concentrações seguem regras fixas e
 iguais para todos(as) e não indicam irregularidade. Ausência de dado não significa zero. Valores são da época, sem
 correção pela inflação. Regras completas: {origin}/metodologia.

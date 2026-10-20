@@ -222,8 +222,8 @@ nav.tabs .nav-theme { display: none; }
 .sk-between.sk-start { justify-content: flex-start; }
 .sk-tiles .tile { gap: 9px; }
 /* Links reais nos lugares que eram botões: navegação, linhas de lista e atalhos continuam com o mesmo desenho. */
-nav.tabs a, a.citizen-row, a.attendance-row, a.citizen-who, a.face, .home-ranking a, .home-shortcuts a, a.more, a.back, a.opt { text-decoration: none; }
-a.citizen-row, a.attendance-row, a.citizen-who, a.face, .home-ranking a { color: inherit; }
+nav.tabs a, a.citizen-row, a.attendance-row, a.citizen-who, a.face, .home-ranking a, .home-attendance a, .home-shortcuts a, a.more, a.back, a.opt { text-decoration: none; }
+a.citizen-row, a.attendance-row, a.citizen-who, a.face, .home-ranking a, .home-attendance a { color: inherit; }
 a.more, a.back { display: inline-flex; align-items: center; }
 a.vt { color: inherit; text-decoration: none; }
 /* Conteúdo entregue pelo servidor (sem JavaScript): diretório de fichas, tabela de partidos e listas simples. */

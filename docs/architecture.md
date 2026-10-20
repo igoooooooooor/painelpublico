@@ -117,7 +117,7 @@ votação do Placar também (`/placar/<id>`) e cada município (`/minha-cidade/<
 `dist/index.html` com título, descrição, endereço canônico, Open Graph (com `og-image.png`), dados estruturados
 (schema.org: `WebSite`, `WebPage`/`CollectionPage`/`AboutPage`, `Person`, `BreadcrumbList`) e, dentro de `#app`,
 o conteúdo essencial da página em HTML, montado por `backend/seo_sections.py` com as mesmas funções que servem a
-API (`citizen`, `votes`, `cities`): resumo da ficha, números e alertas da home, diretório de todas as fichas em
+API (`citizen`, `votes`, `cities`): resumo da ficha, números, alertas, presença e última votação da home, diretório de todas as fichas em
 `/politicos`, lista de presença, catálogo do Placar com link para cada votação, decisão e votos de cada votação,
 tabela de partidos, metodologia e sobre. É o que pessoas sem JavaScript, buscadores e assistentes leem; o bloco
 usa o design system e vem marcado com `data-server-render="<endereço>"`.
