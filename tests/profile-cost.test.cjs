@@ -71,6 +71,19 @@ test('principal shows the latest complete month, with the mandate average as con
   assert.match(profileCostSalaryNote(6182159, '2026-07'), /^acima do subsídio de R\$\s?46\.366,19: inclui férias, retroativos ou outras parcelas pagas no mês$/);
   assert.match(profileCostSalaryNote(2000000, '2026-07'), /^abaixo do subsídio de R\$\s?46\.366,19: redução ao teto constitucional, exercício por parte do mês ou outro desconto publicado$/);
   assert.equal(profileCostSalaryNote(6182159, '2024-12'), '');  // antes da data do subsídio de referência
+  // Com as linhas publicadas no mês, a nota cita a que explica a diferença, com o nome da Câmara.
+  const july = { period: '2026-07', daysInOffice: 31, remunerationComponentsCents: { fixed_remuneration: 4636619, other_eventual_remuneration: -841567 } };
+  const discount = profileCostSalaryNote(3795052, '2026-07', july);
+  assert.match(discount, /^abaixo do subsídio de R\$\s?46\.366,19: −R\$\s?8\.415,67 em “Outras Remunerações Eventuais\/Provisórias”, que a Câmara atribui a acertos de meses anteriores ou descontos de falta e impontualidade$/);
+  assert.doesNotMatch(discount, /teto|parte do mês/);
+  const capped = { period: '2026-07', daysInOffice: 31, remunerationComponentsCents: { fixed_remuneration: 4636619, constitutional_reduction: -300000 } };
+  assert.match(profileCostSalaryNote(4336619, '2026-07', capped), /: −R\$\s?3\.000,00 em “Redutor Constitucional”$/);
+  const partial = { period: '2026-02', daysInOffice: 14, remunerationComponentsCents: { fixed_remuneration: 2318310 } };
+  assert.match(profileCostSalaryNote(2318310, '2026-02', partial), /: Remuneração Fixa de R\$\s?23\.183,10 \(14 de 28 dias em exercício\)$/);
+  const vacation = { period: '2026-07', remunerationComponentsCents: { fixed_remuneration: 4636619, vacation_third: 1545540 } };
+  assert.match(profileCostSalaryNote(6182159, '2026-07', vacation), /^acima do subsídio de R\$\s?46\.366,19: \+R\$\s?15\.455,40 em “Férias \(1\/3 Constitucional\)”$/);
+  // Linhas que não explicam o sentido da diferença: volta o texto geral.
+  assert.match(profileCostSalaryNote(2000000, '2026-07', { remunerationComponentsCents: { fixed_remuneration: 4636619, vacation_third: 100 } }), /redução ao teto constitucional, exercício por parte do mês ou outro desconto publicado$/);
   assert.doesNotMatch(html, /pelo menos/);
   assert.doesNotMatch(html, JARGON);
 });

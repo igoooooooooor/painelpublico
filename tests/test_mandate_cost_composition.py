@@ -102,6 +102,19 @@ class MandateCompositionTests(unittest.TestCase):
         self.assertEqual(row['otherPayrollCents']['daily_allowances'], -100)
         self.assertEqual(row['knownSumCents'], 36000)
 
+    def test_salary_lines_keep_only_published_nonzero_components_with_their_sign(self):
+        components = self.parts['payroll'][self.period]['sheets'][0]['componentsCents']
+        self.assertEqual(compose_month(self.parts, self.service, self.period)['remunerationComponentsCents'],
+                         {'fixed_remuneration': 10000})
+        components.update(other_eventual_remuneration=-2500, constitutional_reduction=-500)
+        row = compose_month(self.parts, self.service, self.period)
+        self.assertEqual(row['remunerationComponentsCents'],
+                         {'fixed_remuneration': 10000, 'other_eventual_remuneration': -2500, 'constitutional_reduction': -500})
+        self.assertEqual(row['valuesCents']['remuneration'], sum(row['remunerationComponentsCents'].values()))
+        # Sem a folha lida, não há linhas para explicar o salário (ausência não vira zero).
+        self.parts['payroll'] = {}
+        self.assertIsNone(compose_month(self.parts, self.service, self.period)['remunerationComponentsCents'])
+
     def test_unverified_quota_rowset_cannot_enter_main(self):
         self.parts['quota'][self.period]['completeSnapshot'] = False
         row = compose_month(self.parts, self.service, self.period)

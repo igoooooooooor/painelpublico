@@ -108,7 +108,7 @@ def _election_result(identifier, profile_path):
 _MONTH_LISTS = ('exclusionReasons', 'sourceGaps')
 _MONTH_FLAGS = ('eligible', 'housingDiscrepancy')
 _MONTH_OPTIONAL = ('daysInOffice', 'knownSumCents', 'christmasBonusCents', 'payrollInventory', 'complementSignedCents',
-                   'functionalPropertyDays', 'housingAllowanceForCheckCents')
+                   'functionalPropertyDays', 'housingAllowanceForCheckCents', 'remunerationComponentsCents')
 
 
 def expand_mandate_cost(record, urls):

@@ -241,17 +241,47 @@ function profileCostWhyMonth(latest, next = '') {
 
 /* "Salário bruto" soma todas as tabelas da página de remuneração do mês (normal e complementares). Quando difere
    do subsídio de referência (PROFILE_SALARY), a linha diz por quê: a página oficial mostra o subsídio em destaque,
-   e o leitor compararia os dois números. Só a partir da data em que o subsídio de referência vale. */
-function profileCostSalaryNote(cents, period) {
+   e o leitor compararia os dois números. Só a partir da data em que o subsídio de referência vale. O motivo vem das
+   linhas publicadas no mês (`remunerationComponentsCents`), com os nomes da Câmara; sem elas, fica o texto geral. */
+const PROFILE_SALARY_LINES = {
+  personal_advantages: 'Vantagens de Natureza Pessoal', commission_role: 'Função ou Cargo em Comissão',
+  vacation_third: 'Férias (1/3 Constitucional)', other_eventual_remuneration: 'Outras Remunerações Eventuais/Provisórias',
+  permanence_bonus: 'Abono Permanência', constitutional_reduction: 'Redutor Constitucional',
+};
+function profileCostSignedMoney(cents) {
+  return `${cents < 0 ? '−' : '+'}${profileCostMoney(Math.abs(cents))}`;
+}
+function profileCostSalaryReasons(lines, subsidy, below, month) {
+  const reasons = [];
+  const fixed = lines.fixed_remuneration;
+  if (profileCostInteger(fixed) && Math.abs(fixed - subsidy) > 100 && (fixed < subsidy) === below) {
+    const days = month && Number.isInteger(month.daysInOffice) ? month.daysInOffice : null;
+    const monthDays = /^\d{4}-\d{2}$/.test(String(month?.period || '')) ? new Date(Date.UTC(Number(month.period.slice(0, 4)), Number(month.period.slice(5)), 0)).getUTCDate() : null;
+    const partial = below && days !== null && monthDays !== null && days < monthDays ? ` (${days} de ${monthDays} dias em exercício)` : '';
+    reasons.push(`Remuneração Fixa de ${profileCostMoney(fixed)}${partial}`);
+  }
+  Object.entries(PROFILE_SALARY_LINES).forEach(([key, label]) => {
+    const value = lines[key];
+    if (!profileCostInteger(value) || value === 0 || (value < 0) !== below) return;
+    const note = key === 'other_eventual_remuneration' && value < 0
+      ? ', que a Câmara atribui a acertos de meses anteriores ou descontos de falta e impontualidade' : '';
+    reasons.push(`${profileCostSignedMoney(value)} em “${label}”${note}`);
+  });
+  return reasons;
+}
+function profileCostSalaryNote(cents, period, month = null) {
   const reference = typeof PROFILE_SALARY !== 'undefined' ? PROFILE_SALARY?.deputado : null;
   if (!profileCostInteger(cents) || !reference || !Number.isFinite(reference.amount) || !/^\d{4}-\d{2}$/.test(String(period || ''))
       || String(reference.since || '').slice(0, 7) > period) return '';
   const subsidy = Math.round(reference.amount * 100);
   if (Math.abs(cents - subsidy) <= 100) return '';
-  const money = profileCostMoney(subsidy);
-  return cents > subsidy
-    ? `acima do subsídio de ${money}: inclui férias, retroativos ou outras parcelas pagas no mês`
-    : `abaixo do subsídio de ${money}: redução ao teto constitucional, exercício por parte do mês ou outro desconto publicado`;
+  const money = profileCostMoney(subsidy), below = cents < subsidy;
+  const lines = month && month.remunerationComponentsCents && typeof month.remunerationComponentsCents === 'object' ? month.remunerationComponentsCents : null;
+  const reasons = lines ? profileCostSalaryReasons(lines, subsidy, below, month) : [];
+  if (reasons.length) return `${below ? 'abaixo' : 'acima'} do subsídio de ${money}: ${reasons.join('; ')}`;
+  return below
+    ? `abaixo do subsídio de ${money}: redução ao teto constitucional, exercício por parte do mês ou outro desconto publicado`
+    : `acima do subsídio de ${money}: inclui férias, retroativos ou outras parcelas pagas no mês`;
 }
 /* Valor da parte: do mês mais recente (`perMonth` falso) ou a média das partes sem mês completo. */
 function profileCostPartRow([key, label, sourceLabel], value, scale, { source = null, detail = '', personId = null, gap = false, perMonth = false } = {}) {
@@ -317,7 +347,7 @@ function profileCostAnswer(cost, asOf) {
        em 2025–2026): o zero é o publicado, mas o total do mês fica sem o custo da equipe e precisa dizer isso. */
     rows = PROFILE_COST_PARTS.map((entry, index) => profileCostPartRow(entry, values[index], scale,
       { source: profileCostSafeSource(sources[entry[0]]), personId: cost.id, gap: gaps.has(entry[0]),
-        detail: entry[0] === 'remuneration' ? profileCostSalaryNote(values[index], period)
+        detail: entry[0] === 'remuneration' ? profileCostSalaryNote(values[index], period, month)
           : entry[0] === 'office' && values[index] === 0 ? 'a Câmara publica R$ 0,00 neste mês; o total pode estar sem o custo da equipe do gabinete' : '' })).join('');
     principal = `<div class="profile-cost-total"><span>Custou</span><b class="mono">${esc(profileCostShort(totalCents))}</b><span>em ${esc(label)}</span></div>
       <p class="citizen-cost-exact">Valor exato: <span class="mono">${esc(profileCostMoney(totalCents))}</span>, a soma das quatro partes abaixo</p>

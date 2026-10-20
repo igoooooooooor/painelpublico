@@ -140,6 +140,10 @@ def compose_month(parts, service, period):
             'functionalPropertyDays': housing.get('functionalPropertyDays') if valid(housing, period) else None,
             'housingDiscrepancy': discrepancy, 'housingAllowanceForCheckCents': housing_value,
             'otherPayrollCents': {key: components.get(key) for key in ('daily_allowances', 'indemnity_benefits')},
+            # Linhas da página oficial que formam o salário bruto, só as diferentes de zero: a ficha explica com elas
+            # por que o bruto do mês difere do subsídio (redutor, acertos e descontos, 1/3 de férias).
+            'remunerationComponentsCents': {key: components[key] for key in GROSS_COMPONENTS if components[key] != 0}
+                                           if remuneration is not None else None,
             'sources': {'remuneration': source(payroll), 'allowances': source(payroll),
                         'quota': source(quota), 'office': source(office), 'housing': source(housing)}}
 

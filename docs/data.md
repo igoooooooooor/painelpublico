@@ -803,6 +803,13 @@ partir de fev/2023.
   "Quem mais custa" com "Todos" mostra dois blocos (Câmara e Senado), cada um ordenado por dentro, e a
   barra e o "acima da média" comparam só com a mesma Casa. Sem mês com todas as partes, "Sem custo", sem
   estimativa; quem está nessa situação vai para o fim da ordem, pela cota.
+- **Salário bruto diferente do subsídio:** desde 20/10/2026, cada mês do `mandate-cost.json` guarda as linhas da
+  página de remuneração que formam o salário bruto e não são zero (`remunerationComponentsCents`, com o sinal
+  publicado). Quando o bruto do mês principal difere do subsídio de referência, a ficha cita a linha que explica a
+  diferença com o nome da Câmara (por exemplo, −R$ 8.415,67 em "Outras Remunerações Eventuais/Provisórias", que a
+  Câmara atribui a acertos de meses anteriores ou a descontos de falta e impontualidade; "Redutor Constitucional";
+  "Férias (1/3 Constitucional)"; Remuneração Fixa menor com os dias em exercício). Sem essas linhas, fica o texto
+  geral. Em jul/2026, os 62 deputados com bruto diferente do subsídio tinham a linha que explica.
 - **No cargo desde:** o cabeçalho da ficha diz "Na Câmara desde 2007" ou "No Senado desde 2019", o início
   da sequência ininterrupta de legislaturas (Câmara) ou mandatos (Senado) com exercício até o atual; um
   mandato anterior separado por um intervalo não entra. `make collect-tenure` gera `tenure.json` a partir do
