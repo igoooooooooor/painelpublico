@@ -152,7 +152,7 @@ Quem clona o repositório não precisa coletar nada: `make fetch-data` baixa o [
 
 ```sh
 make fetch-data                      # último release com tag data-
-make fetch-data TAG=data-2026-10-11  # uma fotografia específica
+make fetch-data TAG=data-2026-10-20  # uma fotografia específica
 make fetch-data FORCE=1              # substitui um banco já existente (cópia em data/backups/)
 make dev
 ```
@@ -165,7 +165,7 @@ O repositório publica só código; a base vai para o público como **release de
 
 ```sh
 make publish-data                      # tag data-AAAA-MM-DD de hoje
-make publish-data TAG=data-2026-10-11  # tag explícita
+make publish-data TAG=data-2026-10-20  # tag explícita
 make publish-data DRY_RUN=1            # só monta o pacote em data/releases/<tag>/, sem publicar
 ```
 
