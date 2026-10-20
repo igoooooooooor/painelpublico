@@ -15,6 +15,7 @@ visitante → Cloudflare (HTTPS, cache, proteção) → túnel → 127.0.0.1:800
 - Só respostas de erro (4xx e 5xx) vão ao journal; o acesso normal fica nas métricas do Cloudflare. Localmente, sem `--prod`, todas as requisições aparecem no terminal.
 - Compressão gzip, `HEAD`, `/healthz` (verifica banco e build) e cabeçalhos de segurança (`X-Frame-Options`, `Referrer-Policy`, `nosniff`).
 - Consultas que passam de 8 segundos são abortadas, para uma busca pesada não travar o site.
+- Cada rota da API só lê os parâmetros que usa (`API_PARAMS` em `backend/server.py`); os demais são descartados antes da consulta e da chave do cache, então `?x=123` não refaz uma resposta cara como `/api/c/resumo`. A foto oficial só é buscada para quem está na base.
 - Teste local igual à produção: `make prod`. Capacidade medida, teste de carga e o que ligar no Cloudflare num pico: [Capacidade e teste de carga](performance.md).
 
 ## Primeira vez

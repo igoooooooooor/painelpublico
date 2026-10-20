@@ -12,7 +12,7 @@ from collections import OrderedDict
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import NamedTuple
-from urllib.parse import parse_qs, unquote, urlsplit
+from urllib.parse import parse_qs, unquote, urlencode, urlsplit
 
 from . import cities, citizen, database, photos, profiles, public_store as store, seo, votes
 from .config import BUILD_PATH, ROOT
@@ -31,6 +31,29 @@ COMPUTE_SLOTS = max(2, min(8, os.cpu_count() or 2))  # respostas calculadas ao m
 SNAPSHOT_CHECK_SECONDS = 1  # a pasta de snapshots é conferida no máximo uma vez por segundo
 IDLE_SECONDS = 120     # conexão parada além disso é fechada (o túnel fecha as suas ociosas antes, em 90 s)
 QUERY_ERRORS = (sqlite3.Error, ValueError, TypeError, ArithmeticError)
+# Parâmetros que cada rota lê; os demais são descartados antes da consulta e da chave do cache. Assim um
+# parâmetro inventado (?x=123) não fura o cache nem obriga a refazer uma resposta cara como /api/c/resumo.
+API_PARAMS = {
+    '/api/c/radar': ('tipo', 'cargo', 'id', 'ano', 'page', 'pageSize'),
+    '/api/c/politicos': ('cargo', 'q', 'ordem', 'page', 'pageSize'),
+    '/api/c/notas': ('id', 'mes'),
+    '/api/c/gastos.csv': ('id',),
+    '/api/c/cities': ('q',),
+    '/api/c/votes': ('page', 'pageSize', 'kind', 'q', 'type', 'theme', 'result'),
+}
+
+
+def route_params(url):
+    """Só os parâmetros conhecidos da rota (o último valor de cada um)."""
+    allowed = API_PARAMS.get(url.path, ())
+    return {key: values[-1] for key, values in parse_qs(url.query).items() if key in allowed}
+
+
+def cache_path(url):
+    """Endereço normalizado para a chave do cache: caminho e parâmetros conhecidos, em ordem fixa."""
+    params = route_params(url)
+    query = urlencode(sorted(params.items()))
+    return url.path + ('?' + query if query else '')
 
 
 def compressible(body, content_type):
@@ -310,14 +333,14 @@ class Handler(BaseHTTPRequestHandler):
         response = cache.fetch(('asset', generation, name), compute) if cache is not None else compute()[0]
         self.send_prepared(response, 'public, max-age=31536000, immutable' if prod else 'no-store')
 
-    def send_snapshot_route(self, compute, prod):
+    def send_snapshot_route(self, compute, prod, url):
         """Rotas montadas a partir dos snapshots locais (Placar, cidades, perfis, Senado), sem o SQLite.
         Em produção a resposta fica em cache enquanto os arquivos não mudarem."""
         cache = getattr(self.server, 'cache', None)
         if cache is None:
             response = compute()[0]
         else:
-            response = cache.fetch(('snapshot', self.snapshot_generation(cache), self.path), compute)
+            response = cache.fetch(('snapshot', self.snapshot_generation(cache), cache_path(url)), compute)
         self.send_prepared(response, 'public, max-age=300' if prod and cache is not None else 'no-store')
 
     def do_HEAD(self):
@@ -355,17 +378,17 @@ class Handler(BaseHTTPRequestHandler):
             return
         snapshot_route = self.snapshot_route(url)
         if snapshot_route is not None:
-            self.send_snapshot_route(snapshot_route, prod)
+            self.send_snapshot_route(snapshot_route, prod, url)
             return
         if url.path.startswith('/api/c/foto/'):
             # Foto oficial pelo próprio domínio, para entrar na imagem de compartilhar (canvas sem CORS).
-            data = photos.photo(unquote(url.path[len('/api/c/foto/'):]))
+            data = photos.photo(unquote(url.path[len('/api/c/foto/'):]), known=self.known_politician)
             if data is None:
                 self.send_json({'error': 'Foto não disponível.'}, 404, 'public, max-age=3600' if prod else 'no-store')
             else:
                 self.send_body(data, 'image/jpeg', cache='public, max-age=604800' if prod else 'no-store')
             return
-        params = {key: values[-1] for key, values in parse_qs(url.query).items()}
+        params = route_params(url)
         if not self.server.db_path.exists():
             self.send_json({'error': 'Base ainda não importada. Execute python3 -m backend.public_store.'}, 503)
             return
@@ -403,12 +426,25 @@ class Handler(BaseHTTPRequestHandler):
         if cache is None:
             response = compute()[0]
         else:
-            response = cache.fetch(('api', self.database_generation(), self.path), compute)
+            response = cache.fetch(('api', self.database_generation(), cache_path(url)), compute)
         cacheable = cache is not None and response.status in (200, 404)
         try:
             self.send_prepared(response, 'public, max-age=300' if cacheable else 'no-store')
         except (BrokenPipeError, ConnectionResetError):
             pass
+
+    def known_politician(self, identifier):
+        """Deputado(a) ou senador(a) da base; sem banco, ninguém (a foto cai nas iniciais)."""
+        if not self.server.db_path.exists():
+            return False
+        db = store.connect(self.server.db_path)
+        try:
+            return db.execute("SELECT 1 FROM authorities WHERE id=? AND role IN ('deputado','senador')",
+                              (identifier,)).fetchone() is not None
+        except sqlite3.Error:
+            return False
+        finally:
+            db.close()
 
     def snapshot_route(self, url):
         """Função que monta a resposta de uma rota de snapshot, ou None se o caminho não for uma delas."""
@@ -416,7 +452,7 @@ class Handler(BaseHTTPRequestHandler):
             return (Response.json(found) if found is not None else Response.json({'error': message}, status)), True
 
         if url.path == '/api/c/cities':
-            query = parse_qs(url.query).get('q', [''])[-1]
+            query = route_params(url).get('q', '')
             return lambda: (Response.json(cities.search(query)), True)
         if url.path.startswith('/api/c/cities/'):
             identifier = unquote(url.path[len('/api/c/cities/'):])
@@ -427,7 +463,7 @@ class Handler(BaseHTTPRequestHandler):
             return lambda: found_or(profiles.profile(identifier), 'Perfil complementar não encontrado.')
         if url.path == '/api/c/votes':
             # O Placar vem de snapshots locais; não depende do SQLite.
-            params = {key: values[-1] for key, values in parse_qs(url.query).items()}
+            params = route_params(url)
             return lambda: (Response.json(votes.listing(params)), True)
         if url.path == '/api/c/votes/party-totals':
             # Totais por partido do catálogo do Placar, para comparar partidos na mesma base.

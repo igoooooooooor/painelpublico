@@ -34,6 +34,12 @@ class PhotoCacheTest(unittest.TestCase):
         self.assertEqual(self.calls, ['https://www.camara.leg.br/internet/deputado/bandep/204515.jpg',
                                       'https://www.senado.leg.br/senadores/img/fotos-oficiais/senador5672.jpg'])
 
+    def test_person_outside_the_database_never_reaches_the_source_or_the_disk(self):
+        known = {'camara:204515'}.__contains__
+        self.assertIsNone(photos.photo('camara:987654321', fetch=self.fetch(JPEG), cache_dir=self.folder, known=known))
+        self.assertEqual((self.calls, list(self.folder.iterdir())), ([], []))
+        self.assertEqual(photos.photo('camara:204515', fetch=self.fetch(JPEG), cache_dir=self.folder, known=known), JPEG)
+
     def test_downloads_once_and_refreshes_after_thirty_days(self):
         self.assertEqual(photos.photo('camara:1', fetch=self.fetch(JPEG), now=1000, cache_dir=self.folder), JPEG)
         self.assertEqual(photos.photo('camara:1', fetch=self.fetch(JPEG), now=2000, cache_dir=self.folder), JPEG)

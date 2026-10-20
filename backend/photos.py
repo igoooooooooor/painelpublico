@@ -3,8 +3,8 @@
 As imagens de compartilhar são desenhadas em canvas no navegador. Uma foto de outro domínio sem CORS (caso da
 Câmara) "contamina" o canvas e impede exportar o PNG; servida daqui, a foto pode entrar na imagem.
 
-Segurança: a URL de origem é montada a partir do identificador (``camara:204515``, ``senado:5672``); nenhuma URL
-vinda de fora é aceita, então isto não vira um proxy aberto. A resposta precisa ser JPEG, pequena e vir de um
+Segurança: a URL de origem é montada a partir do identificador (``camara:204515``, ``senado:5672``) de quem está
+na base; nenhuma URL vinda de fora é aceita, então isto não vira um proxy aberto. A resposta precisa ser JPEG, pequena e vir de um
 host oficial. Cada foto é baixada sob demanda e guardada em disco (``data/cache/fotos``, fora do Git) por 30 dias;
 uma falha fica anotada por um dia para não repetir a consulta a cada pedido.
 """
@@ -64,10 +64,14 @@ def _write_atomic(path: Path, data: bytes) -> None:
     os.replace(handle.name, path)
 
 
-def photo(identifier: str, fetch=download, now: float | None = None, cache_dir: Path | None = None) -> bytes | None:
-    """JPEG da foto oficial, do cache quando recente. Sem foto disponível, None (a imagem usa as iniciais)."""
+def photo(identifier: str, fetch=download, now: float | None = None, cache_dir: Path | None = None,
+          known=None) -> bytes | None:
+    """JPEG da foto oficial, do cache quando recente. Sem foto disponível, None (a imagem usa as iniciais).
+
+    ``known(identificador)`` diz se a pessoa está na base: sem ela, um número qualquer faria o servidor consultar
+    a Câmara ou o Senado e gravar um arquivo em disco a cada pedido."""
     match = PHOTO_ID.fullmatch(str(identifier or ''))
-    if not match:
+    if not match or (known is not None and not known(match[0])):
         return None
     house, number = match.groups()
     now = time.time() if now is None else now

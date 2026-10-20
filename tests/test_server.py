@@ -7,6 +7,7 @@ import time
 import unittest
 import urllib.request
 from pathlib import Path
+from unittest import mock
 
 from backend import public_store as store, server as srv
 
@@ -77,6 +78,17 @@ class ProdServerTests(unittest.TestCase):
         self.assertEqual(second['itens'][0]['sigla'], 'BBB')
         self.assertEqual(len(self.httpd.cache.items), 1)
 
+    def test_unknown_query_parameters_share_one_cached_response(self):
+        # Parâmetro inventado (?x=...) não fura o cache nem refaz a resposta; os conhecidos continuam valendo.
+        for path in ('/api/c/partidos', '/api/c/partidos?x=1', '/api/c/partidos?x=2&y=3'):
+            self.get(path)
+        self.get('/api/c/politicos?page=1&cargo=deputado&x=9')
+        self.get('/api/c/politicos?x=3&cargo=deputado&page=1')
+        self.assertEqual(sorted(key[2] for key in self.httpd.cache.items),
+                         ['/api/c/partidos', '/api/c/politicos?cargo=deputado&page=1'])
+        _, senators = self.get('/api/c/politicos?cargo=senador')
+        self.assertEqual(senators['total'], 0)
+
     def test_home_summary_route_returns_full_roster_contract(self):
         response, summary = self.get('/api/c/resumo')
         self.assertEqual(response.status, 200)
@@ -105,6 +117,13 @@ class ProdServerTests(unittest.TestCase):
                 self.get('/api/c/foto/https%3A%2F%2Fevil.test%2Fx.jpg')
             self.assertEqual(ctx.exception.code, 404)
             ctx.exception.close()
+            # Número que não está na base: nenhuma consulta à Câmara e nenhum arquivo gravado.
+            with mock.patch.object(srv.photos, 'download') as download, self.assertRaises(urllib.error.HTTPError) as ctx:
+                self.get('/api/c/foto/camara%3A987654321')
+            self.assertEqual(ctx.exception.code, 404)
+            ctx.exception.close()
+            download.assert_not_called()
+            self.assertEqual(sorted(path.name for path in folder.iterdir()), ['camara-1.jpg'])
         finally:
             srv.photos.CACHE_DIR = original
 
