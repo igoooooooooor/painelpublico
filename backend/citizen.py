@@ -175,6 +175,11 @@ SENATE_CEAPS_PAGES = (
     ('Contratação de consultorias', 4), ('Divulgação da atividade parlamentar', 5),
     ('Passagens aéreas', 8), ('Serviços de Segurança Privada', 9),
 )
+# Nome de cada tipo como o portal do Senado escreve na página do ano (conferido em 19/10/2026).
+SENATE_CEAPS_NAMES = {1: 'Aluguel de imóveis para escritório político', 2: 'Aquisição de material de consumo',
+                      3: 'Locomoção, hospedagem, alimentação e combustíveis', 4: 'Contratação de serviços de apoio ao parlamentar',
+                      5: 'Divulgação da atividade parlamentar', 8: 'Passagens aéreas, aquáticas e terrestres nacionais',
+                      9: 'Serviços de Segurança Privada'}
 SENATE_DOCUMENT_NOTE = 'Análise dos registros publicados; imagem do documento não disponível nesta base.'
 
 
@@ -741,7 +746,7 @@ def month_notes(db, identifier, period):
         for note in reimbursements:
             page = _senate_page(note['category'])
             key = page if page is not None else category_name(note['category'])
-            entry = by_page.setdefault(key, {'categoria': category_name(note['category']), 'valor': 0, 'notas': 0,
+            entry = by_page.setdefault(key, {'categoria': SENATE_CEAPS_NAMES.get(page) or category_name(note['category']), 'valor': 0, 'notas': 0,
                                              'url': f'https://www6g.senado.leg.br/transparencia/sen/{code}/ceaps/{page}/detalhe/?mesAno={month:02d}/{year}'
                                              if page is not None else None})
             entry['valor'] += note['amountCents']

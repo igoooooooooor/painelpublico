@@ -334,6 +334,8 @@ class CitizenPoliticiansTests(unittest.TestCase):
         with closing(store.connect(self.db_path)) as db:
             notes = citizen.month_notes(db, 'senado:77', '2026-01')
         self.assertEqual(notes['total'], 1500)
+        self.assertEqual([item['categoria'] for item in notes['detalhesOficiais']],
+                         ['Aluguel de imóveis para escritório político', 'Passagens aéreas, aquáticas e terrestres nacionais'])
         self.assertEqual([(item['valor'], item['notas'], item['url']) for item in notes['detalhesOficiais']], [
             (1000, 1, 'https://www6g.senado.leg.br/transparencia/sen/77/ceaps/1/detalhe/?mesAno=01/2026'),
             (500, 2, 'https://www6g.senado.leg.br/transparencia/sen/77/ceaps/8/detalhe/?mesAno=01/2026')])
