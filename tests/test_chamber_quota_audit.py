@@ -143,6 +143,23 @@ class ChamberQuotaAuditTests(unittest.TestCase):
         self.assertTrue(profile_months["2026-12"]["completeSnapshot"])
         self.assertIsNone(profile_months["2026-12"]["sourceSignedTotalCents"])
 
+    def test_profile_with_only_prior_year_expenses_has_complete_scopes(self):
+        self._write_database()
+        connection = sqlite3.connect(self.database_path)
+        connection.executescript("""
+            INSERT INTO authorities VALUES ('camara:3', 'Returning Deputy', 'deputado');
+            INSERT INTO roster VALUES ('camara_deputies_current', 'camara:3');
+            INSERT INTO expenses VALUES ('camara_ceap:record:old', 'camara:3', 'camara_ceap', 2025, 3,
+                '', 'MANUTENÇÃO DE ESCRITÓRIO', 500, '', '', '', 'reembolso');
+        """)
+        connection.commit()
+        connection.close()
+        evidence = audit._database_evidence(self.database_path, 2026)
+        scopes = evidence["profileTotals"]["camara:3"]
+        self.assertEqual(scopes["allTime"]["displayedTotalCents"], 500)
+        self.assertEqual(scopes["year"]["totalWithoutAuditedRowsCents"], 0)
+        self.assertEqual(scopes["janToJuly"]["removalDeltaCents"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()

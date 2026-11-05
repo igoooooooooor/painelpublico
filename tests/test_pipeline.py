@@ -333,11 +333,12 @@ class PipelineTests(unittest.TestCase):
                                           mail_sender=self.fake_mail)
         self.assertEqual([call[0] for call in self.snapshot_calls], ['ingest/senate_cost.py', 'scripts/build.py'])
 
+    # Data fixa em todas as rodadas: sem ela, eventos do calendário (ex.: 2º turno) vencem e mandam e-mail.
+    @mock.patch.dict('os.environ', {'PAINEL_TODAY': '2026-10-11'})
     def test_weekly_runs_inventory_and_mails_when_the_queue_has_news(self):
         self.snapshot_results['ingest.editorial_queue'] = (0, 'resumo: {"placar": "ok", "candidatos": 12, "semRevisao": 2, '
                                                             '"pendentes": 1, "novos": ["7-1"], "arquivosManuais": ["accounts.json"], "atencao": true}\nfila: x')
-        with mock.patch.dict('os.environ', {'PAINEL_TODAY': '2026-10-11'}), \
-                mock.patch.object(pipeline, 'run_snapshot_collector', self.fake_snapshot_collector), redirect_stdout(StringIO()):
+        with mock.patch.object(pipeline, 'run_snapshot_collector', self.fake_snapshot_collector), redirect_stdout(StringIO()):
             status = pipeline.run_weekly(self.config, mail_sender=self.fake_mail)
         self.assertEqual(status['result'], 'ok')
         self.assertEqual([s['name'] for s in status['steps']], ['vote-inventory', 'editorial-queue', 'notify'])

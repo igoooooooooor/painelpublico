@@ -281,13 +281,12 @@ def _database_evidence(path: Path, year: int) -> dict[str, Any]:
                 raise ValueError(f"Non-integer expense amount in SQLite for {profile_id}")
             is_complement = (row["sourceId"] == CEAP_SOURCE_ID and row["year"] == year
                              and row["category"] == COMPLEMENT_CATEGORY)
+            # Todos os escopos nascem completos: um perfil só com despesas de anos anteriores
+            # não passa por "year"/"janToJuly" no laço abaixo.
             period = profile_periods.setdefault(profile_id, {
-                "allTime": {"displayedTotalCents": 0, "housingComplementRows": 0,
-                            "housingComplementSignedCents": 0},
-                "year": {"displayedTotalCents": 0, "housingComplementRows": 0,
-                         "housingComplementSignedCents": 0},
-                "janToJuly": {"displayedTotalCents": 0, "housingComplementRows": 0,
-                              "housingComplementSignedCents": 0},
+                scope: {"displayedTotalCents": 0, "totalWithoutAuditedRowsCents": 0,
+                        "housingComplementRows": 0, "housingComplementSignedCents": 0}
+                for scope in ("allTime", "year", "janToJuly")
             })
             scopes = ["allTime"]
             if row["year"] == year:
